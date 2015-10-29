@@ -138,36 +138,26 @@ namespace Biotissue {
 
   void FiberNetwork::setAllCoordinates(double * coords)
   {
+    assert(coords);
     int ii = 0;
+    double * head = coords;
     for(std::vector<Node>::iterator it = nodes.begin(); it != nodes.end(); it++)
     {
-      it->x = coords[ii+0];
-      it->y = coords[ii+1];
-      it->z = coords[ii+2];
-      ii += 3;
-      if(!TRUSS)
-      {
-	it->rx = coords[ii+0];
-	it->ry = coords[ii+1];
-	it->rz = coords[ii+2];
-	ii += 3;
-      }
+      int num_dofs = it->numDofs();
+      it->setDofs(head);
+      head += num_dofs;
     }
   }
 
   void FiberNetwork::getAllCoordinates(std::vector<double> & ns)
   {
+    ns.erase(ns.begin(),ns.end());
+    std::back_insert_iterator< std::vector<double> > bit(ns);
     for(std::vector<Node>::iterator it = nodes.begin(); it != nodes.end(); it++)
     {
-      ns.push_back(it->x);
-      ns.push_back(it->y);
-      ns.push_back(it->z);
-      if(!TRUSS)
-      {
-	ns.push_back(it->rx);
-	ns.push_back(it->ry);
-	ns.push_back(it->rz);
-      }
+      int num_dofs = it->numDofs();
+      double * dofs = it->getDofs();
+      std::copy(dofs,dofs+num_dofs,bit);
     }
   }
    
@@ -202,20 +192,10 @@ namespace Biotissue {
 
   bool onBoundary(FiberNetwork & fn, const Node & n, FiberNetwork::Side s)
   {
+    int idx[] = {0,0,1,1,2,2}; // left-right, top-bottom, front-back
     bool result = false;
     double coord = 0.0;
-    switch(s)
-    {
-    case FiberNetwork::RIGHT:
-    case FiberNetwork::LEFT:
-      coord = n.x;
-    case FiberNetwork::TOP:
-    case FiberNetwork::BOTTOM:
-      coord = n.y;
-    case FiberNetwork::FRONT:
-    case FiberNetwork::BACK:
-      coord = n.z;
-    }
+    coord = n[idx[side]];
     result = close(coord,fn.sideCoord(s));
     return result;
   }
@@ -273,10 +253,9 @@ namespace Biotissue {
   {
     static double axis[3] = {1.0,0.0,0.0};
     double length = calcFiberLength(n1,n2);
-    
-    rslt[0] = (n2.x - n1.x / length) * axis[0];
-    rslt[1] = (n2.y - n1.y / length) * axis[1];
-    rslt[2] = (n2.z - n1.z / length) * axis[2];
+    rslt[0] = (n2[0] - n1[0] / length) * axis[0];
+    rslt[1] = (n2[1] - n1[1] / length) * axis[1];
+    rslt[2] = (n2[2] - n1[2] / length) * axis[2];
   }
 
   void calcAvgFiberDirection(const FiberNetwork & fn,
@@ -303,9 +282,9 @@ namespace Biotissue {
 			  const Node & n2,
 			  double (&rslt)[3])
   {
-    rslt[0] = n2.x - n1.x;
-    rslt[1] = n2.y - n2.y;
-    rslt[2] = n2.z - n2.z;
+    rslt[0] = n2[0] - n1[0];
+    rslt[1] = n2[1] - n2[1];
+    rslt[2] = n2[2] - n2[2];
     if(rslt[0] < 0)
     {
       rslt[0] *= -1.0;

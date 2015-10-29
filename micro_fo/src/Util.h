@@ -11,7 +11,6 @@ void erase_at(Container & c, size_t pos)
   c.erase(it);
 }
 
-
 template <typename D, template<typename T, typename All = std::allocator<T> > class Container>
   void erase_ptr_at(Container<D*> & c, size_t pos)
 {
