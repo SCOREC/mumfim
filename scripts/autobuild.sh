@@ -17,8 +17,8 @@ fi
 cd $BUILD_DIR
 
 notifybuild \
-"../macro/src/ ../micro_fo/src/ ../micro_fm/src/ ../macro/test/SourceMain/ ../micro_fo/test/" \
-"${DEVROOT}/install/lib/libamsi_control.a" \
+"../micro_fo/src/" \
+"" \
 'make' \
 "BIOTISSUE_$BUILD_TYPE"
 
