@@ -77,7 +77,7 @@ namespace bio
 
   void extractFullMatrix(SparseStructure & ss,
 			 double * sprs_mtrx,
-			 doule * fll_mtrx,
+			 double * fll_mtrx,
 			 int n)
   {
     if(ss.isFinal())

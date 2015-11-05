@@ -1051,20 +1051,17 @@ void calc_deriv(double x[], double y[], double z[], double ux[], double uy[], do
   }
 
     // T. Stylianopolous, V.H. Barocas, Volume-averaging theory for the study of the mechanics of collangen networks (2006), equation (1)
-    void MicroFO::calc_fiber_str(double * len,
-				 double * fib_str,
+    void MicroFO::calc_fiber_str(double * fib_str,
 				 double * dfdl)
   {
     int num_elements = fiber_network->numElements();
     for(int ii = 0; ii < num_elements; ii++)
     {
       const Element & fiber = fiber_network->element(ii);
-      const FiberReaction * fiber_reaction = fiber_network->getFiberParams(ii);
-      
-      std::pair<double,double> force_reaction = fiber_reaction->forceReaction(fiber.orig_len,
-									      len[ii]);
-      fib_str[ii] = force_reaction.first;
-      dfdl[ii] = force_reaction.second;
+      const Element & ofiber = original_network->elements(ii);
+      const FiberReaction * fiber_reaction = fiber_reactions->getReaction(ii);
+      fib_str[ii] = fiber_reaction->f(ofiber,fiber);
+      dfdl[ii] = fiber_reaction->df_dl(ofiber,fiber);
     }
   }
 

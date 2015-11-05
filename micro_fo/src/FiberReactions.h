@@ -3,16 +3,32 @@
 
 #include <cmath>
 #include <utility>
+#include <vector>
 
 namespace bio
 {
-  struct Element;// fiber
+/*
   class FiberReaction
   {
+  protected:
+    std::string nm;
   public:
-    virtual double f(const Element & e) = 0; 
-    virtual double df_dl(const Element & e) = 0;
-    //virtual std::pair<double,double> forceReaction(double,double) const= 0;
+    FiberReaction(const std::string & n) : nm(n) {}
+    virtual double f(const Element & original, const Element & deformed) = 0; 
+    virtual double df_dl(const Element & original, const Element & deformed) = 0;
+    const std::string & getName() {return nm;}
+  };
+
+  class FiberReactionAssignment
+  {
+  protected:
+    std::vector<FiberReaction*> reactions;
+    std::vector<int> assignment;
+  public:
+    FiberReactionAssignment();
+    FiberReaction * getReaction(int fiber) { return reactions[assignment[fiber]]; }
+    int addReaction(FiberReaction * r) { reactions.push_back(r); }
+    void assignReaction(int fiber, int reaction) {assignment[fiber] = reaction;}
   };
   
   class NonLinearReaction : public FiberReaction
@@ -25,10 +41,10 @@ namespace bio
     NonLinearReaction();
   public:
     NonLinearReaction(double fa, double b, double e, double le)
-      : fbr_ar(fa), B(b), E(e), lexp(le)
+      : FiberReaction("nonlinear"), fbr_ar(fa), B(b), E(e), lexp(le)
     {}
-    virtual double f(const Element & e);
-    virtual double df_dl(const Element & e);
+    virtual double f(const Element & original, const Element & deformed);
+    virtual double df_dl(const Element & original, const Element & deformed);
   };
   
   // Note: essentially just a linear spring
@@ -39,12 +55,12 @@ namespace bio
     double E;
   public:
     LinearReaction(double fa, double e)
-      : fbr_ar(fa), E(e)
+      : FiberReaction("linear"), fbr_ar(fa), E(e)
     {}
-    virtual double f(const Element & e);
-    virtual double df_dl(const Element & e);
+    virtual double f(const Element & original, const Element & deformed);
+    virtual double df_dl(const Element & original, const Element & deformed);
   };
-
+*/
   /*
   struct BeamReaction : public FiberReaction
   {

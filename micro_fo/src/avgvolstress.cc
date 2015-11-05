@@ -3,7 +3,7 @@
 #include "globals.h"
 #include "RVE_Util.h"
 
-namespace Biotissue
+namespace bio
 {
   void MicroFO::avg_vol_stress(double * stress,
 			       double & loc_vastrx,

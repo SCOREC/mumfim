@@ -5,36 +5,31 @@
 #include "MicroFOMultiscaleTypes.h"
 
 #include "FiberNetwork.h"
-#include "SparseMatrix.h"
+#include "SparseStructure.h"
 #include "Sparskit_Externs.h"
 
-#include <apf.h>
-#include <apfMesh2.h>
+//#include <apf.h>
+//#include <apfMesh2.h>
 
 #include <iomanip>
 #include <fstream>
 #include <vector>
 
- namespace Biotissue {
+namespace bio
+{
 
-struct RVE_Info{
+struct RVE_Info
+{
   int mType;
   int order;
   double * derivS;
-};
-
-// the structure glo_node is used for bookkeeping the position of the edges of the RVEs. 
-struct glo_node
-{
-  double x[8];     // x-coordinate of the edges
-  double y[8];     // y-coordinate of the edges
-  double z[8];     // z-coordinate of the edges
 };
 
 class MicroFO
 {
 private:
   SparskitBuffers * buffers;
+  FiberReactionAssignment * fiber_reactions;
 
 public:
   MicroFO ();
@@ -134,9 +129,10 @@ private:
   double * displacement;
 
   // Macroscale element information
-  apf::Mesh2 * element_mesh;
+  //apf::Mesh2 * element_mesh;
   //apf::MeshEntity * macro_entity;
-  apf::MeshElement * macro_element;
+  //apf::MeshElement * macro_element;
+  
   int element_type;
   int num_field_comp;
   int num_element_nodes;

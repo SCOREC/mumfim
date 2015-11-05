@@ -38,6 +38,7 @@ namespace Biotissue {
 		   double * init_coords,
 		   int num_nodes) :
     buffers(b),
+    fiber_reactions(),
     firstTimeThrough(true),
     post_migration(false),
     element_type(macro_type),

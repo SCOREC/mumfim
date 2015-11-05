@@ -13,9 +13,9 @@ namespace bio
     std::vector<int> rows;
     std::vector<int> cols;
     int findSpot(int,int) const;
-    SparseMatrix();
+    SparseStructure();
   public:
-    SparseMatrix(int);
+    SparseStructure(int);
     int numNonzeros() const
     {
       if(finalized)
@@ -26,11 +26,11 @@ namespace bio
     bool needMtxElem(int,int);
     void addMtxElem(int,int,int);
     void finalize();
-    void isFinal() {return finalized;}
+    bool isFinal() {return finalized;}
     int sparseLocation(int,int) const;
     int * getRows()
     {
-      int * result = NULL
+      int * result = NULL;
       if(finalized)
 	result = &rows[0];
       return result;

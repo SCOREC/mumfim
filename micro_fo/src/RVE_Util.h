@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  (c) 2014 Scientific Computation Research Center,
+  (c) 2015 Scientific Computation Research Center,
       Rensselaer Polytechnic Institute. All rights reserved.
 
   The LICENSE-SCOREC file included with this distribution describes the terms
@@ -8,26 +8,16 @@
 
 *******************************************************************************/
 
-#ifndef RVEUTIL_H_
-#define RVEUTIL_H_
+#ifndef BIO_RVEUTIL_H_
+#define BIO_RVEUTIL_H_
 
 #include "RepresentVolElem.h"
-#include "SparseMatrix.h"
-
-#ifdef UNIX
-#include <sys/types.h>
-#include <sys/times.h>
-#include <time.h>
-#ifdef _HPUX_SOURCE
-#include <sys/unistd.h>
-#else
-#include <unistd.h>
-#endif
-#endif
+#include "SparseStructure.h"
 
 #include <string>
 
-namespace Biotissue {
+namespace bio
+{
 
   extern int rve_load_balancing;
   extern bool lb_per_iteration;

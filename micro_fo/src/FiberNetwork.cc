@@ -7,7 +7,8 @@
 #include <iostream> 
 #include <cassert> // assert
 
-namespace Biotissue {
+namespace bio
+{
 
   FiberNetwork * FiberNetwork::clone()
   {
@@ -34,96 +35,20 @@ namespace Biotissue {
     std::copy(fn.fiber_types.begin(),fn.fiber_types.end(),fiber_types.begin());
     std::copy(fn.nodes.begin(),fn.nodes.end(),nodes.begin());
     std::copy(fn.elements.begin(),fn.elements.end(),elements.begin());
-
-    // Periodic Connections
-    std::copy(fn.rl_bcs.begin(),fn.rl_bcs.end(),rl_bcs.begin());
-    std::copy(fn.tb_bcs.begin(),fn.tb_bcs.end(),tb_bcs.begin());
-    std::copy(fn.fb_bcs.begin(),fn.fb_bcs.end(),fb_bcs.begin());
-
-    num_rl_bcs = rl_bcs.size();
-    num_tb_bcs = tb_bcs.size();
-    num_fb_bcs = fb_bcs.size();
-
-    side[TOP] = fn.sideCoord(TOP);
-    side[BOTTOM] = fn.sideCoord(BOTTOM);
-    side[LEFT] = fn.sideCoord(LEFT);
-    side[RIGHT] = fn.sideCoord(RIGHT);
-    side[BACK] = fn.sideCoord(BACK);
-    side[FRONT] = fn.sideCoord(FRONT);
   }
 
-  FiberNetwork::FiberNetwork() :
-    elements(),
-    nodes(),
-    num_nodes(0),
+  FiberNetwork::FiberNetwork(int nnds, int nfbrs) :
+    elements(nfbrs),
+    nodes(nnds),
+    num_nodes(nnds),
     num_dofs(0),
-    num_elements(0),
-    num_rl_bcs(0),
-    num_tb_bcs(0),
-    num_fb_bcs(0),
-    dofs_per_node(0),
-    rl_bcs(),
-    tb_bcs(),
-    fb_bcs(),
+    num_elements(nfbrs),
     side(),
     fiber_radius(3.49911271e-08),
-    fiber_area(M_PI * fiber_radius * fiber_radius),
-    fiber_types(2) //Initialize size to match number of different fiber types.
+    fiber_area(M_PI * fiber_radius * fiber_radius)
   {
-    // Trusses or beams
-    if(TRUSS)
-      dofs_per_node = 3;
-    else
-      dofs_per_node = 6;
-
-    NonlinearReaction * r1 = new NonlinearReaction;
-    fiber_types[0] = r1;
-    r1->fiber_area = fiber_area;
-    r1->B = 1.2;
-    r1->E = 43200000; // 43.2 MPa
-    r1->lexp = 1.4; // limit of the length ratio
   }
 
-  void FiberNetwork::collectPeriodicConnectionInfo(std::vector<PBCRelation> & bcs)
-  {
-    for(int ii=0;ii<bcs.size();ii++)
-    {
-      for(int jj=0;jj<num_elements;jj++)
-      {
-        const Element & e = element(jj);
-        if(e.node1_id == bcs[ii].node1_id)
-        {
-          bcs[ii].elem1 = jj;
-          bcs[ii].elem1first = true;
-          break;
-        }
-        else if(e.node2_id == bcs[ii].node1_id)
-        {
-          bcs[ii].elem1 = jj;
-          bcs[ii].elem1first = false;
-          break;
-        }
-      }
-
-      for(int jj=0;jj<num_elements;jj++)
-      {
-        const Element & e = element(jj);
-        if(e.node1_id == bcs[ii].node2_id)
-        {
-          bcs[ii].elem2 = jj;
-          bcs[ii].elem2first = true;
-          break;
-        }
-        else if(e.node2_id == bcs[ii].node2_id)
-        {
-          bcs[ii].elem2 = jj;
-          bcs[ii].elem2first = false;
-          break;
-        }
-      }
-    }
-  }
-  
   void FiberNetwork::setNode(size_t index, const Node & n)
   {
     assert(index < nodes.size());
@@ -219,12 +144,7 @@ namespace Biotissue {
     int num_elements = fn.numElements();
     lengths.resize(num_elements);
     for(int ii = 0; ii < num_elements; ii++)
-    {
-      const Element & e = fn.element(ii);
-      const Node & n1 = fn.node(e.node1_id);
-      const Node & n2 = fn.node(e.node2_id);
-      lengths[ii] = calcFiberLength(n1,n2);
-    }
+      lengths[ii] = calcFiberLength(fn.element(ii));
   }
 
   double calcNetworkOrientation(const FiberNetwork & fn)
@@ -235,8 +155,8 @@ namespace Biotissue {
     for(int ii = 0; ii < num_elements; ii++)
     {
       const Element & e = fn.element(ii);
-      calcFiberOrientation(fn.node(e.node1_id),
-			   fn.node(e.node2_id),
+      calcFiberOrientation(fn.node(e.getNode(0)),
+			   fn.node(e.getNode(1)),
 			   ortn);
       result += ortn[0]*ortn[0];
       result += ortn[1]*ortn[1];
@@ -266,8 +186,8 @@ namespace Biotissue {
     for(int ii = 0; ii < num_elements; ii++)
     {
       const Element & e = fn.element(ii);
-      calcFiberDirection(fn.node(e.node1_id),
-			 fn.node(e.node2_id),
+      calcFiberDirection(fn.node(e.getNode(0)),
+			 fn.node(e.getNode(1)),
 			 dir);
       rslt[0] += dir[0];
       rslt[1] += dir[1];
