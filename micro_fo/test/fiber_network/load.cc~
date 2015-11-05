@@ -1,0 +1,9 @@
+#include "FiberNetworkIO.h"
+#include <cassert>
+#include <iostream>
+
+int main(int argc, char * argv[])
+{
+  assert(argv[1]);
+  apf::Mesh2 * network = bio::readFromStream(std::fstream(argv[1],std::sftream::in));
+}
