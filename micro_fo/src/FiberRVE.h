@@ -1,5 +1,5 @@
-#ifndef H_RepresentVolElem
-#define H_RepresentVolElem
+#ifndef BIO_FIBER_RVE_H_
+#define BIO_FIBER_RVE_H
 
 // multiscale type definitions (for microscale result data)
 #include "MicroFOMultiscaleTypes.h"
@@ -8,9 +8,6 @@
 #include "SparseStructure.h"
 #include "Sparskit_Externs.h"
 
-//#include <apf.h>
-//#include <apfMesh2.h>
-
 #include <iomanip>
 #include <fstream>
 #include <vector>
@@ -18,6 +15,55 @@
 namespace bio
 {
 
+  const int num_corners = 8;
+  const int dim = 3;
+
+  class FiberRVE
+  {
+  private:
+    double half_rve_dim;
+    double rve_dim;
+    apf::Mesh * fiber_network;
+    apf::Field * micro_u;
+
+    int gid;
+    apf::Mesh * macro_msh;
+    apf::MeshEntity * macro_ent;
+  protected:
+    void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE);
+  public:
+    FiberRVE(apf::Mesh * fn, apf::MeshEntity * me, int gauss_pt);
+
+    
+  };
+  
+  class CalcInitGuess
+  {
+  protected:
+    
+  public:
+    CalcInitGuess();
+    void apply(FiberRVE *);
+  };
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  
 struct RVE_Info
 {
   int mType;
@@ -273,7 +319,7 @@ private:
   double PHI(int, double, double, double);
 
 };
-
+*/
  }
 
 #endif

@@ -45,7 +45,7 @@ namespace Biotissue {
     num_field_comp(3), // HACKY hard-coded
     num_element_nodes(num_nodes),
     network_id(id),
-    num_rve_doubles(num_field_comp*num_element_nodes),
+    num_rve_doubles(num_field_comp*num_element_nodes), //12
     init_fiber_network(fn),
     sparse_structure(st),
     num_gauss_pts(2) // HACKY hard-coded

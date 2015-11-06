@@ -1,19 +1,13 @@
 #include "FiberNetworkIO.h"
 
-#include <apfMDS.h>
-#include <apfMesh2.h>
-#include <gmi_null.h>
-#include <gmi_mesh.h>
-
+#include "apfUtil.h"
 #include <iostream>
 
 namespace bio
 {
   apf::Mesh2 * NetworkLoader::fromStream(std::istream & is)
   {
-    gmi_register_null();
-    gmi_model * mdl = gmi_load(".null");
-    apf::Mesh2 * msh = apf::makeEmptyMdsMesh(mdl,3,false);
+    apf::Mesh2 * msh = makeNullMdlEmptyMesh();
     int num_edges = 0;
     parseHeader(is,num_edges);
     for(int ii = 0; ii < num_edges; ii++)

@@ -4,6 +4,7 @@ set(micro_fo_public_headers
   SparseStructure.h)
 
 set(micro_fo_src_files
+  dRVEdFE.cc
   FiberNetworkIO.cc
   FiberReactions.cc
   SparseStructure.cc
