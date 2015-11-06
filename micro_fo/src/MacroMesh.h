@@ -1,17 +1,22 @@
-#ifndef BIO_MACRO_MESH_H
-#define BIO_MACRO_MESH_H
+#ifndef BIO_MACRO_COUPLING_H
+#define BIO_MACRO_COUPLING_H
 
 #include "apfUtil.h"
 
 namespace bio
 {
-  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs)
+  
+  class MacroInfo
   {
-    apf::Mesh2 * msh = makeNullMdlEmptyMesh();
-    msh->buildOneElement(msh,NULL,t,vs);
-    msh->acceptChanges();
-    return msh;
-  }
+  protected:
+    int gss_id;
+    apf::Mesh * macro_msh;
+    apf::MeshEntity * macro_ent;
+    int nnd; // num nodes on macro element
+  public:
+    
+  };
+  
 }
 
 #endif

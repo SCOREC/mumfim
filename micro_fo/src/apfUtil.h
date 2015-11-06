@@ -16,11 +16,13 @@ namespace bio
     return apf::makeEmptyMdsMesh(mdl,3,false);
   };
 
-  apf::Vector3 apply(ma::Affine & af, const apf::Vector3 & v)
+  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs)
   {
-    return af * v;
+    apf::Mesh2 * msh = makeNullMdlEmptyMesh();
+    apf::buildOneElement(msh,NULL,t,vs);
+    msh->acceptChanges();
+    return msh;
   }
-  
 }
 
 #endif

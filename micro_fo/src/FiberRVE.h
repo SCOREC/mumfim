@@ -8,6 +8,8 @@
 #include "SparseStructure.h"
 #include "Sparskit_Externs.h"
 
+#include <apf.h>
+
 #include <iomanip>
 #include <fstream>
 #include <vector>
@@ -21,29 +23,26 @@ namespace bio
   class FiberRVE
   {
   private:
-    double half_rve_dim;
-    double rve_dim;
+    apf::Vector3 rve_dims;            // [mm]
+    
     apf::Mesh * fiber_network;
     apf::Field * micro_u;
-
-    int gid;
-    apf::Mesh * macro_msh;
-    apf::MeshEntity * macro_ent;
+    int num_rve_nds;
+    int dim;
   protected:
-    void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE);
   public:
-    FiberRVE(apf::Mesh * fn, apf::MeshEntity * me, int gauss_pt);
-
-    
+    FiberRVE(apf::Mesh * fn);
+    int numCornerNodes() const { return 8; }
+    apf::Vector3 getRVEDimensions() const { return rve_dims; }
   };
   
+
   class CalcInitGuess
   {
   protected:
-    
   public:
     CalcInitGuess();
-    void apply(FiberRVE *);
+    void operator()(FiberRVE &);
   };
   
 

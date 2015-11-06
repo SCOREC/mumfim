@@ -1,56 +1,75 @@
 #include "FiberRVE.h"
+#include "MacroCoupling.h"
 
 #include <apf.h>
+#include <apfDynamicMatrix.h>
 #include <maMap.h>
 
 namespace bio
 {
-  // assumes 3d
-  void calcGlobalRVECorners(const apf::Vector3 & coord, double half_rve_dim, apf::Vector3 (&cs)[num_corners])
+  // move to FiberRVE.cc
+  void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
+			   const apf::Vector3 & rve_dim,
+			   const apf::Vector3 & gbl_gss)
   {
-    static double op[][] = {{-1.0,-1.0, 1.0},
-			    { 1.0,-1.0, 1.0},
-			    {-1.0,-1.0,-1.0},
-			    { 1.0 -1.0,-1.0},
-			    {-1.0, 1.0, 1.0},
-			    { 1.0, 1.0, 1.0},
-			    {-1.0, 1.0,-1.0},
-			    { 1.0, 1.0,-1.0}};
-    
-    for(int ii = 0; ii < num_corners; ii++}
-      for(int jj = 0; jj < dim; jj++)
-	cs[ii][jj] = coord[jj] + half_rve_dim*op[ii][jj]
+    static double op[8][3] = {{-1.0,-1.0, 1.0},
+			      { 1.0,-1.0, 1.0},
+			      {-1.0,-1.0,-1.0},
+			      { 1.0 -1.0,-1.0},
+			      {-1.0, 1.0, 1.0},
+			      { 1.0, 1.0, 1.0},
+			      {-1.0, 1.0,-1.0},
+			      { 1.0, 1.0,-1.0}};
+    int sz = rve_crds.getSize();
+    int d = sz == 8 ? 3 : 2;
+    int o = d == 3 ? 0 : 2;
+    for(int ii = 0; ii < sz; ii++)
+      for(int jj = 0; jj < d; jj++)
+	rve_crds[ii][jj] = gbl_gss[jj] + rve_dim[jj]*op[ii+o][jj];
   }
 
-  void FiberRVE::dCidFE(apf::DynamicMatrix * dRVEdFE,
-			int ii, const apf::Vector & ci, int nsf)
+  // move to apf util i guess
+  void calcLocalCoords(apf::DynamicArray<apf::Vector3> & lcl_crds,
+		       apf::Mesh * macro_msh,
+		       apf::MeshEntity * macro_ent,
+		       apf::DynamicArray<apf::Vector3> & gbl_crds)
+  {
+    ma::Affine inv = ma::getMap(macro_msh,macro_ent);
+    int sz = gbl_crds.getSize();
+    lcl_crds.setSize(sz);
+    for(int ii = 0; ii < sz; ii++)
+      lcl_crds[ii] = inv * gbl_crds[ii];
+  }
+  
+  void MacroInfo::dCidFE(apf::DynamicMatrix & dRVEdFE, const int ii, const apf::Vector3 & ci,
+			 const apf::Vector3 & rve_dim)
   {
     apf::NewArray<double> N;
-    apf::getShapeValues(e,d,N);
-    for(int jj = 0; jj < nsf; jj++) 
+    apf::getShapeValues(macro_elmnt,ci,N);
+    for(int jj = 0; jj < nnd; jj++) 
       for(int kk = 0; kk < dim; kk++)
-	dRVEdFE(ii*kk  ,jj*kk  ) = N[jj] / rve_dim;
+	dRVEdFE(ii*kk,jj*kk) = N[jj] / rve_dim[kk];
   }
 
-
-  // make stateless, pass in RVE
-  void FiberRVE::calcdRVEdFE(apf::DynamicMatrix & dRVEdFE)
+  void MacroInfo::calcdRVEdFE(apf::DynamicMatrix & drve_dfe, const FiberRVE * rve)
   {
-    dRVEdFE.zero();
-    apf::Vector3 g;  // gauss coords
-    apf::getGaussPt(apf::getEntityType(me),1,gid,g);
-    apf::Vector3 gg; // global gauss coords 
-    apf::mapLocalToGlobal(me,g,gg);
-    apf::Vector3 cnrs[num_corners];
-    calcGlobalRVECorners(gg,half_rve_dim,gbl_cnrs);
-    ma::Affine inv = ma::getMap(macro_msh,macro_ent);
-    std::transform(&cnrs[0],&cnrs[num_corners],&cnrs[0],std::bind1st(apply,inv));
-    int nsf = apf::countNodes(apf::getLagrange(0),macro_msh->getType(macro_ent));
-    for(int ii = 0; ii < num_corners; ii++) //rve corners will always be 8...
-      dCidFE(dRVEdFE,ii,cnrs[ii]-q,nsf);
+    int num_rve_nds = rve->numCornerNodes();
+    apf::Vector3 rve_dims = rve->getRVEDimensions();
+    
+    apf::Vector3 gbl_gss;
+    apf::mapLocalToGlobal(macro_melmnt,lcl_gss,gbl_gss);
+    apf::DynamicArray<apf::Vector3> gbl_rve_crds(num_rve_nds);
+    calcGlobalRVECoords(gbl_rve_crds,rve_dims,gbl_gss);
+    apf::DynamicArray<apf::Vector3> lcl_rve_crds(num_rve_nds);
+    calcLocalCoords(lcl_rve_crds,macro_msh,macro_ent,gbl_rve_crds);
+    
+    drve_dfe.zero();
+    int sz = lcl_rve_crds.getSize();
+    for(int ii = 0; ii < sz; ii++)
+      dCidFE(drve_dfe,ii,lcl_rve_crds[ii]-lcl_gss,rve_dims);
   }
 
-
+  /*
   void FiberRVE::genInitGuess()
   {
     // cosider pulling nsf into the clas.s.?
@@ -62,29 +81,5 @@ namespace bio
 
     // generate initial guess 
   }
-
-  apf::Vector3 FiberRVE::trilinearInterp(const apf::Vector3 & crd,
-					 apf::DynamicMatrix & uRVE)
-  {
-    return apf::Vector3(0.0,0.0,0.0);
-  }
-
-  apf::Vector3 FiberRVE::firstOrderCont(const apf::Vector3 & crd,
-					apf::DynamicMatrix & uRVE)
-  {
-    // all displacements
-    //apf::DynamicVector u = dydxr * uRVE;
-    retrn apf::Vector3(0.0,0.0,0.0);
-  }
-
-  // maybe just build a bi-unit cubic mesh and use the lagrange shape functions to interpolate the displacement from the corners to the nodes?
-  void FiberRVE::initialDisplace(apf::MeshEntity * v,
-				 const apf::DynamicMatrix & uRVE,
-				 apf::Vector3 (*mthd)(const apf::Vector3&, apf::DynamicMatrix&))
-  {
-    apf::Vector3 c;
-    macro_msh->getPoint(v,c);
-    apf::Vector3 u = (*mthd)(c,uRVE);
-    apf::setVector(micro_u,v,0,u);
-  }
+  */
 }

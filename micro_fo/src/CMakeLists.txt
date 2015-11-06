@@ -1,6 +1,7 @@
 set(micro_fo_public_headers
   FiberNetworkIO.h
   FiberReactions.h
+  MacroCoupling.h
   SparseStructure.h)
 
 set(micro_fo_src_files
