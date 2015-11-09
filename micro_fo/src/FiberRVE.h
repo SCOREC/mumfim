@@ -23,30 +23,45 @@ namespace bio
   class FiberRVE
   {
   private:
-    apf::Vector3 rve_dims;            // [mm]
+    double fbr_area; // used in fiber_reactions
+
+    // may only be used in up-/down-scaling, which does not belong in FiberRVE, but acts on it instead
+    double fbr_vl_frc;
+    double rve_dim;
+
+    apf::Mesh * cbe;
+    apf::Field * cbe_u;
+
+    apf::Mesh * fn;
+    apf::Field * fn_u;
     
-    apf::Mesh * fiber_network;
-    apf::Field * micro_u;
-    int num_rve_nds;
+    //int num_rve_nds;
     int dim;
   protected:
   public:
-    FiberRVE(apf::Mesh * fn);
+    FiberRVE(apf::Mesh * f);
+    
     int numCornerNodes() const { return 8; }
-    apf::Vector3 getRVEDimensions() const { return rve_dims; }
-  };
-  
+    double getRVEDim() const { return rve_dim; }
 
-  class CalcInitGuess
+    void interpCornerDisps();
+    void forwardCubeDisp();
+  };
+
+  class ForwardCubeDisp : public FieldOp
   {
   protected:
+    
   public:
-    CalcInitGuess();
-    void operator()(FiberRVE &);
+    ForwardCubeDisp
+    bool inEntity(apf::MeshEntity * me);
+    void outEntity();
+    void atNode(int node);
   };
-  
 
-
+  void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
+			   double rve_dim,
+			   const apf::Vector3 & gbl_gss);
 
 
 

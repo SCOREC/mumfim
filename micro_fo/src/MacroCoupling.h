@@ -18,11 +18,10 @@ namespace bio
     apf::Element * macro_elmnt;
     int nnd; // num nodes on macro element
 
-    void dCidFE(apf::DynamicMatrix&,const int,const apf::Vector3 &, const apf::Vector3 &);
+    void dCidFE(apf::DynamicMatrix&,const int,const apf::Vector3 &, double);
   public:
     void calcdRVEdFE(apf::DynamicMatrix & drve_dfe, const FiberRVE * rve);
   };
-  
 }
 
 #endif

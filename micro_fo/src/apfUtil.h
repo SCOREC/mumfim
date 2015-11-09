@@ -5,10 +5,25 @@
 #include <apfMDS.h>
 #include <gmi.h>
 #include <gmi_null.h>
+#include <maMap.h>
+
+#define NODE_ITER(dim, msh, fl,  X) \
+  apf::MeshEntity * me; \
+  apf::MeshIterator * it; \
+  for(it = msh->begin(dim); me = msh->iterate(it);) \
+  { \
+    apf::FieldShape * fs = apf::getShape(fl); \
+    int nds = fs->countNodesOn(msh->getType(me)); \
+    for(int nd = 0; nd < nds; nd++) \
+    { \
+      X \
+    } \
+  } \
+  msh->end(it); \
+} 
 
 namespace bio
 {
-
   apf::Mesh2 * makeNullMdlEmptyMesh()
   {
     gmi_register_null();
@@ -23,6 +38,33 @@ namespace bio
     msh->acceptChanges();
     return msh;
   }
+
+  apf::Vector3 calcLocalCoord(apf::Mesh * msh, apf::MeshEntity * ent,const apf::Vector3 & glb)
+  {
+    ma::Affine i = ma::getMap(msh,ent);
+    return i * glb;
+  }
+
+  void calcLocalCoords(apf::DynamicArray<apf::Vector3> & lcl_crds,
+		       apf::Mesh * macro_msh,
+		       apf::MeshEntity * macro_ent,
+		       apf::DynamicArray<apf::Vector3> & gbl_crds)
+  {
+    ma::Affine inv = ma::getMap(macro_msh,macro_ent);
+    int sz = gbl_crds.getSize();
+    lcl_crds.setSize(sz);
+    for(int ii = 0; ii < sz; ii++)
+      lcl_crds[ii] = inv * gbl_crds[ii];
+  }
+
+  void calcEdgeLengths(apf::Mesh * msh, std::vector<double> & lngths)
+  {
+    apf::MeshEntity * edge = NULL;
+    apf::MeshIterator * it = NULL;
+    for(it = msh->begin(1); edge = msh->iterate(it);)
+      lngths.push_back(apf::measure(apf::createMeshElement(msh,edge)));
+  }
+    
 }
 
 #endif
