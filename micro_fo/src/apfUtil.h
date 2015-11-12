@@ -7,21 +7,6 @@
 #include <gmi_null.h>
 #include <maMap.h>
 
-#define NODE_ITER(dim, msh, fl,  X) \
-  apf::MeshEntity * me; \
-  apf::MeshIterator * it; \
-  for(it = msh->begin(dim); me = msh->iterate(it);) \
-  { \
-    apf::FieldShape * fs = apf::getShape(fl); \
-    int nds = fs->countNodesOn(msh->getType(me)); \
-    for(int nd = 0; nd < nds; nd++) \
-    { \
-      X \
-    } \
-  } \
-  msh->end(it); \
-} 
-
 namespace bio
 {
   apf::Mesh2 * makeNullMdlEmptyMesh()

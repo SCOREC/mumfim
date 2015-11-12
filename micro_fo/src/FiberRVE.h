@@ -9,6 +9,8 @@
 #include "Sparskit_Externs.h"
 
 #include <apf.h>
+#include <apfDynamicMatrix.h>
+#include <apfField.h>
 
 #include <iomanip>
 #include <fstream>
@@ -44,21 +46,111 @@ namespace bio
     int numCornerNodes() const { return 8; }
     double getRVEDim() const { return rve_dim; }
 
-    void interpCornerDisps();
+    
+    // this is on operation ON the FiberRVE rather than OF the fiber RVE, pulling it out of here into a better location is desireable, it depends on the cube element and the fiber network displacement field
     void forwardCubeDisp();
   };
 
-  class ForwardCubeDisp : public FieldOp
+  class InterpOnto : public apf::FieldOp
   {
   protected:
-    
+    apf::Element * src_elmnt;
+
+    apf::MeshEntity * cur_ent;
+    apf::Field * dest_fld;
+    apf::Field * crd_fld;
   public:
-    ForwardCubeDisp
-    bool inEntity(apf::MeshEntity * me);
-    void outEntity();
-    void atNode(int node);
+    InterpOnto(apf::Element * se, apf::Field * d) :
+      src_elmnt(se),
+      cur_ent(NULL),
+      dest_fld(d),
+      crd_fld(NULL)
+    {
+      crd_fld = apf::getMesh(dest_fld)->getCoordinateField();
+    }
+    bool inEntity(apf::MeshEntity * me)
+    {
+      cur_ent = me;
+    }
+    void outEntity() {}
+    void atNode(int nde)
+    {
+      apf::Vector3 p;
+      apf::Vector3 v;
+      apf::getVector(crd_fld,cur_ent,nde,p);
+      apf::getVector(src_elmnt,p,v);
+      apf::setVector(dest_fld,cur_ent,nde,v);		    
+    }
   };
 
+  // get the change in measure of a mesh element w.r.t. the displacement of the nodes
+  class dMdNi : public apf::Integrator
+  {
+  protected:
+    double m;
+    apf::DynamicMatrix dM_dNi;
+
+    apf::MeshElement * ce;
+    int nends;
+    int dim;
+    apf::Element * e;
+    apf::Field * f;
+  public:
+    dMdNi(apf::Field * fi, int order) :
+      apf::Integrator(order),
+      m(),
+      dM_dNi(),
+      ce(NULL),
+      nends(0),
+      dim(0),
+      e(NULL),
+      f(fi)
+    {}
+
+    void inElement(apf::MeshElement * me)
+    {
+      m = 0.0;
+
+      dim = apf::getDimension(me);
+      ce = me;
+      e = apf::createElement(f,me);
+      nends = apf::countNodes(e);
+
+      dM_dNi.setSize(dim,nends);
+    }
+
+    void outElement();
+    void atPoint(apf::Vector3 const& p, double w, double dV)
+    {
+      apf::Matrix3x3 J;
+
+      apf::NewArray<apf::Vector3> dNi_dxi;
+      apf::getShapeGrads(e,p,dNi_dxi);
+
+      apf::DynamicMatrix ddetJ_dNi(dim,nends);
+      ddetJ_dNi.zero();
+      
+      for(int n = 0; n < nends; n++)
+      {
+	for(int ii = 0; ii < dim; ii++) // x y z
+	{
+	  apf::getJacobian(ce,p,J);
+	  for(int jj = 0; jj < dim; jj++) // xi eta gamma
+	    J[ii][jj] = dNi_dxi[n][jj];
+	  ddetJ_dNi(n,ii) = apf::getJacobianDeterminant(J,dim);
+	}
+      }
+
+      // numerical integration
+      ddetJ_dNi *= w;
+      dM_dNi += ddetJ_dNi;
+      m += w * dV;
+    }
+
+    double getMeasure() { return m; }
+    const apf::DynamicMatrix & getdMdNi() { return dM_dNi; }
+  };
+  
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
 			   double rve_dim,
 			   const apf::Vector3 & gbl_gss);

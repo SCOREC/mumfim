@@ -27,33 +27,14 @@ namespace bio
     double ttl_fbr_lngth = std::accumulate(fbr_lngths.begin(),fbr_lngths.end(),0.0);
     fbr_area = fbr_rds * fbr_rds * M_PI;
     rve_dim = sqrt(ttl_fbr_lngth * fbr_area /  fbr_vl_frc);
-  }
-  
-  void FiberRVE::interpCornerDisps()
-  {
-    apf::Vector3 cu[8];
-    // cu - corner displacements
-    double cfs[8] = {};
-    apf::Vector3 dms(rve_dim,rve_dim,rve_dim);
-    apf::Vector3 trn(-0.5,-0.5,-0.5);
-    for(int d = 0; d < dim; d++)
-    {
-      apf::MeshEntity * me = NULL;
-      apf::MeshIterator * it = NULL;
-      for(it = fn->begin(d); me = fn->iterate(it); )
-      {
-	apf::FieldShape * fs = apf::getShape(fn_u);
-	int nds = fs->countNodesOn(fn->getType(me));
-	for(int nd = 0; nd < nds; nd++)
-	{
-	  tricubicInterpCoefs(cfs,dms,trn,cfs);
-	  apf::Vector3 u;
-	  for(int ii = 0; ii < 8; ii++)
-	    u += cu[ii] * cfs[ii];
-	}
-      }
-      fn->end(it);
-    }
+
+    std::vector<apf::Vector3> cbe_crnrs;
+    // ordering of these loops is important to order the nodes correctly from 0-7
+    for(int y = -1; y <= 1; y += 2)
+      for(int z = -1; z <= 1; z += 2)
+	for(int x = -1; x <= 1; x += 2)
+	  cbe_crnrs.push_back(apf::Vector3(0.5*x,0.5*y,0.5*z));
+    cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
   }
 
   void FiberRVE::forwardCubeDisp()
@@ -62,18 +43,10 @@ namespace bio
     apf::MeshEntity * cbe_me = cbe->iterate(it);
     cbe->end(it);
     apf::Element * cbe_e = apf::createElement(cbe_u,apf::createMeshElement(cbe,cbe_me));
-    
-    for(int d = 0; d < dim; d++)
-    {
-      NODE_ITER(d,fn,fn_u,
-		apf::Vector3 p;
-		apf::Vector3 cbe_u;
-		fn->getPoint(me,nd,p);
-		apf::getVector(cbe_e,p,cbe_u);
-		apf::setVector(fn_u,me,nd,cbe_u);
-	);
-    }
+    InterpOnto forward_u(cbe_e,fn_u);
+    forward_u.apply(fn_u);
   }
+  
   
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
 			   double rve_dim,
