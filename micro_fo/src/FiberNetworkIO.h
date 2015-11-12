@@ -7,6 +7,16 @@
 
 namespace bio
 {
+
+  /**
+   * A utility class typically used as an anonymous instance simply to process the
+   *  loading of the fiber network mesh from different sources.
+   * For example in load.cc : \snippet test/load.cc load from file stream
+   * @note When additional sources are being added, reevaluate whether this class should be
+   *       made into an abstract base class with different derived classes for different sources
+   *       since there is only a single source of fiber networks at the moment the decision
+   *       is moot at this point in time.
+   */
   class NetworkLoader
   {
   protected:

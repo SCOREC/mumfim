@@ -7,6 +7,10 @@
 
 namespace bio
 {
+  /**
+   * A class to manage the multi-scale coupling information relating a single fiber network
+   *  to a single macro-scale integration point and mesh element.
+   */
   class MacroInfo
   {
   protected:
@@ -16,10 +20,14 @@ namespace bio
     apf::MeshEntity * macro_ent;
     apf::MeshElement * macro_melmnt;
     apf::Element * macro_elmnt;
-    int nnd; // num nodes on macro element
+    int nnd; // num nodes effecting the macro element
 
     void dCidFE(apf::DynamicMatrix&,const int,const apf::Vector3 &, double);
   public:
+    /**
+     * Calculate the term relating the macro-scale nodal displacements to the
+     *  micro-scale cube corner displacements.
+     */
     void calcdRVEdFE(apf::DynamicMatrix & drve_dfe, const FiberRVE * rve);
   };
 }

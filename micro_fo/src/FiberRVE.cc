@@ -46,8 +46,6 @@ namespace bio
     InterpOnto forward_u(cbe_e,fn_u);
     forward_u.apply(fn_u);
   }
-  
-  
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
 			   double rve_dim,
 			   const apf::Vector3 & gbl_gss)

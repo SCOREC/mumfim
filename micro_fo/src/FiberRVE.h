@@ -22,6 +22,11 @@ namespace bio
   const int num_corners = 8;
   const int dim = 3;
 
+
+  /**
+   * Responsible for managing the internal state of a single fiber-network
+   *  quasistatics simulation. 
+   */
   class FiberRVE
   {
   private:
@@ -31,6 +36,7 @@ namespace bio
     double fbr_vl_frc;
     double rve_dim;
 
+    // probably pull this out into macro coupling actually... or into a seperate intermediary actually
     apf::Mesh * cbe;
     apf::Field * cbe_u;
 
@@ -41,16 +47,40 @@ namespace bio
     int dim;
   protected:
   public:
+
+    /**
+     * Construct a FiberRVE object.
+     * @param f A pointer to a fiber network mesh (contains only vertices and edges)
+     *          typically loaded using the NetworkLoader classes 
+     */
     FiberRVE(apf::Mesh * f);
-    
+
     int numCornerNodes() const { return 8; }
-    double getRVEDim() const { return rve_dim; }
+
+    /**
+     *  Gives the dimensionality of the managed fiber network
+     *  @return the dimensionality of the fiber network (2 or 3)
+     */
+    int getRVEDim() const { return rve_dim; }
 
     
-    // this is on operation ON the FiberRVE rather than OF the fiber RVE, pulling it out of here into a better location is desireable, it depends on the cube element and the fiber network displacement field
+    /**
+     * Use the displacements from the corners of the cube containing
+     * the fiber network the displace all the nodes in the fiber
+     * network.
+     * @note This is an operation ON the FiberRVE rather than OF the
+     *       FiberRVE and should likely be pulled out into either
+     *       the MacroCoupling class or as an independent function
+     */  
     void forwardCubeDisp();
   };
 
+  /**
+   * A FieldOp designed to take the shape function values from an 'enclosing' element
+   *  and apply them as displacements on 'contained' mesh elements. Used by the MacroCoupling
+   *  to interpolate the displacements on the cube contatining the rve fiber network onto
+   *  the individual nodes in the fiber network.
+   */
   class InterpOnto : public apf::FieldOp
   {
   protected:
@@ -77,13 +107,24 @@ namespace bio
     {
       apf::Vector3 p;
       apf::Vector3 v;
-      apf::getVector(crd_fld,cur_ent,nde,p);
-      apf::getVector(src_elmnt,p,v);
-      apf::setVector(dest_fld,cur_ent,nde,v);		    
+      apf::getVector(crd_fld,cur_ent,nde,p); // get xyz coord of fiber node
+      // map the xyz coord from the fiber node to the parametric space of the containing element
+      apf::getVector(src_elmnt,p,v);         // get 
+      apf::setVector(dest_fld,cur_ent,nde,v);
     }
   };
 
-  // get the change in measure of a mesh element w.r.t. the displacement of the nodes
+  /**
+   * An integrator which gives both the measure and the differential measure of
+   *  an Element.
+   * The measure is simply
+   * \f$ M = \int_{\Omega^e} \mathbf{d}x \mathbf{d}y \mathbf{d}z
+   *       = \int_{\Omega^e} \mathbf{det}(J) \mathbf{d}\xi \mathbf{d}\eta \mathbf{d}\gamma
+   *       = \sum_{i=1}^{n_{int}} w \mathbf{det}(J) \f$.
+   * The differential measure is given by
+   * \f$ \frac{\mathbf{d}M}{\mathbf{d}N_i}  = \int_{\Omega^e} \frac{\mathbf{det}(J)}{\mathbf{d}N_i}
+   *                                          \mathbf{d}\xi \mathbf{d}\eta \mathbf{d}\gamma \f$
+   */
   class dMdNi : public apf::Integrator
   {
   protected:
@@ -150,7 +191,12 @@ namespace bio
     double getMeasure() { return m; }
     const apf::DynamicMatrix & getdMdNi() { return dM_dNi; }
   };
-  
+
+  /**
+   * Calculate the position of the corner nodes of the square/cube enclosing the RVE
+   *  in the cartesian space of the problem.
+   * @note This is specific to the scale-coupling and should probably be moved to MacroCoupling.h
+   */
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
 			   double rve_dim,
 			   const apf::Vector3 & gbl_gss);

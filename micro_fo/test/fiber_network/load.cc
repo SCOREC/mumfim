@@ -15,9 +15,11 @@ int main(int argc, char * argv[])
   MPI_Init(&argc,&argv);
   PCU_Comm_Init();
   
-  std::ifstream f(argv[1]);
-  apf::Mesh2 * network = bio::NetworkLoader().fromStream(f);
-  f.close();
+//! [load from file stream]
+  std::ifstream strm(argv[1]);
+  apf::Mesh2 * network = bio::NetworkLoader().fromStream(strm);
+//! [load from file stream]
+  strm.close();
 
   PCU_Comm_Free();
   MPI_Finalize();
