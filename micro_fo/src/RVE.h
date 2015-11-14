@@ -34,6 +34,14 @@ namespace bio
      */
     int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
 
+    /**
+     * Retrieve the coordinate related to a side of the RVE. This operates on the
+     *  reference configuration of the RVE, so all faces of the cube are axis-aligned
+     *  and only a single coordinate is of importance.
+     * @param sd The side for which to get the primary coordinate, ordered as [-y -z x z -x y]
+     *           in keeping with the standard ordering of faces on a hexahedral element.
+     * @return The primary coordinate for the side specified by the parameter.
+     */
     double sideCoord(int sd)
     {
       assert(sd >= 0 && sd < 6);
@@ -41,6 +49,15 @@ namespace bio
       return hd * op[sd];
     }
 
+    /**
+     * Determine whether a given coordinate in the dimensionless RVE space is on
+     * (within double-precision \f$\epsilon\f$ of) the boundary.
+     * @note This works on the undeformed RVE, so any displacements of the RVE
+     *       cube will not effect the result of this function
+     * @param crd The coordinate in the RVE space to check
+     * @return Whether any coordinate of the parameter is within \f$ \epsilon \f$
+     *         of an initial boundary of the RVE.  
+     */
     bool onBoundary(const apf::Vector3 & crd)
     {
       return close(sideCoord(2),crd[0]) || close(sideCoord(4),crd[0])
@@ -101,12 +118,23 @@ namespace bio
   /**
    * Calculate the position of the corner nodes of the square/cube enclosing the RVE
    *  in the cartesian space of the problem.
-   * @note This is specific to the scale-coupling and should maybe go in MacroCoupling.h
+   * @param rve_crds The coordinates of the 8 vertices of the RVE (using the standard
+   *                 finite element ordering) in the macro-scale coordinate system.
+   * @param rve_dim The dimensionality of the RVE in the macro-scale coordinate
+   *                system, using calculated by calling calcRVEDimensionality().
+   * @param gbl_gss The macro-scale coordinate at the center of the RVE
    */
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
 			   double rve_dim,
 			   const apf::Vector3 & gbl_gss);
 
+  /**
+   * Compile a list of MeshEntities in the fiber network which have at least a single
+   * node classified 'on' the boundary of the RVE.
+   * @param rve The RVE to check against.
+   * @param fn The FiberNetwork to check all nodes for being of the RVE boundary.
+   * @param bnds The MeshEntities determined to lie on the boundary of the RVE.
+   */
   void calcBoundaryNodes(const RVE * rve,
 			 const FiberNetwork * fn,
 			 std::vector<apf::MeshEntity*> & bnds);
