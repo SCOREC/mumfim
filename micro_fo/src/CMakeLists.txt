@@ -1,15 +1,19 @@
 set(micro_fo_public_headers
+  dMdNi.h
   FiberNetworkIO.h
   FiberReactions.h
-  FiberRVE.h
+  FiberNetwork.h
   MacroCoupling.h
-  SparseStructure.h)
+  RVE.h
+  SparseStructure.h
+  TrussIntegrator.h)
 
 set(micro_fo_src_files
   dRVEdFE.cc
   FiberNetworkIO.cc
-  FiberRVE.cc
+  FiberNetwork.cc
   FiberReactions.cc
+  MacroCoupling.cc
   SparseStructure.cc
   Sparskit_Externs.cc)
 
