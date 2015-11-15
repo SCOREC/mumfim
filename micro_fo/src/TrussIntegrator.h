@@ -96,6 +96,11 @@ namespace bio
 	}
       }
     }
+
+    ElementalSystem * getElementalSystem()
+    {
+      return new FacadeElementalSystem(ke,fe);
+    }
   };
 }
 

@@ -10,82 +10,76 @@
 
 namespace bio
 {
-  apf::Mesh2 * makeNullMdlEmptyMesh()
-  {
-    gmi_register_null();
-    gmi_model * mdl = gmi_load(".null");
-    return apf::makeEmptyMdsMesh(mdl,3,false);
-  };
+  /**
+   * Create an empty mesh associated with a 'null' model;
+   * @return Pointer to an empty mesh.
+   */
+  apf::Mesh2 * makeNullMdlEmptyMesh();
 
-  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs)
-  {
-    apf::Mesh2 * msh = makeNullMdlEmptyMesh();
-    apf::buildOneElement(msh,NULL,t,vs);
-    msh->acceptChanges();
-    return msh;
-  }
+  /**
+   * Create a mesh containing a single entity related to a 'null' model.
+   * @param t The entity type of the single mesh entity.
+   * @param vs An array of correctly ordered coordinates defining the vertices of
+   *           mesh entity to be created.
+   * @return Pointer to a mesh with a single mesh entity.
+   */
+  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs);
 
-  apf::Vector3 calcLocalCoord(apf::Mesh * msh, apf::MeshEntity * ent,const apf::Vector3 & glb)
-  {
-    ma::Affine i = ma::getMap(msh,ent);
-    return i * glb;
-  }
-
+  /**
+   * Convert a global coordinate to a parametric coordinate on the specified entity.
+   * @note This basically only works for linear entities (maybe only tets?)
+   * @param msh The mesh containing the mesh entity.
+   * @param ent The mesh entity to perform the conversion on.
+   * @param glb The global coordinate to convert.
+   * @return The barycentric coordinates of the global coordinate.
+   */
+  apf::Vector3 calcLocalCoord(apf::Mesh * msh,
+			      apf::MeshEntity * ent,
+			      const apf::Vector3 & glb);
+  
+  /**
+   * Convert many global coordinates to local coordinates for a single mesh entity.
+   * This function avoid multiply-calculating the inversion matrix (for linear elements)
+   * which results from calling the calcLocalCoord() function multiple times.
+   * @param lcl_crds A dynamic array containing the local coordinates converted from
+   *                 global coordinates.
+   * @param macro_msh The mesh containing the entity to perform the conversion on.
+   * @param macro_ent The mesh entity the local coordinates are in respect to.
+   * @param gbl_crds The global coordinates to convert.
+   */
   void calcLocalCoords(apf::DynamicArray<apf::Vector3> & lcl_crds,
 		       apf::Mesh * macro_msh,
 		       apf::MeshEntity * macro_ent,
-		       apf::DynamicArray<apf::Vector3> & gbl_crds)
-  {
-    ma::Affine inv = ma::getMap(macro_msh,macro_ent);
-    int sz = gbl_crds.getSize();
-    lcl_crds.setSize(sz);
-    for(int ii = 0; ii < sz; ii++)
-      lcl_crds[ii] = inv * gbl_crds[ii];
-  }
+		       const apf::DynamicArray<apf::Vector3> & gbl_crds);
 
-  void calcLocalCoord(apf::Mesh * msh,
-		      apf::MeshEntity * me,
-		      const apf::Vector3 & xyz,
-		      apf::Vector3 & xi)
-  {
-    ma::Affine inv = ma::getMap(msh,me);
-    xi =  inv * xyz;
-  }
+  /**
+   * Calculate the primary measure (lenght, area, volume) for every entity
+   * of the specified dimension in the mesh.
+   * @param msh The mesh.
+   * @param dim The dimensionality of the entities to measure.
+   * @param msrs The resulting measures of all entities.
+   */
+  void calcDimMeasures(apf::Mesh * msh, int dim, std::vector<double> & msrs);
 
-  void calcEdgeLengths(apf::Mesh * msh, std::vector<double> & lngths)
-  {
-    apf::MeshEntity * edge = NULL;
-    apf::MeshIterator * it = NULL;
-    for(it = msh->begin(1); edge = msh->iterate(it);)
-      lngths.push_back(apf::measure(apf::createMeshElement(msh,edge)));
-  }
+  /**
+   * Calculate the difference between all coordinates of the downwardly-adjacent
+   *  vertices of the specified edge.
+   * @param msh The mesh containing the edge.
+   * @param me The edge.
+   * @param diffs The difference between the coordinates of the vertices associated with
+   *              the edge.
+   */
+  void calcEdgeVertDiffs(apf::Mesh * msh, apf::MeshEntity * me, apf::Vector3 & diffs);
 
-  void calcEdgeVertDiffs(apf::Mesh * msh, apf::MeshEntity * me, apf::Vector3 & diffs)
-  {
-    apf::MeshEntity * vs[2];
-    msh->getDownward(me,0,&vs[0]);
-    apf::Vector3 c[2];
-    msh->getPoint(vs[0],0,c[0]);
-    msh->getPoint(vs[1],0,c[1]);
-    diffs = c[1] - c[0];
-  }
+  /**
+   * Make a 3x3 identity matrix.
+   */
+  apf::Matrix3x3 eye();
 
-  apf::Matrix3x3 eye()
-  {
-    apf::Matrix3x3 rslt;
-    for(int ii = 0; ii < 3; ii++)
-      rslt[ii][ii] = 1.0;
-    return rslt;
-  }
-
-  apf::Matrix3x3 ones()
-  {
-    apf::Matrix3x3 rslt;
-    for(int ii = 0; ii < 3; ii++)
-      for(int jj = 0; jj < 3; jj++)
-	rslt[ii][jj] = 1.0;
-    return rslt;
-  }
+  /**
+   * Make a 3x3 matrix containing all 1's
+   */
+  apf::Matrix3x3 ones();
 }
 
 #endif

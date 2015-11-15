@@ -48,7 +48,9 @@ namespace bio
      * @param lngths A vector containing the lengths of all fibers in the network;
      * @note Possibly implement local caching of the answer instead of recalculating
      */
-    void calcFiberLengths(std::vector<double> & lngths) const { calcEdgeLengths(fn,lngths); }
+    void calcFiberLengths(std::vector<double> & lngths) const { calcDimMeasures(fn,1,lngths); }
+
+    void assembleJacobian();
 
     const apf::Mesh * getNetworkMesh() {return fn;}
     const apf::Field * getDisplacementField() {return fn_u;}

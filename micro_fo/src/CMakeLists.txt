@@ -1,4 +1,5 @@
 set(micro_fo_public_headers
+  apfUtil.h
   dMdNi.h
   FiberNetworkIO.h
   FiberReactions.h
@@ -9,6 +10,7 @@ set(micro_fo_public_headers
   TrussIntegrator.h)
 
 set(micro_fo_src_files
+  apfUtil.cc
   dRVEdFE.cc
   FiberNetworkIO.cc
   FiberNetwork.cc
