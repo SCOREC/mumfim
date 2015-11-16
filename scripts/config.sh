@@ -38,11 +38,11 @@ else
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DBUILD_TESTS=ON \
   -DLOGRUN=TRUE \
-  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/sim/openmpi-1.10.0/lib/cmake/amsi \
+  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/sim/openmpi-1.3.3/lib/cmake/amsi \
   -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/git/openmpi-1.3.3 \
-  -DCORE_ROOT=$DEVROOT/install/core-sim/openmpi-1.10.0/ \
+  -DCORE_DIR=$DEVROOT/install/core-sim/openmpi-1.3.3/ \
   -DSIMWRAPPER_DIR=$DEVROOT/simPartitionWrapper/PartitionWrapper/lib \
-  -DSIM_MPI=openmpi110 \
+  -DSIM_MPI=openmpi14 \
   ..
 fi
 
