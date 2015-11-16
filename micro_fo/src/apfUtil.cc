@@ -1,4 +1,6 @@
 #include "apfUtil.h"
+#include <apfNumbering.h>
+#include <cassert>
 
 namespace bio
 {
@@ -44,15 +46,34 @@ namespace bio
     for(it = msh->begin(dim); ent = msh->iterate(it);)
       msrs.push_back(apf::measure(apf::createMeshElement(msh,ent)));
   }
-
-  void calcEdgeVertDiffs(apf::Mesh * msh, apf::MeshEntity * me, apf::Vector3 & diffs)
+  
+  void getCoords(apf::Mesh * msh,
+		 apf::MeshEntity ** vrts,
+		 apf::Vector3 * crds,
+		 int nm)
   {
+    for(int ii = 0; ii < nm; ii++)
+      msh->getPoint(vrts[ii],0,crds[ii]);
+  }
+
+  double calcDeformedLength(apf::Field * f, apf::MeshEntity * e)
+  {
+    apf::Mesh * msh = f->getMesh();
     apf::MeshEntity * vs[2];
-    msh->getDownward(me,0,&vs[0]);
-    apf::Vector3 c[2];
-    msh->getPoint(vs[0],0,c[0]);
-    msh->getPoint(vs[1],0,c[1]);
-    diffs = c[1] - c[0];
+    msh->getDownward(e,0,&vs[0]);
+    apf::Vector3 crds[2];
+    getCoords(msh,&vs[0],&crds[0],2);
+    apf::Vector3 du[2];
+    apf::getVector(f,vs[0],0,du[0]);
+    apf::getVector(f,vs[1],0,du[1]);
+    return calcDistance(crds[0]+du[0],crds[1]+crds[1]);
+  }
+
+  double calcDistance(const apf::Vector3 & a, const apf::Vector3 & b)
+  {
+    apf::Vector3 c = b - a;
+    double v = c * c;
+    return sqrt(v);
   }
 
   apf::Matrix3x3 eye()

@@ -2,7 +2,9 @@
 #define BIO_FIBER_NETWORK_H_
 
 #include "apfUtil.h"
+#include "ElementalSystem.h"
 #include "FiberReactions.h"
+#include "LinearSystem.h"
 #include "RVE.h"
 #include "SparseStructure.h"
 #include "Sparskit_Externs.h"
@@ -24,8 +26,8 @@ namespace bio
   private:
     apf::Mesh * fn;
     apf::Field * fn_u;
+    apf::Field * fn_du;
     apf::Numbering * fn_dof;
-    
     int dim;
   protected:
   public:
@@ -50,11 +52,27 @@ namespace bio
      */
     void calcFiberLengths(std::vector<double> & lngths) const { calcDimMeasures(fn,1,lngths); }
 
-    void assembleJacobian();
+    void applySolution(double * sol, int ndof);
 
-    const apf::Mesh * getNetworkMesh() {return fn;}
-    const apf::Field * getDisplacementField() {return fn_u;}
+    const ElementalSystem * calcElementalSystem(apf::MeshElement * );
+    
+    const apf::Mesh * getNetworkMesh() { return fn; }
+    const apf::Field * getDisplacementField() { return fn_u; }
+    const apf::Field * getIncrementalDispField() { return fn_du; }
+    const apf::Numbering * getNumbering() { return fn_dof; }
   };
+
+  template <typename T, typename OP>
+    void assembleLinearSystem(const apf::Mesh * msh,
+			      apf::Numbering * num,
+			      int dim,
+			      T * es_gn,
+			      LinearSystem * ls);
+
+  void assembleElementalSystem(const ElementalSystem * es,
+			       const apf::NewArray<int> & dofs,
+			       LinearSystem * ls);
+
 
 /*  
 struct RVE_Info

@@ -1,4 +1,5 @@
 #include "FiberNetwork.h"
+#include "FiberReactions.h"
 #include "TrussIntegrator.h"
 
 #include <apfShape.h>
@@ -18,22 +19,38 @@ namespace bio
     , dim(f->getDimension())
   {
     assert(f);
-    fn_u = apf::createLagrangeField(f,"displacement",apf::VECTOR,1);
-    fn_dof = apf::createNumbering(fn_u);
+    fn_u = apf::createLagrangeField(f,"u",apf::VECTOR,1);
+    fn_du = apf::createLagrangeField(f,"du",apf::VECTOR,1);
+    fn_dof = apf::createNumbering(fn_du);
   }
 
-  void FiberNetwork::assembleJacobian()
+  void FiberNetwork::applySolution(double * sol, int ndof)
   {
-    TrussIntegrator elmnt_stm;
 
-    apf::MeshEntity * edge = NULL;
-    apf::MeshIterator * it = NULL;
-    for(it = mesh->begin(1); me = mesh->iterate(it);)
-    {
-      elmnt_stm.process(me);
-      apf::DynamicMatrix & ke = elmnt_stm.getKe();
-      apf::DynamicMatrix & fe = elmnt_stm.getFe();
-    }
-    fn->end(it);
   }
+
+  const ElementalSystem * FiberNetwork::calcElementalSystem(apf::MeshElement * melmt)
+  {
+    // retrieve the integrator responsible for generating the elemental system
+    //  for this fiber, use it and return the resulting elemental system
+    static TrussIntegrator intgrtr(1,fn_u,new LinearReaction);
+    intgrtr.process(melmt);
+    return intgrtr.getElementalSystem();
+  }
+
+  void assembleElementalSystem(const ElementalSystem * es,
+			       const apf::NewArray<int> & dofs,
+			       LinearSystem * ls)
+  {
+    int nedofs = es->nedofs();
+    LSOps * ops = ls->getOps();
+    ops->addToVector(ls->getVector(),es->getfe(),dofs,nedofs);
+    ops->addToMatrix(ls->getMatrix(),es->getKe(),dofs,nedofs);
+  }
+
+  /*
+  assembleLinearSystem<FiberNetwork,FiberNetwork::calcElementalSystem>(fn->getMesh(),fn,ls);
+  assembleLinearSystem<ElementalSystemIntegrator,
+		       ElementalSystemIntegrator::calcElementalSystem>(fn->getMesh(),new TrussIntegrator,ls);
+  */
 }

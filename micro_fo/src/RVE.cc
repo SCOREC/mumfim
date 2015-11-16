@@ -68,4 +68,27 @@ namespace bio
       fn_msh->end(it);
     }
   }
+
+  void applyRVEForceBC(LinearSystem * ls,
+		       RVE * rve,
+		       FiberNetwork * fn)
+  {
+    const apf::Numbering * nm = fn->getNumbering();
+    const apf::Field * u = fn->getDisplacementField();
+
+    Vector * vec = ls->getVector();
+    LSOps * ops = ls->getOps();
+    
+    std::vector<apf::MeshEntity*> bnds;
+    calcBoundaryNodes(rve,fn,bnds);
+    for(std::vector<apf::MeshEntity*>::iterator it = bnds.begin(); it != bnds.end(); it++)
+    {
+      apf::NewArray<int> dofs;
+      apf::getElementNumbers(nm,*it,dofs);
+      int nedofs = apf::countNodes(apf::createElement(u,*it));
+      apf::DynamicVector zeros(nedof);
+      zeros.zero();
+      ops->setVector(vec,zeros,dofs,nedofs);
+    }
+  }
 }

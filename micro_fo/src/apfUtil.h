@@ -2,11 +2,15 @@
 #define BIO_APF_UTIL_H_
 
 #include <apf.h>
+#include <apfField.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
+#include <apfNumbering.h>
 #include <gmi.h>
 #include <gmi_null.h>
 #include <maMap.h>
+
+#include <cassert>
 
 namespace bio
 {
@@ -61,15 +65,11 @@ namespace bio
    */
   void calcDimMeasures(apf::Mesh * msh, int dim, std::vector<double> & msrs);
 
-  /**
-   * Calculate the difference between all coordinates of the downwardly-adjacent
-   *  vertices of the specified edge.
-   * @param msh The mesh containing the edge.
-   * @param me The edge.
-   * @param diffs The difference between the coordinates of the vertices associated with
-   *              the edge.
-   */
-  void calcEdgeVertDiffs(apf::Mesh * msh, apf::MeshEntity * me, apf::Vector3 & diffs);
+  void getCoords(apf::Mesh * msh, apf::MeshEntity ** vrts, apf::Vector3 * crds, int nm);
+  
+  double calcDeformedLength(apf::Field * f, apf::MeshEntity * e);
+
+  double calcDistance(const apf::Vector3 & a, const apf::Vector3 & b);
 
   /**
    * Make a 3x3 identity matrix.
@@ -80,6 +80,52 @@ namespace bio
    * Make a 3x3 matrix containing all 1's
    */
   apf::Matrix3x3 ones();
+
+
+  /**
+   * Takes a numbering and array of doubles with an initial dof offset and either
+   *  sets or accumulates the array values at the index corresponding to the
+   *  numbering minus the initial dof offset.
+   */
+  class ApplySolution : public apf::FieldOp
+  {
+  protected:
+    apf::Numbering * num;
+    apf::Field * fld;
+    int fldcmp;
+    double * sol;
+    int dof0;
+    apf::MeshEntity * me;
+    bool add;
+  public:
+  ApplySolution(apf::Numbering * nm, double * s, int d = 0, bool a = true)
+      : apf::FieldOp()
+      , num(nm)
+      , fld(NULL)
+      , fldcmp()
+      , sol(s)
+      , dof0(d)
+      , me(NULL)
+      , add(a)
+    {
+      assert(nm);
+      fld = apf::getField(num);
+      fldcmp = apf::countComponents(fld);
+    }
+    bool inEntity(apf::MeshEntity * m) { me = m; }
+    void outEntity() {}
+    void atNode(int nde)
+    {
+      double cmps[fldcmp];
+      apf::getComponents(fld,me,0,&cmps[0]);
+      for(int ii = 0; ii < fldcmp; ii++)
+      {
+	int dof = apf::getNumber(num,me,0,ii);
+	cmps[ii] = sol[dof - dof0] + (add ? cmps[ii] : 0.0);
+      }
+      apf::setComponents(fld,me,0,&cmps[0]);
+    }
+  };
 }
 
 #endif

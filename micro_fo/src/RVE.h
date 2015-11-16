@@ -1,9 +1,12 @@
 #ifndef BIO_RVE_H_
 #define BIO_RVE_H_
 
+#include "apfUtil.h"
+#include "LinearSystem.h"
 #include "MicroFOUtil.h"
 
 #include <apf.h>
+#include <apfElement.h>
 #include <apfField.h>
 #include <apfMesh.h>
 
@@ -101,10 +104,8 @@ namespace bio
       apf::Vector3 p;
       apf::Vector3 u;
       apf::getVector(crd_fld,cur_ent,nde,p); // get xyz coord of fiber node
-      //p = calcLocalCoord(src_elmnt->getMesh(),apf::getMeshEntity(src_elmnt));
-      
+      calcLocalCoord(src_elmnt->getMesh(),apf::getMeshEntity(src_elmnt),p);
       apf::getVector(src_elmnt,p,u);
-      
       apf::setVector(dest_fld,cur_ent,nde,u);
     }
   };
@@ -134,10 +135,19 @@ namespace bio
    * @param rve The RVE to check against.
    * @param fn The FiberNetwork to check all nodes for being of the RVE boundary.
    * @param bnds The MeshEntities determined to lie on the boundary of the RVE.
+   * @note Only checks against the reference configuration of the RVE
    */
   void calcBoundaryNodes(const RVE * rve,
 			 const FiberNetwork * fn,
 			 std::vector<apf::MeshEntity*> & bnds);
+
+  /**
+   * Set the force vector value associated with dofs on nodes lying on the RVE
+   *  boundaries to zero.
+   */
+  void applyRVEForceBC(LinearSystem * ls,
+		       RVE * rve,
+		       FiberNetwork * fn);
 }
 
 #endif

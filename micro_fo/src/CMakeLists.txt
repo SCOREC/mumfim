@@ -6,6 +6,7 @@ set(micro_fo_public_headers
   FiberNetwork.h
   MacroCoupling.h
   RVE.h
+  Solver.h
   SparseStructure.h
   TrussIntegrator.h)
 
