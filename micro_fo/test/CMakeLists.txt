@@ -1,1 +1,4 @@
 add_subdirectory(fiber_network)
+add_subdirectory(rve)
+add_subdirectory(linear_system)
+add_subdirectory(analysis)

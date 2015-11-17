@@ -24,33 +24,14 @@ namespace bio
     fn_dof = apf::createNumbering(fn_du);
   }
 
-  void FiberNetwork::applySolution(double * sol, int ndof)
-  {
-
-  }
-
-  const ElementalSystem * FiberNetwork::calcElementalSystem(apf::MeshElement * melmt)
-  {
-    // retrieve the integrator responsible for generating the elemental system
-    //  for this fiber, use it and return the resulting elemental system
-    static TrussIntegrator intgrtr(1,fn_u,new LinearReaction);
-    intgrtr.process(melmt);
-    return intgrtr.getElementalSystem();
-  }
-
-  void assembleElementalSystem(const ElementalSystem * es,
-			       const apf::NewArray<int> & dofs,
-			       LinearSystem * ls)
+  void assembleElementalSystem(skMat * k,
+			       skVec * f,
+			       const ElementalSystem * es,
+			       apf::NewArray<int> & dofs)
   {
     int nedofs = es->nedofs();
-    LSOps * ops = ls->getOps();
-    ops->addToVector(ls->getVector(),es->getfe(),dofs,nedofs);
-    ops->addToMatrix(ls->getMatrix(),es->getKe(),dofs,nedofs);
+    setVecValues(f,es->getfe(),dofs,nedofs,true);
+    setMatValues(k,es->getKe(),dofs,nedofs,dofs,nedofs,true);
   }
 
-  /*
-  assembleLinearSystem<FiberNetwork,FiberNetwork::calcElementalSystem>(fn->getMesh(),fn,ls);
-  assembleLinearSystem<ElementalSystemIntegrator,
-		       ElementalSystemIntegrator::calcElementalSystem>(fn->getMesh(),new TrussIntegrator,ls);
-  */
 }

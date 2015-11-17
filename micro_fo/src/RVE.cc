@@ -1,5 +1,5 @@
 #include "RVE.h"
-
+#include "FiberNetwork.h"
 namespace bio
 {
   RVE::RVE()
@@ -16,7 +16,6 @@ namespace bio
 	for(int x = -1; x <= 1; x += 2)
 	  cbe_crnrs.push_back(apf::Vector3(hd*x,hd*y,hd*z));
     cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
-
     //make cbe_u and cbe_e_u
   }
   
@@ -49,10 +48,10 @@ namespace bio
   }
 
   void calcBoundaryNodes(const RVE * rve,
-			 const FiberNetwork * fn,
+			 FiberNetwork * fn,
 			 std::vector<apf::MeshEntity*> & bnds)
   {
-    const apf::Mesh * fn_msh = fn->getNetworkMesh();
+    apf::Mesh * fn_msh = fn->getNetworkMesh();
     int dim = fn->getDim();
     for(int d = 0; d < dim; d++)
     {
@@ -69,26 +68,21 @@ namespace bio
     }
   }
 
-  void applyRVEForceBC(LinearSystem * ls,
+  void applyRVEForceBC(skVec * f,
 		       RVE * rve,
 		       FiberNetwork * fn)
   {
-    const apf::Numbering * nm = fn->getNumbering();
-    const apf::Field * u = fn->getDisplacementField();
-
-    Vector * vec = ls->getVector();
-    LSOps * ops = ls->getOps();
-    
+    apf::Numbering * nm = fn->getNumbering();
+    apf::Field * du = fn->getDisplacementField();
     std::vector<apf::MeshEntity*> bnds;
     calcBoundaryNodes(rve,fn,bnds);
     for(std::vector<apf::MeshEntity*>::iterator it = bnds.begin(); it != bnds.end(); it++)
     {
       apf::NewArray<int> dofs;
-      apf::getElementNumbers(nm,*it,dofs);
-      int nedofs = apf::countNodes(apf::createElement(u,*it));
-      apf::DynamicVector zeros(nedof);
+      int nedofs = apf::getElementNumbers(nm,*it,dofs);
+      apf::DynamicVector zeros(nedofs);
       zeros.zero();
-      ops->setVector(vec,zeros,dofs,nedofs);
+      setVecValues(f,zeros,dofs,nedofs,false);
     }
   }
 }

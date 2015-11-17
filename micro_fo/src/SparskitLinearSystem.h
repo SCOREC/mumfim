@@ -1,35 +1,40 @@
 #ifndef BIO_SPARSKIT_LINEAR_SYSTEM_H_
 #define BIO_SPARSKIT_LINEAR_SYSTEM_H_
 
-#include "Sparskit_Externs.h"
+#include <cassert>
 
 namespace bio
 {
+  class CSR;
+  
+  typedef double* skVec;
+  skVec makeVec(int rws);
+  void destroyVec(skVec * vec);
 
-  Vector * castVector(double *);
-  Matrix * castMatrix(double *);
-
-  class SparskitOps : public LSOps
-  {
-    
-  };
-
-  class SparskitLinearSystem : public LinearSystem
+  class skMat
   {
   private:
-
+    double * mat;
+    CSR * sttr;
   public:
-    Vector * getVector();
-    Vector * getSolution();
-    Matrix * getMatrix();
-    LSOps* getOps();
+    skMat(CSR * ss);
+    ~skMat();
+    double operator()(int r, int c) const;
+    double & operator()(int r,int c);
+    CSR * getSparseStructure() const { return sttr; }
   };
 
-  class SparskitSolver : public LinearSolver
+  template <typename T1, typename T2>
+    void setVecValues(skVec * vec, T1 & fe, T2 & rws, int nmrws, bool add = false);
+  template <typename T1, typename T2>
+    void setMatValues(skMat * mat, T1 & ke, T2 & rws, int nmrws, T2 & cls, int nmcls, bool add = false);
+
+  class skSolver
   {
+  public:
+    void solve(skMat k, skVec u, skVec f);
   };
-
-  
 }
-
+#include "SparskitLinearSystem_impl.h"
 #endif
+

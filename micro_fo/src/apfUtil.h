@@ -2,6 +2,7 @@
 #define BIO_APF_UTIL_H_
 
 #include <apf.h>
+#include <apfElement.h>
 #include <apfField.h>
 #include <apfMesh2.h>
 #include <apfMDS.h>
@@ -80,8 +81,7 @@ namespace bio
    * Make a 3x3 matrix containing all 1's
    */
   apf::Matrix3x3 ones();
-
-
+  
   /**
    * Takes a numbering and array of doubles with an initial dof offset and either
    *  sets or accumulates the array values at the index corresponding to the
@@ -118,11 +118,18 @@ namespace bio
     {
       double cmps[fldcmp];
       apf::getComponents(fld,me,0,&cmps[0]);
-      for(int ii = 0; ii < fldcmp; ii++)
-      {
-	int dof = apf::getNumber(num,me,0,ii);
-	cmps[ii] = sol[dof - dof0] + (add ? cmps[ii] : 0.0);
-      }
+      if(add)
+	for(int ii = 0; ii < fldcmp; ii++)
+	{
+	  int dof = apf::getNumber(num,me,0,ii);
+	  cmps[ii] += sol[dof - dof0];
+	}
+      else
+	for(int ii = 0; ii < fldcmp; ii++)
+	{
+	  int dof = apf::getNumber(num,me,0,ii);
+	  cmps[ii] = sol[dof - dof0];
+	}
       apf::setComponents(fld,me,0,&cmps[0]);
     }
   };

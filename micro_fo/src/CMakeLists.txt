@@ -1,5 +1,6 @@
 set(micro_fo_public_headers
   apfUtil.h
+  CSR.h
   dMdNi.h
   FiberNetworkIO.h
   FiberReactions.h
@@ -7,18 +8,20 @@ set(micro_fo_public_headers
   MacroCoupling.h
   RVE.h
   Solver.h
-  SparseStructure.h
+  SparskitLinearSystem.h
   TrussIntegrator.h)
 
 set(micro_fo_src_files
   apfUtil.cc
+  CSR.cc
+  CSRBuilder.cc
   dRVEdFE.cc
   FiberNetworkIO.cc
   FiberNetwork.cc
   FiberReactions.cc
   MacroCoupling.cc
-  SparseStructure.cc
-  Sparskit_Externs.cc)
+  RVE.cc
+  SparskitLinearSystem.cc)
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})

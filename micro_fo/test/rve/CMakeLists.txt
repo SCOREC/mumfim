@@ -1,0 +1,2 @@
+add_executable(rve rve.cc)
+target_link_libraries(rve micro_fo ${CORE_LIBRARIES})
