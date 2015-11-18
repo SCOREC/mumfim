@@ -4,6 +4,7 @@
 #include "MicroFOUtil.h"
 #include "SparskitLinearSystem.h"
 #include <apf.h>
+#include <apfDynamicVector.h>
 #include <apfElement.h>
 #include <apfField.h>
 #include <apfMesh.h>
@@ -19,6 +20,7 @@ namespace bio
     apf::Mesh * cbe;
     apf::Element * cbe_u_e;
     apf::Field * cbe_u;
+    apf::Numbering * cbe_dof;
   protected:
   public:
     RVE();
@@ -56,8 +58,9 @@ namespace bio
           || close(sideCoord(0),crd[1]) || close(sideCoord(5),crd[1])
           || close(sideCoord(1),crd[2]) || close(sideCoord(3),crd[2]);
     }
-
     apf::Element * getElement() { return cbe_u_e;}
+    apf::Numbering * getNumbering() { return cbe_dof; }
+    apf::Field * getField() { return cbe_u; }
   };
   /**
    * A FieldOp designed to take the shape function values from an 'enclosing' element
@@ -137,5 +140,7 @@ namespace bio
   void applyRVEForceBC(skVec * f,
 		       RVE * rve,
 		       FiberNetwork * fn);
+
+  void displaceRVE(RVE * rve,const apf::DynamicVector & du);
 }
 #endif

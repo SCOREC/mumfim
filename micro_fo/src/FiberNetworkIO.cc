@@ -1,10 +1,17 @@
 #include "FiberNetworkIO.h"
-
 #include "apfUtil.h"
+#include "FiberNetwork.h"
+#include <cassert>
+#include <fstream>
 #include <iostream>
-
 namespace bio
 {
+  FiberNetwork * loadFromFile(const std::string & fnm)
+  {
+    std::fstream strm(fnm);
+    return new FiberNetwork(NetworkLoader().fromStream(strm));
+  }
+  
   apf::Mesh2 * NetworkLoader::fromStream(std::istream & is)
   {
     apf::Mesh2 * msh = makeNullMdlEmptyMesh();

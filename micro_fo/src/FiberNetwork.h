@@ -61,6 +61,11 @@ namespace bio
     apf::Numbering * getNumbering() { return fn_dof; }
   };
 
+  /**
+   *
+   */
+  FiberNetwork * loadFromFile(const std::string & fnm);
+
   void assembleElementalSystem(skMat * k,
 			       skVec * f,
 			       const ElementalSystem * es,

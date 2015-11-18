@@ -57,13 +57,14 @@ namespace bio
       , cls(NULL)
     {
       assert(nm);
-      rws = new int[ndofs];
-      cls = new int[ndofs*ndofs];
+      rws = new int[ndofs]();
+      cls = new int[ndofs*ndofs]();
     }
     ~CSRBuilder()
     {
-      delete [] rws;
-      delete [] cls;
+      // todo (h) Bill : memory leak? but double-free error if these are here...
+      //delete [] rws;
+      //delete [] cls;
     }
     bool inEntity(apf::MeshEntity * me)
     {

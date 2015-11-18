@@ -47,7 +47,7 @@ extern "C" {
 namespace bio
 {
   skVec makeVec(int rws) { return new double[rws]; }
-  void destroyVec(skVec * vec) { delete [] vec; }
+  void destroyVec(skVec vec) { delete [] vec; }
   
   skMat::skMat(CSR * ss)
     : mat(NULL)

@@ -9,7 +9,7 @@ namespace bio
   
   typedef double* skVec;
   skVec makeVec(int rws);
-  void destroyVec(skVec * vec);
+  void destroyVec(skVec vec);
 
   class skMat
   {

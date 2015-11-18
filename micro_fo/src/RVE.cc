@@ -8,6 +8,7 @@ namespace bio
     , cbe(NULL)
     , cbe_u_e(NULL)
     , cbe_u(NULL)
+    , cbe_dof(NULL)
   {
     std::vector<apf::Vector3> cbe_crnrs;
     // ordering of these loops is important to order the nodes correctly from 0-7
@@ -16,7 +17,12 @@ namespace bio
 	for(int x = -1; x <= 1; x += 2)
 	  cbe_crnrs.push_back(apf::Vector3(hd*x,hd*y,hd*z));
     cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
-    //make cbe_u and cbe_e_u
+    apf::MeshIterator * it = cbe->begin(3);
+    apf::MeshEntity * cbe_e = cbe->iterate(it);
+    cbe->end(it);
+    cbe_u = apf::createLagrangeField(cbe,"u",apf::VECTOR,1);
+    cbe_dof = apf::createNumbering(cbe_u);
+    cbe_u_e = apf::createElement(cbe_u,cbe_e);
   }
   
   void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn)
@@ -47,6 +53,10 @@ namespace bio
 	rve_crds[ii][jj] = gbl_gss[jj] + rve_dim*op[ii+o][jj];
   }
 
+  // technically the vector should only return the nodes, since if an edge
+  //  had two mid-edge nodes one of them could theoretically by on the boundary
+  //  and the other not, but we will never run into this
+  //  also this is basically a FieldOp...
   void calcBoundaryNodes(const RVE * rve,
 			 FiberNetwork * fn,
 			 std::vector<apf::MeshEntity*> & bnds)
@@ -59,10 +69,14 @@ namespace bio
       apf::MeshIterator * it = NULL;
       for(it = fn_msh->begin(d); me = fn_msh->iterate(it);)
       {
-	apf::Vector3 crd;
-	fn_msh->getPoint(me,0,crd);
-	if(rve->onBoundary(crd))
-	  bnds.push_back(me);
+	int nds = fn->getDisplacementField()->countNodesOn(me);
+	for(int nd = 0; nd < nds; nd++)
+	{
+	  apf::Vector3 crd;
+	  fn_msh->getPoint(me,nd,crd);
+	  if(rve->onBoundary(crd))
+	    bnds.push_back(me);
+	}
       }
       fn_msh->end(it);
     }
@@ -84,5 +98,10 @@ namespace bio
       zeros.zero();
       setVecValues(f,zeros,dofs,nedofs,false);
     }
+  }
+
+  void displaceRVE(RVE * rve,const apf::DynamicVector & du)
+  {
+    ApplySolution(rve->getNumbering(),&du[0],0,true).apply(rve->getField());
   }
 }

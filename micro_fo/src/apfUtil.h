@@ -93,12 +93,12 @@ namespace bio
     apf::Numbering * num;
     apf::Field * fld;
     int fldcmp;
-    double * sol;
+    const double * sol;
     int dof0;
     apf::MeshEntity * me;
     bool add;
   public:
-  ApplySolution(apf::Numbering * nm, double * s, int d = 0, bool a = true)
+  ApplySolution(apf::Numbering * nm, const double * s, int d = 0, bool a = true)
       : apf::FieldOp()
       , num(nm)
       , fld(NULL)

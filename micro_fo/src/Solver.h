@@ -62,7 +62,9 @@ namespace bio
     void init()
     {
       apf::Numbering * dofs = fn->getNumbering();
-      int ndofs = apf::AdjReorder(dofs);
+      // need to use naive order... adjreorder tries
+      // to query faces which don't exist for the fiber network
+      int ndofs = apf::NaiveOrder(dofs);
       f = makeVec(ndofs);
       u = makeVec(ndofs);
       k = new skMat(createCSR(dofs,ndofs));
