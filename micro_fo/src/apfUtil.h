@@ -1,6 +1,5 @@
 #ifndef BIO_APF_UTIL_H_
 #define BIO_APF_UTIL_H_
-
 #include <apf.h>
 #include <apfElement.h>
 #include <apfField.h>
@@ -10,9 +9,7 @@
 #include <gmi.h>
 #include <gmi_null.h>
 #include <maMap.h>
-
 #include <cassert>
-
 namespace bio
 {
   /**
@@ -20,7 +17,6 @@ namespace bio
    * @return Pointer to an empty mesh.
    */
   apf::Mesh2 * makeNullMdlEmptyMesh();
-
   /**
    * Create a mesh containing a single entity related to a 'null' model.
    * @param t The entity type of the single mesh entity.
@@ -29,7 +25,6 @@ namespace bio
    * @return Pointer to a mesh with a single mesh entity.
    */
   apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs);
-
   /**
    * Convert a global coordinate to a parametric coordinate on the specified entity.
    * @note This basically only works for linear entities (maybe only tets?)
@@ -41,7 +36,6 @@ namespace bio
   apf::Vector3 calcLocalCoord(apf::Mesh * msh,
 			      apf::MeshEntity * ent,
 			      const apf::Vector3 & glb);
-  
   /**
    * Convert many global coordinates to local coordinates for a single mesh entity.
    * This function avoid multiply-calculating the inversion matrix (for linear elements)
@@ -56,7 +50,6 @@ namespace bio
 		       apf::Mesh * macro_msh,
 		       apf::MeshEntity * macro_ent,
 		       const apf::DynamicArray<apf::Vector3> & gbl_crds);
-
   /**
    * Calculate the primary measure (lenght, area, volume) for every entity
    * of the specified dimension in the mesh.
@@ -65,23 +58,20 @@ namespace bio
    * @param msrs The resulting measures of all entities.
    */
   void calcDimMeasures(apf::Mesh * msh, int dim, std::vector<double> & msrs);
-
-  void getCoords(apf::Mesh * msh, apf::MeshEntity ** vrts, apf::Vector3 * crds, int nm);
-  
+  void getCoords(apf::Mesh * msh,
+		 apf::MeshEntity ** vrts,
+		 apf::Vector3 * crds,
+		 int nm);
   double calcDeformedLength(apf::Field * f, apf::MeshEntity * e);
-
   double calcDistance(const apf::Vector3 & a, const apf::Vector3 & b);
-
   /**
    * Make a 3x3 identity matrix.
    */
   apf::Matrix3x3 eye();
-
   /**
    * Make a 3x3 matrix containing all 1's
    */
   apf::Matrix3x3 ones();
-  
   /**
    * Takes a numbering and array of doubles with an initial dof offset and either
    *  sets or accumulates the array values at the index corresponding to the
@@ -133,6 +123,24 @@ namespace bio
       apf::setComponents(fld,me,0,&cmps[0]);
     }
   };
+  void fromArray(apf::DynamicVector & to,
+		 const double * from,
+		 int sz)
+  {
+    to.resize(sz);
+    to.zero();
+    for(int ii = 0; ii < sz; ii++)
+      to[ii] = from[ii];
+  }
+  void fromArray(apf::DynamicMatrix & to,
+		 const double * from,
+		 int nr, int nc)
+  {
+    to.resize(nr,nc);
+    to.zero();
+    for(int ii = 0; ii < nr; ii++)
+      for(int jj = 0; jj < nc; jj++)
+	to(ii,jj) = from[ii*nc + jj];
+  }
 }
-
 #endif

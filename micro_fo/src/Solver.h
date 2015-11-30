@@ -1,14 +1,11 @@
 #ifndef BIO_SOLVER_H_
 #define BIO_SOLVER_H_
-
 #include "FiberNetwork.h"
 #include "FiberReactions.h"
 #include "RVE.h"
 #include "TrussIntegrator.h"
-
 namespace bio
 {
-
   class NewtonRaphson
   {
   protected:

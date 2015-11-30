@@ -1,10 +1,8 @@
 #ifndef BIO_ELEMENTAL_SYSTEM_H_
 #define BIO_ELEMENTAL_SYSTEM_H_
-
 #include <apf.h>
 #include <apfDynamicVector.h>
 #include <apfDynamicMatrix.h>
-
 namespace bio
 {
   /**
@@ -48,8 +46,6 @@ namespace bio
     const apf::DynamicVector & getfe() const {return fe;}
     const apf::DynamicMatrix & getKe() const {return ke;}
   };
-
-
   template <typename A, typename B, typename C>
     void assemble(A from, B indices, C to, int cnt)
   {
