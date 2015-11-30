@@ -2,7 +2,7 @@
 #define BIO_RVE_H_
 #include "apfUtil.h"
 #include "MicroFOUtil.h"
-#include "SparskitLinearSystem.h"
+#include "lasSparskit.h"
 #include <apf.h>
 #include <apfDynamicVector.h>
 #include <apfElement.h>
@@ -137,10 +137,10 @@ namespace bio
    * @param rve The rve which defines which nodes are on the boundary
    * @param fn The fiber network to check for boundary nodes
    */
-  void applyRVEForceBC(skVec * f,
-		       RVE * rve,
-		       FiberNetwork * fn);
-
-  void displaceRVE(RVE * rve,const apf::DynamicVector & du);
+  void applyRVEForceBC(las::skVec * f,
+		                   RVE * rve,
+		                   FiberNetwork * fn);
+  void displaceRVE(RVE * rve,
+                   const apf::DynamicVector & du);
 }
 #endif

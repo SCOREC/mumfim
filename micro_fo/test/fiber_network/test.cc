@@ -1,16 +1,12 @@
 #include "FiberNetworkIO.h"
 #include "FiberNetwork.h"
-
 #include <apf.h>
 #include <PCU.h>
-
 #include <fstream>
 #include <iostream>
 #include <numeric>
 #include <vector>
-
 #include <mpi.h>
-
 int main(int argc, char * argv[])
 {
   assert(argv[1]);

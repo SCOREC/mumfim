@@ -6,11 +6,16 @@
 #  SIMMODSUITE_DEFINITIONS - Compiler switches required for using SimModSuite
 #
 
+set(SIM_WRAP_DIR $ENV{SIM_WRAP_DIR})
+if("${SIM_WRAP_DIR}" STREQUAL "")
+  message(SEND_ERROR "Please specify the SIM_WRAP_DIR variable.")
+endif()
+
 find_library(simpartitioned SimPartitionedMesh-mpi)
 find_library(simmeshing SimMeshing)
 find_library(simmodel SimModel)
 find_library(simmeshtools SimMeshTools)
-find_library(simwrapper SimPartitionWrapper-${SIM_MPI})
+find_library(simwrapper SimPartitionWrapper-${SIM_MPI} HINTS ${SIM_WRAP_DIR} PATH_SUFFIXES lib)
 find_library(simfield SimField)
 find_library(simparasolid SimParasolid270)
 set(SIMMODSUITE_LIBS "${simmeshing};${simfield};${simmeshtools};${simpartitioned};${simwrapper};${simparasolid};${simmodel}")

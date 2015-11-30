@@ -1,23 +1,17 @@
 #ifndef BIO_FIBER_NETWORK_H_
 #define BIO_FIBER_NETWORK_H_
-
 #include "apfUtil.h"
-#include "CSR.h"
+#include "lasCSR.h"
 #include "ElementalSystem.h"
 #include "FiberReactions.h"
 #include "RVE.h"
-#include "SparskitLinearSystem.h"
-
+#include "lasSparskit.h"
 #include <apf.h>
 #include <apfDynamicMatrix.h>
 #include <apfField.h>
-
 #include <cassert>
-
 namespace bio
 {
-  class skMat;
-  
   /**
    * Responsible for managing the internal state of a single fiber-network
    *  quasistatics simulation. 
@@ -62,13 +56,13 @@ namespace bio
   };
 
   /**
-   *
+   * TODO (m) Bill : move to FiberNetworkIO files
    */
   FiberNetwork * loadFromFile(const std::string & fnm);
 
-  void assembleElementalSystem(skMat * k,
-			       skVec * f,
-			       const ElementalSystem * es,
-			       apf::NewArray<int> & dofs);
+  void assembleElementalSystem(las::skMat * k,
+			                         las::skVec * f,
+			                         const ElementalSystem * es,
+			                         apf::NewArray<int> & dofs);
 }
 #endif

@@ -1,6 +1,8 @@
 #ifndef BIO_APF_UTIL_H_
 #define BIO_APF_UTIL_H_
 #include <apf.h>
+#include <apfDynamicMatrix.h>
+#include <apfDynamicVector.h>
 #include <apfElement.h>
 #include <apfField.h>
 #include <apfMesh2.h>
@@ -123,24 +125,7 @@ namespace bio
       apf::setComponents(fld,me,0,&cmps[0]);
     }
   };
-  void fromArray(apf::DynamicVector & to,
-		 const double * from,
-		 int sz)
-  {
-    to.resize(sz);
-    to.zero();
-    for(int ii = 0; ii < sz; ii++)
-      to[ii] = from[ii];
-  }
-  void fromArray(apf::DynamicMatrix & to,
-		 const double * from,
-		 int nr, int nc)
-  {
-    to.resize(nr,nc);
-    to.zero();
-    for(int ii = 0; ii < nr; ii++)
-      for(int jj = 0; jj < nc; jj++)
-	to(ii,jj) = from[ii*nc + jj];
-  }
+  void fromArray(apf::DynamicVector & to, const double * from, int sz);
+  void fromArray(apf::DynamicMatrix & to, const double * from, int nr, int nc);
 }
 #endif

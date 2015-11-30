@@ -1,5 +1,6 @@
 #include "FiberNetwork.h"
 #include "FiberReactions.h"
+#include "las.h"
 #include "TrussIntegrator.h"
 #include <apfShape.h>
 #include <apfMesh.h>
@@ -20,13 +21,13 @@ namespace bio
     fn_du = apf::createLagrangeField(f,"du",apf::VECTOR,1);
     fn_dof = apf::createNumbering(fn_du);
   }
-  void assembleElementalSystem(skMat * k,
-			       skVec * f,
-			       const ElementalSystem * es,
-			       apf::NewArray<int> & dofs)
+  void assembleElementalSystem(las::skMat * k,
+			                         las::skVec * f,
+			                         const ElementalSystem * es,
+			                         apf::NewArray<int> & dofs)
   {
     int nedofs = es->nedofs();
-    setVecValues(f,es->getfe(),dofs,nedofs,true);
-    setMatValues(k,es->getKe(),dofs,nedofs,dofs,nedofs,true);
+    las::setVecValues(f,es->getfe(),dofs,nedofs,true);
+    las::setMatValues(k,es->getKe(),dofs,nedofs,dofs,nedofs,true);
   }
 }

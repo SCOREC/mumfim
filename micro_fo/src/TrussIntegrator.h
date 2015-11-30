@@ -2,7 +2,7 @@
 #define BIO_TRUSS_INTEGRATOR_H_
 #include "apfUtil.h"
 #include "FiberNetwork.h"
-#include "SparskitLinearSystem.h"
+#include "lasSparskit.h"
 #include <apf.h>
 #include <apfDynamicMatrix.h>
 #include <apfField.h>
@@ -19,9 +19,9 @@ namespace bio
    * @todo Bill : refactor and simplify, it feels like there is too much
    *              happening in this class
    */
-  class TrussIntegrator : public apf::Integrator
-  {
-  protected:
+   class TrussIntegrator : public apf::Integrator
+   {
+   protected:
     apf::Mesh * msh;
     apf::MeshEntity * ment;
     apf::MeshElement * crnt_elmnt;
@@ -34,27 +34,27 @@ namespace bio
     int dim;
     apf::NewArray<int> dofs;
     ElementalSystem es;
-    skMat * k;
-    skVec * f;
+    las::skMat * k;
+    las::skVec * f;
   public:
     TrussIntegrator(int o,
-		    apf::Numbering * nm,
-		    FiberReaction * r,
-		    skMat * K,
-		    skVec * F)
-      : apf::Integrator(o)
-      , msh(NULL)
-      , crnt_elmnt(NULL)
-      , u(NULL)
-      , num(nm)
-      , fbr_rctn(r)
-      , lngth()
-      , lngth_o()
-      , nedofs()
-      , dim()
-      , es()
-      , k(K)
-      , f(F)
+      apf::Numbering * nm,
+      FiberReaction * r,
+      las::skMat * K,
+      las::skVec * F)
+    : apf::Integrator(o)
+    , msh(NULL)
+    , crnt_elmnt(NULL)
+    , u(NULL)
+    , num(nm)
+    , fbr_rctn(r)
+    , lngth()
+    , lngth_o()
+    , nedofs()
+    , dim()
+    , es()
+    , k(K)
+    , f(F)
     {
       assert(fbr_rctn);
       assert(num);
@@ -88,26 +88,26 @@ namespace bio
       double frc = 0.0;
       for(int ii = 0; ii < dim; ii++)
       {
-	frc = frcs[ii] * f;
-	es.addToVector(ii      ,-frc);
-	es.addToVector(2*dim+ii, frc);
-      }
-      apf::Matrix3x3 rctn = apf::tensorProduct(frcs,frcs*dfdl_fl) + eye()*fl;
-      double op = -1.0;
-      for(int ii = 0; ii < 2; ii++)
-      {
-	op *= -1.0;
-	for(int jj = 0; jj < 2; jj++)
-	{
-	  op *= -1.0;
-	  for(int kk = 0; kk < dim; kk++)
-	    for(int ll = 0; ll < dim; ll++)
-	      es.addToMatrix(ii*dim + kk, jj*dim + ll, rctn[ii][jj] * op);
-	}
-      }
-    }
-    void outElement()
-    {
+       frc = frcs[ii] * f;
+       es.addToVector(ii      ,-frc);
+       es.addToVector(2*dim+ii, frc);
+     }
+     apf::Matrix3x3 rctn = apf::tensorProduct(frcs,frcs*dfdl_fl) + eye()*fl;
+     double op = -1.0;
+     for(int ii = 0; ii < 2; ii++)
+     {
+       op *= -1.0;
+       for(int jj = 0; jj < 2; jj++)
+       {
+         op *= -1.0;
+         for(int kk = 0; kk < dim; kk++)
+           for(int ll = 0; ll < dim; ll++)
+             es.addToMatrix(ii*dim + kk, jj*dim + ll, rctn[ii][jj] * op);
+         }
+       }
+     }
+     void outElement()
+     {
       assembleElementalSystem(k,f,&es,dofs);
     }
     const ElementalSystem * getElementalSystem() {return &es;}
