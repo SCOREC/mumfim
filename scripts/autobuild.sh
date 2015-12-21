@@ -20,5 +20,5 @@ notifybuild \
 "../micro_fo/src/" \
 "" \
 'make' \
-"BIOTISSUE_$BUILD_TYPE"
+"BIO_RED_$BUILD_TYPE"
 

@@ -1,4 +1,5 @@
 set(micro_fo_public_headers
+  Analysis.h
   apfUtil.h
   dMdNi.h
   FiberNetworkIO.h
@@ -9,6 +10,7 @@ set(micro_fo_public_headers
   TrussIntegrator.h)
 
 set(micro_fo_src_files
+  Analysis.cc
   apfUtil.cc
   dRVEdFE.cc
   FiberNetworkIO.cc
@@ -17,11 +19,8 @@ set(micro_fo_src_files
   MacroCoupling.cc
   RVE.cc)
 
-find_package(MPI REQUIRED)
-include_directories(${MPI_INCLUDE_PATH})
-
 find_package(amsi REQUIRED)
-find_package(CoreSim REQUIRED)
+find_package(Core COMPONENTS Sim)
 
 add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})
 set_property(TARGET micro_fo PROPERTY VERSION ${BIOTISSUE_VERSION})
@@ -35,8 +34,7 @@ target_link_libraries(micro_fo PUBLIC
                                las
 			       num
 			       fea
-                               ${CORE_LIBRARIES}
-                               ${MPI_LIBRARIES})
+                               ${CORE_LIBS})
 
 install(TARGETS micro_fo
 	EXPORT biotissueTargets

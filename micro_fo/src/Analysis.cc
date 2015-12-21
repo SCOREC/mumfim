@@ -1,29 +1,23 @@
 #include "Analysis.h"
+#include "FiberNetwork.h"
+#include "RVE.h"
+#include "TrussIntegrator.h"
+#include <lasSparskit.h>
 namespace bio
 {
-  struct FiberRVEAnalysis
-  {
-    FiberNetwork * fn;
-    RVE * rve;
-    apf::Integrator * itgr;
-    apf::FieldOp * writesol;
-    apf::FieldOp * accumsol;
-    las::skMat * k;
-    las::skVec * u;
-    las::skVec * f;
-  };
   FiberRVEAnalysis * makeAnalysis(const std::string & fnm)
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = loadFromFile(fnm);
     an->rve = new RVE;
-    int ndofs = apf::NaiveOrder(fn->getNumbering());
+    apf::Numbering * dofs = an->fn->getNumbering();
+    int ndofs = apf::NaiveOrder(dofs);
     an->f = las::makeVec(ndofs);
     an->u = las::makeVec(ndofs);
-    an->k = new skMat(createCSR(dofs,ndofs));
-    an->writesol = new ApplySolution(dofs,u,0,true);
-    an->accumsol = new ApplySolution(dofs,u,0,false);
-    an->itgr = new TrussIntegrator(1,dofs,new LinearReaction,an->k,an->f);
+    an->k = new las::skMat(las::createCSR(dofs,ndofs));
+    an->writesol = new ApplySolution(dofs,an->u,0,true);
+    an->accumsol = new ApplySolution(dofs,an->u,0,false);
+    an->itgr = new TrussIntegrator(1,dofs,new LinearReaction,an->k,&an->f);
   }
   void destroyAnalysis(FiberRVEAnalysis * fa)
   {
@@ -45,8 +39,8 @@ namespace bio
   void FiberRVEIteration::iterate()
   {
     an->itgr->process(an->fn->getNetworkMesh());
-    applyRVEForceBC(an->f,an->rve,an->fn);
-    //solve(an->k,an->u,an->f);
+    applyRVEForceBC(&an->f,an->rve,an->fn);
+    //solve(an->k,&an->u,&an->f);
     an->accumsol->apply(an->fn->getIncrementalDispField());
     an->writesol->apply(an->fn->getDisplacementField());
   }
@@ -56,12 +50,13 @@ namespace bio
     , eps(e)
     , resid_im(0.0)
   {}
-  bool FiberRVEConvergece::converged()
+  bool FiberRVEConvergence::converged()
   {
     bool result = false;
-    double resid = norm(*(an->u));
+    double resid = 0.0;
+    //double resid = norm(*(an->u));
     if(resid < eps)
       result = true;
-    return reslt;
+    return result;
   }
 };

@@ -1,12 +1,13 @@
 #ifndef BIO_FIBER_REACTIONS_H_
 #define BIO_FIBER_REACTIONS_H_
-
 #include <cmath>
 #include <utility>
 #include <vector>
-
 namespace bio
 {
+  /**
+   * Todo: renamce to TrussForceReaction?
+   */
 
   class FiberReaction
   {

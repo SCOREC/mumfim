@@ -23,7 +23,7 @@ namespace bio
     apf::Numbering * cbe_dof;
   protected:
   public:
-    RVE();
+    RVE(int d = 3);
     /**
      * Get the number of nodes for the RVE
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
@@ -140,6 +140,13 @@ namespace bio
   void applyRVEForceBC(las::skVec * f,
 		                   RVE * rve,
 		                   FiberNetwork * fn);
+  /**
+   * Apply a vector of displacements to the coordinates of the rve mesh
+   * @param rve The rve to displace
+   * @param du A vector of the correct length (24 for 3d, 8 for 2d) containing
+   *           displacement values for each rve node in the typically finite element
+   *           ordering for a cube
+   */
   void displaceRVE(RVE * rve,
                    const apf::DynamicVector & du);
 }
