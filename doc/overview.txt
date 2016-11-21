@@ -1,0 +1,56 @@
+ - Mechanical capabilities supported
+  - Brief mechanics overview and references to papers
+
+Balaji Agoram and Victor H. Barocas, Coupled Macroscopic and Microscopic Scale Modeling of Fibrillar Tissues and Tissue Equivalents, Journal of Biomechanical Engineering, 123, 362-369, 2001
+
+Triantafyllos Stylianopoulos and Victor H. Barocas, Multiscale, Structure-Based Modeling for the Elastic Mechanical Behavior of Arterial Walls, Journal of Biomechanical Engineering, 129, 611-618, 2007
+
+Triantafyllos Stylianopoulos and Victor H. Barocas, Volume-averaging theory for the study of the mechanics of collagen networks, Comput. Methods Appl. Mech. Engrg. 196 (2007) 2981–2990
+
+Preethi L. Chandran and Victor H. Barocas, Deterministic Material-Based Averaging Theory Model of Collagen Gel Micromechanics, Journal of Biomechanical Engineering, 129, 137-147, 2007
+
+SPENCER P. LAKE, MOHAMMAD F. HADI, VICTOR K. LAI, and VICTOR H. BAROCAS, Mechanics of a Fiber Network Within a Non-Fibrillar Matrix: Model and Comparison with Collagen-Agarose Co-gels, Annals of Biomedical Engineering, Vol. 40, No. 10, 2012, 2111–2121
+
+L. Zhang, S. P. Lake, V. H. Barocas, M. S. Shephard, and R. C. Picu, Cross-linked fiber network embedded in an elastic matrix, Soft Matter, 2013, 9, 6398
+
+Lijuan Zhang, Spencer P. Lake, Victor K. Lai, Catalin R. Picu, Victor H. Barocas, Mark S. Shephard, A Coupled Fiber-Matrix Model Demonstrates Highly Inhomogeneous Microstructural Interactions in Soft Tissues Under Tensile Load, Journal of Biomechanical Engineering, 135, 2013
+
+
+  - Support for boundary conditions
+
+The software allows for specification of prescribed displacement boundary conditions on geometric model entities. These displacements may either be specified independently for each component of the displacement vector, and may be specified as a function of the simulation time $t$ or as a static value.  Support for expressions in terms of the global coordinate system $(x,y,z)$ is also possible, but due to the implementation of the geometry and meshing database supporting the software it may not be expressed in terms of $(x,y,z,t)$. For our purposes being restricted to only expressions in terms of $t$ has not proved limiting thus far, but may prove a limitation for contact problems (though they would likely involve the implementation of a seperate method of specifying prescribed displacements in any event). 
+
+Force boundary conditions may also be specified using the geometric model fairly generally, though again with the same restriction on specifying them either in terms of $t$ or $(x,y,z)$ but not both simultaneously.
+
+Both types of boundary conditions are specified using the simmodeler program provided by Simmetrix software, which also produces the geometry and meshing systems our simulation uses. Specifying them using this program prevents the software from requiring recompilation for every problem with a different set of boundary conditions.
+
+  - load stepping # load steps
+  - fixed delta-t newton solver # iterations
+  - supported geometry/mesh
+
+At present any geometry supported by both the Parasolid modeling kernel (and related geometric file format) and the Simmetrix SimModel geometric library can be used in the simulation. Only linear tetrahedral meshes generated on these geometries have been used at present, though the microscale and macroscale simulations have untested support for general linear elements, the multiscale communication component currently does not provide the level of support we would prefer for more general element/mesh types (as the multiscale communication is in part dependent on the element type), but can provide support with minimal changes for any element type and already supports any number of numerical integration points potentially hosting microscale RVE simulations.
+
+ - Multiscale capabilities supported
+  - support for linear tets in macro-micro communication
+  - support for general scale-linking communication in parallel
+  - primary scale supported by two tertiary scales
+  - capability to dynamically add/remove tertiary scales related to the primary scale
+  - 
+
+ - Parallel capabilities
+  - Standard partitioned mesh parallelization of macroscale simulation
+  - initial microscale simulations not parallelized (for reasons)
+  - static load balancing procedure
+  - dynamic load balancing for adding microscale simulations
+
+ - Planned mechanical capabilities
+  - adaptive delta-t newton solver
+  - general element support wrt multiscale 
+  - including additional microscale simulations (fiber-matrix)
+  - single-scale adaptive processes
+  - multi-scale adaptive processes
+   - load balancing of dynamically created/deleted tertiary scales
+ 
+ multiscale adaptive information -> single scale adaptation -> single scale load balancing -> multiscale load balancing
+ 
+  - additional mircoscale simulations (FEA) parallelized using partitioned mesh 

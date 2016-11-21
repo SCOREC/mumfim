@@ -1,0 +1,1031 @@
+\documentclass[12pt,aps,pre]{revtex4}
+%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
+\usepackage{graphicx, epsfig,cancel}
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{amssymb,amsmath} 
+\usepackage{setspace}
+
+% for writing code snippets in latex
+\usepackage{listings}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{[#1]}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+
+\newcommand{\diff}{\mathop{}\!\mathrm{d}}
+
+\begin{document}
+\setstretch{1.5}
+\title{Macrocale Derivation}
+\author{V. W. L. Chan and W. R. Tobin}
+\maketitle
+
+\section{Motivation}
+
+Formulation for Biotissue code.
+
+\section{Macro Scale}
+
+\subsection{Momentum Balance and Formulation of the Residual}
+
+We are interested in solving the Cauchy Momentum Balance Equation for a body in static equilibrium and in absence of body forces:
+%
+\begin{align}
+\nabla \cdot \pmb{\sigma} =& \; 0 \text{ in } \Omega \label{momentum_balance} \\
+\pmb{\sigma} \cdot \pmb{n} =& \; \pmb{t} \text{ on } \partial \Omega \nonumber
+\end{align}
+%
+where $\pmb{\Omega}$ is the problem domain, $\partial \pmb{\Omega}$ is the domain boundary, $\pmb{\sigma}$ is the Cauchy stress tensor, $\pmb{n}$ is the outward-facing unit normal along the domain boundary, and $\pmb{t}$ is the surface traction along the domain boundary.
+%
+\begin{eqnarray}
+\pmb{\sigma} \equiv
+\begin{bmatrix}
+\sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
+\sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
+\sigma_{zx} & \sigma_{zy} & \sigma_{zz} 
+\end{bmatrix} .
+\label{cauchy_stress_tensor}
+\end{eqnarray}
+%
+
+Since we intend to use the Galerkin Finite Element Method (FEM), we will need to consider the Galerkin weak form of Eq.\ \eqref{momentum_balance}. We obtain the weak or variational form of the equation by multiplying using an appropriate weighting function $\phi \in \pmb{V}$ where $\pmb{V}$ is an infinite-dimensional trial space and then integrating over the domain:
+
+%
+\begin{equation}
+\int_\Omega \phi(\nabla \cdot \pmb{\sigma}) \diff \Omega = 0
+\label{weak_form1}
+\end{equation}
+%
+
+Using the divergenge identity 
+
+%
+\begin{equation}
+\nabla \cdot (\phi \pmb{\sigma}) = \pmb{\sigma} (\nabla \phi) + \phi (\nabla \cdot \pmb{\sigma}) \nonumber
+\end{equation}
+%
+
+to arrive at 
+
+%
+\begin{equation}
+\int_\Omega \nabla \cdot (\phi \pmb{\sigma}) - \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\label{weak_form2}
+\end{equation}
+%
+
+seperating the integrand terms and applying the Divergence Theorem: 
+
+%
+\begin{equation}
+\int_\Omega \nabla \cdot \textbf{F} \diff \Omega = \iint_{\partial \Omega} \textbf{F} \cdot \textbf{n} \; \diff \partial \Omega \nonumber
+\end{equation}
+%
+
+where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\textbf{n}$ is the normal to the surface, to the first term in Eq.\ \eqref{weak_form2} we have
+
+%
+\begin{equation}
+\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n} \; \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\label{weak_form3}
+\end{equation}
+%
+
+If we consider a surface-traction free problem, the first term in Eq.\ \eqref{weak_form3} goes to zero and we have
+
+%
+\begin{equation}
+\int_\Omega \pmb{\sigma} \nabla \phi \diff \Omega = 0
+\label{weak_form}
+\end{equation}
+%
+
+Finally, we cast the problem in a Galerkin form by selecting a finite subspace of the trial space $\pmb{V}_h \subseteq \pmb{V}$ and selecting our trial functions from this finite subspace $\phi_i \in \pmb{V}_h$
+
+%
+\begin{equation}
+\int_\Omega \pmb{\sigma} \nabla \phi_i \diff \Omega = 0
+\label{galerkin_weak_form}
+\end{equation}
+%
+
+which is the problem we will set out to solve in this note.
+
+To clearly see the problem, the terms within the integral of Eq.\ \eqref{galerkin_weak_form} can be explicitly written out as
+%
+\begin{eqnarray}
+\pmb{\sigma} \nabla \phi_i &=&
+\begin{bmatrix}
+\sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
+\sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
+\sigma_{zx} & \sigma_{zy} & \sigma_{zz} 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial x} \\ \frac{\partial \phi_i}{\partial y} \\ \frac{\partial \phi_i}{\partial z}
+\end{bmatrix} \nonumber\\
+%
+&=& 
+%
+\begin{bmatrix}
+\sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \\
+%
+\sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \\
+%
+\sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} 
+\end{bmatrix}
+%
+\end{eqnarray}
+%
+Therefore, Eq.\ \eqref{galerkin_weak_form} can be written as
+%
+\begin{eqnarray}
+R_{ix} = \int_V \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} dV \nonumber\\
+%
+R_{iy} = \int_V \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} dV \nonumber\\
+%
+R_{iz} = \int_V \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z}  dV,
+\label{residual_xyz}
+\end{eqnarray}
+%
+where the $x$, $y$, and $z$ in the subscript indicate the $x$, $y$, and $z$ contributions to the residual, respectively.
+
+\subsection{Newton-Raphson Procedure}
+
+To minimize the residual in Eq.\ \eqref{galerkin_weak_form}, and hence solve the problem, the Newton-Raphson Procedure is used
+%
+\begin{equation}
+\pmb{K}_T \delta u = -R, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
+\end{equation}
+%
+and 
+%
+\begin{eqnarray}
+\pmb{K}_T \equiv
+\begin{bmatrix}
+\frac{\partial R_x}{\partial x_n} & \frac{\partial R_x}{\partial y_n} & \frac{\partial R_x}{\partial z_n} \\
+\frac{\partial R_y}{\partial x_n} & \frac{\partial R_y}{\partial y_n} & \frac{\partial R_y}{\partial z_n} \\
+\frac{\partial R_z}{\partial x_n} & \frac{\partial R_z}{\partial y_n} & \frac{\partial R_z}{\partial z_n} ,
+\label{tangent_stiffness}
+\end{bmatrix}
+\end{eqnarray}
+%
+where $x_n$, $y_n$, and $z_n$ are the nodal positions (the vertices in this case) of the element.
+
+As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each node of the element. The derivatives indicated in Eq.\ \eqref{tangent_stiffness} for the $x$ contribution to each node are
+%
+\begin{eqnarray}
+%%%%
+\frac{\partial R_{ix}}{\partial x_n} &=& \frac{\partial R_{ix}}{\partial x_n} \bigg |_V + \frac{\partial R_{ix}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{xx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{xy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}}{\partial x_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left( \sigma_{xx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right)+\sigma_{xy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{xz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial x_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{ix}}{\partial y_n} &=& \frac{\partial R_{ix}}{\partial y_n} \bigg |_V + \frac{\partial R_{ix}}{\partial V} \frac{\partial V}{\partial y_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{xx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{xy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} +  \frac{\partial \sigma_{xz}}{\partial y_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&& + \int_V \left( \sigma_{xx} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{xy} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{xz} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial y_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{ix}}{\partial z_n} &=& \frac{\partial R_{ix}}{\partial z_n} \bigg |_V + \frac{\partial R_{ix}}{\partial V} \frac{\partial V}{\partial z_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{xx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{xy}}{\partial z_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}}{\partial z_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left(\sigma_{xx} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{xy} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{xz} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
+\label{dRx}
+\end{eqnarray}
+%
+
+Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account \red{this is essentially the 3D Leibniz integration rule. Discuss Eq.\ \eqref{dRx} in terms of Leibniz integration rule}. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
+
+The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.
+
+\subsection{Tetrahedral Shape Functions and Their Derivatives}
+
+The shape functions, $\phi_i$, for the four nodes of a linear tetrahedral element are
+%
+\begin{equation}
+\phi_1 = 1 - r - s - t, \ \ \phi_2 = r, \ \ \phi_3 = s, \ \ \text{and} \ \ \phi_4 = t,
+\label{shape_fxns}
+\end{equation}
+%
+where $(r,s,t)$ are the barycentric coordinates of a tetrahedron. The geometry of our problem $(x,y,z)$ can be written in terms of the shape functions, $\phi_i$, as
+%
+\begin{eqnarray}
+x &=& \sum_{i}^4 x_i \phi_i = x_1 \phi_1 + x_2 \phi_2 + x_3 \phi_3 + x_4 \phi_4 \nonumber\\
+y &=& \sum_i^4 y_i \phi_i =  y_1 \phi_1 + y_2 \phi_2 + y_3 \phi_3 + y_4 \phi_4  \nonumber\\
+z &=& \sum_i^4  z_i \phi_i =  z_1 \phi_1 + z_2 \phi_2 + z_3 \phi_3 + z_4 \phi_4 ,
+\label{geometry}
+\end{eqnarray}
+%
+where $x_i$, $y_i$, and $z_i$ are the nodal positions (i.e., $x_i = x_n$, $y_i = y_n$, and $z_i = z_n$) of a tetrahedral element. As seen in Eq.\ \eqref{dRx}, we require the derivative of $\phi_i$ with respect to $x$, $y$, and $z$. In order to obtain such derivatives, we use the relationships
+%
+\begin{eqnarray}
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} \\
+\frac{\partial \phi_i}{\partial s} \\
+\frac{\partial \phi_i}{\partial t}
+\end{bmatrix} &=&
+%
+J^T
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial x} \\
+\frac{\partial \phi_i}{\partial y} \\
+\frac{\partial \phi_i}{\partial z}
+\end{bmatrix} \ \ \rightarrow \ \ 
+%
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial x} \\
+\frac{\partial \phi_i}{\partial y} \\
+\frac{\partial \phi_i}{\partial z}
+\end{bmatrix} =
+%
+(J^T)^{-1}
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} \\
+\frac{\partial \phi_i}{\partial s} \\
+\frac{\partial \phi_i}{\partial t}
+\end{bmatrix}
+\label{dx_to_dr}
+\end{eqnarray}
+%
+where
+%
+\begin{eqnarray}
+J^T &\equiv&
+% 
+\begin{bmatrix}
+\frac{\partial x}{\partial r} & \frac{\partial y}{\partial r} & \frac{\partial z}{\partial r} \\
+\frac{\partial x}{\partial s} & \frac{\partial y}{\partial s} & \frac{\partial z}{\partial s} \\
+\frac{\partial x}{\partial t} & \frac{\partial y}{\partial t} & \frac{\partial z}{\partial t} 
+\end{bmatrix} 
+%
+=
+%
+\begin{bmatrix}
+\text{x}_1 & \text{y}_1 & \text{z}_1 \\
+\text{x}_2 & \text{y}_2 & \text{z}_2 \\
+\text{x}_3 & \text{y}_3 & \text{z}_3
+\end{bmatrix} \ \ \text{and} \nonumber\\
+%
+(J^T)^{-1} &=& \frac{1}{\text{det}(J^T)} \begin{bmatrix}
+\text{y}_2 \text{z}_3 - \text{y}_3 \text{z}_2 &-\text{y}_1 \text{z}_3 + \text{y}_3 \text{z}_1  & \text{y}_1 \text{z}_2 - \text{y}_2 \text{z}_1 \\
+- \text{x}_2 \text{z}_3 + \text{x}_3\text{z}_2 & \text{x}_1\text{z}_3 - \text{x}_3 \text{z}_1 & -\text{x}_1 \text{z}_2 + \text{x}_2 \text{z}_1  \\
+\text{x}_2 \text{y}_3 - \text{x}_3 \text{y}_2 & -\text{x}_1 \text{y}_3 + \text{x}_3 \text{y}_1 & \text{x}_1 \text{y}_2 - \text{x}_2 \text{y}_1
+\end{bmatrix}.
+\label{J}
+\end{eqnarray}
+%
+The derivatives in $J^T$ can be straightforwardly determined by taking derivatives of Eq.\ \eqref{geometry} and using the definition of $\phi_i$ in Eq.\ \eqref{shape_fxns}. The derivatives are
+%
+\begin{eqnarray}
+\text{x}_1 &=& \frac{\partial x}{\partial r} = -x_1 + x_2 , \ \ \
+\text{y}_1 = \frac{\partial y}{\partial r} = -y_1 + y_2 , \ \ \
+\text{z}_1 = \frac{\partial z}{\partial r} = -z_1 + z_2 \nonumber\\
+%
+\text{x}_2 &=& \frac{\partial x}{\partial s} = -x_1 + x_3 , \ \ \
+\text{y}_2 = \frac{\partial y}{\partial s} = -y_1 + y_3, \ \ \  
+\text{z}_2 = \frac{\partial z}{\partial s} = -z_1 + z_3 \nonumber\\
+%
+\text{x}_3 &=& \frac{\partial x}{\partial t} = - x_1 + x_4, \ \ \ 
+\text{y}_3 = \frac{\partial y}{\partial t} = - y_1 + y_4, \ \ \ 
+\text{z}_3 = \frac{\partial z}{\partial t} = -z_1 + z_4  \nonumber\\
+%
+\text{det}(J^T) &=& \text{x}_1 \left(\text{y}_2 \text{z}_3 - \text{z}_2\text{y}_3 \right) - \text{y}_1 \left(\text{x}_2 \text{z}_3 - \text{z}_2\text{x}_3 \right) + \text{z}_1 \left(\text{x}_2 \text{y}_3 - \text{y}_2\text{x}_3 \right).
+\end{eqnarray}
+%
+
+Employing Eq.\ \eqref{dx_to_dr}, the derivatives of the shape functions with respect to $x$, $y$, and $z$ are
+%
+\begin{eqnarray}
+%
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial x} \\
+\frac{\partial \phi_i}{\partial y} \\
+\frac{\partial \phi_i}{\partial z}
+\end{bmatrix} = \frac{1}{\text{det}(J^T)}
+%
+\begin{bmatrix}
+\left(\text{y}_2 \text{z}_3 - \text{y}_3 \text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\text{y}_1 \text{z}_3 + \text{y}_3 \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left(\text{y}_1 \text{z}_2 - \text{y}_2 \text{z}_1\right) \frac{\partial \phi_i}{\partial t} \\
+%
+\left(-\text{x}_2 \text{z}_3 + \text{x}_3\text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(\text{x}_1\text{z}_3 - \text{x}_3 \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left( -\text{x}_1 \text{z}_2 + \text{x}_2 \text{z}_1\right) \frac{\partial \phi_i}{\partial t} \\
+%
+\left(\text{x}_2 \text{y}_3 - \text{x}_3 \text{y}_2 \right) \frac{\partial \phi_i}{\partial r} + \left( -\text{x}_1 \text{y}_3 + \text{x}_3 \text{y}_1\right) \frac{\partial \phi_i}{\partial s} + \left( \text{x}_1 \text{y}_2 - \text{x}_2 \text{y}_1 \right) \frac{\partial \phi_i}{\partial t}
+\end{bmatrix},
+%
+\end{eqnarray}
+% 
+%and are calculated in calc\_six\_dos.cc and stored as the variables ttkx, ttky, and ttkz.
+
+As seen in Eq.\ \eqref{dRx}, we also need the derivatives of $\partial \phi_i/\partial x$, $\partial \phi_i/\partial y$, and $\partial \phi_i/\partial z$ terms with respect to $x_n$, $y_n$, and $y_n$ (the nodal positions). The derivatives of $\partial \phi_i/\partial x$, $\partial \phi_i/\partial y$, and $\partial \phi_i/\partial z$ with respect to $x_n$ are
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=&  -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial x_n} P_x + \text{det}(J^T) \frac{\partial P_x}{\partial x_n}\nonumber\\
+%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial y_n} P_x + \text{det}(J^T) \frac{\partial P_x}{\partial y_n} \nonumber\\
+%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial z_n} P_x + \text{det}(J^T) \frac{\partial P_x}{\partial z_n} ,
+\label{d2phi_dxdxn}
+\end{eqnarray}
+%
+where $P_x$ is the first row of the dot product of the Adjoint matrix of $J^T$ with the gradient of the shape functions with respect to $r$, $s$, and $t$ and is explicitly represented as
+%
+\begin{equation}
+P_x \equiv \left(\text{y}_2 \text{z}_3 - \text{y}_3 \text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\text{y}_1 \text{z}_3 + \text{y}_3 \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left(\text{y}_1 \text{z}_2 - \text{y}_2 \text{z}_1\right) \frac{\partial \phi_i}{\partial t}.
+\label{Px}
+\end{equation}
+%
+
+Similarly, the derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/ \partial z$ are 
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=&  -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial x_n} P_y + \text{det}(J^T) \frac{\partial P_y}{\partial x_n}\nonumber\\
+%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial y_n} P_y + \text{det}(J^T) \frac{\partial P_y}{\partial y_n} \nonumber\\
+%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial z_n} P_y + \text{det}(J^T) \frac{\partial P_y}{\partial z_n} 
+\label{d2phi_dydxn}
+\end{eqnarray}
+%
+and
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial z} \right) &=&  -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial x_n} P_z + \text{det}(J^T) \frac{\partial P_z}{\partial x_n}\nonumber\\
+%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial z} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial y_n} P_z + \text{det}(J^T) \frac{\partial P_z}{\partial y_n} \nonumber\\
+%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial z} \right) &=& -\frac{1}{(\text{det}(J^T))^2} \frac{\partial \text{det}(J^T)}{\partial z_n} P_z + \text{det}(J^T) \frac{\partial P_z}{\partial z_n} ,
+\label{d2phi_dzdxn}
+\end{eqnarray}
+%
+respectively, where $P_y$ and $P_z$ are the second and third row of the dot product of the Adjoint matrix of $J^T$ with the gradient of the shape functions with respect to $r$, $s$, and $t$. They are explicitly represented as
+%
+\begin{eqnarray}
+P_y &\equiv& \left(-\text{x}_2 \text{z}_3 + \text{x}_3 \text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\text{x}_1 \text{z}_3 - \text{x}_3 \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left(-\text{x}_1 \text{z}_2 + \text{x}_2 \text{z}_1\right) \frac{\partial \phi_i}{\partial t} \nonumber\\
+%
+P_z &\equiv& \left(\text{x}_2 \text{y}_3 - \text{x}_3 \text{y}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\text{x}_1 \text{y}_3 + \text{x}_3 \text{y}_1\right) \frac{\partial \phi_i}{\partial s} + \left(\text{x}_1 \text{y}_2 - \text{x}_2 \text{y}_1\right) \frac{\partial \phi_i}{\partial t}.
+%
+\label{Py_and_Pz}
+\end{eqnarray}
+%
+To determine the terms in Eqs.\ \eqref{d2phi_dxdxn}, \eqref{d2phi_dydxn}, and \eqref{d2phi_dzdxn} we need to explicitly write out the derivatives of det($J^T$), $P_x$, $P_y$, and $P_z$. 
+
+\subsubsection{Derivative of det($J^T$) }
+
+The derivative of det($J^T$) with respect to $x_n$ is
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \text{det}(J^T) &=& \text{det}
+%
+\begin{bmatrix}
+\frac{\partial \text{x}_1}{\partial x_n} & \text{y}_1 & \text{z}_1 \\
+\frac{\partial \text{x}_2}{\partial x_n} & \text{y}_2 & \text{z}_2 \\
+\frac{\partial \text{x}_3}{\partial x_n} & \text{y}_3 & \text{z}_3
+\end{bmatrix} \nonumber\\
+%
+&=& \frac{\partial \text{x}_1}{\partial x_n} \left(\text{y}_2 \text{z}_3 - \text{y}_3 \text{z}_2\right) - \text{y}_1 \left( \frac{\partial \text{x}_2}{\partial x_n} \text{z}_3 - \text{z}_2 \frac{\partial \text{x}_3}{\partial x_n} \right) + \text{z}_1 \left( \frac{\partial \text{x}_2}{\partial x_n} \text{y}_3 - \text{y}_2 \frac{\partial \text{x}_3}{\partial x_n} \right),
+\end{eqnarray}
+%
+where
+%
+\begin{eqnarray}
+\frac{\partial \text{x}_1}{\partial \text{x}_n} &=& \frac{\partial}{\partial x_n} \left( \frac{\partial x}{\partial r} \right) = \frac{\partial}{\partial x_n}\left(-x_1 + x_2 \right) = \frac{\partial \phi_n}{\partial r} \nonumber\\
+%
+\frac{\partial \text{x}_2}{\partial \text{x}_n} &=& \frac{\partial}{\partial x_n} \left( \frac{\partial x}{\partial s} \right) = \frac{\partial}{\partial x_n}\left(-x_1 + x_3  \right) = \frac{\partial \phi_n}{\partial s} \nonumber\\
+%
+\frac{\partial \text{x}_3}{\partial \text{x}_n} &=& \frac{\partial}{\partial x_n} \left( \frac{\partial x}{\partial t} \right) =  \frac{\partial}{\partial x_n}\left(-x_1+ x_4  \right) = \frac{\partial \phi_n}{\partial t}
+%
+\label{dxdxn_to_dphidr}
+\end{eqnarray}
+%
+Therefore, we have
+%
+\begin{eqnarray}
+%
+\frac{\partial}{\partial x_n} \text{det}(J^T) &=&\text{det}
+\begin{bmatrix}
+\frac{\partial \phi_n}{\partial r} & \text{y}_1 & \text{z}_1 \\
+\frac{\partial \phi_n}{\partial s} & \text{y}_2 & \text{z}_2 \\
+\frac{\partial \phi_n}{\partial t} & \text{y}_3 & \text{z}_3
+\end{bmatrix} \nonumber\\
+%
+&=& \frac{\partial \phi_n}{\partial r} \left(\text{y}_2 \text{z}_3 - \text{y}_3 \text{z}_2\right) - \text{y}_1 \left( \frac{\partial \phi_n}{\partial s} \text{z}_3 - \text{z}_2 \frac{\partial \phi_n}{\partial t} \right) + \text{z}_1 \left( \frac{\partial \phi_n}{\partial s} \text{y}_3 - \text{y}_2 \frac{\partial \phi_n}{\partial t} \right) 
+\label{dJTx}
+\end{eqnarray}
+%
+In Eq.\ \eqref{dJTx} the determinant is evaluated using a row expansion (expanded with respect to the first row). Interestingly, if we evaluate the determinant of the matrix using a column expansion (expanded with respect to the first column), we obtain the expression in Eq.\ \eqref{Px}. This suggests that, numerically, 
+%
+\begin{equation}
+\frac{\partial}{\partial x_n} \text{det}(J^T) = P_x, \ \ \frac{\partial}{\partial y_n} \text{det}(J^T) = P_y, \ \ \text{and} \ \ \frac{\partial}{\partial z_n} \text{det}(J^T) = P_z,
+\label{ddet_equal_P}
+\end{equation}
+%
+
+where the derivatives of det($J^T$) with respect to $y_n$ and $z_n$ are derived similarly as above: 
+%
+\begin{eqnarray}
+%
+\frac{\partial}{\partial y_n} \text{det}(J^T) &=& \text{det}
+%
+\begin{bmatrix}
+\text{x}_1 & \frac{\partial \text{y}_1}{\partial y_n} & \text{z}_1 \\
+\text{x}_2 & \frac{\partial \text{y}_2}{\partial y_n} & \text{z}_2 \\
+\text{x}_3 & \frac{\partial \text{y}_3}{\partial y_n} & \text{z}_3
+\end{bmatrix} \nonumber\\
+%
+&=& x_1 \left(\frac{\partial \phi_n}{\partial s} \text{z}_3 - \frac{\partial \phi_n}{\partial t} \text{z}_2\right) - \frac{\partial \phi_n}{\partial r} \left(  \text{x}_2 \text{z}_3 - \text{z}_2 \text{x}_3 \right) + \text{z}_1 \left(  \text{x}_2 \frac{\partial \phi_n}{\partial t} - \frac{\partial \phi_n}{\partial s} \text{x}_3 \right) \nonumber\\
+%%%%%%%
+\frac{\partial}{\partial z_n} \text{det}(J^T) &=& \text{det}
+%
+\begin{bmatrix}
+\text{x}_1 & \text{y}_1 & \frac{\partial \text{z}_1}{\partial z_n}  \\
+\text{x}_2 & \text{y}_2 & \frac{\partial \text{z}_2}{\partial z_n}  \\
+\text{x}_3 & \text{y}_3& \frac{\partial \text{z}_3}{\partial z_n}
+\end{bmatrix} \nonumber\\
+%
+&=&  \text{x}_1 \left(\text{y}_2 \frac{\partial \phi_n}{\partial  t} - \text{y}_3 \frac{\partial \phi_n}{\partial s}\right) - \text{y}_1 \left( \text{x}_2 \frac{\partial \phi_n}{\partial t} - \frac{\partial \phi_n}{\partial s} \text{x}_3 \right) + \frac{\partial \phi_n}{\partial r} \left( \text{x}_2 \text{y}_3 - \text{y}_2 \text{x}_3 \right) . \nonumber\\
+%
+\label{dJT}
+\end{eqnarray}
+
+\subsubsection{Derivatives of $P_x$, $P_y$, and $P_z$}
+
+The derivatives of $P_x$ are
+%
+\begin{eqnarray}
+\frac{\partial P_x}{\partial x_n} &=& 0 \nonumber\\
+%%%
+\frac{\partial P_x}{\partial y_n} &=& \left(\frac{\partial \text{y}_2}{\partial y_n} \text{z}_3 - \frac{\partial\text{y}_3}{\partial y_n} \text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\frac{\partial\text{y}_1}{\partial y_n} \text{z}_3 + \frac{\partial \text{y}_3}{\partial y_n} \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left(\frac{\partial \text{y}_1}{\partial y_n} \text{z}_2 - \frac{\partial \text{y}_2}{\partial y_n} \text{z}_1\right) \frac{\partial \phi_i}{\partial t} \nonumber\\
+%
+&=& \left(\frac{\partial \phi_n}{\partial s} \text{z}_3 - \frac{\partial \phi_n}{\partial t} \text{z}_2\right) \frac{\partial \phi_i}{\partial r} + \left(-\frac{\partial\phi_n}{\partial r} \text{z}_3 + \frac{\partial \phi_n}{\partial t} \text{z}_1\right) \frac{\partial \phi_i}{\partial s} + \left(\frac{\partial \phi_n}{\partial r} \text{z}_2 - \frac{\partial \phi_n}{\partial s} \text{z}_1\right) \frac{\partial \phi_i}{\partial t} \nonumber\\
+%
+&=& \text{det}_{\text{col}} \begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} & \frac{\partial \phi_n}{\partial r} & z_1 \\
+\frac{\partial \phi_i}{\partial s} & \frac{\partial \phi_n}{\partial s} & z_2 \\
+\frac{\partial \phi_i}{\partial t} & \frac{\partial \phi_n}{\partial t} & z_3 
+\end{bmatrix}\nonumber\\
+%%%
+\frac{\partial P_x}{\partial z_n} &=& \left(\text{y}_2 \frac{\partial \text{z}_3}{\partial z_n} - \text{y}_3 \frac{\partial \text{z}_2}{\partial z_n} \right) \frac{\partial \phi_i}{\partial r} + \left(-\text{y}_1 \frac{\partial\text{z}_3}{\partial z_n} + \text{y}_3 \frac{\partial\text{z}_1}{\partial z_n}\right) \frac{\partial \phi_i}{\partial s} + \left(\text{y}_1 \frac{\partial \text{z}_2}{\partial z_n} - \text{y}_2 \frac{\partial \text{z}_1}{\partial z_n}\right) \frac{\partial \phi_i}{\partial t}  \nonumber\\
+%
+ &=& \left(\text{y}_2 \frac{\partial \phi_n}{\partial t} - \text{y}_3 \frac{\partial \phi_n}{\partial s} \right) \frac{\partial \phi_i}{\partial r} + \left(-\text{y}_1 \frac{\partial\phi_n}{\partial t} + \text{y}_3 \frac{\partial\phi_n}{\partial r}\right) \frac{\partial \phi_i}{\partial s} + \left(\text{y}_1 \frac{\partial \phi_n}{\partial s} - \text{y}_2 \frac{\partial \phi_n}{\partial r}\right) \frac{\partial \phi_i}{\partial t}  \nonumber\\
+ %
+&=& \text{det}_{\text{col}} \begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} & y_1 & \frac{\partial \phi_n}{\partial r}  \\
+\frac{\partial \phi_i}{\partial s} & y_2 & \frac{\partial \phi_n}{\partial s} \\
+\frac{\partial \phi_i}{\partial t} & y_3 & \frac{\partial \phi_n}{\partial t}  
+\end{bmatrix} ,
+%
+\label{dPx}
+\end{eqnarray}
+%
+where we have used the relationships of the type in Eq.\ \eqref{dxdxn_to_dphidr} for the second equalities for $\partial P_x/\partial y_n$ and $\partial P_x/ \partial z_n$. The subscript ``col" indicates that the determinants are evaluated using a column expansion. Notice that shape functions with subscripts $i$ and $n$ are involved. The subscript $n$ corresponds to the ``current" node, while the subscript $i$ corresponds to the ``other" nodes in the element (including the current node).
+
+The subscript ``col" is specified to ensure the correct analytical expression. Numerically, the determinant of the matrix is the same regardless of whether a row or column expansion is used. Following the pattern in Eq.\ \eqref{dPx}, the derivatives of $P_y$ and $P_z$ are 
+%
+\begin{eqnarray}
+\frac{\partial P_y}{\partial x_n} &=&
+\text{det} \begin{bmatrix}
+\frac{\partial \phi_n}{\partial r} & \frac{\partial \phi_i}{\partial r} & z_1 \\
+\frac{\partial \phi_n}{\partial s} & \frac{\partial \phi_i}{\partial s} & z_2 \\
+\frac{\partial \phi_n}{\partial t} & \frac{\partial \phi_i}{\partial t} & z_3 
+\end{bmatrix}, \ \ 
+%
+\frac{\partial P_y}{\partial y_n} = 0, \ \ 
+%
+\frac{\partial P_y}{\partial z_n} =
+\text{det} \begin{bmatrix}
+x_1 & \frac{\partial \phi_i}{\partial r} & \frac{\partial \phi_n}{\partial r} \\
+x_2 & \frac{\partial \phi_i}{\partial s} & \frac{\partial \phi_n}{\partial s} \\
+x_3 & \frac{\partial \phi_i}{\partial t} & \frac{\partial \phi_n}{\partial t} 
+\end{bmatrix} \nonumber\\
+%%%%%
+\frac{\partial P_z}{\partial x_n} &=&
+\text{det} \begin{bmatrix}
+\frac{\partial \phi_n}{\partial r} & y_1 & \frac{\partial \phi_i}{\partial r}  \\
+\frac{\partial \phi_n}{\partial s} & y_2 & \frac{\partial \phi_i}{\partial s} \\
+\frac{\partial \phi_n}{\partial t} & y_3 & \frac{\partial \phi_i}{\partial t}  
+\end{bmatrix}, \ \
+%
+\frac{\partial P_z}{\partial y_n} =
+\text{det} \begin{bmatrix}
+x_1 & \frac{\partial \phi_n}{\partial r} &  \frac{\partial \phi_i}{\partial r}  \\
+x_2 & \frac{\partial \phi_n}{\partial s} &  \frac{\partial \phi_i}{\partial s} \\
+x_3 & \frac{\partial \phi_n}{\partial t} &  \frac{\partial \phi_i}{\partial t}  
+\end{bmatrix}, \ \
+%
+\frac{\partial P_z}{\partial y_n} = 0 .
+\label{dPy_and_dPz}
+\end{eqnarray}
+% 
+
+\subsubsection{Combining It All Together}
+
+Substituting the relationships in Eqs.\ \eqref{dJTx}, \eqref{ddet_equal_P}, and \eqref{dPx} into Eq.\ \eqref{d2phi_dxdxn} we have
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=&  -\frac{P_x^2}{(\text{det}(J^T))^2}  \nonumber\\
+%%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=& -\frac{P_y P_x}{(\text{det}(J^T))^2} + \text{det}(J^T) \text{det}_{\text{col}} \begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} & \frac{\partial \phi_n}{\partial r} & z_1 \\
+\frac{\partial \phi_i}{\partial s} & \frac{\partial \phi_n}{\partial s} & z_2 \\
+\frac{\partial \phi_i}{\partial t} & \frac{\partial \phi_n}{\partial t} & z_3 
+\end{bmatrix} \nonumber\\
+%%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial x} \right) &=& -\frac{P_z P_x}{(\text{det}(J^T))^2} + \text{det}(J^T) \text{det}_{\text{col}} \begin{bmatrix}
+\frac{\partial \phi_i}{\partial r} & y_1 & \frac{\partial \phi_n}{\partial r}  \\
+\frac{\partial \phi_i}{\partial s} & y_2 & \frac{\partial \phi_n}{\partial s} \\
+\frac{\partial \phi_i}{\partial t} & y_3 & \frac{\partial \phi_n}{\partial t}  
+\end{bmatrix} .
+\label{dkdx}
+\end{eqnarray}
+%
+
+Similarly, substituting the relationships in Eqs.\ \eqref{dJT}, \eqref{ddet_equal_P}, and \eqref{dPy_and_dPz} in Eqs.\ \eqref{d2phi_dydxn} and \eqref{d2phi_dzdxn} we have
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=&  -\frac{P_x P_y}{(\text{det}(J^T))^2} + \text{det}(J^T) \text{det} \begin{bmatrix}
+\frac{\partial \phi_n}{\partial r} & \frac{\partial \phi_i}{\partial r} & z_1 \\
+\frac{\partial \phi_n}{\partial s} & \frac{\partial \phi_i}{\partial s} & z_2 \\
+\frac{\partial \phi_n}{\partial t} & \frac{\partial \phi_i}{\partial t} & z_3 
+\end{bmatrix} \nonumber\\
+%%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{P_y^2}{(\text{det}(J^T))^2}  \nonumber\\
+%%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{P_z P_y}{(\text{det}(J^T))^2} + \text{det}(J^T) \text{det} \begin{bmatrix}
+x_1 & \frac{\partial \phi_i}{\partial r} & \frac{\partial \phi_n}{\partial r} \\
+x_2 & \frac{\partial \phi_i}{\partial s} & \frac{\partial \phi_n}{\partial s} \\
+x_3 & \frac{\partial \phi_i}{\partial t} & \frac{\partial \phi_n}{\partial t} 
+\end{bmatrix} 
+\label{dkdy}
+\end{eqnarray}
+%
+and
+%
+\begin{eqnarray}
+\frac{\partial}{\partial x_n} \left( \frac{\partial \phi_i}{\partial z} \right) &=&  -\frac{P_x P_z}{(\text{det}(J^T))^2} + \text{det}(J^T) \text{det} \begin{bmatrix}
+\frac{\partial \phi_n}{\partial r} & y_1 & \frac{\partial \phi_i}{\partial r}  \\
+\frac{\partial \phi_n}{\partial s} & y_2 & \frac{\partial \phi_i}{\partial s} \\
+\frac{\partial \phi_n}{\partial t} & y_3 & \frac{\partial \phi_i}{\partial t}  
+\end{bmatrix} \nonumber\\
+%%%%%
+\frac{\partial}{\partial y_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{P_y P_z}{(\text{det}(J^T))^2} + \text{det}(J^T)\text{det} \begin{bmatrix}
+x_1 & \frac{\partial \phi_n}{\partial r} &  \frac{\partial \phi_i}{\partial r}  \\
+x_2 & \frac{\partial \phi_n}{\partial s} &  \frac{\partial \phi_i}{\partial s} \\
+x_3 & \frac{\partial \phi_n}{\partial t} &  \frac{\partial \phi_i}{\partial t}  
+\end{bmatrix} \nonumber\\
+%%%%%
+\frac{\partial}{\partial z_n} \left( \frac{\partial \phi_i}{\partial y} \right) &=& -\frac{P_z^2 }{(\text{det}(J^T))^2} .
+\label{dkdz}
+\end{eqnarray}
+%
+The above terms are calculated in microscale. % and the derivatives of $\partial \phi_i/\partial x$ with respect to $x_n$, $y_n$, and $z_n$ are stored in the variable dkdx as dkdx[in][3*n], dkdx[in][3*n+1], and dkdx[in][3*n+2], respectively. Note that ``in" corresponds to the subscript $n$, while ``n'' corresponds to the subscript $i$. Since we are employing a linear tetrahedral element, ``in" and ``n" range from 0 to 3. 
+
+Each node of the tetrahedral element contains three derivatives $(\partial/\partial x_n, \partial/\partial y_n, \partial/\partial z_n)$ for each shape function (total of 4 for the tetrahedral element). Therefore, each node contains 12 entries. Since there are 4 nodes for each tetrahedral element, dkdx for each element is a 4 $\times$ 12 array:
+%
+\begin{eqnarray}
+dkdx = 
+%
+\begin{bmatrix}
+\frac{\partial}{\partial x_1}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial y_1}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial z_1}\left(\frac{\partial \phi_1}{\partial x}\right) & \cdots &\frac{\partial}{\partial x_1}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial y_1}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial z_1}\left(\frac{\partial \phi_4}{\partial x}\right) \\
+%%
+\frac{\partial}{\partial x_2}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial y_2}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial z_2}\left(\frac{\partial \phi_1}{\partial x}\right) & \cdots &\frac{\partial}{\partial x_2}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial y_2}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial z_2}\left(\frac{\partial \phi_4}{\partial x}\right) \\
+%%
+\frac{\partial}{\partial x_3}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial y_3}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial z_3}\left(\frac{\partial \phi_1}{\partial x}\right) & \cdots &\frac{\partial}{\partial x_3}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial y_3}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial z_3}\left(\frac{\partial \phi_4}{\partial x}\right) \\
+%%
+\frac{\partial}{\partial x_4}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial y_4}\left(\frac{\partial \phi_1}{\partial x}\right) & \frac{\partial}{\partial z_4}\left(\frac{\partial \phi_1}{\partial x}\right) & \cdots & \frac{\partial}{\partial x_4}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial y_4}\left(\frac{\partial \phi_4}{\partial x}\right) & \frac{\partial}{\partial z_4}\left(\frac{\partial \phi_4}{\partial x}\right)
+\end{bmatrix},
+\end{eqnarray}
+%
+where the rows correspond to the ``current" node number and the columns correspond to the derivative of the shape functions of the ``other" nodes with respect to $x_n$, $y_n$, and $z_n$.
+
+The derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/\partial z$ with respect to $x_n$, $y_n$, and $z_n$ are determined by following the same procedures used to determine the derivatives in Eq.\ \eqref{dkdx}. These terms, dkdy and dkdz, are explicitly written out in the appendix \red{need to add this later}.
+
+\section{Micro Scale}
+
+\section{Code Implementation of Macro Scale}
+
+We need to create a 12 $\times$ 12 elemental tangent stiffness matrix, $K_e$, for each element that is formed from the derivatives of the residual:
+%
+\setcounter{MaxMatrixCols}{12}
+\begin{eqnarray}
+K_e = 
+\begin{bmatrix}
+\frac{\partial R_{1x}}{\partial x_1} & \frac{\partial R_{1x}}{\partial y_1} & \frac{\partial R_{1x}}{\partial z_1} & \frac{\partial R_{2x}}{\partial x_1} & \frac{\partial R_{2x}}{\partial y_1} & \frac{\partial R_{2x}}{\partial z_1} & \frac{\partial R_{3x}}{\partial x_1} & \frac{\partial R_{3x}}{\partial y_1} & \frac{\partial R_{3x}}{\partial z_1} & \frac{\partial R_{4x}}{\partial x_1} & \frac{\partial R_{4x}}{\partial y_1} & \frac{\partial R_{4x}}{\partial z_1} \\
+%%%%%
+\frac{\partial R_{1y}}{\partial x_1} & \frac{\partial R_{1y}}{\partial y_1} & \frac{\partial R_{1y}}{\partial z_1} & \frac{\partial R_{2y}}{\partial x_1} & \frac{\partial R_{2y}}{\partial y_1} & \frac{\partial R_{2y}}{\partial z_1} & \frac{\partial R_{3y}}{\partial x_1} & \frac{\partial R_{3y}}{\partial y_1} & \frac{\partial R_{3y}}{\partial z_1} & \frac{\partial R_{4y}}{\partial x_1} & \frac{\partial R_{4y}}{\partial y_1} & \frac{\partial R_{4y}}{\partial z_1} \\
+%%%%%
+\frac{\partial R_{1z}}{\partial x_1} & \frac{\partial R_{1z}}{\partial y_1} & \frac{\partial R_{1z}}{\partial z_1} & \frac{\partial R_{2z}}{\partial x_1} & \frac{\partial R_{2z}}{\partial y_1} & \frac{\partial R_{2z}}{\partial z_1} & \frac{\partial R_{3z}}{\partial x_1} & \frac{\partial R_{3z}}{\partial y_1} & \frac{\partial R_{3z}}{\partial z_1} & \frac{\partial R_{4z}}{\partial x_1} & \frac{\partial R_{4z}}{\partial y_1} & \frac{\partial R_{4z}}{\partial z_1} \\
+%%%%%%
+%%%%%%
+%%%%%%
+\frac{\partial R_{1x}}{\partial x_2} & \frac{\partial R_{1x}}{\partial y_2} & \frac{\partial R_{1x}}{\partial z_2} & \frac{\partial R_{2x}}{\partial x_2} & \frac{\partial R_{2x}}{\partial y_2} & \frac{\partial R_{2x}}{\partial z_2} & \frac{\partial R_{3x}}{\partial x_2} & \frac{\partial R_{3x}}{\partial y_2} & \frac{\partial R_{3x}}{\partial z_2} & \frac{\partial R_{4x}}{\partial x_2} & \frac{\partial R_{4x}}{\partial y_2} & \frac{\partial R_{4x}}{\partial z_2} \\
+%%%%%
+\frac{\partial R_{1y}}{\partial x_2} & \frac{\partial R_{1y}}{\partial y_2} & \frac{\partial R_{1y}}{\partial z_2} & \frac{\partial R_{2y}}{\partial x_2} & \frac{\partial R_{2y}}{\partial y_2} & \frac{\partial R_{2y}}{\partial z_2} & \frac{\partial R_{3y}}{\partial x_2} & \frac{\partial R_{3y}}{\partial y_2} & \frac{\partial R_{3y}}{\partial z_2} & \frac{\partial R_{4y}}{\partial x_2} & \frac{\partial R_{4y}}{\partial y_2} & \frac{\partial R_{4y}}{\partial z_2} \\
+%%%%%
+\frac{\partial R_{1z}}{\partial x_2} & \frac{\partial R_{1z}}{\partial y_2} & \frac{\partial R_{1z}}{\partial z_2} & \frac{\partial R_{2z}}{\partial x_2} & \frac{\partial R_{2z}}{\partial y_2} & \frac{\partial R_{2z}}{\partial z_2} & \frac{\partial R_{3z}}{\partial x_2} & \frac{\partial R_{3z}}{\partial y_2} & \frac{\partial R_{3z}}{\partial z_2} & \frac{\partial R_{4z}}{\partial x_2} & \frac{\partial R_{4z}}{\partial y_2} & \frac{\partial R_{4z}}{\partial z_2} \\
+%%%%%%
+%%%%%%
+%%%%%%
+\frac{\partial R_{1x}}{\partial x_3} & \frac{\partial R_{1x}}{\partial y_3} & \frac{\partial R_{1x}}{\partial z_3} & \frac{\partial R_{2x}}{\partial x_3} & \frac{\partial R_{2x}}{\partial y_3} & \frac{\partial R_{2x}}{\partial z_3} & \frac{\partial R_{3x}}{\partial x_3} & \frac{\partial R_{3x}}{\partial y_3} & \frac{\partial R_{3x}}{\partial z_3} & \frac{\partial R_{4x}}{\partial x_3} & \frac{\partial R_{4x}}{\partial y_3} & \frac{\partial R_{4x}}{\partial z_3} \\
+%%%%%
+\frac{\partial R_{1y}}{\partial x_3} & \frac{\partial R_{1y}}{\partial y_3} & \frac{\partial R_{1y}}{\partial z_3} & \frac{\partial R_{2y}}{\partial x_3} & \frac{\partial R_{2y}}{\partial y_3} & \frac{\partial R_{2y}}{\partial z_3} & \frac{\partial R_{3y}}{\partial x_3} & \frac{\partial R_{3y}}{\partial y_3} & \frac{\partial R_{3y}}{\partial z_3} & \frac{\partial R_{4y}}{\partial x_3} & \frac{\partial R_{4y}}{\partial y_3} & \frac{\partial R_{4y}}{\partial z_3} \\
+%%%%%
+\frac{\partial R_{1z}}{\partial x_3} & \frac{\partial R_{1z}}{\partial y_3} & \frac{\partial R_{1z}}{\partial z_3} & \frac{\partial R_{2z}}{\partial x_3} & \frac{\partial R_{2z}}{\partial y_3} & \frac{\partial R_{2z}}{\partial z_3} & \frac{\partial R_{3z}}{\partial x_3} & \frac{\partial R_{3z}}{\partial y_3} & \frac{\partial R_{3z}}{\partial z_3} & \frac{\partial R_{4z}}{\partial x_3} & \frac{\partial R_{4z}}{\partial y_3} & \frac{\partial R_{4z}}{\partial z_3} \\
+%%%%%%
+%%%%%%
+%%%%%%
+\frac{\partial R_{1x}}{\partial x_4} & \frac{\partial R_{1x}}{\partial y_4} & \frac{\partial R_{1x}}{\partial z_4} & \frac{\partial R_{2x}}{\partial x_4} & \frac{\partial R_{2x}}{\partial y_4} & \frac{\partial R_{2x}}{\partial z_4} & \frac{\partial R_{3x}}{\partial x_4} & \frac{\partial R_{3x}}{\partial y_4} & \frac{\partial R_{3x}}{\partial z_4} & \frac{\partial R_{4x}}{\partial x_4} & \frac{\partial R_{4x}}{\partial y_4} & \frac{\partial R_{4x}}{\partial z_4} \\
+%%%%%
+\frac{\partial R_{1y}}{\partial x_4} & \frac{\partial R_{1y}}{\partial y_4} & \frac{\partial R_{1y}}{\partial z_4} & \frac{\partial R_{2y}}{\partial x_4} & \frac{\partial R_{2y}}{\partial y_4} & \frac{\partial R_{2y}}{\partial z_4} & \frac{\partial R_{3y}}{\partial x_4} & \frac{\partial R_{3y}}{\partial y_4} & \frac{\partial R_{3y}}{\partial z_4} & \frac{\partial R_{4y}}{\partial x_4} & \frac{\partial R_{4y}}{\partial y_4} & \frac{\partial R_{4y}}{\partial z_4} \\
+%%%%%
+\frac{\partial R_{1z}}{\partial x_4} & \frac{\partial R_{1z}}{\partial y_4} & \frac{\partial R_{1z}}{\partial z_4} & \frac{\partial R_{2z}}{\partial x_4} & \frac{\partial R_{2z}}{\partial y_4} & \frac{\partial R_{2z}}{\partial z_4} & \frac{\partial R_{3z}}{\partial x_4} & \frac{\partial R_{3z}}{\partial y_4} & \frac{\partial R_{3z}}{\partial z_4} & \frac{\partial R_{4z}}{\partial x_4} & \frac{\partial R_{4z}}{\partial y_4} & \frac{\partial R_{4z}}{\partial z_4} \\
+\end{bmatrix}
+\end{eqnarray}
+%
+
+\subsection{First Term}
+
+Each node of an element contains 9 terms: three terms each for the $x_n$ (see Eq.\ \eqref{dRx}), $y_n$, and $z_n$ contributions. 
+
+The code snippet:
+%
+\begin{lstlisting}
+apf::DynamicMatrix stress_derivs(9,9);                                                                                                                                                                            
+apf::DynamicMatrix shape_grads(3,9);
+for(int ii = 0; ii < nenodes; ii++)
+	{
+	// determine "force" vector.
+	for (int jj = 0; jj < nenodes; jj++)
+		{
+		// extract j1, j2, and j3.
+		for(int kk = 0; kk < 3; kk++)
+			{
+            		shape_grads(0,kk) = grads[ii][kk];
+            		shape_grads(1,3+kk) = grads[ii][kk];
+            		shape_grads(2,6+kk) = grads[ii][kk];
+            		for(int ll = 0; ll < 3; ll++)
+            			{
+              	 		stress_derivs(kk,ll) = j1[kk][ll];
+              	 		stress_derivs(3+kk,3+ll) = j2[kk][ll];
+              	 		stress_derivs(6+kk,6+ll) = j3[kk][ll];
+            			}
+          		} // end loop for ll
+		} // end loop for jj
+	} // end loop for ii
+\end{lstlisting}
+%
+produces the following matrices
+%
+\begin{eqnarray}
+\text{shape\_grads} &=& 
+\begin{bmatrix}
+\frac{\partial \phi_i}{\partial x} & \frac{\partial \phi_i}{\partial y} & \frac{\partial \phi_i}{\partial z} & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \frac{\partial \phi_i}{\partial x} & \frac{\partial \phi_i}{\partial y} & \frac{\partial \phi_i}{\partial z} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \frac{\partial \phi_i}{\partial x} & \frac{\partial \phi_i}{\partial y} & \frac{\partial \phi_i}{\partial z} 
+\end{bmatrix} \ \ \text{and} \nonumber\\
+%
+\text{stress\_derivs} &=&
+\begin{bmatrix}
+\frac{\partial \sigma_{xx}}{\partial x_n} & \frac{\partial \sigma_{xy}}{\partial x_n} & \frac{\partial \sigma_{xz}} {\partial x_n} & 0 & 0 & 0 & 0 & 0 & 0 \\
+%
+\frac{\partial \sigma_{yx}}{\partial x_n} & \frac{\partial \sigma_{yy}}{\partial x_n} & \frac{\partial \sigma_{yz}} {\partial x_n} & 0 & 0 & 0 & 0 & 0 & 0 \\
+%
+\frac{\partial \sigma_{zx}}{\partial x_n} & \frac{\partial \sigma_{zy}}{\partial x_n} & \frac{\partial \sigma_{zz}} {\partial x_n} & 0 & 0 & 0 & 0 & 0 & 0 \\
+%%%%
+0 & 0 & 0 & \frac{\partial \sigma_{xx}}{\partial y_n} & \frac{\partial \sigma_{xy}}{\partial y_n} & \frac{\partial \sigma_{xz}} {\partial y_n} &  0 & 0 & 0 \\
+%
+0 & 0 & 0 & \frac{\partial \sigma_{yx}}{\partial y_n} & \frac{\partial \sigma_{yy}}{\partial y_n} & \frac{\partial \sigma_{yz}} {\partial y_n} &  0 & 0 & 0 \\
+%
+0 & 0 & 0 & \frac{\partial \sigma_{zx}}{\partial y_n} & \frac{\partial \sigma_{zy}}{\partial y_n} & \frac{\partial \sigma_{zz}} {\partial y_n} &  0 & 0 & 0 \\
+%%%%
+0 & 0 & 0 &  0 & 0 & 0 & \frac{\partial \sigma_{xx}}{\partial z_n} & \frac{\partial \sigma_{xy}}{\partial z_n} & \frac{\partial \sigma_{xz}} {\partial z_n}  \\
+%
+0 & 0 & 0 &  0 & 0 & 0 & \frac{\partial \sigma_{yx}}{\partial z_n} & \frac{\partial \sigma_{yy}}{\partial z_n} & \frac{\partial \sigma_{yz}} {\partial z_n}  \\
+%
+0 & 0 & 0 &  0 & 0 & 0 & \frac{\partial \sigma_{zx}}{\partial z_n} & \frac{\partial \sigma_{zy}}{\partial z_n} & \frac{\partial \sigma_{zz}} {\partial z_n}  
+\end{bmatrix}.
+\end{eqnarray}
+%
+Note that the subscript $i$ in shape\_grads corresponds to the $i^{th}$ shape function. A linear tetrahedral element is described by 4 shape functions, which are written out in Eq.\ \eqref{shape_fxns}. The subscript $i$ is represented by the variable ii in the code snippet above. Since the derivative of each shape function can be taken with respect to either $x$, $y$, or $z$, the shape\_grads array contains three unique derivatives for each shape function. The derivatives with respect to $x$, $y$, and $z$ are denoted by kk=0, 1, and 2, respectively, as seen in the code snippet above.   
+
+Also note that the stress derivatives in stress\_derivs depend on the element node as indicated by the subscript $n$ on the nodal positions $x_n$, $y_n$, and $z_n$. In the code snippet above the node number is represented by the variable jj. Since we are dealing with linear tetrahedral elements, the number of shape functions (ii) \red{should ii in the code snippet above use number of shape functions instead of nenodes?} and the number of nodes (jj) are the same. However, this is not necessarily true.
+
+The multiplication of stress\_derivs and shape\_grads via 
+%
+\begin{lstlisting}
+// within for loop of ii and jj above
+apf::DynamicMatrix shape_grads_T;
+apf::transpose(shape_grads,shape_grads_T);
+apf::DynamicMatrix first_term;
+apf::multiply(stress_derivs,shape_grads_T,first_term);
+\end{lstlisting}
+%
+where 
+%
+\begin{eqnarray}
+\text{first\_term} = 
+%
+\begin{bmatrix}
+\frac{\partial \sigma_{xx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{xy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}} {\partial x_n}\frac{\partial \phi_i}{\partial z} & 0 & 0 \\
+%
+\frac{\partial \sigma_{yx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}} {\partial x_n}\frac{\partial \phi_i}{\partial z}  & 0 & 0 \\
+%
+\frac{\partial \sigma_{zx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}} {\partial x_n}\frac{\partial \phi_i}{\partial z} & 0 & 0 \\
+%%%%%
+0 & \frac{\partial \sigma_{xx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{xy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}} {\partial y_n}\frac{\partial \phi_i}{\partial z} & 0 \\
+%
+0 & \frac{\partial \sigma_{yx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}} {\partial y_n}\frac{\partial \phi_i}{\partial z} & 0 \\
+%
+0 & \frac{\partial \sigma_{zx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}} {\partial y_n}\frac{\partial \phi_i}{\partial z} & 0 \\
+%%%%%
+0 & 0 & \frac{\partial \sigma_{xx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{xy}}{\partial z_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}} {\partial z_n}\frac{\partial \phi_i}{\partial z}  \\
+%
+0 & 0 & \frac{\partial \sigma_{yx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial z_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}} {\partial z_n}\frac{\partial \phi_i}{\partial z}  \\
+%
+0 & 0 & \frac{\partial \sigma_{zx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial z_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}} {\partial z_n} \frac{\partial \phi_i}{\partial z} 
+\end{bmatrix}
+\nonumber\\
+\end{eqnarray}
+%
+represents the first terms on the right-hand-sides of the relationships in Eq.\ \eqref{dRx}. Note that the terms in first\_term are different for each node ($n$) and shape function ($i$). 
+
+\subsection{Second Term}
+
+%\begin{eqnarray}
+%\text{stress} =
+%\begin{bmatrix}
+%\sigma_{xx} & \sigma_{xy} & \sigma_{xz} & 0 & 0 & 0 & 0 & 0 & 0 \\
+%%%%
+%0 & 0 & 0 & \sigma_{yx} & \sigma_{yy} & \sigma_{yz} & 0 & 0 & 0 \\
+%%%%
+%0 & 0 & 0 & 0 & 0 & 0 & \sigma_{zx} & \sigma_{zy} & \sigma_{zz} 
+%\end{bmatrix}
+%\end{eqnarray}
+\begin{eqnarray}
+\text{stress} =
+\begin{bmatrix}
+\sigma_{xx} & \sigma_{xy} & \sigma_{xz} & 0 & 0 & 0 & 0 & 0 & 0 \\
+\sigma_{yx} & \sigma_{yy} & \sigma_{yz} & 0 & 0 & 0 & 0 & 0 & 0 \\
+\sigma_{zx} & \sigma_{zy} & \sigma_{zz} & 0 & 0 & 0 & 0 & 0 & 0 \\
+%%%
+0 & 0 & 0 & \sigma_{xx} & \sigma_{xy} & \sigma_{xz} & 0 & 0 & 0 \\
+0 & 0 & 0 & \sigma_{yx} & \sigma_{yy} & \sigma_{yz} & 0 & 0 & 0 \\
+0 & 0 & 0 & \sigma_{zx} & \sigma_{zy} & \sigma_{zz} & 0 & 0 & 0 \\
+%%%
+0 & 0 & 0 & 0 & 0 & 0 & \sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
+0 & 0 & 0 & 0 & 0 & 0 & \sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
+0 & 0 & 0 & 0 & 0 & 0 & \sigma_{zx} & \sigma_{zy} & \sigma_{zz} 
+\end{bmatrix}
+\end{eqnarray}
+%
+%\begin{eqnarray}
+%\text{d2phi} = 
+%\begin{bmatrix}
+%\frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 & 0 & 0 & 0\\
+%%
+%\frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 & 0 & 0 & 0\\
+%% 
+%\frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 & 0 & 0 & 0\\
+%%%%%%
+%0 & 0 & 0 & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 &  0 & 0\\
+%%
+%0 & 0 & 0 & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 \\
+%% 
+%0 & 0 & 0 & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 \\
+%%%%%%
+%0 & 0 & 0 & 0 & 0 & 0 & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right)\\
+%%
+%0 & 0 & 0 & 0 & 0 & 0 & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \\
+%% 
+%0 & 0 & 0 & 0 & 0 & 0 & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \\
+%\end{bmatrix} 
+%\end{eqnarray}
+%%
+\begin{eqnarray}
+\text{d2phi} = 
+\begin{bmatrix}
+\frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 & 0 & 0 & 0\\
+%%%%%
+0 & 0 & 0 & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) & 0 & 0 & 0 \\
+%%%%% 
+0 & 0 & 0 & 0 & 0 & 0 & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) & \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \\
+\end{bmatrix} 
+\end{eqnarray}
+%
+
+Multiplication of d2phi and stress via
+%
+\begin{lstlisting}
+// within for loop of ii and jj above
+apf::DynamicMatrix d2phi;
+apf::transpose(d2phi,d2phi_T);
+apf::DynamicMatrix second_term;
+apf::multiply(stress,d2phi_T,second_term);
+\end{lstlisting}
+%
+where
+%
+\begin{eqnarray}
+\text{second\_term} =
+\begin{bmatrix}
+\sigma_{xx}\frac{\partial \phi_{i,x}}{\partial x_n} +\sigma_{xy} \frac{\partial \phi_{i,y}}{\partial x_n}  + \sigma_{xz} \frac{\partial \phi_{i,z}}{\partial x_n} & 0 & 0 \\
+%
+\sigma_{yx}\frac{\partial \phi_{i,x}}{\partial x_n} +\sigma_{yy} \frac{\partial \phi_{i,y}}{\partial x_n}  + \sigma_{yz} \frac{\partial \phi_{i,z}}{\partial x_n} & 0 & 0 \\
+%
+\sigma_{zx}\frac{\partial \phi_{i,x}}{\partial x_n} +\sigma_{zy} \frac{\partial \phi_{i,y}}{\partial x_n}  + \sigma_{zz} \frac{\partial \phi_{i,z}}{\partial x_n} & 0 & 0 \\
+%%%
+0 & \sigma_{xx}\frac{\partial \phi_{i,x}}{\partial y_n} +\sigma_{xy} \frac{\partial \phi_{i,y}}{\partial y_n}  + \sigma_{xz} \frac{\partial \phi_{i,z}}{\partial y_n}  & 0 \\
+%
+0 & \sigma_{yx}\frac{\partial \phi_{i,x}}{\partial y_n} +\sigma_{yy} \frac{\partial \phi_{i,y}}{\partial y_n}  + \sigma_{yz} \frac{\partial \phi_{i,z}}{\partial y_n}  & 0 \\
+%
+0 & \sigma_{zx}\frac{\partial \phi_{i,x}}{\partial y_n} +\sigma_{zy} \frac{\partial \phi_{i,y}}{\partial y_n}  + \sigma_{zz} \frac{\partial \phi_{i,z}}{\partial y_n}  & 0 \\
+%%%
+0 & 0 & \sigma_{xx}\frac{\partial \phi_{i,x}}{\partial z_n} +\sigma_{xy} \frac{\partial \phi_{i,y}}{\partial z_n}  + \sigma_{xz} \frac{\partial \phi_{i,z}}{\partial z_n}      \\
+%
+0 & 0 & \sigma_{yx}\frac{\partial \phi_{i,x}}{\partial z_n} +\sigma_{yy} \frac{\partial \phi_{i,y}}{\partial z_n}  + \sigma_{yz} \frac{\partial \phi_{i,z}}{\partial z_n}      \\
+%
+0 & 0 & \sigma_{zx}\frac{\partial \phi_{i,x}}{\partial z_n} +\sigma_{zy} \frac{\partial \phi_{i,y}}{\partial z_n}  + \sigma_{zz} \frac{\partial \phi_{i,z}}{\partial z_n}   
+\end{bmatrix} \nonumber\\
+\end{eqnarray}
+
+%\section{Neumann Boundary Conditions}
+%
+%In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero and solution to the problem is obtained when 
+%%
+%\begin{equation}
+%\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n}  \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega =  0
+%\label{weak_form_neumann}
+%\end{equation}
+%%
+
+%% Previous notes...may be incorrect
+%In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero. Since it is unclear how to deal with the surface integral in Eq.\ \eqref{weak_form3}, we will instead consider Eq.\ \eqref{weak_form2}, weak form prior to applying the divergence theorem:
+%%
+%\begin{eqnarray}
+%R_i &=& \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV - \int_V \pmb{\sigma} \nabla \phi_i dV \nonumber\\
+%&=& A_i + B_i.
+%\end{eqnarray}
+%%
+%The term of interest is 
+%%
+%\begin{equation}
+%A_i = \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV,
+%\end{equation}
+%%
+%where 
+%%
+%\begin{eqnarray}
+%\nabla \cdot (\phi_i \pmb{\sigma}) &=& 
+%\begin{bmatrix}
+%\frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z}
+%\end{bmatrix}
+%%
+%\begin{bmatrix}
+%\phi_i \sigma_{xx} & \phi_i \sigma_{yx} & \phi_i \sigma_{zx} \\
+%\phi_i \sigma_{xy} & \phi_i \sigma_{yy} & \phi_i \sigma_{yz} \\
+%\phi_i \sigma_{xz} & \phi_i \sigma_{yz} & \phi_i \sigma_{zz} 
+%\end{bmatrix} \nonumber\\
+%%
+%&=& \begin{bmatrix}
+%\frac{\partial}{\partial x}\left(\phi_i \sigma_{xx}\right) + \frac{\partial}{\partial y}\left(\phi_i \sigma_{xy}\right) + \frac{\partial}{\partial z}\left(\phi_i \sigma_{xz}\right) \\
+%%
+%\frac{\partial}{\partial x}\left(\phi_i \sigma_{yx}\right) + \frac{\partial}{\partial y}\left(\phi_i \sigma_{yy}\right) + \frac{\partial}{\partial z}\left(\phi_i \sigma_{yz}\right) \\
+%%
+%\frac{\partial}{\partial x}\left(\phi_i \sigma_{zx}\right) + \frac{\partial}{\partial y}\left(\phi_i \sigma_{zy}\right) + \frac{\partial}{\partial z}\left(\phi_i \sigma_{zz}\right) 
+%\end{bmatrix}^{\text{T}} .
+%\end{eqnarray}
+%%
+%
+%Therefore, we have
+%%
+%\begin{eqnarray}
+%A_{ix} &=& \int_V \left(\sigma_{xx} \frac{\partial \phi_i}{\partial x}  + \phi_i \frac{\partial \sigma_{xx}}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y}  + \phi_i \frac{\partial \sigma_{xy}}{\partial y}+\sigma_{xz} \frac{\partial \phi_i}{\partial z}  + \phi_i \frac{\partial \sigma_{xz}}{\partial z}\right) dV \nonumber\\
+%%
+%A_{iy} &=& \int_V \left(\sigma_{yx} \frac{\partial \phi_i}{\partial x}  + \phi_i \frac{\partial \sigma_{yx}}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y}  + \phi_i \frac{\partial \sigma_{yy}}{\partial y}+\sigma_{yz} \frac{\partial \phi_i}{\partial z}  + \phi_i \frac{\partial \sigma_{yz}}{\partial z}\right) dV \nonumber\\
+%%
+%A_{iz} &=& \int_V \left(\sigma_{zx} \frac{\partial \phi_i}{\partial x}  + \phi_i \frac{\partial \sigma_{zx}}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y}  + \phi_i \frac{\partial \sigma_{zy}}{\partial y}+\sigma_{zz} \frac{\partial \phi_i}{\partial z}  + \phi_i \frac{\partial \sigma_{zz}}{\partial z}\right) dV .
+%%
+%\end{eqnarray}
+%%
+%
+%Furthermore, the derivatives of $A_{ix}$, $A_{iy}$, and $A_{iz}$ with respect to $x_n$ are
+%%
+%\begin{eqnarray}
+%\frac{\partial A_{ix}}{\partial x_n} &=& \frac{\partial A_{ix}}{\partial x_n} \bigg |_V + \frac{\partial A_{ix}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\ 
+%%
+%&=& \int_V \left( \frac{\partial \sigma_{xx}}{\partial x_n} \frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{xy}}{\partial x_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{xz}}{\partial x_n} \frac{\partial \phi_i}{\partial z}\right)dV + \int_V \left(\frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{xx}}{\partial x} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{xy}}{\partial y} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{xz}}{\partial z}\right) dV \nonumber\\
+%%
+%&&+ \int_V \left(\sigma_{xx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x} \right)+ \sigma_{xy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right)  + \sigma_{xz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \right)dV \nonumber\\
+%%
+%&&+ \int_V \left( \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{xx}}{\partial x} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{xy}}{\partial y} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{xz}}{\partial z} \right) \right) dV \nonumber\\
+%%%%%%
+%%%%%%
+%\frac{\partial A_{iy}}{\partial x_n} &=& \frac{\partial A_{iy}}{\partial x_n} \bigg |_V + \frac{\partial A_{iy}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\ 
+%%
+%&=& \int_V \left( \frac{\partial \sigma_{yx}}{\partial x_n} \frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial x_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}}{\partial x_n} \frac{\partial \phi_i}{\partial z}\right)dV + \int_V \left(\frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{yx}}{\partial x} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{yy}}{\partial y} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{yz}}{\partial z}\right) dV \nonumber\\
+%%
+%&&+ \int_V \left(\sigma_{yx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x} \right)+ \sigma_{yy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right)  + \sigma_{yz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \right)dV \nonumber\\
+%%
+%&&+ \int_V \left( \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{yx}}{\partial x} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{yy}}{\partial y} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{yz}}{\partial z} \right) \right) dV \nonumber\\
+%%%%%%
+%%%%%%
+%\frac{\partial A_{iz}}{\partial x_n} &=& \frac{\partial A_{iz}}{\partial x_n} \bigg |_V + \frac{\partial A_{iz}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\ 
+%%
+%&=& \int_V \left( \frac{\partial \sigma_{zx}}{\partial x_n} \frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial x_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}}{\partial x_n} \frac{\partial \phi_i}{\partial z}\right)dV + \int_V \left(\frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{zx}}{\partial x} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{zy}}{\partial y} + \frac{\partial \phi_i}{\partial x_n} \frac{\partial \sigma_{zz}}{\partial z}\right) dV \nonumber\\
+%%
+%&&+ \int_V \left(\sigma_{zx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x} \right)+ \sigma_{zy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right)  + \sigma_{zz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right)  \right)dV \nonumber\\
+%%
+%&&+ \int_V \left( \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{zx}}{\partial x} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{zy}}{\partial y} \right) + \phi_i \frac{\partial}{\partial x_n} \left(\frac{\partial \sigma_{zz}}{\partial z} \right) \right) dV ,
+%%
+%\end{eqnarray}
+%%
+%where the only new terms are the $\partial \sigma_{ij}/\partial x$ and $\partial/\partial x_n (\partial \sigma_{ij}/\partial x)$ type terms. \red{Can we take the derivatives of $\sigma_{ij}$ analytically?} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\appendix
+\section{Derivatives of $y$ and $z$ Contributions of Residuals}
+\label{app:dRy_and_dRz}
+
+The derivatives of $R_{iy}$ with respect to $x_n$, $y_n$, and $z_n$ are
+%
+\begin{eqnarray}
+%%%%
+\frac{\partial R_{iy}}{\partial x_n} &=& \frac{\partial R_{iy}}{\partial x_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}}{\partial x_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left( \sigma_{yx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right)+\sigma_{yy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial x_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{iy}}{\partial y_n} &=& \frac{\partial R_{iy}}{\partial y_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial y_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{yy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} +  \frac{\partial \sigma_{yz}}{\partial y_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&& + \int_V \left( \sigma_{yx} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{yy} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial y_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{iy}}{\partial z_n} &=& \frac{\partial R_{iy}}{\partial z_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial z_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{yy}}{\partial z_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}}{\partial z_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left(\sigma_{yx} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{yy} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
+\label{dRy}
+\end{eqnarray}
+%
+
+Similarly, the derivatives of $R_{iz}$ with respect to $x_n$, $y_n$, and $z_n$ are
+%
+\begin{eqnarray}
+%%%%
+\frac{\partial R_{iz}}{\partial x_n} &=& \frac{\partial R_{iz}}{\partial x_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}}{\partial x_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left( \sigma_{zx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right)+\sigma_{zy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial x_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{iz}}{\partial y_n} &=& \frac{\partial R_{iz}}{\partial y_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial y_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{zy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} +  \frac{\partial \sigma_{zz}}{\partial y_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&& + \int_V \left( \sigma_{zx} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{zy} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial y_n} \left(\int_V dV \right) \nonumber\\
+%%%%
+\frac{\partial R_{iz}}{\partial z_n} &=& \frac{\partial R_{iz}}{\partial z_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial z_n} \nonumber\\
+&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{zy}}{\partial z_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}}{\partial z_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
+&&+ \int_V \left(\sigma_{zx} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{zy} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
+&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
+\label{dRz}
+\end{eqnarray}
+%
+\bibliographystyle{apsrev}
+\bibliography{References}
+\end{document}

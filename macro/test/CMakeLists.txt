@@ -1,0 +1,2 @@
+add_subdirectory(multiscale)
+add_subdirectory(singlescale)

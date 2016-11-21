@@ -1,0 +1,644 @@
+\documentclass[12pt,aps,pre]{revtex4}
+%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
+\usepackage{graphicx, epsfig,cancel}
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{amssymb,amsmath} 
+\usepackage{setspace}
+
+% for writing code snippets in latex
+\usepackage{listings}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{[#1]}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+
+
+\begin{document}
+\setstretch{1.5}
+\title{Volume Constraint (Global Incompressibility)}
+\author{V. W. L. Chan}
+\maketitle
+
+\section{Governing Equation}
+
+Based on the work of Barocas group \cite{Chandran:2007hy,Stylianopoulos:2007dp} the macroscale momentum conservation equation is
+%
+\begin{eqnarray}
+\sigma^{macro}_{ij,i} &=& Q_j \nonumber\\
+%
+&=&\frac{1}{V} \oint_{\partial V} \left( \sigma^{micro}_{ij} - \sigma^{macro}_{ij} \right)u_{k,i}n_k dS,
+\label{eq:governing_eq}
+\end{eqnarray}
+%
+where $u$ is the displacement of the RVE boundary and $n_k$ is the corresponding unit normal vector. The $Q$ term on the right of Eq.\ \eqref{eq:governing_eq} arises from using a material averaging volume at the microscale to calculate macroscale quantities \cite{Chandran:2007hy}:
+%
+\begin{equation}
+\sigma_{ij}^{macro} = \frac{1}{V}\int_{V}\sigma_{ij}^{micro} dV,
+\end{equation}
+%
+where $V$ is the material volume of the RVE.
+
+The virtual work from Eq.\ \eqref{eq:governing_eq} is \cite{JavierBonet:2008uxa}
+%
+\begin{equation}
+\delta W = \int_V \pmb{\sigma}^{macro} : \delta\pmb{d} dV - \int_{\partial V} \pmb{t} \cdot \delta \pmb{v} da + \int_V \pmb{Q} \cdot \delta \pmb{v} dV = 0,
+\label{eq:weak_form}
+\end{equation}
+%
+where $\delta \pmb{d}$ is the virtual displacement rate tensor and $\delta \pmb{v}$ is the virtual velocity.
+
+\section{Finite-Element Discretization}
+
+The virtual work equation in Eq.\ \eqref{eq:weak_form} can be discretized by interpolating nodal virtual velocity $\delta \pmb{v}_a$ and nodal virtual displacement deformation rates $\delta \pmb{d}_a$ with shape functions $N_a$ \cite{JavierBonet:2008uxa}:
+%
+\begin{equation}
+\delta \pmb{v} = \sum_{a=1}^n N_a \delta \pmb{v}_a \ \ \text{ and } \ \ \delta \pmb{d} = \frac{1}{2}\sum_{a=1}^n \left(\delta \pmb{v}_a \otimes \nabla N_a + \nabla N_a \otimes \delta \pmb{v}_a\right),
+\label{eq:interpolation}
+\end{equation}
+%
+respectively. Applying the interpolations in Eq.\ \eqref{eq:interpolation}, the contribution to the virtual work from a single nodal velocity $\delta \pmb{v}_a$ at a node a of element $(e)$ is 
+%
+\begin{eqnarray}
+\delta W^{(e)}(\phi, N_a \delta \pmb{v}_a) &=& \delta \pmb{v}_a \cdot \left( \int_{V^{(e)}}\pmb{\sigma}^{macro} \nabla N_a dV - \int_{\partial V^{(e)}} N_a \pmb{t} da + \int_{V^{(e)}} N_a \pmb{Q}dV \right) \nonumber\\
+%
+&\equiv& \delta \pmb{v}_a \cdot \left(\pmb{T}^{(e)}_a - \pmb{F}^{(e)}_a\right),
+\end{eqnarray}
+%
+$\phi$ denotes the current configuration. The contribution from all elements $e$ containing node $a (e \ni a)$ is 
+%
+\begin{equation}
+\delta W(\phi, N_a \delta \pmb{v}_a) = \sum_{e=1, e\ni a}^{m_a} \delta W^{(e)}(\phi, N_a \delta \pmb{v}_a) = \delta \pmb{v}_a \cdot \left(\pmb{T}_a - \pmb{F}_a\right),
+\end{equation}
+%
+where $m_a$ is the number of elements that contain node $a$. Finally, the contribution to $\delta W(\phi,\delta \pmb{v})$ from all nodes $N$ in the finite element mesh is
+%
+\begin{equation}
+\delta W(\phi,\delta \pmb{v}) = \sum_{a=1}^N \delta W(\phi,N_a\delta\pmb{v}_a)=\sum_{a=1}^N \delta \pmb{v}_a \cdot \left(\pmb{T}_a - \pmb{F}_a\right) = 0.
+\label{eq:weak_form_discretized}
+\end{equation}
+%
+
+Since Eq.\ \eqref{eq:weak_form_discretized} must be satisfied for any arbitrary $\delta \pmb{v}_a$, the nodal residual force can be expressed as
+%
+\begin{equation}
+\pmb{R}_a = \pmb{T}_a - \pmb{F}_a = 0,
+\end{equation}
+%
+where the nodal residual force is zero when the internal nodal forces are in equilibrium with the external nodal forces at each node. The discretization in Eq.\ \eqref{eq:weak_form_discretized} can also be expressed in matrix form as
+%
+\begin{eqnarray}
+&&\delta W(\phi,\delta\pmb{v}) = \delta \textbf{v}^T \textbf{R} = \delta \textbf{v}^T (\textbf{T} - \textbf{F})=0, \ \ \text{ where } \nonumber\\
+%
+&& \textbf{R} = \begin{bmatrix}
+\pmb{R}_1 \\ \vdots \\ \pmb{R}_N
+\end{bmatrix}, \ \
+%
+\textbf{T} = \begin{bmatrix}
+\pmb{T}_1 \\ \vdots \\ \pmb{T}_N
+\end{bmatrix}, \ \
+%
+\textbf{F} = \begin{bmatrix}
+\pmb{F}_1 \\ \vdots \\ \pmb{F}_N
+\end{bmatrix}, \ \
+%
+\delta\textbf{v} = \begin{bmatrix}
+\delta\pmb{v}_1 \\ \vdots \\ \delta\pmb{v}_N
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+\section{Global Incompressibility (Volume Preservation) Constraint}
+
+Following the procedure of Hirota et al.\ \cite{Hirota:2000jw} volume preservation can be posed as a constrained minimization problem of the virtual work
+%
+\begin{equation}
+\begin{aligned}
+\underset{ \pmb{u}}{\text{min}} \ \delta W \ \ \text{s.t.} \ \ \Delta V = 0, \ \ \text{where} \ \ \Delta V = V - V_{init},\
+\end{aligned}
+\end{equation}
+%
+where $\pmb{u}$ is the displacement. The constrained minimization problem can be converted to a saddle point problem
+%
+\begin{equation}
+\begin{aligned}
+\underset{\lambda}{\text{max}} \ \underset{\pmb{u}}{\text{min}} \ L,
+\end{aligned}
+\end{equation}
+%
+where $L$ is the Lagrangian
+%
+\begin{equation}
+L \equiv \delta W + \lambda \Delta V
+\end{equation}
+%
+and $\lambda$ is the Lagrangian multiplier. The solution to the saddle point problem satisfies two conditions
+%
+\begin{equation}
+\begin{aligned}
+&\frac{\partial L}{\partial \lambda} = \Delta V = 0 \\
+&\frac{\partial L}{\partial \pmb{u}} = \frac{\partial \delta W}{\partial \pmb{u}} + \lambda \frac{\partial V}{\partial \pmb{u}},
+\end{aligned}
+\label{eq:conditions}
+\end{equation}
+%
+where $\partial \Delta V/\partial \pmb{u} = \partial V/\partial \pmb{u}$. Note, the first condition explicitly preserves volume. 
+
+To obtain a linear model, Eq.\ \eqref{eq:conditions} is linearized via a Taylor expansion \cite{Belytschko:2013tz}
+%
+\begin{equation}
+\begin{aligned}
+&\Delta V + \frac{\partial V}{\partial  \pmb{u}_a} \Delta \pmb{u}_a = 0 \\
+%
+&\pmb{R}_a + \lambda \frac{\partial V}{\partial \pmb{u}_a} + \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} \right) \Delta \pmb{u}_b + \frac{\partial V}{\partial \pmb{u}_a} \Delta \lambda =0,
+\end{aligned}
+\label{eq:taylor-expand}
+\end{equation}
+%
+where the subscripts $a,b=1$ to $N$ indicate the nodes of the finite-element mesh and nodal residual force is $\pmb{R}_a = \partial \delta W/\partial  \pmb{u}_a$. Introducing the following matrices
+%
+\begin{eqnarray}
+\textbf{G} \equiv \begin{bmatrix}
+\frac{\partial V}{\partial \pmb{u}_1} \\ \vdots \\ \frac{\partial V}{\partial \pmb{u}_N} 
+\end{bmatrix}, \ 
+%
+\textbf{u} \equiv \begin{bmatrix}
+\pmb{u}_1 \\ \vdots \\ \pmb{u}_N
+\end{bmatrix}, \ 
+%
+\textbf{H} \equiv \begin{bmatrix}
+\frac{\partial^2 V}{\partial \pmb{u}_1\partial \pmb{u}_1} & \cdots & \frac{\partial^2 V}{\partial \pmb{u}_1\partial \pmb{u}_N}\\
+%
+\vdots & \ddots & \vdots \\
+%
+\frac{\partial^2 V}{\partial \pmb{u}_N\partial \pmb{u}_1} & \cdots & \frac{\partial^2 V}{\partial \pmb{u}_N\partial \pmb{u}_N}
+\end{bmatrix} \text{ and }  
+%
+\textbf{K} \equiv \begin{bmatrix}
+\frac{\partial \pmb{R}_1}{\partial \pmb{u}_1} & \cdots & \frac{\partial \pmb{R}_1}{\partial \pmb{u}_N} \\
+%
+\vdots & \ddots & \vdots \\
+%
+\frac{\partial \pmb{R}_N}{\partial \pmb{u}_1} & \cdots & \frac{\partial \pmb{R}_N}{\partial \pmb{u}_N} 
+\end{bmatrix}
+\end{eqnarray}
+%
+the system of equations in Eq.\ \eqref{eq:taylor-expand} can be written in matrix form as
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \textbf{H} & \textbf{G} \\
+\textbf{G}^T & 0 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\ \Delta \lambda
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda \textbf{G} \\
+- \Delta V 
+\end{bmatrix}.
+\label{eq:taylor-expand_matrix}
+\end{eqnarray}
+%
+Note that the matrix \textbf{K} is the tangent-stiffness matrix and the system of equations in Eq.\ \eqref{eq:taylor-expand_matrix} represent one iteration step of a Newton-Raphson process. As discussed in Refs.\ \cite{Hirota:2000jw,Lai:2013fp}, the Lagrange multiplier $\lambda$ represents a hydrostatic pressure that acts to preserve the volume. The hydrostatic pressure and displacement of the equilibrium configuration is obtained by iterating Eq.\ \eqref{eq:taylor-expand_matrix}
+%
+\begin{eqnarray}
+&&\begin{bmatrix}
+\textbf{K} + \lambda \textbf{H} & \textbf{G} \\
+\textbf{G}^T & 0 
+\end{bmatrix}_k
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\ \Delta \lambda
+\end{bmatrix}_{k+1}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda \textbf{G} \\
+- \Delta V 
+\end{bmatrix}_k \nonumber\\
+%
+&&\textbf{u}_{k+1} = \textbf{u}_k + \Delta \textbf{u} \nonumber\\
+%
+&&\lambda_{k+1} = \lambda_k + \Delta \lambda
+\label{eq:taylor-expand_iterate}
+\end{eqnarray}
+%
+until the appropriate norms of $\textbf{u}_{k+1} - \textbf{u}_k$ and $\lambda_{k+1} - \lambda_k$ are below some tolerance. The subscript $k$ in Eq.\ \eqref{eq:taylor-expand_iterate} denote the iteration step.
+
+\section{Volume Calculation}
+
+The volume of each tetrahedra element in the finite element mesh can be determined from the Gauss quadrature rule
+%
+\begin{equation}
+V^{(e)} = \sum_{i=1}^{n_{gp}} W_i \text{det}(\pmb{J}^e(\xi_1,\xi_2,\xi_3)),
+\end{equation}
+%
+where $W_i$ the Gauss quadrature weight, $n_{gp}$ is the number of Gauss points, and $\pmb{J}^e(\xi_1,\xi_2,\xi_3)$ is the Jacobian of a tetrahedra element (same as in apf)
+%
+\begin{equation}
+\pmb{J}^e \equiv 
+\begin{bmatrix}
+\frac{\partial x}{\partial \xi_1} & \frac{\partial x}{\partial \xi_2} & \frac{\partial x}{\partial \xi_3} \\
+\frac{\partial y}{\partial \xi_1} & \frac{\partial y}{\partial \xi_2} & \frac{\partial y}{\partial \xi_3} \\
+\frac{\partial z}{\partial \xi_1} & \frac{\partial z}{\partial \xi_2} & \frac{\partial z}{\partial \xi_3} 
+\end{bmatrix} = 
+%
+\sum_{i=1}^{n_{en}}
+\begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1} x_i^e & \frac{\partial N_i}{\partial \xi_2} x_i^e & \frac{\partial N_i}{\partial \xi_3} x_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix},
+\label{eq:jacobian}
+\end{equation}
+%
+where $n_{en}$ is the number of element nodes and $x_i^e, y_i^e, z_i^e$ are the $x,y,z$ coordinates of the $i^{th}$ node of the tetrahedra element.
+
+For a linear tetrahedra element, $n_{gp}=1$, $W_1=1$, and $n_{en}=4$. The shape functions and its derivatives are therefore
+%
+\begin{equation}
+N_1 = 1- \xi_1 - \xi_2 - \xi_3, \ \ 
+N_2 = \xi_1, \ \
+N_3 = \xi_2, \ \text{ and } \
+N_4 = \xi_3
+\label{eq:tet_shape_fxns}
+\end{equation}
+%
+and
+%
+\begin{eqnarray}
+&&\frac{\partial N_1}{\partial \xi_1} = -1, \frac{\partial N_1}{\partial \xi_2} = -1, \frac{\partial N_1}{\partial \xi_3} = -1 \nonumber\\
+%
+&&\frac{\partial N_2}{\partial \xi_1} = 1, \frac{\partial N_2}{\partial \xi_2} = 0, \frac{\partial N_2}{\partial \xi_3} = 0 \nonumber\\
+%
+&&\frac{\partial N_3}{\partial \xi_1} = 0, \frac{\partial N_3}{\partial \xi_2} = 1, \frac{\partial N_3}{\partial \xi_3} = 0 \nonumber\\
+%
+&&\frac{\partial N_4}{\partial \xi_1} = 0, \frac{\partial N_4}{\partial \xi_2} = 0, \frac{\partial N_4}{\partial \xi_3} = 1,
+\label{eq:tet_shape_fxns_deriv}
+\end{eqnarray}
+%
+respectively. Combining Eqs.\ \eqref{eq:jacobian}, \eqref{eq:tet_shape_fxns}, and \eqref{eq:tet_shape_fxns_deriv}, the Jacobian and its determinant for a linear tetrahedra element is 
+%
+\begin{eqnarray}
+\pmb{J}^e &=& \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix} \nonumber\\
+%
+\text{det}(\pmb{J}^e) &=& (x_2^e - x_1^e)[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
+%
+&&-(x_3^e - x_1^e)[(y_2^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_2^e - z_1^e)] \nonumber\\
+%
+&&+(x_4^e - x_1^e)[(y_2^e - y_1^e)(z_3^e - z_1^e)-(y_3^e - y_1^e)(z_2^e - z_1^e)].
+\end{eqnarray}
+%
+Therefore, the volume of each linear tetrahedra element can be calculated from the coordinates of its corner nodes.
+
+The total volume is calculated by summing over the volume of each element
+%
+\begin{equation}
+V = \sum_{e=1}^{N_{el}} V^{(e)} = \sum_{e=1}^{N_{el}}\text{det}\left( \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right),
+\label{eq:total_volume}
+\end{equation}
+%
+where $N_{el}$ is the number of linear tetrahedra elements in the finite-element mesh. Both the current and initial volumes can be calculated by Eq.\ \eqref{eq:total_volume}.
+
+\section{First Derivative of Total Volume}
+
+The change of total volume from the change of a single nodal displacement $\pmb{u}_a$ at a node $a$ (=1 to 4 for linear tetrahedra element) of element $e$ is
+%
+\begin{eqnarray}
+\frac{\partial V}{\partial \pmb{u}_a^e} &=& \frac{\partial V}{\partial (\pmb{x}_a^e-\pmb{X}_a^e)} = \frac{\partial V}{\partial \pmb{x}_a^e} \nonumber\\
+%%
+&=& \frac{\partial}{\partial \pmb{x}_a^e} \sum_{e=1}^{N_{el}}V^{(e)} = \sum_{e=1}^{N_{el}}\frac{\partial V^{(e)}}{\partial \pmb{x}_a^e}
+%%
+= \begin{bmatrix}
+\frac{\partial V}{\partial x_a^e} \\ \frac{\partial V}{\partial y_a^e} \\ \frac{\partial V}{\partial z_a^e}
+\end{bmatrix},
+\label{eq:dVdu}
+\end{eqnarray}
+%
+where the derivative of the total volume has been rewritten as the sum of the derivatives of element volumes. To understand how to compute Eq.\ \eqref{eq:dVdu}, the x-component is written out explicitly
+%
+\begin{eqnarray}
+\frac{\partial V}{\partial x_a^e} &=& \sum_{e=1}^{N_{el}} \frac{\partial}{\partial x_a^e}\text{det}\left(\sum_{i=1}^{n_{en}}
+\begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1} x_i^e & \frac{\partial N_i}{\partial \xi_2} x_i^e & \frac{\partial N_i}{\partial \xi_3} x_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) = \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e  & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}} \text{det}\left(
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right)\nonumber\\
+&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
+%
+&&-\frac{\partial N_a}{\partial \xi_2}\left[(y_2^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_2^e - z_1^e)\right] \nonumber\\
+%
+&&+\frac{\partial N_a}{\partial \xi_3}\left[(y_2^e - y_1^e)(z_3^e - z_1^e)-(y_3^e - y_1^e)(z_2^e - z_1^e)\right].
+\label{eq:dVdx}
+\end{eqnarray}
+%
+Similarly, the $y$ and $z$ components are
+%
+\begin{eqnarray}
+\frac{\partial V}{\partial y_a^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
+%
+\frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) 
+%%
+= \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+\frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right)
+\nonumber\\
+%
+&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_a}{\partial \xi_3}(z_3^e - z_1^e)\right] \nonumber\\
+%
+&&-(x_3^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}(z_4^e - z_1^e)-\frac{\partial N_a}{\partial \xi_3}(z_2^e - z_1^e)\right] \nonumber\\
+%
+&&+(x_4^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}(z_3^e - z_1^e)-\frac{\partial N_a}{\partial \xi_2}(z_2^e - z_1^e)\right] \nonumber\\
+%%%%
+\frac{\partial V}{\partial z_a^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} 
+\end{bmatrix}\right) 
+%%
+= \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} 
+\end{bmatrix}\right)  \nonumber\\
+%
+&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\frac{\partial N_a}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_a}{\partial \xi_2}\right] \nonumber\\
+%
+&&-(x_3^e - x_1^e)\left[(y_2^e - y_1^e)\frac{\partial N_a}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_a}{\partial \xi_1}\right] \nonumber\\
+%
+&&+(x_4^e - x_1^e)\left[(y_2^e - y_1^e)\frac{\partial N_a}{\partial \xi_2}-(y_3^e - y_1^e)\frac{\partial N_a}{\partial \xi_1}\right].
+\label{eq:dVdy-dVdz}
+\end{eqnarray}
+
+\section{Second Derivative of Total Volume}
+
+The second derivative of the total volume is determined by observing the change of Eq.\ \eqref{eq:dVdu} due to the change of a single nodal displacement $\pmb{u}_b$ at a node of $b$ (=1 to 4 for tetrahedra element) of element $e$
+%
+\begin{eqnarray}
+\frac{\partial}{\partial \pmb{u}^e_b}\frac{\partial V}{\partial \pmb{u}_a^e} &=& \frac{\partial}{\partial \pmb{x}^e_b}\frac{\partial V}{\partial \pmb{x}_a^e} 
+%
+=\sum_{e=1}^{N_{el}}\frac{\partial^2 V^{(e)}}{\partial \pmb{x}_a^e \partial \pmb{x}_b^e} = 
+%
+\begin{bmatrix}
+\frac{\partial^2 V}{\partial x_a^e \partial x_b^e} & \frac{\partial^2 V}{\partial x_a^e \partial y_b^e} & \frac{\partial^2 V}{\partial x_a^e \partial z_b^e} \\
+%
+\frac{\partial^2 V}{\partial y_a^e \partial x_b^e} & \frac{\partial^2 V}{\partial y_a^e \partial y_b^e} & \frac{\partial^2 V}{\partial y_a^e \partial z_b^e} \\
+%
+\frac{\partial^2 V}{\partial z_a^e \partial x_b^e} & \frac{\partial^2 V}{\partial z_a^e \partial y_b^e} & \frac{\partial^2 V}{\partial z_a^e \partial z_b^e} 
+\end{bmatrix},
+\label{eq:dVduadub}
+\end{eqnarray}
+%
+where as before the second derivative of the total volume has been written as the summation of the second derivative of element volumes. 
+
+The diagonal terms of Eq.\ \eqref{eq:dVduadub} are
+%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial x_a^e \partial x_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e   & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}} \text{det}\left(
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}}\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
+%
+&&-\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)\left[(y_2^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_2^e - z_1^e)\right] \nonumber\\
+%
+&&+\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)\left[(y_2^e - y_1^e)(z_3^e - z_1^e)-(y_3^e - y_1^e)(z_2^e - z_1^e)\right]
+\end{eqnarray}
+%%%%%
+%%%%%
+%%%%%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial y_a^e \partial y_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e  \\
+%
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}& \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}& \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right) \nonumber\\
+%
+&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)(z_4^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)(z_3^e - z_1^e)\right] \nonumber\\
+%
+&&-(x_3^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)(z_4^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)(z_2^e - z_1^e)\right] \nonumber\\
+%
+&&+(x_4^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)(z_3^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)(z_2^e - z_1^e)\right] 
+\end{eqnarray}
+%%%%%
+%%%%%
+%%%%%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial z_a^e \partial z_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
+%
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}  & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}  & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} 
+\end{bmatrix}\right) \nonumber\\
+%
+&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)-(y_4^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)\right] \nonumber\\
+%
+&&-(x_3^e - x_1^e)\left[(y_2^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)-(y_4^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)\right] \nonumber\\
+%
+&&+(x_4^e - x_1^e)\left[(y_2^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)-(y_3^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)\right].
+\end{eqnarray}
+
+
+The off-diagonal terms of Eq.\ \eqref{eq:dVduadub} are
+%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial x_a^e \partial y_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
+%
+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}  \\
+%
+\frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
+\end{bmatrix}\right) 
+%
+= \sum_{e=1}^{N_{el}} \text{det}\left(
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
+%
+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}  \\
+%
+z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
+\end{bmatrix}\right)\nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[\frac{\partial N_b}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_b}{\partial \xi_3}(z_3^e - z_1^e)\right]
+%
+-\frac{\partial N_a}{\partial \xi_2}\left[\frac{\partial N_b}{\partial \xi_1}(z_4^e - z_1^e)-\frac{\partial N_b}{\partial \xi_3}(z_2^e - z_1^e)\right] \nonumber\\
+%
+&&+\frac{\partial N_a}{\partial \xi_3}\left[\frac{\partial N_b}{\partial \xi_1}(z_3^e - z_1^e)-\frac{\partial N_b}{\partial \xi_2}(z_2^e - z_1^e)\right] 
+\end{eqnarray}
+%%%%%
+%%%%%
+%%%%%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial x_a^e \partial z_b^e} &=&  \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  &  \frac{\partial N_a}{\partial \xi_2} &  \frac{\partial N_a}{\partial \xi_3}\\
+%
+\frac{\partial N_i}{\partial \xi_1}y_i^e  & \frac{\partial N_i}{\partial \xi_2}y_i^e &\frac{\partial N_i}{\partial \xi_3}y_1^e  \\
+%
+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3} 
+\end{bmatrix}\right) 
+%
+= \sum_{e=1}^{N_{el}} \text{det}\left(
+%
+\begin{bmatrix}
+\frac{\partial N_a}{\partial \xi_1}  &  \frac{\partial N_a}{\partial \xi_2} &  \frac{\partial N_a}{\partial \xi_3}\\
+%
+y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
+%
+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3} 
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[(y_3^e - y_1^e)\frac{\partial N_b}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_b}{\partial \xi_2}\right] 
+%
+-\frac{\partial N_a}{\partial \xi_2}\left[(y_2^e - y_1^e)\frac{\partial N_b}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_b}{\partial \xi_1}\right] \nonumber\\
+%
+&&+\frac{\partial N_a}{\partial \xi_3}\left[(y_2^e - y_1^e)\frac{\partial N_b}{\partial \xi_2}-(y_3^e - y_1^e)\frac{\partial N_b}{\partial \xi_1}\right] 
+\end{eqnarray}
+%%%%%
+%%%%%
+%%%%%
+\begin{eqnarray}
+\frac{\partial^2 V}{\partial y_a^e \partial z_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
+%
+\frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
+%
+ \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}
+\end{bmatrix}\right) 
+%
+= \sum_{e=1}^{N_{el}} \text{det}\left(\begin{bmatrix}
+x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
+%
+\frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
+%
+ \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}
+\end{bmatrix}\right) \nonumber\\
+%%%
+&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}\frac{\partial N_b}{\partial \xi_3}-\frac{\partial N_a}{\partial \xi_3}\frac{\partial N_b}{\partial \xi_2}\right] 
+%
+-(x_3^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}\frac{\partial N_b}{\partial \xi_3}-\frac{\partial N_a}{\partial \xi_3}\frac{\partial N_b}{\partial \xi_1}\right] \nonumber\\
+%
+&&+(x_4^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}\frac{\partial N_b}{\partial \xi_2}-\frac{\partial N_a}{\partial \xi_2}\frac{\partial N_b}{\partial \xi_1}\right],
+\label{eq:dV-offdiag}
+\end{eqnarray}
+%
+where 
+%
+\begin{equation}
+\frac{\partial^2 V}{\partial y_a^e \partial x_b^e} = \frac{\partial^2 V}{\partial x_a^e \partial y_b^e}, \ \
+%
+\frac{\partial^2 V}{\partial z_a^e \partial x_b^e} = \frac{\partial^2 V}{\partial x_a^e \partial z_b^e}, \ \
+%
+\frac{\partial^2 V}{\partial z_a^e \partial y_b^e} = \frac{\partial^2 V}{\partial y_a^e \partial z_b^e}
+\end{equation}
+\bibliographystyle{apsrev}
+\bibliography{References}
+\end{document}

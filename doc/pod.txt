@@ -1,0 +1,4 @@
+Mesh Adaptation:
+ - After uniform size_field test works, implement simple error estimator (should exist in codebase or repo already), then (possibly) work on using the ZZ error estimator that is part of the spr package in core.
+ 
+BlueGene:

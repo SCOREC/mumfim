@@ -1,0 +1,13 @@
+#%Module
+
+proc ModulesHelp { } {
+    puts stderr "This module sets the path and environment variables for SPARSKIT_1.0"
+}
+module-whatis ""
+
+set		version			1.0
+set		path			/fasttmp/wtobin/develop/install/sparskit
+
+setenv		SPARSKIT_INSTALL_DIR		$path
+setenv 		SPARSKIT_INCLUDE_DIR 	$path/include
+setenv 		SPARSKIT_LIB_DIR     	$path/lib

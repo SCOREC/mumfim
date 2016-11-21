@@ -1,0 +1,2 @@
+/fasttmp/wtobin/develop/install/sparskit/lib/libSPARSKIT.a
+/fasttmp/wtobin/develop/install/sparskit/lib/module/Sparskit_1.0

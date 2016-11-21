@@ -1,0 +1,124 @@
+\documentclass{article}
+\usepackage{amsmath, amsthm, amssymb, graphicx, listings}
+\usepackage[table]{xcolor}
+
+\setcounter{section}{-1}
+
+\begin{document}
+
+%\lstset{language=Matlab,basicstyle=\footnotesize\ttfamily}
+
+\title{Update and Planned Directions on Project: Multiscale Mechanics of Bioengineered Tissues}
+%\author{Daniel Fovargue and Bill Tobin}
+\date{August 2014}
+\maketitle
+
+
+\section{Summary}
+
+This document discusses the current status of the \textit{MSM: Multiscale Mechanics of Bioengineered Tissues} grant from the computational modeling perspective. It includes summaries and possible immediate directions for progress for each task under the three specific aims of the project.
+
+Generally, the grant indicates that the:
+\begin{enumerate}
+\item development of an intermediate cell scale,
+\item incorporation of the fiber-matrix coupled microscale into the multiscale model, 
+\item adaptivity of the multiscale model, and
+\item implementation of a fiber damage law 
+\end{enumerate}
+should be the priority early in the grant. Interfibrillar failure and viscoelastic models and meant for later in the grant and are therefore not discussed in detail here.
+
+Possible immediate work directions are provided in detail below, but overall, discussions are needed to understand and refine our directions on the cell scale model and multiscale fracture.
+
+\section{Specific Aim: Model Development}
+
+Essentially all computational work thus far has been within Specific Aim 1.
+
+\subsection{Task: Three-scale model}
+
+The core of this task involves implementing an intermediate cellular scale model. AMSI should be capable of handling three scales although the default routines for communication pattern creation, load balancing, and migration may need updating.
+
+There is also discussion in this section of RVE size effects, possible models of cells, including associated microscales, and failure. Failure could lead to refinement near crack tips past the point of valid RVEs. This brings up possible alternatives such as concurrent multiscale methods or special continuum level elements (XFEM type elements?).
+
+We can make some purely computational progress on the model prior to some of these mechanics and modeling questions being sorted out:
+
+\begin{itemize}
+\item Write an AMSI test case with 3 scale interaction to catch any unforseen issues.
+\item Assuming the cell scale is an RVE and will be modeled by FEM, it would therefore be extremely similar, computationally speaking, to the Fiber-Matrix Coupled Microscale. Once this microscale model is working within the multiscale model it could be used as a starting point for the cell scale by removing the fibers. Later, geometries and mechanics could be updated.
+\end{itemize}
+
+\subsection{Task: Interfibrillar material}
+
+This task discusses the addition of an interfibrillar material in the collagen fiber network model in either a parallel or coupled way.
+
+Bill and Ehsan are working on incorporating the coupled model into the full multiscale model.
+
+The parallel model is included in the code in such a way that the \textit{fiber-only microscale model} is now considered a special case of the \textit{fiber-matrix parallel model} where the elastic moduli of the interfibrillar material are set to zero. 
+
+These models converge (although I have seen some non convergence at large-ish strains that should be investigated) but have not been tested against known solutions/behaviors.
+
+To do:
+
+\begin{itemize}
+\item Discuss possible previous work and solutions to make comparisons to, in order to verify that our versions of these models are working
+\item Verification of fiber-only model
+\item Verification of fiber-matrix parallel model
+\item Verification of fiber-matrix coupled model 
+\end{itemize}
+
+\subsection{Task: Adaptive modeling framework}
+
+This is an on-going task and so while a lot of progress has been made, more work will always present itself. The simplest version of the multiscale model (macroscale \textless-\textgreater fiber-only microscale) has been run at large scales on the supercomputer at RPI with promising results.
+
+Some model adaptivity has been implemented. It is possible to switch an element from solving a continuum consitutive relation to solving an RVE (fiber-only or fiber-matrix parallel) and back again. Load balancing and migration routines have been added to AMSI and the multiscale model for the two scale fiber-only case.
+
+Some avenues to follow here are:
+
+\begin{itemize}
+
+\item With Task 1.1, add an intermediate cell scale
+\item Add AMSI test problems that utilize data addition/removal, load balancing, and migration routines
+\item Get the fiber-matrix coupled model integrated into the multiscale model
+\item Mesh adaptivity, I don't know much about this area. This will presumably take some discussion too, e.g. how to refine elements with RVEs.
+\item There are also updates to AMSI to work on, these are in the AMSI document
+\end{itemize}
+
+
+\subsection{Task: Experiments}
+
+We will need information regarding these experiments in order to inform and validate the models.
+
+\section{Specific Aim: Damage and Failure}
+
+According to the grant we already have a fiber network model that incorporates fiber failure, but not damage accumulation. There is no discussion of multiscale failure in this section of the grant, the only discussion is with respect to the RVEs.
+
+\subsection{Task: Fiber damage accumulation}
+
+\begin{itemize}
+\item Add existing fiber failure model to multiscale code, or at least provide support for fibers being removed.
+\item Determine appropriate damage accumulation model and implement.
+\item Understand possible directions on multiscale failure in order to implement features in anticipation of these models.
+\end{itemize}
+
+\subsection{Task: Interfibrillar material failure}
+
+\begin{itemize}
+\item Keep in mind (when developing fiber-matrix coupled microscale model) that the mesh defining the interfibrillar material may detach from the fibers
+\end{itemize}
+
+\subsection{Task: Experiments}
+
+\section{Specific Aim: Viscoelasticity}
+
+According to the grant, in general, the viscoelastic models are intended for development later in the grant, after implementation of the three scale model and damage/failure.
+
+\subsection{Task: Fiber viscoelasticity}
+
+\subsection{Task: Cell viscoelasticity}
+
+\subsection{Task: Interfibrillar material viscoelasticity}
+
+\subsection{Task: Biphasic interfibrillar material}
+
+\subsection{Task: Experiments}
+
+\end{document}
