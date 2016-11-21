@@ -1,47 +1,58 @@
 #!/bin/bash
-
-module load simmetrix/simModSuite
-
-HOSTNAME=`hostname`
-
+# Cmake config for biotissiue
+# usage ./config.sh [build_type] [logrun_flag]
+source $DEVROOT/scripts/util
+ROOT=$DEVROOT/biotissue
+LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
   BUILD_TYPE=Debug
 else
   BUILD_TYPE=$1
 fi
-
-if [ "$BUILD_TYPE" == "Debug" ]; then
-  BUILD_DIR=../build_debug
+if [ "$BUILD_TYPE" == "Debug" ] ; then
+  BUILD_DIR=$ROOT/build_debug
 elif [ "$BUILD_TYPE" == "Release" ] ; then
-  BUILD_DIR=../build_release
+  BUILD_DIR=$ROOT/build_release
 fi
-
-if [ ! -d $BUILD_DIR ]; then
-  mkdir $BUILD_DIR
+LOGRUN=ON
+if [ "$LOGRUN_OVERRIDE" != "" ] ; then
+  LOGRUN=$LOGRUN_OVERRIDE
 fi
+verify_directory_recreate ${BUILD_DIR}
 cd $BUILD_DIR
-rm -rf ./* #stupid and dangerous
-
+module load cmake
+HOSTNAME=`hostname`
 if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
-  export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:$DEVROOT/install
-
   cmake \
-  -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-  -DBUILD_TESTS=OFF \
-  -DLOGRUN=TRUE \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install \
-  -DSIM_MPI=openmpi14 \
-  -DCMAKE_TOOLCHAIN_FILE=$CMAKE_XL_TOOLCHAIN \
-  ..
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+    -DCMAKE_C_COMPILER="mpicc" \
+    -DCMAKE_CXX_COMPILER="mpicxx" \
+    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/bgq/xl/ \
+    -DBUILD_TESTS=OFF \
+    -DLOGRUN=$LOGRUN \
+    -DSIM_MPI=bgmpi \
+    -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/sim/bgq/xl/lib/cmake/amsi \
+    -DCORE_DIR=$DEVROOT/install/core/sim/xl \
+    -DSPARSKIT_DIR=$DEVROOT/install/sparskit \
+    -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/xl/ \
+    ..
+  chmod g+rw $BUILD_DIR
 else
+  module load $DEVROOT/module/openmpi/1.10.0
+  CC=`which mpicc`
+  CXX=`which mpicxx`
   cmake \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DBUILD_TESTS=ON \
-  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/red/openmpi-1.10.0/lib/cmake/amsi \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/git/openmpi-1.10.0 \
-  -DCORE_DIR=$DEVROOT/install/core-sim/openmpi-1.10.0/ \
+  -DCMAKE_C_COMPILER=$CC \
+  -DCMAKE_CXX_COMPILER=$CXX \
+  -DLOGRUN=TRUE \
+  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/openmpi-1.10.0 \
+  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/openmpi-1.10.0/lib/cmake/amsi \
   -DSIM_MPI=openmpi110 \
-  -DSIMMETRIX_LIB_DIR=$DEVROOT/simPartitionWrapper/PartitionWrapper/lib \
+  -DSCOREC_DIR=$DEVROOT/install/core/openmpi-1.10.0/lib/cmake/SCOREC \
+  -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
+  -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/openmpi-1.10.0/ \
   ..
 fi
 

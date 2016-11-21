@@ -11,6 +11,5 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
   set(CMAKE_EXE_LINKER_FLAGS -static)
 endif()
 
-add_subdirectory(micro_fo)
-#add_subdirectory(micro_fm)
+add_subdirectory(micro)
 add_subdirectory(macro)
