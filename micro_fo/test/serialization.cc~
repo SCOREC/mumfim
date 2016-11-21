@@ -1,0 +1,66 @@
+#include "RepresentVolElem.h"
+#include "RVE_Util.h"
+#include "SparseMatrix.h"
+
+#include <amsi.h>
+#include <amsiMPI.h>
+#include <ControlService.h>
+#include <Migration.h>
+
+
+int main(int argc, char ** argv)
+{
+  using namespace Biotissue;
+
+  FiberNetwork * network = new FiberNetwork;
+  network->readFromFile("fiber_networks/clipped_del_1.txt");
+  SparseMatrix * sparse_struct(Make_Structure(network));
+  SparskitBuffers buffers(network->numDofs());
+
+  std::vector<MicroFO*> rve(1);
+  std::vector< std::vector<char> > rve_data;
+
+  // determine initial coordinates of the tetrahedron
+  double theta = -2 * atan(sqrt(2) - sqrt(3));
+  apf::Matrix3x3 roty( cos(theta), 0,sin(theta),
+		       0, 1,         0,
+		       -sin(theta), 0, cos(theta));
+  
+  apf::Vector3 coord1(-1.0,  0.0, -1.0/sqrt(2));
+  apf::Vector3 coord2( 1.0,  0.0, -1.0/sqrt(2));
+  apf::Vector3 coord3( 0.0,  1.0,  1.0/sqrt(2));
+  apf::Vector3 coord4( 0.0, -1.0,  1.0/sqrt(2));
+  
+  apf::Vector3 ncoord1 = roty * coord1;
+  apf::Vector3 ncoord2 = roty * coord2;
+  apf::Vector3 ncoord3 = roty * coord3;
+  apf::Vector3 ncoord4 = roty * coord4;
+  
+  double init_coords[12] = {};
+  
+  ncoord1.toArray(init_coords);
+  ncoord2.toArray(init_coords+3);
+  ncoord3.toArray(init_coords+6);
+  ncoord4.toArray(init_coords+9);
+  
+  double pt[3] = {0.25, 0.25, 0.25};
+  rve[0] = new MicroFO(4,
+		       &pt[0],
+		       0,
+		       network,
+		       sparse_struct,
+		       &buffers,
+		       init_coords,
+		       4);
+  
+  rve_data.resize(1);
+  rve[0]->collectMigrationData();
+  rve[0]->getMigrationData(rve_data[0]);
+
+  delete rve[0];
+  
+  rve.reserve(1);
+  rve[0] = new MicroFO();
+  rve[0]->setMigrationData(rve_data[0]);
+  rve[0]->constructRVEFromMigrationData(&network,&sparse_struct,&buffers);
+}

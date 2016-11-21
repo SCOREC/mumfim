@@ -1,0 +1,13 @@
+#%Module
+
+proc ModulesHelp { } {
+    puts stderr "This module sets the path and environment variables for @PACKAGE_NAME@_@PACKAGE_VERSION@"
+}
+module-whatis "Micro_FO - Fiber-Only microscale RVE simulation"
+
+set		version			@PACKAGE_VERSION@
+set		path			@CMAKE_INSTALL_PREFIX@
+
+setenv		@PACKAGE_NAME@_INSTALL_DIR		$path
+setenv 		@PACKAGE_NAME@_INCLUDE_DIR 	$path/include
+setenv 		@PACKAGE_NAME@_LIB_DIR     	$path/lib
