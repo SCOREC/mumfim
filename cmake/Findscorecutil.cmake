@@ -1,0 +1,24 @@
+# Once done this will define
+#  SCORECUTIL_FOUND - System has SCORECUTIL
+#  SCORECUTIL_INCLUDE_DIRS - 
+#  SCORECUTIL_LIBRARIES - The libraries needed to use SCORECUTIL
+#  SCORECUTIL_DEFINITIONS - Compiler switches required for using SCORECUTIL
+
+checkSetParam(SCORECUTIL_DIR FALSE)
+
+find_package(SimModSuite REQUIRED)
+
+find_path(SCORECUTIL_INCLUDE_DIR LagrangeMapping.h
+          HINTS ${SCORECUTIL_DIR}
+          PATH_SUFFIXES include)
+ 
+find_library(SCORECUTIL_LIBRARY SCORECUtil
+             HINTS ${SCORECUTIL_DIR}
+             PATH_SUFFIXES lib)
+
+set(SCORECUTIL_LIBRARIES ${SCORECUTIL_LIBRARY} ${SIMMODSUITE_LIBS})
+set(SCORECUTIL_INCLUDE_DIRS ${SCORECUTIL_INCLUDE_DIR} ${SIMMODSUITE_INCLUDE_DIRS})
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SCORECUTIL SCORECUTIL_LIBRARIES SCORECUTIL_INCLUDE_DIRS)
+mark_as_advanced(SCORECUTIL_LIBRARIES SCORECUTIL_INCLUDE_DIRS)
