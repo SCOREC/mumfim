@@ -1,8 +1,8 @@
 
 BUILD := latest
-PLATFORM := x64_rhel6_gcc44
+PLATFORM := x64_rhel5_gcc41
 FNAME := partitionMesh
-PARALLEL := openmpi16
+PARALLEL := openmpi110
 
 EXECNAME := bin/$(PLATFORM)/$(FNAME)
 
@@ -10,17 +10,17 @@ PROJECTROOT := /net/common/meshSim
 INCLUDES := -I$(PROJECTROOT)/$(BUILD)/include
 LIBPATH := -L$(PROJECTROOT)/$(BUILD)/lib/$(PLATFORM) -L$(PROJECTROOT)/$(BUILD)/lib/$(PLATFORM)/psKrnl
 LIBS = $(LIBPATH) -lSimPartitionedMesh-mpi -lSimMeshing -lSimMeshTools -lSimModel \
-  -lSimPartitionWrapper-$(PARALLEL) -lSimParasolid270 -lpskernel
+  -lSimPartitionWrapper-$(PARALLEL) -lSimParasolid280 -lpskernel
 
 COMPFLAG := -c
 OBJNAME := obj/$(PLATFORM)/$(FNAME).o
 OBJTARGET := -o $(OBJNAME)
 LINKTARGET := -o $(EXECNAME)
 
-ifeq ($(PLATFORM),x64_rhel6_gcc44)
+ifeq ($(PLATFORM),x64_rhel5_gcc41)
   # May need to change these to get correct MPI implementation, paths etc
-  PARALLEL := openmpi16
-  CC := /usr/local/openmpi/1.6.5-ib/bin/mpicxx
+  PARALLEL := openmpi110
+  CC := /fasttmp/wtobin/develop/install/openmpi/1.10.0/bin/mpicxx
   LINK := $(CC)
   CCFLAGS := -O2
   LINKFLAGS :=
