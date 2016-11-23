@@ -4,7 +4,7 @@
 namespace bio
 {
   // refactor so this is only dealing with a single type of RVE
-  class MultiscaleTissue : public NonLinTissue
+  class MultiscaleTissue : public NonlinearTissue
   {
   public:
     enum MicroscaleType{NONE = 0,
