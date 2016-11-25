@@ -1,7 +1,6 @@
 #include "RepresentVolElem.h"
 #include "SparseMatrix.h"
 #include "RVE_Util.h"
-#include <amsi.h>
 #include <iostream>
 #include <list>
 #include <sstream>

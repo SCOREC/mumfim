@@ -4,7 +4,6 @@
 #include "LagrangeMapping.h"// scorecutil stuff to be taken out eventually
 #include <cstring>
 #include <vector>
-#include <amsiInterface.h>
 /*
   This file contains the functions
   create_element_shape_vars

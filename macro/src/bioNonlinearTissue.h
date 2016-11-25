@@ -8,9 +8,9 @@
 #include "bioVolumeConstraintIntegrator.h"
 #include <Solvers.h>
 #include <NonLinElasticity.h>
-#include <amsi.h>
-#include <amsiReporter.h>
-#include <amsiNonlinearAnalysis.h>
+#include <amsiMultiscale.h>
+#include <amsiAnalysis.h>
+#include <amsiUtil.h>
 #include <apfsimWrapper.h>
 #include <vector>
 #include <list>

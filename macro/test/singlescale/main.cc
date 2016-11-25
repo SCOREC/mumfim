@@ -1,8 +1,7 @@
 #include "bioTissueAnalysis.h"
 #include "bioTissueMultiscaleAnalysis.h" // only for convergence ops, delete after
-#include <amsiInterface.h>
-#include <amsiOutput.h>
-#include <SimFEA.h>
+#include <amsiAnalysis.h>
+#include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
 #include <sstream>
@@ -67,7 +66,7 @@ int main(int argc, char ** argv)
   {
     amsi::use_simmetrix = true;
     amsi::use_petsc = true;
-    amsi::amsiInit(argc,argv);
+    amsi::initAnalysis(argc,argv);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
     if(rnk > 0)
@@ -103,7 +102,7 @@ int main(int argc, char ** argv)
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);
-    amsi::amsiFree();
+    amsi::freeAnalysis();
   }
   else result++;
   AMSI_DEBUG(Sim_logOff());

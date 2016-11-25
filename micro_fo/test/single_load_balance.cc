@@ -1,10 +1,8 @@
 #include "RepresentVolElem.h"
 #include "RVE_Util.h"
 #include "SparseMatrix.h"
-#include <amsi.h>
-#include <amsiMPI.h>
-#include <amsiControlService.h>
-#include <Migration.h>
+#include <amsiMultiscale.h>
+#include <amsiUtil.h>
 void planMigration(std::vector<int> & to_serialize,
                    std::vector<int> & send_to,
                    MPI_Comm comm,
@@ -22,7 +20,7 @@ void planMigration(std::vector<int> & to_serialize,
 int main(int argc, char ** argv)
 {
   using namespace bio;
-  amsi::amsiInit(argc,argv);
+  amsi::initMultiscale(argc,argv);
   amsi::Migration migrator(AMSI_COMM_SCALE,
                            amsi::Migration::USER_ALGO,
                            &planMigration);
@@ -87,5 +85,5 @@ int main(int argc, char ** argv)
     rve[0]->setMigrationData(rve_data[0]);
     rve[0]->constructRVEFromMigrationData(&network,&sparse_struct,&buffers);
   }
-  amsi::amsiFree();
+  amsi::freeMultiscale();
 }

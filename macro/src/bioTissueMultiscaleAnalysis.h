@@ -1,10 +1,9 @@
 #ifndef BIO_TISSUEMULTISCALEANALYSIS_H_
 #define BIO_TISSUEMULTISCALEANALYSIS_H_
-#include <Elasticity.h>
 #include "bioLinearTissue.h"
 #include "bioMultiscaleTissue.h"
-#include <amsiNonlinearAnalysis.h>
-#include <amsiControlService.h>
+#include <amsiMultiscale.h>
+#include <amsiAnalysis.h>
 #include <apfsimWrapper.h>
 #include <apf.h>
 #include <MeshSim.h>

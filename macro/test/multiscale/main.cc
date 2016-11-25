@@ -2,15 +2,9 @@
 #include "bioMultiscaleTissue.h"
 #include "NonLinFibMtx.h"
 #include "RVE_Util.h"
-#include <amsiRankSet.h>
-#include <amsiScale.h>
-#include <amsi.h>
+#include <amsiMultiscale.h>
+#include <amsiAnalysis.h>
 #include <amsiUtil.h>
-#include <amsiMeta.h>
-#include <amsiInterface.h>
-#include <amsiReporter.h>
-#include <amsiControlService.h>
-#include <SimFEA.h>
 #include <SimError.h>
 #include <iostream>
 #include <sstream>
@@ -137,7 +131,8 @@ int main(int argc, char **argv)
   {
     amsi::use_simmetrix = true;
     amsi::use_petsc = true;
-    amsi::amsiInit(argc,argv);
+    amsi::initMultiscale(argc,argv);
+    amsi::initAnalysis(argc,argv);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
@@ -159,7 +154,8 @@ int main(int argc, char **argv)
     }
     amsi::deleteLog(execution_time);
 #   endif
-    amsi::amsiFree();
+    amsi::freeAnalysis();
+    amsi::freeMultiscale();
   }
   else
     result++;

@@ -8,9 +8,6 @@
 #include "bioPreserveVolConstraintIntegrator.h"
 #include "RVE_Util.h"
 #include "bioVariableRecovery.h"
-#include <amsi.h>
-#include <amsiUtil.h>
-#include <amsiMeta.h>
 #include <ErrorEstimators.h>
 #include <apfFunctions.h>
 #include <apfsimWrapper.h>

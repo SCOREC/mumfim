@@ -5,7 +5,7 @@ else
   BUILD_TYPE=$1
 fi
 
-AMSI_LIB=${DEVROOT}/install/amsi/openmpi-1.10.0/lib/libcontrol
+AMSI_LIB=${DEVROOT}/install/amsi/lib/libmultiscale
 
 if [ "$BUILD_TYPE" == "Debug" ]; then
   BUILD_DIR=../build_debug

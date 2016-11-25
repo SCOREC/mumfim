@@ -1,8 +1,8 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioMultiscaleTissue.h"
-#include "Solvers.h"
-#include "ConvenienceFunctions.h"
-#include <amsiMeta.h>
+#include <Solvers.h>
+#include <ConvenienceFunctions.h>
+#include <amsiMultiscale.h>
 #include <apfWrapper.h>
 #include <simAttributes.h>
 #include <apfNumbering.h>
