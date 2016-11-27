@@ -1,10 +1,9 @@
 #ifndef BIO_TISSUEMULTISCALEANALYSIS_H_
 #define BIO_TISSUEMULTISCALEANALYSIS_H_
-#include <Elasticity.h>
 #include "bioLinearTissue.h"
 #include "bioMultiscaleTissue.h"
-#include <amsiNonlinearAnalysis.h>
-#include <amsiControlService.h>
+#include <amsiMultiscale.h>
+#include <amsiAnalysis.h>
 #include <apfsimWrapper.h>
 #include <apf.h>
 #include <MeshSim.h>
@@ -135,78 +134,6 @@ namespace bio
                         << "entire domain" << ", "
                         << v0 << ", "
                         << vi << ", "
-                        << vi - v0 << std::endl;
-    }
-  };
-  /** Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev*/
-  class VolumeConvergenceAccm_Incrmt : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissue * ts;
-    double eps;
-    amsi::Log vols;
-  public:
-    VolumeConvergenceAccm_Incrmt(MultiscaleTissue * tssu, double e)
-      : amsi::Convergence()
-      , ts(tssu)
-      , eps(e)
-      , vols(amsi::activateLog("volume"))
-    { }
-    bool converged()
-    {
-      int rgns = ts->numVolumeConstraints();
-      bool converged = true;
-      double vi = 0.0; ///<Accumulated Current Volume
-      double vp = 0.0; ///<Accumulated Previous Volume
-      double dv = 0.0; ///<Accumulated Volume Difference
-      if (rgns == 0)
-	vp = 1.0; // so that we do not run into divide by zero error.
-      for(int ii = 0; ii < rgns; ii++)
-      {
-        /** prev_rgn_vol initialized to init_rgn_vol,
-         * therefore, dv_rgn = vi_rgn - initial v_rgn at ldstp0, iteration 0. */
-        double vp_rgn = ts->getRgnVolPrev(ii);
-        double vi_rgn = ts->getRgnVol(ii);
-        double dv_rgn = vi_rgn - vp_rgn;
-        vi += vi_rgn;
-        vp += vp_rgn;
-        dv += dv_rgn;
-      }
-      /** convergence based on volume change */
-      converged = std::abs(dv) < eps * vp  ;
-      std::cout << "current volume: " << vi << std::endl;
-      std::cout << "previous volume: " << vp << std::endl;
-      std::cout << "accumulated incremental volume convergence: " << std::endl
-                << "\t" << dv << " < " << eps * vp << std::endl
-                << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-      return converged;
-    }
-    bool failed()
-    {
-      return false;
-    }
-    void log(int ldstp, int iteration, int rnk)
-    {
-      int rgns = ts->numVolumeConstraints();
-      double v0 = 0;
-      double vi = 0;
-      double vp = 0; ///<Accumulated Previous Volume.
-      for (int ii = 0; ii < rgns; ii++)
-      {
-        double vi_rgn = ts->getRgnVol(ii);
-        double v0_rgn = ts->getRgnVolInit(ii);
-        double vp_rgn = ts->getRgnVolPrev(ii);
-        v0 += v0_rgn;
-        vi += vi_rgn;
-        vp += vp_rgn;
-      }
-      if (rnk==0)
-        amsi::log(vols) << ldstp << ", "
-                        << iteration << ", "
-                        << "entire domain" << ", "
-                        << v0 << ", "
-                        << vi << ", "
-                        << vi - vp << ", "
                         << vi - v0 << std::endl;
     }
   };

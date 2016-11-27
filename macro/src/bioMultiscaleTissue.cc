@@ -5,7 +5,7 @@
 namespace bio
 {
   MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm)
-    : NonLinTissue(g,m,pd,cm)
+    : NonlinearTissue(g,m,pd,cm)
     , mltscl(NULL)
     , crt_rve(NULL)
     , prv_rve(NULL)
@@ -21,7 +21,7 @@ namespace bio
     , rcv_ptrns()
     , mtd()
   {
-    // primary field created in NonLinTissue
+    // primary field created in NonlinearTissue
     crt_rve = apf::createIPField(apf_mesh,"current_rve",apf::SCALAR,1);
     prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
     fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);

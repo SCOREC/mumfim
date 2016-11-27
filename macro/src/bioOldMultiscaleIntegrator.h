@@ -11,7 +11,7 @@ namespace bio
   class MultiscaleIntegrator : public apf::Integrator
   {
   public:
-  MultiscaleIntegrator(Biotissue::NonLinTissue * nlt,
+  MultiscaleIntegrator(Biotissue::NonlinearTissue * nlt,
                        apf::Mesh * mesh,
                        apf::Field * field,
                        int o) :
@@ -208,7 +208,7 @@ namespace bio
     apf::EntityShape * es;
     apf::MeshElement * me;
     apf::Mesh * m;
-    Biotissue::NonLinTissue * analysis;
+    Biotissue::NonlinearTissue * analysis;
   };
 }
 #endif

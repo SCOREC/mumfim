@@ -2,7 +2,6 @@
 #include "SparseMatrix.h"
 #include "Sparskit_Externs.h"
 #include "RVE_Util.h"
-#include <amsi.h>
 #include <iostream>
 #include <list>
 #include <sstream>

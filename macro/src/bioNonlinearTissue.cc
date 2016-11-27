@@ -8,9 +8,6 @@
 #include "bioPreserveVolConstraintIntegrator.h"
 #include "RVE_Util.h"
 #include "bioVariableRecovery.h"
-#include <amsi.h>
-#include <amsiUtil.h>
-#include <amsiMeta.h>
 #include <ErrorEstimators.h>
 #include <apfFunctions.h>
 #include <apfsimWrapper.h>
@@ -30,7 +27,7 @@
 #include <cstring>
 namespace bio
 {
-  NonLinTissue::NonLinTissue(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm)
+  NonlinearTissue::NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm)
     : FEA(cm)
     , apfSimFEA(imdl,imsh,pd,cm)
     , poisson_ratio(0.236249)
@@ -97,14 +94,14 @@ namespace bio
     rgn_vols = init_rgn_vols;
     prev_rgn_vols = init_rgn_vols;
   }
-  NonLinTissue::~NonLinTissue()
+  NonlinearTissue::~NonlinearTissue()
   {
     apf::destroyField(delta_u);
     apf::destroyField(strs);
     apf::destroyField(rcvrd_strs);
     apf::destroyField(strn);
   }
-  void NonLinTissue::ApplyBC_Dirichlet()
+  void NonlinearTissue::ApplyBC_Dirichlet()
   {
     //apf::Field * nw_dlta_u = apf::createLagrangeField(apf_mesh,"tmp_delta_u",apf::VECTOR,1);
     //apf::copyData(nw_dlta_u,apf_primary_field);
@@ -121,7 +118,7 @@ namespace bio
     //amsi::PrintField(delta_u,std::cout).run();
     //apf::destroyField(nw_dlta_u);
   }
-  void NonLinTissue::RenumberDOFs()
+  void NonlinearTissue::RenumberDOFs()
   {
     //constraint_dofs = vol_cnst.size(); // implicit input the renumbering function
     amsi::apfFEA::RenumberDOFs();
@@ -131,7 +128,7 @@ namespace bio
       (*cnst)->setDof(global_dof_count - cntr); // implicit output from the renumbering function
     */
   }
-  void NonLinTissue::step()
+  void NonlinearTissue::step()
   {
     //apf::zeroField(delta_u);
     //amsi::displaceMesh(delta_u);
@@ -142,7 +139,7 @@ namespace bio
     load_step++;
     //apf::zeroField(apf_primary_field);
   }
-  void NonLinTissue::Assemble(amsi::LAS * las)
+  void NonlinearTissue::Assemble(amsi::LAS * las)
   {
 #   ifdef LOGRUN
     int rnk = -1;
@@ -182,7 +179,7 @@ namespace bio
     amsi::log(macro_efficiency)  << load_step << ", " << iteration << ", " << pre_slv << ", ACTIVE, PRE_SOLVE" << std::endl;
 #   endif
   }
-  void NonLinTissue::UpdateDOFs(const double * sol)
+  void NonlinearTissue::UpdateDOFs(const double * sol)
   {
 #   ifdef LOGRUN
     amsi::Log macro_efficiency = amsi::activateLog("macro_efficiency");
@@ -202,7 +199,7 @@ namespace bio
     apf::synchronize(apf_primary_field);
     apf::synchronize(delta_u);
   }
-  void NonLinTissue::ComputeDispL2Norm(double & norm)
+  void NonlinearTissue::ComputeDispL2Norm(double & norm)
   {
     norm = 0.0;
     double sqrtnorm;
@@ -233,7 +230,7 @@ namespace bio
     // Compute norm over all local processes
     norm = sqrt(amsi::comm_sum(norm));
   }
-  void NonLinTissue::getLoadOn(pGEntity ent, double * frc)
+  void NonlinearTissue::getLoadOn(pGEntity ent, double * frc)
   {
     amsi::SimBCQuery * snbcq = amsi::findSimBCQueryOn(neu_bcs.begin(),neu_bcs.end(),ent);
     assert(snbcq);
@@ -241,7 +238,7 @@ namespace bio
     for(int ii = 0; ii < 3; ii++)
       frc[ii] = snbcq->getValue(ii,T);
   }
-  void NonLinTissue::recoverSecondaryVariables(int load_step)
+  void NonlinearTissue::recoverSecondaryVariables(int load_step)
   {
     //#ifdef SCOREC
     int rnk = -1;
@@ -256,7 +253,7 @@ namespace bio
     apf::destroyField(quality_field);
     //#endif
   }
-  void NonLinTissue::storeStrain(apf::MeshElement * me, double* strain)
+  void NonlinearTissue::storeStrain(apf::MeshElement * me, double* strain)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
     apf::Matrix3x3 eps(strain[0],strain[3],strain[5],
@@ -264,7 +261,7 @@ namespace bio
                        strain[5],strain[4],strain[2]);
     apf::setMatrix(strn,m_ent,0,eps);
   }
-  void NonLinTissue::storeStress(apf::MeshElement * me, double* stress)
+  void NonlinearTissue::storeStress(apf::MeshElement * me, double* stress)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
     apf::Matrix3x3 sigma(stress[0],stress[3],stress[5],
@@ -272,7 +269,7 @@ namespace bio
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
   }
-  void NonLinTissue::updateConstraints()
+  void NonlinearTissue::updateConstraints()
   {
     /** Update beta and lambda based on values of dv and v calculated above. */
     double max_beta = 128;
@@ -310,7 +307,7 @@ namespace bio
       idx++;
     }
   }
-  void NonLinTissue::updateConstraintsAccm()
+  void NonlinearTissue::updateConstraintsAccm()
   {
     /** Determine accumulated volume change */
     double dv = 0.0;
@@ -362,7 +359,7 @@ namespace bio
       (*cnst)->setGflag(true);
     }
   }
-  void NonLinTissue::updateConstraintsAccm_Incrmt()
+  void NonlinearTissue::updateConstraintsAccm_Incrmt()
   {
     /** Determine accumulated volume change */
     double dv = 0.0;
@@ -412,9 +409,9 @@ namespace bio
     }
     dv_prev = dv;
     /** prev_rgn_vols is subsequently updated in
-     ** NonLinTissue::updatePrevVolumes() */
+     ** NonlinearTissue::updatePrevVolumes() */
   }
-  void NonLinTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
+  void NonlinearTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
   {
     amsi::Log cnstrnts = amsi::activateLog("constraints");
     double lmbda = 0.0;

@@ -12,7 +12,7 @@ namespace bio
   class NeoHookeanIntegrator : public amsi::ElementalSystem
   {
   public:
-  NeoHookeanIntegrator(NonLinTissue * n,
+  NeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
                        double shear_modulus,
                        double poisson_ratio,
@@ -242,7 +242,7 @@ namespace bio
     }
     int current_integration_point;
   private:
-    NonLinTissue * analysis;
+    NonlinearTissue * analysis;
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;

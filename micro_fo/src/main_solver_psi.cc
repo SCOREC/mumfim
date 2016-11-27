@@ -3,7 +3,6 @@
 #include "RVE_Util.h"
 #include "Sparskit_Externs.h"
 #include "Util.h"
-#include <amsiInterface.h>
 #include <iostream>
 #include <cstring>
 namespace bio
@@ -69,11 +68,6 @@ namespace bio
     local_S22 = (stress[3] / vol) * scale_conversion;
     local_S23 = (stress[4] / vol) * scale_conversion;
     local_S33 = (stress[5] / vol) * scale_conversion;
-    /*
-      AMSI_DEBUG(std::cout << "Macroscale stress: " << local_S11 << " " << local_S12 << " "
-      << local_S13 << " " << local_S22 << " "
-      << local_S23 << " " << local_S33 << std::endl);
-    */
     // todo (m) : hacky, change/fix this
     double orientation_tensor[9]={};
     calcFiberOrientationTensor(*fiber_network,orientation_tensor);

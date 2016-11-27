@@ -4,7 +4,7 @@
 #include "RVE_Util.h"
 #include "Util.h"
 #include <cstring> //memset
-#include <amsi.h>
+#include <amsiUtil.h>
 namespace bio
 {
   int MicroFO::Solver()
@@ -26,8 +26,6 @@ namespace bio
     double * dfdl = new double[num_elements]();
     // debug vars
     std::vector<double> mat;
-    //int rnk = -1;
-    //MPI_Comm_rank(AMSI_COMM_LOCAL,&rnk);
     // Calculates the fiber length
     std::vector<double> len(num_elements);
     calcFiberLengths(*fiber_network,len);

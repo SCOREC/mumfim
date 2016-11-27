@@ -1,11 +1,6 @@
-add_executable(singlescale main.cc)
-find_package(amsi COMPONENTS util meta interface control)
-target_link_libraries(singlescale
-                      biotissue
-                      util
-                      meta
-                      interface
-                      control)
-set_target_properties(singlescale PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-install(TARGETS singlescale
+find_package(amsi COMPONENTS util analysis)
+add_executable(bio_singlescale main.cc)
+target_link_libraries(bio_singlescale biotissue util analysis)
+set_target_properties(bio_singlescale PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+install(TARGETS bio_singlescale
         RUNTIME DESTINATION bin)

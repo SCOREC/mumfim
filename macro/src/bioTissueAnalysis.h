@@ -7,10 +7,10 @@ namespace bio
   class TissueIteration : public amsi::Iteration
   {
   protected:
-    NonLinTissue * tssu;
+    NonlinearTissue * tssu;
     amsi::LAS * las;
   public:
-    TissueIteration(NonLinTissue * t, amsi::LAS * l)
+    TissueIteration(NonlinearTissue * t, amsi::LAS * l)
       : amsi::Iteration()
       , tssu(t)
       , las(l)

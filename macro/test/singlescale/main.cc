@@ -1,6 +1,7 @@
 #include "bioTissueAnalysis.h"
-#include <amsiInterface.h>
-#include <SimFEA.h>
+#include "bioTissueMultiscaleAnalysis.h" // only for convergence ops, delete after
+#include <amsiAnalysis.h>
+#include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
 #include <sstream>
@@ -65,7 +66,11 @@ int main(int argc, char ** argv)
   {
     amsi::use_simmetrix = true;
     amsi::use_petsc = true;
-    amsi::amsiInit(argc,argv);
+    amsi::initAnalysis(argc,argv);
+    int rnk = -1;
+    MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
+    if(rnk > 0)
+      amsi::suppressOutput(std::cout);
     int sz = 0;
     MPI_Comm_size(MPI_COMM_WORLD,&sz);
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
@@ -78,10 +83,12 @@ int main(int argc, char ** argv)
     {
       amsi::initCase(mdl,*cs);
       pACase pd = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
-      bio::NonLinTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
+      bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       amsi::PetscLAS las;
       bio::TissueIteration itr(&tssu,&las);
-      amsi::RelativeResidualConvergence cnvrg(&las,1e-8);
+      amsi::RelativeResidualConvergence rs_cnvrg(&las,1e-8);
+      bio::VolumeConvergenceAccm_Incrmt dv_cnvrg(&tssu,1e-3); // %dv
+      amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
       int stp = 0;
       int nm_stps = 10;
       do
@@ -90,10 +97,12 @@ int main(int argc, char ** argv)
         tssu.step();
         tssu.setSimulationTime((double)stp/nm_stps);
       } while (amsi::numericalSolve(&itr,&cnvrg));
-        std::cout << "Analysis case completed successfully, continuing..." << std::endl;
+      std::cout << "Analysis case completed successfully, continuing..." << std::endl;
       amsi::freeCase(*cs);
     }
-    amsi::amsiFree();
+    if(rnk > 0)
+      amsi::expressOutput(std::cout);
+    amsi::freeAnalysis();
   }
   else result++;
   AMSI_DEBUG(Sim_logOff());

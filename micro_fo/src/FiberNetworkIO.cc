@@ -1,7 +1,7 @@
 #include "FiberNetwork.h"
 #include "globals.h"
 #include "Util.h"
-#include <amsi.h>
+#include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <cassert>
 #include <iostream>

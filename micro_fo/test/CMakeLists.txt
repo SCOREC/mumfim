@@ -1,19 +1,19 @@
-find_package(amsi COMPONENTS util meta interface control)
+find_package(amsi COMPONENTS util analysis multiscale)
 
 add_mpi_test(fiber_only main.cc 1)
-target_link_libraries(fiber_only micro_fo util meta interface control)
+target_link_libraries(fiber_only micro_fo)
 
 add_mpi_test(isolated_dof isolated_dof.cc 1)
-target_link_libraries(isolated_dof micro_fo util meta interface control)
+target_link_libraries(isolated_dof micro_fo)
 
 add_mpi_test(multi_disp multi_disp.cc 1)
-target_link_libraries(multi_disp micro_fo util meta interface control)
+target_link_libraries(multi_disp micro_fo)
 
 add_mpi_test(singleDOF_disp singleDOF_disp.cc 1)
-target_link_libraries(singleDOF_disp micro_fo util meta interface control)
+target_link_libraries(singleDOF_disp micro_fo)
 
 add_mpi_test(single_load_balance single_load_balance.cc 1)
-target_link_libraries(single_load_balance micro_fo control)
+target_link_libraries(single_load_balance micro_fo multiscale)
 
 add_mpi_test(serialization serialization.cc 1)
 target_link_libraries(serialization micro_fo)

@@ -3,7 +3,7 @@
 #include "RVE_Util.h"
 #include "FiberNetwork.h"
 #include "LagrangeMapping.h" // scorecutil to be phased out
-#include <amsiInterface.h>
+#include <amsiAnalysis.h>
 #include <apf.h>
 #include <apfMDS.h>
 #include <apfMesh2.h>

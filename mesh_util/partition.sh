@@ -25,7 +25,7 @@ else
 fi
 
 mpirun -np $NUM_PROCS \
-    bin/x64_rhel6_gcc44/partitionMesh \
+    bin/x64_rhel5_gcc41/partitionMesh \
     $MODEL \
     $MESH_ROOT/$MESH_SIZE/ \
     $MESH_NAME \

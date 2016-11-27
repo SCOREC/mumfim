@@ -48,9 +48,9 @@ else
   -DCMAKE_CXX_COMPILER=$CXX \
   -DLOGRUN=TRUE \
   -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
-  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/openmpi-1.10.0/lib/cmake/amsi \
+  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
   -DSIM_MPI=openmpi110 \
-  -DSCOREC_DIR=$DEVROOT/install/core/openmpi-1.10.0/lib/cmake/SCOREC \
+  -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
   -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
   -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/openmpi-1.10.0/ \
   ..

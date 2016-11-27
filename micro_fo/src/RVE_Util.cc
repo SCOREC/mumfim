@@ -10,10 +10,8 @@
 #include <apf.h>
 #include <apfMesh.h>
 // Multiscale control stuff (AMSI)
-#include <amsiMeta.h>
-#include <amsiControlService.h>
-#include <Migration.h>
-#include <amsiReporter.h>
+#include <amsiUtil.h>
+#include <amsiMultiscale.h>
 // Simmetrix libs
 #include <MeshSim.h>
 // Standard libs

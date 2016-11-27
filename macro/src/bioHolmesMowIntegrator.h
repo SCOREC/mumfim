@@ -12,7 +12,7 @@ namespace bio
   class HolmesMowIntegrator : public amsi::ElementalSystem
   {
   public:
-  HolmesMowIntegrator(NonLinTissue * n,
+  HolmesMowIntegrator(NonlinearTissue * n,
                       apf::Field * field,
                       apf::Field * strain_ip_field,
                       apf::Field * stress_ip_field,
@@ -302,7 +302,7 @@ namespace bio
     }
     int current_integration_point;
   private:
-    NonLinTissue * analysis;
+    NonlinearTissue * analysis;
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
