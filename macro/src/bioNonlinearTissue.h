@@ -156,17 +156,18 @@ namespace bio
     { }
     bool converged()
     {
+      ts->updateVolumes();
       int rgns = ts->numVolumeConstraints();
       bool converged = true;
-      double vi = 0.0; ///<Accumulated Current Volume
-      double vp = 0.0; ///<Accumulated Previous Volume
-      double dv = 0.0; ///<Accumulated Volume Difference
+      double vi = 0.0; // Accumulated Current Volume
+      double vp = 0.0; // Accumulated Previous Volume
+      double dv = 0.0; // Accumulated Volume Difference
       if (rgns == 0)
         vp = 1.0; // so that we do not run into divide by zero error.
       for(int ii = 0; ii < rgns; ii++)
       {
-        /** prev_rgn_vol initialized to init_rgn_vol,
-         * therefore, dv_rgn = vi_rgn - initial v_rgn at ldstp0, iteration 0. */
+        // prev_rgn_vol initialized to init_rgn_vol,
+        // therefore, dv_rgn = vi_rgn - initial v_rgn at ldstp0, iteration 0.
         double vp_rgn = ts->getRgnVolPrev(ii);
         double vi_rgn = ts->getRgnVol(ii);
         double dv_rgn = vi_rgn - vp_rgn;
@@ -174,13 +175,15 @@ namespace bio
         vp += vp_rgn;
         dv += dv_rgn;
       }
-      /** convergence based on volume change */
+      // convergence based on volume change
       converged = std::abs(dv) < eps * vp  ;
       std::cout << "current volume: " << vi << std::endl;
       std::cout << "previous volume: " << vp << std::endl;
       std::cout << "accumulated incremental volume convergence: " << std::endl
                 << "\t" << dv << " < " << eps * vp << std::endl
                 << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
+      if(!converged)
+        ts->updateConstraintsAccm_Incrmt();
       return converged;
     }
     bool failed()

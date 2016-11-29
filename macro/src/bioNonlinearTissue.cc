@@ -271,20 +271,18 @@ namespace bio
   }
   void NonlinearTissue::updateConstraints()
   {
-    /** Update beta and lambda based on values of dv and v calculated above. */
+    // Update beta and lambda based on values of dv and v calculated above.
     double max_beta = 128;
     double max_iter = 15;
     double idx = 0;
     double eps = 1e-2;
-//    for(std::vector<VolumeConstraintADMM*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    for (std::vector<VolumeConstraintSurface*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
     {
-      double dv = rgn_vols[idx] - init_rgn_vols[idx]; ///< dv is calculated with respect to initial (target) volume.
+      double dv = rgn_vols[idx] - init_rgn_vols[idx]; // dv is calculated with respect to initial (target) volume.
       double dv_prev = prev_rgn_vols[idx] - init_rgn_vols[idx];
-      if (std::abs(dv) > eps * init_rgn_vols[idx]) ///< criteria for volume difference constraint.
-//      if (std::abs(dv) > eps)
+      if (std::abs(dv) > eps * init_rgn_vols[idx])    // criteria for volume difference constraint.
       {
-        /** Update beta */
+        // beta update
         if (std::abs(dv_prev) > 1e-10 && dv > 0.5 * dv_prev)
         {
           double beta = 0.0;
@@ -299,117 +297,61 @@ namespace bio
             (*cnst)->setBeta(beta);
           }
         }
-        /** Update lambda */
-        std::cout<<"Beta="<<(*cnst)->getBeta()<<std::endl;
+        // Update lambda
+        std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
         (*cnst)->setLambda((*cnst)->getLambda() + (dv * (*cnst)->getBeta()));
-        std::cout<<"Lambda="<<(*cnst)->getLambda()<<std::endl;
+        std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
       }
       idx++;
     }
   }
   void NonlinearTissue::updateConstraintsAccm()
   {
-    /** Determine accumulated volume change */
+    // Determine accumulated volume change
     double dv = 0.0;
     double v = 0.0;
-//    double dv_prev = 0.0;
     double v0 = 0.0;
     int rgns = numVolumeConstraints();
     for (int ii=0; ii<rgns; ii++)
     {
-//      double dv_rgn = rgn_vols[ii] - init_rgn_vols[ii]; ///< dv is calculated with respect to initial (target) volume.
-//      double dv_prev_rgn = prev_rgn_vols[ii] - init_rgn_vols[ii];
       v += rgn_vols[ii];
-//      dv += dv_rgn;
-//      dv_prev += dv_prev_rgn;
       v0 += init_rgn_vols[ii];
     }
     dv = v - v0;
-    /** Update beta and lambda based on values of dv and v calculated above. */
-/*
-    double max_beta = 10000;
-    double max_iter = 10000;
-*/
-//    for(std::vector<VolumeConstraintADMM*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    for(std::vector<VolumeConstraintSurface*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+    // Update beta and lambda based on values of dv and v calculated above.
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
     {
-      /** Update beta */
-      /*
-      if (std::abs(dv_prev) > 1e-10 && dv > 0.5 * dv_prev)
-      {
-        double beta = 0.0;
-        if (iteration < max_iter && (*cnst)->getBeta() < max_beta)
-        {
-          beta = (*cnst)->getBeta() * 2.0;
-          (*cnst)->setBeta(beta);
-        }
-        else
-        {
-          beta = (*cnst)->getBeta() * 0.5;
-          (*cnst)->setBeta(beta);
-        }
-      }
-      */
-      /** Update lambda */
-      std::cout<<"Beta="<<(*cnst)->getBeta()<<std::endl;
+      // Update lambda
+      std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
       (*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
-//      (*cnst)->setLambda((*cnst)->getLambda() - 1.0*dv/v0);
-      std::cout<<"dv="<<dv<<std::endl;
-      std::cout<<"Lambda="<<(*cnst)->getLambda()<<std::endl;
+      std::cout << "dv = " << dv << std::endl;
+      std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
       (*cnst)->setGflag(true);
     }
   }
   void NonlinearTissue::updateConstraintsAccm_Incrmt()
   {
-    /** Determine accumulated volume change */
+    // Determine accumulated volume change
     double dv = 0.0;
     double vp = 0.0;
     double dv_rgn = 0;
     int rgns = numVolumeConstraints();
     for (int ii=0; ii<rgns; ii++)
     {
-      /** prev_rgn_vols is initialized to init_rgn_vols,
-       * therefore, at ldstp 0, iteration 0 dv_rgn = rgn_vols - init_rgn_vols. */
       dv_rgn = rgn_vols[ii] - prev_rgn_vols[ii];
       dv += dv_rgn;
       vp += prev_rgn_vols[ii];
     }
-    /** Update beta and lambda based on values of dv and v calculated above. */
-    /*
-    double max_beta = 128e-6;
-    double max_iter = 50;
-    */
-//    for(std::vector<VolumeConstraintADMM*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    for(std::vector<VolumeConstraintSurface*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+    // Update beta and lambda based on values of dv and v calculated above.
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
     {
-      /** Update beta
-       ** abs(dv_prev) > 1e-10 is equivalent to iterations != 0 */
-      /*
-      if (std::abs(dv_prev) > 1e-10 && dv > 0.5 * dv_prev)
-      {
-        double beta = 0.0;
-        if (iteration < max_iter && (*cnst)->getBeta() < max_beta)
-        {
-          beta = (*cnst)->getBeta() * 2.0;
-          (*cnst)->setBeta(beta);
-        }
-        else
-        {
-          beta = (*cnst)->getBeta() * 0.5;
-          (*cnst)->setBeta(beta);
-        }
-      }
-      */
-      /** Update lambda */
-      std::cout<<"Beta="<<(*cnst)->getBeta()<<std::endl;
+      // Update lambda
+      //std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
       (*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
-//      (*cnst)->setLambda((*cnst)->getLambda() - dv/vp );
-      std::cout<<"dv="<<dv<<std::endl;
-      std::cout<<"Lambda="<<(*cnst)->getLambda()<<std::endl;
+      //std::cout << "dv = " << dv << std::endl;
+      //std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
     }
     dv_prev = dv;
-    /** prev_rgn_vols is subsequently updated in
-     ** NonlinearTissue::updatePrevVolumes() */
   }
   void NonlinearTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
   {
@@ -424,18 +366,5 @@ namespace bio
                           << lmbda << ", "
                           << beta << std::endl;
     }
-//    for(std::vector<VolumeConstraintADMM*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    /*
-    for(std::vector<VolumeConstraintSurface*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    {
-      lmbda = (*cnst) -> getLambda();
-      beta = (*cnst) -> getBeta();
-      if (rnk == 0)
-        amsi::log(cnstrnts) << ldstp << ", "
-                            << iteration << ", "
-                            << lmbda << ", "
-                            << beta << std::endl;
-    }
-    */
   }
 } // end of namespace Biotissue

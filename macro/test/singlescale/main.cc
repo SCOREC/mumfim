@@ -83,21 +83,33 @@ int main(int argc, char ** argv)
     {
       amsi::initCase(mdl,*cs);
       pACase pd = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
+      pACase ss = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
+      int nm_stps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
       bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       amsi::PetscLAS las;
       bio::TissueIteration itr(&tssu,&las);
       amsi::RelativeResidualConvergence rs_cnvrg(&las,1e-8);
       bio::VolumeConvergenceAccm_Incrmt dv_cnvrg(&tssu,1e-3); // %dv
       amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
-      int stp = 0;
-      int nm_stps = 10;
-      do
+      for(int stp = 1; stp <= nm_stps; ++stp)
       {
-        stp++;
-        tssu.step();
         tssu.setSimulationTime((double)stp/nm_stps);
-      } while (amsi::numericalSolve(&itr,&cnvrg));
-      std::cout << "Analysis case completed successfully, continuing..." << std::endl;
+        if(amsi::numericalSolve(&itr,&cnvrg))
+        {
+          tssu.step();
+          las.step();
+          std::stringstream fnm;
+          fnm << amsi::fs->getResultsDir() << "/msh_stp_" << stp;
+          apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
+          std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
+        }
+        else
+        {
+          std::cerr << "Load step " << stp << " failed! Exiting..." << std::endl;
+          break;
+        }
+      }
+      std::cout << "Analysis case exited, continuing..." << std::endl;
       amsi::freeCase(*cs);
     }
     if(rnk > 0)
