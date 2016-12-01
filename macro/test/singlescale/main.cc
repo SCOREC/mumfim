@@ -77,7 +77,8 @@ int main(int argc, char ** argv)
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
     std::vector<pACase> css;
-    amsi::getTypeCases(SModel_attManager(mdl),"analysis",std::back_inserter(css));
+    pAManager att_mn = SModel_attManager(mdl);
+    amsi::getTypeCases(att_mn,"analysis",std::back_inserter(css));
     auto css_nd = css.end();
     for(auto cs = css.begin(); cs != css_nd; ++cs)
     {
@@ -114,6 +115,9 @@ int main(int argc, char ** argv)
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);
+    M_release(msh);
+    //AMAN_release(att_mn);
+    GM_release(mdl);
     amsi::freeAnalysis();
   }
   else result++;

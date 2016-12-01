@@ -44,8 +44,8 @@ namespace bio
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
-    GRIter ri = GM_regionIter(imdl);
     pGEntity rgn = NULL;
+    GRIter ri = GM_regionIter(imdl);
     while((rgn = (pGEntity)GRIter_next(ri)))
     {
       // initialize constraints
@@ -74,6 +74,7 @@ namespace bio
                                                                     strs,
                                                                     youngs_modulus,poisson_ratio);
     }
+    GRIter_delete(ri);
     double shear_modulus = ( 3.0 * youngs_modulus * (1.0 - 2.0 * poisson_ratio) )/( 2.0 * (1.0 + poisson_ratio) );
     constitutive =  new NeoHookeanIntegrator(this,apf_primary_field,shear_modulus,poisson_ratio,1);
     int dir_tps[] = {amsi::FieldUnit::displacement};
@@ -151,7 +152,8 @@ namespace bio
     ApplyBC_Neumann(las);
     apf::MeshEntity * me = NULL;
     // custom iterator would be perfect for switching for multiscale version
-    for(apf::MeshIterator * it = apf_mesh->begin(analysis_dim); (me = apf_mesh->iterate(it));)
+    auto it = apf_mesh->begin(analysis_dim);
+    while((me = apf_mesh->iterate(it)))
     {
       apf::MeshElement * mlmt = apf::createMeshElement(apf_mesh,me);
       //amsi::ElementalSystem * sys = getElementalSystem(me,0); // assumes 1 type of system per element
@@ -167,7 +169,9 @@ namespace bio
                    &constitutive->getKe()(0,0),
                    &constitutive->getfe()(0),
                    constitutive->includesBodyForces());
+      apf::destroyMeshElement(mlmt);
     }
+    apf_mesh->end(it);
     // process constraints
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las,apf_mesh,part,apf_primary_numbering);
@@ -299,7 +303,8 @@ namespace bio
         }
         // Update lambda
         std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-        (*cnst)->setLambda((*cnst)->getLambda() + (dv * (*cnst)->getBeta()));
+        //(*cnst)->setLambda((*cnst)->getLambda() + (dv * (*cnst)->getBeta()));
+        (*cnst)->setLambda(0.0);
         std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
       }
       idx++;
@@ -323,7 +328,8 @@ namespace bio
     {
       // Update lambda
       std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      (*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
+      //(*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
+      (*cnst)->setLambda(0.0);
       std::cout << "dv = " << dv << std::endl;
       std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
       (*cnst)->setGflag(true);
@@ -348,6 +354,7 @@ namespace bio
       // Update lambda
       //std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
       (*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
+      //(*cnst)->setLambda(0.0);
       //std::cout << "dv = " << dv << std::endl;
       //std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
     }
