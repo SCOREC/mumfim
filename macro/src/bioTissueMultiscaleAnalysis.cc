@@ -191,9 +191,26 @@ namespace bio
       current_step++;
       // write mesh to file
       std::stringstream stpstrm;
+      std::string pvd = "out.pvd";
+      std::fstream pvdf;
       stpstrm << current_step;
       if ( (current_step) % 1 == 0 )
+      {
         apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
+	pvdf.open(std::string(amsi::fs->getResultsDir()+"/"+pvd.c_str()), std::ios::out);
+	pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
+	pvdf << "  <Collection>" << std::endl;
+	for (uint t=0; t < current_step; t++) {
+	  std::ostringstream oss;
+	  oss << "msh_stp_" << t+1;
+	  std::string vtu = oss.str();
+	  pvdf << "    <DataSet timestep=\"" << t << "\" group=\"\" ";
+	  pvdf << "part=\"0\" file=\"" << vtu << "/" << vtu;
+	  pvdf << ".pvtu\"/>" << std::endl;
+	}
+	pvdf << "  </Collection>" << std::endl;
+	pvdf << "</VTKFile>" << std::endl;
+      }
       if (current_step >= num_load_steps)
       {
         complete = true;
