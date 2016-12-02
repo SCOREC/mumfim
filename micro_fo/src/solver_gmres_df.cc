@@ -125,7 +125,10 @@ namespace bio
           ncv = 0;
         }
       } while(cont == 1);
-      relative_norm = fabs(previous_norm - current_norm);
+      if (current_norm != 0)
+	relative_norm = fabs(previous_norm - current_norm);
+      else
+	relative_norm = current_norm;
       /*
         AMSI_DEBUG
         (
