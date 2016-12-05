@@ -43,14 +43,6 @@ namespace bio
       MPI_Comm_size(AMSI_COMM_SCALE,&sz);
       if(rnk == sz - 1)
         local = true;
-/** initialize prevVol vector
- ** f is member variable of ElementalSystem and stores accumulated displacement (apf_primary_field)*/
-      /*
-      int dm = 2; ///<For surface mesh entities.
-      std::vector<pEntity> rgns;
-      amsi::getClassifiedEnts(part,rgn,dm,std::back_inserter(rgns));
-      prevVol.resize(rgns.size());
-      */
     }
     // TODO:
     // passing in the mesh partition here is a stopgap to avoid having to develop an intermediary at the moment,
@@ -70,10 +62,8 @@ namespace bio
         apf::NewArray<int> ids;
         apf::getElementNumbers(nm,mnt,ids);
         apf::DynamicMatrix & lG = getLambdaFirstVolDeriv();
-//        apf::DynamicMatrix & lH = getLambdaSecondVolDeriv();
         // Multiply appropriate terms by -1
         lG *= -1.0;
-//        amsi::assembleMatrix(las,nedofs,&ids[0],nedofs,&ids[0],&lH(0,0));
         amsi::assembleVector(las,nedofs,&ids[0],&lG(0,0));
         elem_num++;
       }
@@ -88,50 +78,40 @@ namespace bio
       es = fs->getEntityShape(apf::getMesh(f)->getType(apf::getMeshEntity(me)));
       d2Vdu2.setSize(nedofs,nedofs);
       dVdu.setSize(1,nedofs);
-//      d2Vdu2.zero();
-//      dVdu.zero();
-      /** We want to consider 3D space, however MeshElement me is for 2D entity. Therefore we need to hardcode dim for now.. */
+      // hard-coded, should be derived from me
+      // bill: can't we just add one to the dim of the meshelement, since this reduces to an area constraint calculated from edges in 2d, and a length constraint from vertices in 1d... the dim value should work correctly in all cases
       dim = 3;
     }
     bool includesBodyForces() { return true; }
     void atPoint(apf::Vector3 const &p, double w, double dV)
     {
       int & nen = nenodes; // = 3 (triangle)
-      /** 1. Get coordinates of underlying mesh
-       * mesh_xyz contains coordinates corresponding to underlying mesh, which is at the reference state. */
-      apf::Mesh * mesh = apf::getMesh(f);                                      ///<getMesh from apf_primary_field (accumulated displacement field).
-      apf::Field * apf_coord_field = mesh->getCoordinateField();               ///<extract coordinate field from mesh.
-      apf::Element * mesh_coord_elem = apf::createElement(apf_coord_field,me); ///<create element that contains coordinates.
+      apf::Mesh * mesh = apf::getMesh(f);
+      apf::Field * apf_coord_field = mesh->getCoordinateField();
+      apf::Element * mesh_coord_elem = apf::createElement(apf_coord_field,me);
       apf::NewArray<apf::Vector3> mesh_xyz;
-      apf::getVectorNodes(mesh_coord_elem,mesh_xyz);                           ///<extract coordinate values from coordinate element.
-      /** 2. Get coordinates from apf_primary_field (passed in), which contains the accumulated displacement
-       * primary_field_xyz contains accumulated displacement values at each node. */
+      apf::getVectorNodes(mesh_coord_elem,mesh_xyz);
       apf::NewArray<apf::Vector3> primary_field_xyz;
       apf::getVectorNodes(e,primary_field_xyz);
-      /** 3. Calculate current coordinates
-       * xyz = mesh_xyz + primary_field_xyz and contains the current nodal position values. */
-      apf::DynamicMatrix xyz(nen,dim); xyz.zero();
-      for (int ii = 0; ii < nen; ii++)    ///<nen = 3 (triangle on surface mesh)
-        for (int jj = 0; jj < dim; jj++)  ///<dim = 3 (three dimension geometry)
+      apf::DynamicMatrix xyz(nen,dim);
+      xyz.zero();
+      for (int ii = 0; ii < nen; ii++)
+        for (int jj = 0; jj < dim; jj++)
           xyz(ii,jj) = mesh_xyz[ii][jj] + primary_field_xyz[ii][jj];
-      /** Calculate volumes from triangles on surface mesh
-       * Initial volume is calculated from mesh_xyz
-       * Current volume is calculated from xyz */
-      //     apf::Vector3 normal, init_normal;
-      apf::Vector3 pt0, pt1, pt2;
+      apf::Vector3 pt0;
+      apf::Vector3 pt1;
+      apf::Vector3 pt2;
       for (int jj = 0; jj < dim; jj++)
       {
         pt0[jj] = xyz(0,jj);
         pt1[jj] = xyz(1,jj);
         pt2[jj] = xyz(2,jj);
       }
-
-//      if (updateG_flag)
       calcG(pt0, pt1, pt2, dVdu);
       if (updateH_flag)
-	calcH(pt0, pt1, pt2, d2Vdu2, nen);
-      
+        calcH(pt0, pt1, pt2, d2Vdu2, nen);
       // Determine normal direction (based on measureVol_pGFace in apfsimWrapper.cc)
+      // todo: make this a standalone function... should be pretty straightforward
       pRegion mshRgnIn = F_region((pFace)apf::getMeshEntity(me),0);
       pRegion mshRgnOut = F_region((pFace)apf::getMeshEntity(me),1);
       int normal_dir = 1;
@@ -139,74 +119,51 @@ namespace bio
       int GRgnOut_tag = mshRgnOut == NULL ? -2 : GEN_tag(R_whatIn(mshRgnOut));
       if (GRgnIn_tag == rgn_tag)
         normal_dir = 1;
-//	normal_dir = -1;
       else if (GRgnOut_tag == rgn_tag)
         normal_dir = -1;
-//	normal_dir = 1;
-      else{
+      else // have to deal with partitioning..
+      {
         if (GRgnIn_tag == -2 && GRgnOut_tag != rgn_tag)
           normal_dir = 1;
         else if (GRgnOut_tag == -2 && GRgnIn_tag != rgn_tag)
           normal_dir = -1;
-//	  normal_dir = 1;
       }
-      //DeltaV = Vol_glb - initVol_glb;
       DeltaV = Vol_glb - prevVol_glb;
-
       dVdu *= normal_dir;
       d2Vdu2 *= normal_dir;
-
       Lambda_d2Vdu2 = d2Vdu2;
       Lambda_d2Vdu2 *= Lambda;
-      /*
-      std::cout<<"dVdu:"<<std::endl;
-      std::cout<<dVdu<<std::endl;
-      */
       // Modifications to force-vector.
       Lambda_dVdu = dVdu;
       Lambda_dVdu *= Lambda;
-
-      // Augmented Lagrangian method
-      /**
-       * A   = Beta * (GG^T + DeltaV * H)
-       * VH  = DeltaV * H
-       * BVG = Beta * DeltaV * G
-       * Lambda * H modified to Lambda * H + Beta * (GG^T + DeltaV * H)
-       */
-/*
+      // Augmented Lagrangian method:
+      // A   = Beta * (GG^T + DeltaV * H)
+      // VH  = DeltaV * H
+      // BVG = Beta * DeltaV * G
+      // Lambda * H modified to Lambda * H + Beta * (GG^T + DeltaV * H)
       apf::DynamicMatrix A(nedofs,nedofs);
       apf::DynamicMatrix GT(nedofs,1);
       apf::transpose(dVdu,GT);
       apf::multiply(GT,dVdu,A);
-      
       apf::DynamicMatrix VH(nedofs,nedofs);
       VH = d2Vdu2;
       VH *= DeltaV;
-
       A += VH;
       A *= Beta;
-//      A /= prevVol_glb;
       A /= initVol_glb; //scale entire A by V0^2.
-//      A /= initVol_glb;
-
       Lambda_d2Vdu2 += A;
-*/
       apf::DynamicMatrix BVG(1,nedofs);
       BVG = dVdu;
       BVG *= DeltaV;
       BVG *= Beta;
       BVG /= prevVol_glb;
-//      BVG /= initVol_glb;
-//      BVG /= initVol_glb;
-      
       Lambda_dVdu += BVG;
     }
-
     void calcG(apf::Vector3 const &pt0, apf::Vector3 const &pt1, apf::Vector3 const &pt2, apf::DynamicMatrix& dVdu)
     {
       dVdu.zero();
-      /** Calculate volume derivatives from triangles on surface mesh
-       * dVdu is of size 1 x nedofs (9). Size set in inElement.*/
+      // volume derivatives
+      // dVdu is of size 1 x nedofs, the below shouldn't be hardcoded for triangles in that case..
       dVdu(0,0) = 0.5 * (pt2[1] * pt1[2] - pt1[1] * pt2[2]);  ///<dVdx1
       dVdu(0,1) = 0.5 * (-pt2[0] * pt1[2] + pt1[0] * pt2[2]); ///<dVdy1
       dVdu(0,2) = 0.5 * (pt2[0] * pt1[1] - pt1[0] * pt2[1]);  ///<dVdz1
@@ -217,19 +174,27 @@ namespace bio
       dVdu(0,7) = 0.5 * (-pt1[0] * pt0[2] + pt0[0] * pt1[2]); ///<dVdy3
       dVdu(0,8) = 0.5 * (pt1[0] * pt0[1] - pt0[0] * pt1[1]);  ///<dVdz3
     } // end of calcG
-    void calcH(apf::Vector3 const &pt0, apf::Vector3 const &pt1, apf::Vector3 const &pt2, apf::DynamicMatrix& dVdu, int nen)
+    void calcH(apf::Vector3 const & pt0,
+               apf::Vector3 const & pt1,
+               apf::Vector3 const & pt2,
+               apf::DynamicMatrix & dVdu,
+               int nen)
     {
       d2Vdu2.zero();
-      /** submat1 = [0 -z3 y3]
-                   [z3 0 -x3]
-                   [-y3 x3 0]
-      *   submat2 = [0 z2 -y2]
-                   [-z2 0 x2]
-                   [y2 -x2 0]
-      *   submat3 = [0 -z1 y1]
-                   [z1 0 -x1]
-                   [-y1 x1 0]*/
-      apf::Matrix<3,3> submat1, submat2, submat3;
+      /*
+        submat1 = [ 0  -z3  y3]
+                  [ z3   0 -x3]
+                  [-y3  x3   0]
+        submat2 = [  0  z2 -y2]
+                  [-z2   0  x2]
+                  [ y2 -x2   0]
+        submat3 = [  0 -z1  y1]
+                  [ z1   0 -x1]
+                  [-y1  x1   0]
+      */
+      apf::Matrix<3,3> submat1;
+      apf::Matrix<3,3> submat2;
+      apf::Matrix<3,3> submat3;
       submat1[0][0] = 0.0;     submat1[0][1] = -pt2[2]; submat1[0][2] = pt2[1];
       submat1[1][0] = pt2[2];  submat1[1][1] = 0.0;     submat1[1][2] = -pt2[0];
       submat1[2][0] = -pt2[1]; submat1[2][1] = pt2[0];  submat1[2][2] = 0.0;
@@ -242,29 +207,15 @@ namespace bio
       for (int ii = 0; ii < nen; ii++)
         for (int jj = 0; jj < nen; jj++)
         {
-          /** Diagonal submatrices */
-
+          // Diagonal submatrices
           d2Vdu2(ii,jj) = 0.0;
           d2Vdu2(ii+dim,jj+dim) = 0.0;
           d2Vdu2(ii+2*dim,jj+2*dim) = 0.0;
-
-          /** off-diagonal submatrices */
-          /*
-          d2Vdu2(ii,jj+dim) = submat1[ii][jj];
-          d2Vdu2(ii+dim,jj) = -1.0 * submat1[ii][jj];
-
-          d2Vdu2(ii,jj+2*dim) = submat2[ii][jj];
-          d2Vdu2(ii+2*dim,jj) = -1.0 * submat2[ii][jj];
-
-          d2Vdu2(ii+dim,jj+2*dim) = submat3[ii][jj];
-          d2Vdu2(ii+2*dim,jj+dim) = -1.0 * submat3[ii][jj];
-          */
+          // off-diagonal submatrices
           d2Vdu2(ii,jj+dim) = 0.0;
           d2Vdu2(ii+dim,jj) = 0.0;
-
           d2Vdu2(ii,jj+2*dim) = 0.0;
           d2Vdu2(ii+2*dim,jj) = 0.0;
-
           d2Vdu2(ii+dim,jj+2*dim) = 0.0;
           d2Vdu2(ii+2*dim,jj+dim) = 0.0;
         }
@@ -285,8 +236,6 @@ namespace bio
     void setBeta(double factor) { Beta = factor; }
     void setGflag(bool flag){updateG_flag = flag;}
     void setHflag(bool flag){updateH_flag = flag;}
-//    void setPrevVol(int idx, double vol){prevVol[idx] = vol;}
-//    void getPrevVols(std::vector<double> & v){v = prevVol;}
     void setVol(double vol){Vol_glb = vol;}
     void setInitVol(double vol){initVol_glb = vol;}
     void setPrevVol(double vol){prevVol_glb = vol;}
@@ -312,7 +261,6 @@ namespace bio
     double Vol_glb;     // global current volume of entire structure being constrained.
     double initVol_glb; // global initial volume of entire structure being constrained.
     double prevVol_glb; // global previous volume of entire structure being constrained.
-//    std::vector<double> prevVol;
     int elem_num; // keeps count of element number within region.
   };
 }

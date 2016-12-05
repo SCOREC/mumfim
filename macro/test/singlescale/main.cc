@@ -77,31 +77,47 @@ int main(int argc, char ** argv)
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
     std::vector<pACase> css;
-    amsi::getTypeCases(SModel_attManager(mdl),"analysis",std::back_inserter(css));
+    pAManager att_mn = SModel_attManager(mdl);
+    amsi::getTypeCases(att_mn,"analysis",std::back_inserter(css));
     auto css_nd = css.end();
     for(auto cs = css.begin(); cs != css_nd; ++cs)
     {
       amsi::initCase(mdl,*cs);
       pACase pd = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
+      pACase ss = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
+      int nm_stps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
       bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       amsi::PetscLAS las;
       bio::TissueIteration itr(&tssu,&las);
       amsi::RelativeResidualConvergence rs_cnvrg(&las,1e-8);
       bio::VolumeConvergenceAccm_Incrmt dv_cnvrg(&tssu,1e-3); // %dv
       amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
-      int stp = 0;
-      int nm_stps = 10;
-      do
+      for(int stp = 1; stp <= nm_stps; ++stp)
       {
-        stp++;
-        tssu.step();
         tssu.setSimulationTime((double)stp/nm_stps);
-      } while (amsi::numericalSolve(&itr,&cnvrg));
-      std::cout << "Analysis case completed successfully, continuing..." << std::endl;
+        if(amsi::numericalSolve(&itr,&cnvrg))
+        {
+          tssu.step();
+          las.step();
+          std::stringstream fnm;
+          fnm << amsi::fs->getResultsDir() << "/msh_stp_" << stp;
+          apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
+          std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
+        }
+        else
+        {
+          std::cerr << "Load step " << stp << " failed! Exiting..." << std::endl;
+          break;
+        }
+      }
+      std::cout << "Analysis case exited, continuing..." << std::endl;
       amsi::freeCase(*cs);
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);
+    M_release(msh);
+    //AMAN_release(att_mn);
+    GM_release(mdl);
     amsi::freeAnalysis();
   }
   else result++;

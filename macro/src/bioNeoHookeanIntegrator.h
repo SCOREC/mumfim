@@ -28,12 +28,17 @@ namespace bio
     {
       ElementalSystem::inElement(me);
       fs = apf::getShape(f);
-      es = fs->getEntityShape(apf::getMesh(f)->getType(apf::getMeshEntity(me)));
+      msh = apf::getMesh(f);
+      es = fs->getEntityShape(msh->getType(apf::getMeshEntity(me)));
       dim = apf::getDimension(me);
+      ce = apf::createElement(msh->getCoordinateField(),me);
+      apf::getVectorNodes(ce,msh_xyz);
+      apf::getVectorNodes(e,fld_xyz);
+      current_integration_point = 0;
     }
     void outElement()
     {
-      current_integration_point = 0;
+      apf::destroyElement(ce);
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
@@ -41,21 +46,11 @@ namespace bio
     {
       int & nen = nenodes; // = 4 (tets)
       int & nedof = nedofs; // = 12 (tets)
-      // Calculate current coordinates using accumulated displacements up to this point.
-      // 1. Get coordinates on underlying mesh
-      apf::Mesh * mesh = apf::getMesh(f);
-      apf::Field * apf_coord_field = mesh->getCoordinateField();
-      apf::Element * mesh_coord_elem = apf::createElement(apf_coord_field,me);
-      apf::NewArray<apf::Vector3> mesh_xyz;
-      apf::getVectorNodes(mesh_coord_elem,mesh_xyz);
-      // 2. Get coordinates from apf_primary_field (passed in), which contains the accumulated displacement
-      apf::NewArray<apf::Vector3> primary_field_xyz;
-      apf::getVectorNodes(e,primary_field_xyz);
       // 3. Calculate current coordinates
       apf::DynamicMatrix xyz(nen,dim); xyz.zero();
       for (int ii = 0; ii < nen; ii++)
         for (int jj = 0; jj < dim; jj++)
-          xyz(ii,jj) = mesh_xyz[ii][jj] + primary_field_xyz[ii][jj];
+          xyz(ii,jj) = msh_xyz[ii][jj] + fld_xyz[ii][jj];
       // For Updated Lagrangian, the Jacobian of the current coordinate is used
       // Note: that entires of Jacobian is hard coded for Linear tetrahedra elements.
       // TO DO: Generalize Jacobian for current configuration.
@@ -80,7 +75,7 @@ namespace bio
       apf::DynamicMatrix grads(nen,dim);
       grads.zero();
       apf::NewArray<apf::Vector3> local_grads;
-      es->getLocalGradients(mesh, apf::getMeshEntity(me), p, local_grads);
+      es->getLocalGradients(msh, apf::getMeshEntity(me), p, local_grads);
       for (int ii = 0; ii < nen; ii++)
         for (int jj = 0; jj < dim; jj++)
           for (int kk = 0; kk < dim; kk++)
@@ -239,6 +234,7 @@ namespace bio
       apf::getVectorNodes(e_disp,disp);
       for (int ii=0;ii<nedofs;ii++)
         u(ii) = disp[ii/3][ii%3];
+      apf::destroyElement(e_disp);
     }
     int current_integration_point;
   private:
@@ -246,6 +242,10 @@ namespace bio
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
+    apf::Element * ce;
+    apf::Mesh * msh;
+    apf::NewArray<apf::Vector3> msh_xyz;
+    apf::NewArray<apf::Vector3> fld_xyz;
     double ShearModulus;
     double PoissonsRatio;
   };

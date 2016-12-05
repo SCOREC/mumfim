@@ -229,7 +229,7 @@ namespace bio
                         << iteration << ", "
                         << nrm/accm_nrm << std::endl;
     }
-  };  
+  };
   class LASSubvectorConvergence : public amsi::RelativeResidualConvergence
   {
   protected:

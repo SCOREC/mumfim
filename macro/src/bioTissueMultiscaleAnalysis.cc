@@ -106,27 +106,20 @@ namespace bio
     {
       bool converged = false;
       double eps = 1e-4;
-      /** incremental volume constraint */
+      // incremental volume constraint
       // embedded_cell_resize:
       //double eps_v = 4.0;
-      /** accm. volume constraint V - V0 */
+      // accm. volume constraint V - V0
       double eps_v = 1e-3;
-//      double eps_v = 1e-4;
       unsigned iteration = 0;
       tissue->updateMicro();
 #     ifdef LOGRUN
       if (rnk == 0)
-      {
         amsi::log(loads) << current_step << ", ";
-//        amsi::log(disps) << current_step << ", ";
-      }
 #     endif
       /// Create convergence objects.
-//      VolumeConvergence dv_convergence(tissue,eps_v);
-//      VolumeConvergenceAccm dv_convergence(tissue,eps_v);
       VolumeConvergenceAccm_Incrmt dv_convergence(tissue,eps_v);
-      RelativeFieldNorm convergence(tissue->getdUField(),tissue->getUField(),tissue->getNumbering(),eps);
-//      LASResidualConvergence convergence(las,eps);
+      LASResidualConvergence convergence(las,eps);
       while(!converged)
       {
 #       ifdef LOGRUN
@@ -137,32 +130,12 @@ namespace bio
         std::cout << "Current nonlinear iteration = " << iteration << "." << std::endl;
         LinearSolver(tissue,las);
         las->iter();
-//      tissue->updateVolumes(); // Only update when converged for a load step.
-//      tissue->updateConstraintsAccm();
-
-        // check for convergence
-        //std::vector<int> cnst_dofs;
-        //tissue->getConstraintDofs(std::back_inserter(cnst_dofs));
-        //LASSubvectorConvergence convergence(las,eps,cnst_dofs.size(),&cnst_dofs[0]);
         converged = convergence.converged();
-
-        if (converged){
-//        tissue->updatePrevVolumes(); // Set previous volume to current volume.
-          tissue->updateVolumes(); // Only update when converged for a load step.
-        }
-
-        /// record convergence history and constraint parameters
         convergence.log(current_step, iteration, rnk);
-        dv_convergence.log(current_step, iteration, rnk);
         tissue->logCnstrntParams(current_step, iteration, rnk);
-        if(converged && !dv_convergence.converged())
-        {
-          converged = false;
-//        tissue->updateConstraints();
-//        tissue->updateConstraintsAccm();
-        tissue->updateConstraintsAccm_Incrmt();
-        }
-
+        // if we've converged on displacement, check the volume convergence and update the vols
+        converged = converged ? dv_convergence.converged() : false;
+        dv_convergence.log(current_step, iteration, rnk);
         cs->couplingBroadcast(cplng,&converged);
         tissue->iter();
         iteration++;
@@ -170,10 +143,8 @@ namespace bio
         amsi::log(state) << current_step << ", " << iteration << ", "
                          << amsi::getElapsedTime(state) << ", ACTIVE, END_ITER" << std::endl;
 #       endif
-      } // while(!converged)
+      }
       tissue->updatePrevVolumes();
-//      tissue->resetLambda();
-      // load step has converged
 #     ifdef LOGRUN
       if(rnk == 0)
       {
@@ -218,9 +189,26 @@ namespace bio
       current_step++;
       // write mesh to file
       std::stringstream stpstrm;
+      std::string pvd = "out.pvd";
+      std::fstream pvdf;
       stpstrm << current_step;
       if ( (current_step) % 1 == 0 )
+      {
         apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
+	pvdf.open(std::string(amsi::fs->getResultsDir()+"/"+pvd.c_str()), std::ios::out);
+	pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
+	pvdf << "  <Collection>" << std::endl;
+	for (uint t=0; t < current_step; t++) {
+	  std::ostringstream oss;
+	  oss << "msh_stp_" << t+1;
+	  std::string vtu = oss.str();
+	  pvdf << "    <DataSet timestep=\"" << t << "\" group=\"\" ";
+	  pvdf << "part=\"0\" file=\"" << vtu << "/" << vtu;
+	  pvdf << ".pvtu\"/>" << std::endl;
+	}
+	pvdf << "  </Collection>" << std::endl;
+	pvdf << "</VTKFile>" << std::endl;
+      }
       if (current_step >= num_load_steps)
       {
         complete = true;

@@ -256,6 +256,8 @@ namespace bio
       * (top-bottom)
       * (right-left); // area of the whole RVE ... volume
     double area1,area2,area3,area4;
+    // initialize area variables.
+    area1=0.0; area2=0.0; area3=0.0; area4=0.0;
     switch(side)
     {
     case FiberNetwork::BOTTOM:
