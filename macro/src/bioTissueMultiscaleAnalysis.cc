@@ -16,19 +16,18 @@ namespace bio
 {
   TissueMultiScaleAnalysis::TissueMultiScaleAnalysis(pGModel imdl,pParMesh imsh,pACase cs,MPI_Comm cm)
     : rnk(-1)
-    , rnkstr()
     , num_load_steps(1)
     , current_step(0)
     , t(0.0)
     , frc_itms()
     , dsp_itms()
     , vol_itms()
-    , state(NULL)
-    , cnstrnts(NULL)
-    , norms(NULL)
-    , disps(NULL)
-    , loads(NULL)
-    , vols(NULL)
+    , state()
+    , cnstrnts()
+    , norms()
+    , disps()
+    , loads()
+    , vols()
     , state_file()
     , cnstrnts_file(amsi::fs->getResultsDir() + "/constraints.log")
     , norms_file(amsi::fs->getResultsDir() + "/norms.log")
@@ -44,8 +43,7 @@ namespace bio
     MPI_Comm_rank(cm,&rnk);
     std::stringstream rnkstrm;
     rnkstrm << rnk;
-    rnkstr = rnkstrm.str();
-    state_file = amsi::fs->getResultsDir() + "/macro_state." + rnkstr + ".log";
+    state_file = amsi::fs->getResultsDir() + "/macro_state." + rnkstrm.str() + ".log";
     pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
     tissue = new MultiscaleTissue(imdl,imsh,pd,cm);
     amsi::getTrackedModelItems(cs,"output force",std::back_inserter(frc_itms));

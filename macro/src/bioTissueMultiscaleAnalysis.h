@@ -286,7 +286,6 @@ namespace bio
     int run();
   private:
     int rnk;
-    std::string rnkstr;
     unsigned num_load_steps;
     unsigned current_step;
     double t; // [0,1] 0-initial configuration, 1-final configuration
