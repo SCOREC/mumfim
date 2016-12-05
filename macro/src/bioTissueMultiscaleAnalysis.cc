@@ -189,13 +189,13 @@ namespace bio
       current_step++;
       // write mesh to file
       std::stringstream stpstrm;
-      std::string pvd = "out.pvd";
+      std::string pvd(amsi::fs->getResultsDir() + "/out.pvd");
       std::fstream pvdf;
       stpstrm << current_step;
       if ( (current_step) % 1 == 0 )
       {
         apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
-	pvdf.open(std::string(amsi::fs->getResultsDir()+"/"+pvd.c_str()), std::ios::out);
+	pvdf.open(pvd.c_str(), std::ios::out);
 	pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
 	pvdf << "  <Collection>" << std::endl;
 	for (uint t=0; t < current_step; t++) {
