@@ -15,10 +15,12 @@ void display_help_string()
   std::cout << "Usage: singlescale [OPTIONS]\n"
             << "  [-h, --help]                              display this help text\n"
             << "  [-g, --model model_file]                  the model file (.smd)\n"
+            << "  [-c, --case string]                       a string specifying the analysis case to run"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n";
 }
-std::string model_filename;
-std::string mesh_filename;
+std::string model_filename("");
+std::string mesh_filename("");
+std::string analysis_case("");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -30,10 +32,11 @@ bool parse_options(int & argc, char ** & argv)
       {
         {"help",        no_argument,        0, 'h'},
         {"model",       required_argument,  0, 'g'},
-        {"mesh",        required_argument,  0, 'm'},
+        {"case",        required_argument,  0, 'c'},
+        {"mesh",        required_argument,  0, 'm'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hg:m:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hg:m:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
@@ -45,6 +48,9 @@ bool parse_options(int & argc, char ** & argv)
       break;
     case 'm':
       mesh_filename = optarg;
+      break;
+    case 'c':
+      analysis_case = optarg;
       break;
     case -1:
       //end of options
@@ -76,24 +82,33 @@ int main(int argc, char ** argv)
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
-    std::vector<pACase> css;
-    pAManager att_mn = SModel_attManager(mdl);
-    amsi::getTypeCases(att_mn,"analysis",std::back_inserter(css));
-    auto css_nd = css.end();
-    for(auto cs = css.begin(); cs != css_nd; ++cs)
+    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; )
     {
-      amsi::initCase(mdl,*cs);
-      pACase pd = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
-      pACase ss = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
+      amsi::initCase(mdl,cs);
+      pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
+      pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
       int nm_stps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
       bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       amsi::PetscLAS las;
-      bio::TissueIteration itr(&tssu,&las);
-      amsi::RelativeResidualConvergence rs_cnvrg(&las,1e-8);
-      bio::VolumeConvergenceAccm_Incrmt dv_cnvrg(&tssu,1e-3); // %dv
-      amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
       for(int stp = 1; stp <= nm_stps; ++stp)
       {
+        bio::TissueIteration itr(&tssu,&las);
+        double eps = 1e-8;
+        auto eps_scheme = [&]()->double { int it = itr.iteration();
+                                          bool inc = it > 20;
+                                          double e = inc ? (pow(10,(it - 20)/5))*eps : eps;
+                                          std::cout << "epsilon update (" << it << "): " << e << std::endl;
+                                          return e; };
+        amsi::RelativeResidualConvergence<decltype(eps_scheme)> rs_cnvrg(&las,eps_scheme);
+        double dv_eps = 1e-3;
+        int dv_its = 0;
+        auto dv_eps_scheme = [&]()->double { bool inc = dv_its > 5;
+                                             double r = inc ? dv_eps+(dv_its-5)*2.5e-4 : dv_eps;
+                                             std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
+                                             ++dv_its;
+                                             return r; };
+        bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
+        amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);
         if(amsi::numericalSolve(&itr,&cnvrg))
         {
@@ -111,7 +126,7 @@ int main(int argc, char ** argv)
         }
       }
       std::cout << "Analysis case exited, continuing..." << std::endl;
-      amsi::freeCase(*cs);
+      amsi::freeCase(cs);
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);

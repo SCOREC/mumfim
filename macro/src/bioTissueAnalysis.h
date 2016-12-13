@@ -17,6 +17,7 @@ namespace bio
     {}
     virtual void iterate()
     {
+      amsi::Iteration::iterate();
       LinearSolver(tssu,las);
       las->iter();
     }

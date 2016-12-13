@@ -120,7 +120,8 @@ namespace bio
         amsi::log(loads) << current_step << ", ";
 #     endif
       /// Create convergence objects.
-      VolumeConvergenceAccm_Incrmt dv_convergence(tissue,eps_v);
+      auto dv_eps = [&]()->double {return eps_v;};
+      VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
       LASResidualConvergence convergence(las,eps);
       while(!converged)
       {

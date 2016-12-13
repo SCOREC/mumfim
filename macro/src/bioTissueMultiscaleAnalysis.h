@@ -230,6 +230,7 @@ namespace bio
                         << nrm/accm_nrm << std::endl;
     }
   };
+  /*
   class LASSubvectorConvergence : public amsi::RelativeResidualConvergence
   {
   protected:
@@ -273,6 +274,7 @@ namespace bio
       return cnvrgd;
     }
   };
+  */
   class TissueMultiScaleAnalysis
   {
   public:

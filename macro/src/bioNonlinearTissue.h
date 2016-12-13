@@ -141,21 +141,21 @@ namespace bio
     }
   };
   // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
-  class VolumeConvergenceAccm_Incrmt : public amsi::Convergence
+  template <typename T>
+    class VolumeConvergenceAccm_Incrmt : public amsi::UpdatingConvergence<T>
   {
   protected:
     NonlinearTissue * ts;
-    double eps;
     amsi::Log vols;
   public:
-    VolumeConvergenceAccm_Incrmt(NonlinearTissue * tssu, double e)
-      : amsi::Convergence()
+    VolumeConvergenceAccm_Incrmt(NonlinearTissue * tssu, T e)
+      : amsi::UpdatingConvergence<T>(e)
       , ts(tssu)
-      , eps(e)
       , vols(amsi::activateLog("volume"))
     { }
     bool converged()
     {
+      amsi::UpdatingConvergence<T>::update();
       ts->updateVolumes();
       int rgns = ts->numVolumeConstraints();
       bool converged = true;
@@ -176,11 +176,11 @@ namespace bio
         dv += dv_rgn;
       }
       // convergence based on volume change
-      converged = std::abs(dv) < eps * vp  ;
+      converged = std::abs(dv) < amsi::UpdatingConvergence<T>::eps * vp  ;
       std::cout << "current volume: " << vi << std::endl;
       std::cout << "previous volume: " << vp << std::endl;
       std::cout << "accumulated incremental volume convergence: " << std::endl
-                << "\t" << dv << " < " << eps * vp << std::endl
+                << "\t" << dv << " < " << amsi::UpdatingConvergence<T>::eps * vp << std::endl
                 << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
       if(!converged)
         ts->updateConstraintsAccm_Incrmt();

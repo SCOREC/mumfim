@@ -19,11 +19,13 @@ void display_help_string()
             << "  [-h, --help]                              display this help text\n"
             << "  [-s, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
+            << "  [-c, --case string]                       a string specifying the analysis case to run"
             << "  [-b, --balancing]                         specify if load balancing of RVEs is desired";
 }
-std::string model_filename;
-std::string mesh_filename;
-std::string fiber_network_filename;
+std::string model_filename("");
+std::string mesh_filename("");
+std::string fiber_network_filename("");
+std::string analysis_case("");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -37,10 +39,11 @@ bool parse_options(int & argc, char ** & argv)
         {"help",        no_argument,        0, 'h'},
         {"model",       required_argument,  0, 's'},
         {"mesh",        required_argument,  0, 'm'},
-        {"balancing",   required_argument,  0, 'b'}
+        {"balancing",   required_argument,  0, 'b'},
+        {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hf:l:m:s:b:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hf:l:m:s:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
@@ -58,6 +61,9 @@ bool parse_options(int & argc, char ** & argv)
       break;
     case 'b':
       bio::rve_load_balancing = atoi(optarg);
+      break;
+    case 'c':
+      analysis_case = optarg;
       break;
     case -1:
 // end of options
@@ -92,15 +98,12 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   {
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
-    std::vector<pACase> css;
-    amsi::getTypeCases(SModel_attManager(mdl),"analysis",std::back_inserter(css));
-    auto css_nd = css.end();
-    for(auto cs = css.begin(); cs != css_nd; ++cs)
+    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
     {
-      amsi::initCase(mdl,*cs);
-      bio::TissueMultiScaleAnalysis TMSA(mdl,msh,*cs,cm);
+      amsi::initCase(mdl,cs);
+      bio::TissueMultiScaleAnalysis TMSA(mdl,msh,cs,cm);
       result += TMSA.run();
-      amsi::freeCase(*cs);
+      amsi::freeCase(cs);
     }
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
@@ -137,7 +140,7 @@ int main(int argc, char **argv)
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
     amsi::ControlService * control = amsi::ControlService::Instance();
-    control->setSuppressOutput(true);
+//    control->setSuppressOutput(true);
     control->setScaleMain("macro",&run_macro);
     control->setScaleMain("micro_fo",&run_micro_fo);
     result = control->Execute(argc,argv);
