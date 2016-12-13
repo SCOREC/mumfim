@@ -16,19 +16,18 @@ namespace bio
 {
   TissueMultiScaleAnalysis::TissueMultiScaleAnalysis(pGModel imdl,pParMesh imsh,pACase cs,MPI_Comm cm)
     : rnk(-1)
-    , rnkstr()
     , num_load_steps(1)
     , current_step(0)
     , t(0.0)
     , frc_itms()
     , dsp_itms()
     , vol_itms()
-    , state(NULL)
-    , cnstrnts(NULL)
-    , norms(NULL)
-    , disps(NULL)
-    , loads(NULL)
-    , vols(NULL)
+    , state()
+    , cnstrnts()
+    , norms()
+    , disps()
+    , loads()
+    , vols()
     , state_file()
     , cnstrnts_file(amsi::fs->getResultsDir() + "/constraints.log")
     , norms_file(amsi::fs->getResultsDir() + "/norms.log")
@@ -44,8 +43,7 @@ namespace bio
     MPI_Comm_rank(cm,&rnk);
     std::stringstream rnkstrm;
     rnkstrm << rnk;
-    rnkstr = rnkstrm.str();
-    state_file = amsi::fs->getResultsDir() + "/macro_state." + rnkstr + ".log";
+    state_file = amsi::fs->getResultsDir() + "/macro_state." + rnkstrm.str() + ".log";
     pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
     tissue = new MultiscaleTissue(imdl,imsh,pd,cm);
     amsi::getTrackedModelItems(cs,"output force",std::back_inserter(frc_itms));
@@ -192,9 +190,26 @@ namespace bio
       current_step++;
       // write mesh to file
       std::stringstream stpstrm;
+      std::string pvd(amsi::fs->getResultsDir() + "/out.pvd");
+      std::fstream pvdf;
       stpstrm << current_step;
       if ( (current_step) % 1 == 0 )
+      {
         apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
+	pvdf.open(pvd.c_str(), std::ios::out);
+	pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
+	pvdf << "  <Collection>" << std::endl;
+	for (uint t=0; t < current_step; t++) {
+	  std::ostringstream oss;
+	  oss << "msh_stp_" << t+1;
+	  std::string vtu = oss.str();
+	  pvdf << "    <DataSet timestep=\"" << t << "\" group=\"\" ";
+	  pvdf << "part=\"0\" file=\"" << vtu << "/" << vtu;
+	  pvdf << ".pvtu\"/>" << std::endl;
+	}
+	pvdf << "  </Collection>" << std::endl;
+	pvdf << "</VTKFile>" << std::endl;
+      }
       if (current_step >= num_load_steps)
       {
         complete = true;

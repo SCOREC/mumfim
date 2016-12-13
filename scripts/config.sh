@@ -27,12 +27,12 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_C_COMPILER="mpicc" \
     -DCMAKE_CXX_COMPILER="mpicxx" \
-    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/bgq/xl/ \
+    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
     -DBUILD_TESTS=OFF \
     -DLOGRUN=$LOGRUN \
     -DSIM_MPI=bgmpi \
-    -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/sim/bgq/xl/lib/cmake/amsi \
-    -DCORE_DIR=$DEVROOT/install/core/sim/xl \
+    -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
+    -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
     -DSPARSKIT_DIR=$DEVROOT/install/sparskit \
     -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/xl/ \
     ..

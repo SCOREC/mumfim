@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     ncoord3.toArray(init_coords+6);
     ncoord4.toArray(init_coords+9);
     int i = nodenum;
-    int j;
+    int j = 0; //Initialize to zero.
     if (disp_dir == "x") j=0;
     if (disp_dir == "y") j=1;
     if (disp_dir == "z") j=2;
