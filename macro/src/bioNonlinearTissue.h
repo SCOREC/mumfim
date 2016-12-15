@@ -22,6 +22,7 @@ namespace bio
   {
   protected:
     std::vector<VolumeConstraintSurface*> vol_cnst;
+    std::vector<VolumeConstraintSurface*> pen_vol_cnst;
     amsi::ElementalSystem * constitutive;
     apf::Field * delta_u;
   private:
@@ -83,6 +84,14 @@ namespace bio
     {
       return vol_cnst.size();
     }
+    int numPenaltyVolumeConstraints()
+    {
+      return pen_vol_cnst.size();
+    }
+    int numLagrangeVolumeConstraints()
+    {
+      return vol_cnst.size() - pen_vol_cnst.size();
+    }
     VolumeConstraintSurface * getVolumeConstraint(int idx)
     {
       if((int)vol_cnst.size() >= idx)
@@ -103,8 +112,8 @@ namespace bio
         init_vol_glb += init_rgn_vols[ii];
         ii++;
       }
-      std::cout<<"current volume (updateVolumes()) = "<<vol_glb<<std::endl;
-      std::cout<<"initial volume (updateVolumes()) = "<<init_vol_glb<<std::endl;
+      std::cout<<"current volume (updateVolumes()) = " << vol_glb << std::endl;
+      std::cout<<"initial volume (updateVolumes()) = " << init_vol_glb << std::endl;
       for(auto it = vol_cnst.begin(); it != vol_cnst.end(); ++it)
         (*it)->setVol(vol_glb);
     }
@@ -114,7 +123,7 @@ namespace bio
       double prev_vol_glb = 0.0;
       for (uint ii = 0; ii < prev_rgn_vols.size(); ii++)
         prev_vol_glb += prev_rgn_vols[ii];
-      std::cout<<"previous volume (updatePrevVolumes()) = "<<prev_vol_glb<<std::endl;
+      std::cout << "previous volume (updatePrevVolumes()) = " << prev_vol_glb << std::endl;
       for (auto it = vol_cnst.begin(); it != vol_cnst.end(); ++it)
         (*it)->setPrevVol(prev_vol_glb);
     }
@@ -124,8 +133,8 @@ namespace bio
         (*cnst)->setLambda(0.0);
     }
     void updateConstraints();
-    void updateConstraintsAccm();
-    void updateConstraintsAccm_Incrmt();
+    //void updateConstraintsAccm();
+    //void updateConstraintsAccm_Incrmt();
     /// record parameters for imposing Volume constraint.
     void logCnstrntParams(int ldstp, int iteration, int rnk);
   protected:
@@ -142,17 +151,25 @@ namespace bio
   };
   // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
   template <typename T>
-    class VolumeConvergenceAccm_Incrmt : public amsi::UpdatingConvergence<T>
+    class VolumeConvergence : public amsi::UpdatingConvergence<T>
   {
   protected:
     NonlinearTissue * ts;
     amsi::Log vols;
+    int rnk;
+    amsi::Iteration * itr;
+    const int & stp;
   public:
-    VolumeConvergenceAccm_Incrmt(NonlinearTissue * tssu, T e)
+    VolumeConvergence(NonlinearTissue * tssu, amsi::Iteration * i, const int & s, T e)
       : amsi::UpdatingConvergence<T>(e)
       , ts(tssu)
       , vols(amsi::activateLog("volume"))
-    { }
+      , rnk(-1)
+      , itr(i)
+      , stp(s)
+    {
+      MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
+    }
     bool converged()
     {
       amsi::UpdatingConvergence<T>::update();
@@ -183,11 +200,12 @@ namespace bio
                 << "\t" << dv << " < " << amsi::UpdatingConvergence<T>::eps * vp << std::endl
                 << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
       if(!converged)
-        ts->updateConstraintsAccm_Incrmt();
+        ts->updateConstraints();
+      log(stp,itr->iteration(),rnk);
       return converged;
     }
     bool failed()
-    {
+   {
       return false;
     }
     void log(int ldstp, int iteration, int rnk)
@@ -208,7 +226,7 @@ namespace bio
       if (rnk==0)
         amsi::log(vols) << ldstp << ", "
                         << iteration << ", "
-                        << "entire domain" << ", "
+                       << "entire domain" << ", "
                         << v0 << ", "
                         << vi << ", "
                         << vi - vp << ", "

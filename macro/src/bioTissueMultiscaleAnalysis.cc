@@ -119,7 +119,8 @@ namespace bio
 #     endif
       /// Create convergence objects.
       auto dv_eps = [&]()->double {return eps_v;};
-      VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
+      amsi::Iteration itr; // hacky, only counts iteration atm
+      VolumeConvergence<decltype(dv_eps)> dv_convergence(tissue,&itr,current_step,dv_eps);
       LASResidualConvergence convergence(las,eps);
       while(!converged)
       {
@@ -139,6 +140,7 @@ namespace bio
         dv_convergence.log(current_step, iteration, rnk);
         cs->couplingBroadcast(cplng,&converged);
         tissue->iter();
+        itr.iterate();
         iteration++;
 #       ifdef LOGRUN
         amsi::log(state) << current_step << ", " << iteration << ", "
@@ -190,26 +192,9 @@ namespace bio
       current_step++;
       // write mesh to file
       std::stringstream stpstrm;
-      std::string pvd(amsi::fs->getResultsDir() + "/out.pvd");
-      std::fstream pvdf;
       stpstrm << current_step;
-      if ( (current_step) % 1 == 0 )
-      {
-        apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
-	pvdf.open(pvd.c_str(), std::ios::out);
-	pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
-	pvdf << "  <Collection>" << std::endl;
-	for (uint t=0; t < current_step; t++) {
-	  std::ostringstream oss;
-	  oss << "msh_stp_" << t+1;
-	  std::string vtu = oss.str();
-	  pvdf << "    <DataSet timestep=\"" << t << "\" group=\"\" ";
-	  pvdf << "part=\"0\" file=\"" << vtu << "/" << vtu;
-	  pvdf << ".pvtu\"/>" << std::endl;
-	}
-	pvdf << "  </Collection>" << std::endl;
-	pvdf << "</VTKFile>" << std::endl;
-      }
+      apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
+      amsi::writePVDFile("/results.pvd","/msh_stp_",current_step);
       if (current_step >= num_load_steps)
       {
         complete = true;

@@ -4,6 +4,7 @@
 #include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <cstring>
 #include <getopt.h>
@@ -21,6 +22,7 @@ void display_help_string()
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
+std::string vol_log("volume");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -107,16 +109,28 @@ int main(int argc, char ** argv)
                                              std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
                                              ++dv_its;
                                              return r; };
-        bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
-        amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
+        auto yes = [&]()->double { return std::numeric_limits<double>::max(); };
+        std::function<double()> scheme;
+        if(tssu.numLagrangeVolumeConstraints() > 0)
+          scheme = dv_eps_scheme;
+        else
+          scheme = yes;
+        bio::VolumeConvergence<decltype(scheme)> dv_cnvrg(&tssu,&itr,stp,scheme); // %dv
+        amsi::MultiConvergence mcnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);
-        if(amsi::numericalSolve(&itr,&cnvrg))
+        if(amsi::numericalSolve(&itr,&mcnvrg))
         {
           tssu.step();
           las.step();
           std::stringstream fnm;
           fnm << amsi::fs->getResultsDir() << "/msh_stp_" << stp;
           apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
+          amsi::writePVDFile("/results.pvd","/msh_stp_",stp);
+          amsi::Log vols = amsi::activateLog(vol_log.c_str());
+          std::fstream vls_fs(std::string(amsi::fs->getResultsDir() + "/vols.log").c_str(),
+                              std::ios::out | std::ios::app);
+          amsi::flushToStream(vols,vls_fs);
+
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
         }
         else
@@ -125,6 +139,9 @@ int main(int argc, char ** argv)
           break;
         }
       }
+      //retrieve and print logs
+      amsi::Log vol = amsi::activateLog(vol_log.c_str());
+      amsi::deleteLog(vol);
       std::cout << "Analysis case exited, continuing..." << std::endl;
       amsi::freeCase(cs);
     }

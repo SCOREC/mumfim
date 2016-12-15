@@ -43,6 +43,7 @@ namespace bio
       MPI_Comm_size(AMSI_COMM_SCALE,&sz);
       if(rnk == sz - 1)
         local = true;
+      penalty = false;
     }
     // TODO:
     // passing in the mesh partition here is a stopgap to avoid having to develop an intermediary at the moment,
@@ -220,6 +221,13 @@ namespace bio
           d2Vdu2(ii+2*dim,jj+dim) = 0.0;
         }
     } // end of calcH
+    void update(double dv, double vp)
+    {
+      if(!penalty)
+        Lambda = Lambda + Beta * (dv/vp);
+      else
+        Lambda = 0.0;
+    }
     apf::DynamicMatrix& getFirstVolDeriv(){return dVdu;}
     apf::DynamicMatrix& getSecondVolDeriv(){return d2Vdu2;}
     apf::DynamicMatrix& getLambdaFirstVolDeriv(){return Lambda_dVdu;}
@@ -241,10 +249,13 @@ namespace bio
     void setPrevVol(double vol){prevVol_glb = vol;}
     pGFace getFace() { return rgn; }
     int getRegionTag() {return rgn_tag;}
+    bool isPenalty() { return penalty; }
+    void setPenalty(bool p) { penalty = p; }
   private:
     bool local;
     bool updateG_flag;
     bool updateH_flag;
+    bool penalty;
     int dim;
     int dof;
     pGFace rgn;
