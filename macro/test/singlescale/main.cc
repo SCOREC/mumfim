@@ -125,12 +125,11 @@ int main(int argc, char ** argv)
           std::stringstream fnm;
           fnm << amsi::fs->getResultsDir() << "/msh_stp_" << stp;
           apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
-          amsi::writePVDFile("/results.pvd","/msh_stp_",stp);
+          amsi::writePVDFile("/results.pvd","msh_stp_",stp);
           amsi::Log vols = amsi::activateLog(vol_log.c_str());
           std::fstream vls_fs(std::string(amsi::fs->getResultsDir() + "/vols.log").c_str(),
                               std::ios::out | std::ios::app);
           amsi::flushToStream(vols,vls_fs);
-
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
         }
         else

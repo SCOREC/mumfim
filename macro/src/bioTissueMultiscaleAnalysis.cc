@@ -147,7 +147,6 @@ namespace bio
                          << amsi::getElapsedTime(state) << ", ACTIVE, END_ITER" << std::endl;
 #       endif
       }
-      tissue->updatePrevVolumes();
 #     ifdef LOGRUN
       if(rnk == 0)
       {
@@ -194,7 +193,7 @@ namespace bio
       std::stringstream stpstrm;
       stpstrm << current_step;
       apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str()).c_str(),tissue->getMesh());
-      amsi::writePVDFile("/results.pvd","/msh_stp_",current_step);
+      amsi::writePVDFile("/results.pvd","msh_stp_",current_step);
       if (current_step >= num_load_steps)
       {
         complete = true;
