@@ -154,6 +154,7 @@ namespace bio
         dv_convergence.log(current_step, rnk);
         cs->scaleBroadcast(cplng,&converged);
         tissue->iter();
+        itr.iterate();
         iteration++;
 #       ifdef LOGRUN
         amsi::log(state) << current_step << ", " << iteration << ", "
@@ -211,13 +212,6 @@ namespace bio
         tissue->setSimulationTime(t);
       }
       tissue->recoverSecondaryVariables(current_step);
-      //      deleteLogs();
-      // write mesh to file
-      /*
-      std::stringstream stpstrm;
-        stpstrm << current_step;
-        apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str() + "_").c_str(),tissue->getMesh());
-      */
       cs->scaleBroadcast(cplng,&complete);
     } // while(!complete)
     deleteLogs();

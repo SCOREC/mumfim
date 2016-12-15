@@ -55,7 +55,14 @@ namespace bio
         double beta = 0.0;
         pAttribute mthd = Attribute_childByType(inc,"incompressible enforcement");
         char * mtd = Attribute_imageClass(mthd);
+        bool penalty = false;
         if(std::string("penalty method").compare(mtd) == 0)
+        {
+          pAttributeDouble bt_att = (pAttributeDouble)Attribute_childByType(mthd,"beta");
+          beta = AttributeDouble_value(bt_att);
+          penalty = true;
+        }
+        if(std::string("lagrange multiplier").compare(mtd) == 0)
         {
           pAttributeDouble bt_att = (pAttributeDouble)Attribute_childByType(mthd,"beta");
           beta = AttributeDouble_value(bt_att);
@@ -72,6 +79,9 @@ namespace bio
             auto cnst = new VolumeConstraintSurface(fc,GEN_tag((pGRegion)rgn),part,delta_u,1);
             cnst->setBeta(beta);
             vol_cnst.push_back(cnst);
+            cnst->setPenalty(penalty);
+            if(penalty)
+              pen_vol_cnst.push_back(cnst);
           }
           PList_delete(fcs);
         }
@@ -307,6 +317,7 @@ namespace bio
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
   }
+  /*
   void NonlinearTissue::updateConstraints()
   {
     // Update beta and lambda based on values of dv and v calculated above.
@@ -369,29 +380,20 @@ namespace bio
       (*cnst)->setGflag(true);
     }
   }
-  void NonlinearTissue::updateConstraintsAccm_Incrmt()
+  */
+  void NonlinearTissue::updateConstraints()
   {
-    // Determine accumulated volume change
     double dv = 0.0;
     double vp = 0.0;
-    double dv_rgn = 0;
     int rgns = numVolumeConstraints();
-    for (int ii=0; ii<rgns; ii++)
+    for (int ii = 0; ii < rgns; ii++)
     {
-      dv_rgn = rgn_vols[ii] - prev_rgn_vols[ii];
+      double dv_rgn = rgn_vols[ii] - prev_rgn_vols[ii];
       dv += dv_rgn;
       vp += prev_rgn_vols[ii];
     }
-    // Update beta and lambda based on values of dv and v calculated above.
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    {
-      // Update lambda
-      //std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      (*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
-      //(*cnst)->setLambda(0.0);
-      //std::cout << "dv = " << dv << std::endl;
-      //std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
-    }
+      (*cnst)->update(dv,vp);
     dv_prev = dv;
   }
   void NonlinearTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
@@ -399,7 +401,8 @@ namespace bio
     amsi::Log cnstrnts = amsi::activateLog("constraints");
     double lmbda = 0.0;
     double beta = 0.0;
-    if (rnk == 0 && vol_cnst.size() > 0){
+    if (rnk == 0 && vol_cnst.size() > 0)
+    {
       lmbda = vol_cnst[0]->getLambda();
       beta = vol_cnst[0]->getBeta();
       amsi::log(cnstrnts) << ldstp << ", "

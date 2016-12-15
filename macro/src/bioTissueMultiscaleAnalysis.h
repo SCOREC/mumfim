@@ -12,7 +12,8 @@
 #include <stdexcept>
 namespace bio
 {
-  /* Volume convergence class that considers current volume - initial volume of each individual region */
+  /*
+  /// Volume convergence class that considers current volume - initial volume of each individual region
   class VolumeConvergence : public amsi::Convergence
   {
   protected:
@@ -37,7 +38,7 @@ namespace bio
         double v0 = amsi::measureEntity(cnstrnt->getFace(),ts->getPart(),ts->getMesh());
         double vi = amsi::measureDisplacedEntity(cnstrnt->getFace(),ts->getPart(),ts->getUField());
         double dv = vi - v0;
-        /** convergence based on volume change */
+        // convergence based on volume change
         converged = std::abs(dv) < eps  * v0;
         std::cout << "incremental volume " << ii << " convergence: " << std::endl
                   << "\t" << dv << " < " << eps * v0 << std::endl
@@ -70,7 +71,7 @@ namespace bio
       }
     }
   };
-  /** Volume convergence class that considers accumulated volume of all regions */
+  /// Volume convergence class that considers accumulated volume of all regions
   class VolumeConvergenceAccm : public amsi::Convergence
   {
   protected:
@@ -91,7 +92,7 @@ namespace bio
       double vi = 0.0; ///<Accumulated Current Volume
       double v0 = 0.0; ///<Accumulated Initial Volume
       double dv = 0.0; ///<Accumulated Volume Difference
-      /** If volume constraint is turned off, volume convergence criteria always true. */
+      // If volume constraint is turned off, volume convergence criteria always true.
       if (rgns == 0)
         v0 = 1.0;
       for(int ii = 0; ii < rgns; ii++)
@@ -103,7 +104,7 @@ namespace bio
         v0 += v0_rgn;
         dv += dv_rgn;
       }
-      /** convergence based on volume change */
+      // convergence based on volume change
       converged = std::abs(dv) < eps * v0;
       std::cout << "current volume: " << vi << std::endl;
       std::cout << "initial volume: " << v0 << std::endl;
@@ -137,6 +138,7 @@ namespace bio
                         << vi - v0 << std::endl;
     }
   };
+  */
   class RelativeFieldNorm : public amsi::Convergence
   {
   protected:

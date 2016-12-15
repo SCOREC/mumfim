@@ -5,6 +5,7 @@
 #include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <cstring>
 #include <getopt.h>
@@ -22,6 +23,7 @@ void display_help_string()
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
+std::string vol_log("volume");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -169,7 +171,7 @@ int main(int argc, char ** argv)
         bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
         amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);
-        if(amsi::numericalSolve(&itr,&cnvrg))
+        if(amsi::numericalSolve(&itr,&mcnvrg))
         {
           tssu.recoverSecondaryVariables(stp);
           tssu.step();
@@ -184,11 +186,11 @@ int main(int argc, char ** argv)
           bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu.getPart(),tssu.getUField());
           if(rnk == 0)
           {
-	    std::string vl_fl(amsi::fs->getResultsDir() + std::string("/vols.log"));
-	    std::fstream vl_st(vl_fl.c_str(),std::ios::out | std::ios::app);
+            std::string vl_fl(amsi::fs->getResultsDir() + std::string("/vols.log"));
+            std::fstream vl_st(vl_fl.c_str(),std::ios::out | std::ios::app);
             amsi::flushToStream(vols,vl_st);
-	    std::string ds_fl(amsi::fs->getResultsDir() + std::string("/dsps.log"));
-	    std::fstream ds_st(ds_fl.c_str(),std::ios::out | std::ios::app);
+            std::string ds_fl(amsi::fs->getResultsDir() + std::string("/dsps.log"));
+            std::fstream ds_st(ds_fl.c_str(),std::ios::out | std::ios::app);
             amsi::flushToStream(dsps,ds_st);
           }
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
@@ -199,6 +201,9 @@ int main(int argc, char ** argv)
           break;
         }
       }
+      //retrieve and print logs
+      amsi::Log vol = amsi::activateLog(vol_log.c_str());
+      amsi::deleteLog(vol);
       std::cout << "Analysis case exited, continuing..." << std::endl;
       if(rnk == 0)
       {
