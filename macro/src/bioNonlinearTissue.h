@@ -195,6 +195,7 @@ namespace bio
                 << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
       if(!converged)
         ts->updateConstraints();
+      ts->updatePrevVolumes();
       log(stp,itr->iteration(),rnk);
       return converged;
     }

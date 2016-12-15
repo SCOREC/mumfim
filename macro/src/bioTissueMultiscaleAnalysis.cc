@@ -161,7 +161,6 @@ namespace bio
                          << amsi::getElapsedTime(state) << ", ACTIVE, END_ITER" << std::endl;
 #       endif
       }
-      tissue->updatePrevVolumes();
 #     ifdef LOGRUN
       // displacement log
       logDisps(dsp_itms.begin(),dsp_itms.end(),disps,current_step,tissue->getPart(),tissue->getUField());
