@@ -75,13 +75,18 @@ namespace bio
       nlr->fiber_area = fiber_area;
       nlr->length_ratio_trns = prms[LINEAR_TRANSITION];
       fiber_types[0] = nlr;
-
+/*
       NonlinearReaction * snlr = new NonlinearReaction;
       snlr->E = 0.05 * prms[YOUNGS_MODULUS];
       snlr->B = prms[NONLINEAR_PARAM];
       snlr->fiber_area = fiber_area;
       snlr->length_ratio_trns = prms[LINEAR_TRANSITION];
       fiber_types[1] = snlr;
+*/
+      // Use linear relationship for support fibers.
+      LinearSupportReaction * slr = new LinearSupportReaction;
+      slr->E = 0.001 * prms[YOUNGS_MODULUS];
+      fiber_types[1] = slr;
     }
     else
     {
@@ -90,9 +95,8 @@ namespace bio
       lr->fiber_area = fiber_area;
       fiber_types[0] = lr;
 
-      LinearReaction * slr = new LinearReaction;
-      slr->E = 0.05 * prms[YOUNGS_MODULUS];
-      slr->fiber_area = fiber_area;
+      LinearSupportReaction * slr = new LinearSupportReaction;
+      slr->E = prms[YOUNGS_MODULUS] * fiber_area * 0.01;
       fiber_types[1] = slr;
     }
 

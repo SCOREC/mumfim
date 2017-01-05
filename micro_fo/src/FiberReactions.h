@@ -58,6 +58,23 @@ struct LinearReaction : public FiberReaction
     return result;
   }
 };
+struct LinearSupportReaction : public FiberReaction
+{
+  double E;
+  std::pair<double,double> forceReaction(double orig_length, double length) const
+  {
+    std::pair<double,double> result;
+    double length_ratio = length / orig_length;
+    /* Remove dependence of fiber modulus on fiber area and length.
+       - modulus of support fiber is simply E
+       - F = E(l/l0-1.0)
+       - dF/dl = E/l0
+    */    
+    result.first = E * (length_ratio - 1.0);
+    result.second = E / orig_length;
+    return result;
+  }
+};
 struct BeamReaction : public FiberReaction
 {
   double * forceReaction(double,double) {return NULL;}
