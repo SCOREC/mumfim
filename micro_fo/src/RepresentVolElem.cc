@@ -85,7 +85,7 @@ namespace bio
 */
       // Use linear relationship for support fibers.
       LinearSupportReaction * slr = new LinearSupportReaction;
-      slr->E = 0.001 * prms[YOUNGS_MODULUS];
+      slr->E = prms[YOUNGS_MODULUS] * fiber_area * 0.15;
       fiber_types[1] = slr;
     }
     else
@@ -96,7 +96,7 @@ namespace bio
       fiber_types[0] = lr;
 
       LinearSupportReaction * slr = new LinearSupportReaction;
-      slr->E = prms[YOUNGS_MODULUS] * fiber_area * 0.01;
+      slr->E = prms[YOUNGS_MODULUS] * fiber_area * 0.1;
       fiber_types[1] = slr;
     }
 
