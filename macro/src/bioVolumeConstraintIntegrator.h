@@ -30,7 +30,7 @@ namespace bio
       , Lambda_dVdu(0,0)
       , DeltaV(0)
       , Lambda(0.0)
-      , Beta(-5.0)
+      , Beta(-2.5)
       , Vol_glb(0)
       , initVol_glb(0)
       , prevVol_glb(0)

@@ -48,19 +48,37 @@ namespace bio
     GRIter ri = GM_regionIter(imdl);
     while((rgn = (pGEntity)GRIter_next(ri)))
     {
-      // initialize constraints
-      pAttributeInt inc = (pAttributeInt)GEN_attrib(rgn,"incompressible");
+      pAttribute inc = GEN_attrib(rgn,"specify incompressible");
       if(inc)
       {
-        // Need to extract face entities that are adjacenet to rgn.
-        int pGRgn_tag = GEN_tag((pGRegion)rgn);
-        pPList adjpGFaces = GR_faces((pGRegion)rgn);
-        std::cout<<"number of adjacent faces to region "<<pGRgn_tag<<" in VolumeConstraintSurface constructor is "<<PList_size(adjpGFaces)<<std::endl;
-        void* iter = 0;
-        void* pGF;
-        while((pGF = PList_next(adjpGFaces,&iter)))
-          vol_cnst.push_back(new VolumeConstraintSurface((pGFace)pGF,pGRgn_tag,part,delta_u,1));
-        PList_delete(adjpGFaces);
+        // which version (surface, volume, etc)
+        // enforcement method
+        // parameters
+        double beta = 0.0;
+        pAttribute mthd = Attribute_childByType(inc,"incompressible enforcement");
+        char * mtd = Attribute_imageClass(mthd);
+        if(std::string("penalty method").compare(mtd) == 0)
+        {
+          pAttributeDouble bt_att = (pAttributeDouble)Attribute_childByType(mthd,"beta");
+          beta = AttributeDouble_value(bt_att);
+        }
+        Sim_deleteString(mtd);
+        pAttributeInt vrsn_att = (pAttributeInt)Attribute_childByType(inc,"version");
+        if(AttributeInt_value(vrsn_att) == 0)
+        {
+          pPList fcs = GR_faces((pGRegion)rgn);
+          void * itr = 0;
+          pGFace fc;
+          while((fc = (pGFace)PList_next(fcs,&itr)))
+          {
+            auto cnst = new VolumeConstraintSurface(fc,GEN_tag((pGRegion)rgn),part,delta_u,1);
+            cnst->setBeta(beta);
+            vol_cnst.push_back(cnst);
+          }
+          PList_delete(fcs);
+        }
+        else
+          std::cout << "WARNING: unsupported incompressibility version specified!" << std::endl;
       }
       pAttribute mm = GEN_attrib(rgn,"material model");
       pAttribute cm = Attribute_childByType(mm,"continuum model");
@@ -353,8 +371,8 @@ namespace bio
     {
       // Update lambda
       //std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      (*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
-      //(*cnst)->setLambda(0.0);
+      //(*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
+      (*cnst)->setLambda(0.0);
       //std::cout << "dv = " << dv << std::endl;
       //std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
     }
