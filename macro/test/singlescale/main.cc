@@ -64,6 +64,40 @@ bool parse_options(int & argc, char ** & argv)
   opterr = 1;
   return result;
 }
+struct eps_updt
+{ 
+  bio::TissueIteration * itr;
+  double & eps;
+  double operator()()
+  {
+    int it = itr->iteration();
+    bool inc = it > 20;
+    double e = inc ? (pow(10,(it-20)/5))*eps : eps;
+    std::cout << "epsilon update (" << it << "): " << e << std::endl;
+    return e;
+  }
+  eps_updt(bio::TissueIteration * i, double & e)
+    : itr(i)
+    , eps(e)
+  {}
+};
+struct dv_updt
+{
+  int & dv_its;
+  double & eps;
+  double operator()()
+  {
+    bool inc = dv_its > 5;
+    double r = inc ? eps + (dv_its-5)*2.5e-4 : eps;
+    std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
+    ++dv_its;
+    return r;
+  }
+  dv_updt(int & di, double & e)
+    : dv_its(di)
+    , eps(e)
+  {}
+};
 int main(int argc, char ** argv)
 {
   int result = 0;
@@ -94,19 +128,25 @@ int main(int argc, char ** argv)
       {
         bio::TissueIteration itr(&tssu,&las);
         double eps = 1e-8;
+	eps_updt eps_scheme(&itr,eps);
+	/*
         auto eps_scheme = [&]()->double { int it = itr.iteration();
                                           bool inc = it > 20;
                                           double e = inc ? (pow(10,(it - 20)/5))*eps : eps;
                                           std::cout << "epsilon update (" << it << "): " << e << std::endl;
                                           return e; };
+	*/
         amsi::RelativeResidualConvergence<decltype(eps_scheme)> rs_cnvrg(&las,eps_scheme);
         double dv_eps = 1e-3;
         int dv_its = 0;
+	dv_updt dv_eps_scheme(dv_its,dv_eps);
+	/*
         auto dv_eps_scheme = [&]()->double { bool inc = dv_its > 5;
                                              double r = inc ? dv_eps+(dv_its-5)*2.5e-4 : dv_eps;
                                              std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
                                              ++dv_its;
                                              return r; };
+	*/
         bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
         amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);

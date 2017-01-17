@@ -14,6 +14,17 @@
 #include <fstream>
 namespace bio
 {
+  struct dv_updt
+  {
+    double & eps_v;
+    double operator()()
+    {
+      return eps_v;
+    }
+    dv_updt(double & e)
+      : eps_v(e)
+    {}
+  };
   TissueMultiScaleAnalysis::TissueMultiScaleAnalysis(pGModel imdl,pParMesh imsh,pACase cs,MPI_Comm cm)
     : rnk(-1)
     , num_load_steps(1)
@@ -118,7 +129,8 @@ namespace bio
         amsi::log(loads) << current_step << ", ";
 #     endif
       /// Create convergence objects.
-      auto dv_eps = [&]()->double {return eps_v;};
+      dv_updt dv_eps(eps_v);
+      //auto dv_eps = [&]()->double {return eps_v;};
       VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
       LASResidualConvergence convergence(las,eps);
       while(!converged)
