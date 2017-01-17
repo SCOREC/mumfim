@@ -30,7 +30,7 @@ namespace bio
       , Lambda_dVdu(0,0)
       , DeltaV(0)
       , Lambda(0.0)
-      , Beta(-2.5)
+      , Beta(-5.0)
       , Vol_glb(0)
       , initVol_glb(0)
       , prevVol_glb(0)
@@ -135,12 +135,14 @@ namespace bio
       Lambda_d2Vdu2 *= Lambda;
       // Modifications to force-vector.
       Lambda_dVdu = dVdu;
-      Lambda_dVdu *= Lambda;
+      Lambda_dVdu *= Lambda; //<--division by volume is contained in Lambda via update of constraint.
       // Augmented Lagrangian method:
       // A   = Beta * (GG^T + DeltaV * H)
       // VH  = DeltaV * H
       // BVG = Beta * DeltaV * G
       // Lambda * H modified to Lambda * H + Beta * (GG^T + DeltaV * H)
+      // Second Derivative is not used (see N2P106 for details).
+      /* 
       apf::DynamicMatrix A(nedofs,nedofs);
       apf::DynamicMatrix GT(nedofs,1);
       apf::transpose(dVdu,GT);
@@ -152,6 +154,7 @@ namespace bio
       A *= Beta;
       A /= initVol_glb; //scale entire A by V0^2.
       Lambda_d2Vdu2 += A;
+      */
       apf::DynamicMatrix BVG(1,nedofs);
       BVG = dVdu;
       BVG *= DeltaV;

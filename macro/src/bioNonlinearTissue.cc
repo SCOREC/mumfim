@@ -371,8 +371,8 @@ namespace bio
     {
       // Update lambda
       //std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      //(*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
-      (*cnst)->setLambda(0.0);
+      (*cnst)->setLambda((*cnst)->getLambda() + (dv/vp * (*cnst)->getBeta()));
+      //(*cnst)->setLambda(0.0);
       //std::cout << "dv = " << dv << std::endl;
       //std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
     }
