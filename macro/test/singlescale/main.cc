@@ -130,25 +130,25 @@ int main(int argc, char ** argv)
       {
         bio::TissueIteration itr(&tssu,&las);
         double eps = 1e-8;
-	eps_updt eps_scheme(&itr,eps);
-	/*
+        eps_updt eps_scheme(&itr,eps);
+        /*
         auto eps_scheme = [&]()->double { int it = itr.iteration();
                                           bool inc = it > 20;
                                           double e = inc ? (pow(10,(it - 20)/5))*eps : eps;
                                           std::cout << "epsilon update (" << it << "): " << e << std::endl;
                                           return e; };
-	*/
+        */
         amsi::RelativeResidualConvergence<decltype(eps_scheme)> rs_cnvrg(&las,eps_scheme);
         double dv_eps = 1e-3;
         int dv_its = 0;
-	dv_updt dv_eps_scheme(dv_its,dv_eps);
-	/*
+        dv_updt dv_eps_scheme(dv_its,dv_eps);
+        /*
         auto dv_eps_scheme = [&]()->double { bool inc = dv_its > 5;
                                              double r = inc ? dv_eps+(dv_its-5)*2.5e-4 : dv_eps;
                                              std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
                                              ++dv_its;
                                              return r; };
-	*/
+        */
         bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
         amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);
@@ -157,8 +157,11 @@ int main(int argc, char ** argv)
           tssu.step();
           las.step();
           std::stringstream fnm;
-          fnm << amsi::fs->getResultsDir() << "/msh_stp_" << stp;
+          std::string msh_prfx("msh_stp_");
+          fnm << amsi::fs->getResultsDir() << "/" << msh_prfx << stp;
           apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
+          std::string pvd("/out.pvd");
+          amsi::writePvdFile(pvd,msh_prfx,stp);
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
         }
         else
