@@ -65,7 +65,7 @@ bool parse_options(int & argc, char ** & argv)
   return result;
 }
 struct eps_updt
-{ 
+{
   bio::TissueIteration * itr;
   double & eps;
   double operator()()
@@ -91,6 +91,8 @@ struct dv_updt
     double r = inc ? eps + (dv_its-5)*2.5e-4 : eps;
     std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
     ++dv_its;
+    if(dv_its > 20)
+      r = std::numeric_limits<double>::max();
     return r;
   }
   dv_updt(int & di, double & e)
