@@ -10,12 +10,14 @@
 // The filename of the PMesh is based on the filename of the original mesh.
 //
 // This can run in serial or parallel
-// Running in serial corresponds to a max of 128 parts
+// Running in serial corresponds to a max of PARLIMIT parts
 // To get more parts, run in serial then in parallel,the filenames 
 // won't work that great though so some tweaking is necessary.
 // E.g. to get 256 parts, create a 2 part mesh first. Then run this
 // with 'mpirun -np 2' and load the 2 part mesh and specify 256
 // as the desired partitions.
+
+#define PARLIMIT 64
 
 #include "SimPartitionedMesh.h"
 #include "SimModel.h"
@@ -69,10 +71,10 @@ int main(int argc, char **argv)
 
   // Create filename for partitioned mesh from other input info
   int trailingNum = 4;
-  if(desiredTotNumParts > 128)
+  if(desiredTotNumParts > PARLIMIT)
   {
     trailingNum += 6;
-    int old_parts = desiredTotNumParts / 128;
+    int old_parts = desiredTotNumParts / PARLIMIT;
     while(old_parts)
     {
       old_parts /= 10;
