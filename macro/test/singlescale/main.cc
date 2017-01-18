@@ -1,3 +1,4 @@
+#include "bioAnalysis.h"
 #include "bioTissueAnalysis.h"
 #include "bioTissueMultiscaleAnalysis.h" // only for convergence ops, delete after
 #include <amsiAnalysis.h>
@@ -121,11 +122,22 @@ int main(int argc, char ** argv)
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; )
     {
       amsi::initCase(mdl,cs);
+      // initialize logs... should really only happen if they are used....?
+      amsi::Log vols;
+      if(rnk == 0)
+      {
+        vols = amsi::activateLog("volume");
+        amsi::log(vols) << "LOADSTEP, ENT_TAG, VOL" << std::endl;
+      }
       pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
       pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
+      // discover output policies
+      std::vector<pModelItem> vol_itms;
+      amsi::getTrackedModelItems(cs,"output volume",std::back_inserter(vol_itms));
       int nm_stps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
       bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       amsi::PetscLAS las;
+      bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,0,tssu.getPart(),tssu.getUField());
       for(int stp = 1; stp <= nm_stps; ++stp)
       {
         bio::TissueIteration itr(&tssu,&las);
@@ -162,6 +174,12 @@ int main(int argc, char ** argv)
           apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
           std::string pvd("/out.pvd");
           amsi::writePvdFile(pvd,msh_prfx,stp);
+          bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu.getPart(),tssu.getUField());
+          if(rnk == 0)
+          {
+            std::fstream vl_st(std::string(amsi::fs->getResultsDir() + "/vols.log"),std::ios::out | std::ios::app);
+            amsi::flushToStream(vols,vl_st);
+          }
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
         }
         else
@@ -171,6 +189,8 @@ int main(int argc, char ** argv)
         }
       }
       std::cout << "Analysis case exited, continuing..." << std::endl;
+      if(rnk == 0)
+        amsi::deleteLog(vols);
       amsi::freeCase(cs);
     }
     if(rnk > 0)

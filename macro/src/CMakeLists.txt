@@ -1,4 +1,6 @@
 set(biotissue_public_headers
+  bioAnalysis.h
+  bioAnalysis_impl.h
   bioMultiscaleTissue.h
   bioTissueAnalysis.h
   bioMultiscaleIntegrator.h

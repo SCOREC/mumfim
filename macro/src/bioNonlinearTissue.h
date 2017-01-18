@@ -190,7 +190,7 @@ namespace bio
     {
       return false;
     }
-    void log(int ldstp, int iteration, int rnk)
+    void log(int ldstp, int rnk)
     {
       int rgns = ts->numVolumeConstraints();
       double v0 = 0;
@@ -207,7 +207,6 @@ namespace bio
       }
       if (rnk==0)
         amsi::log(vols) << ldstp << ", "
-                        << iteration << ", "
                         << "entire domain" << ", "
                         << v0 << ", "
                         << vi << ", "

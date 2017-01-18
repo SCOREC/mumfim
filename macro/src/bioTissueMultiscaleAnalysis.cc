@@ -1,4 +1,5 @@
 #include "bioTissueMultiscaleAnalysis.h"
+#include "bioAnalysis.h"
 #include "bioMultiscaleTissue.h"
 #include <Solvers.h>
 #include <ConvenienceFunctions.h>
@@ -78,7 +79,7 @@ namespace bio
       cnstrnts = amsi::activateLog("constraints");
       amsi::log(disps) << "LOADSTEP, ENT_TAG, X, Y, Z" << std::endl;
       amsi::log(loads) << "LOADSTEP, ENT_TAG, X, Y, Z" << std::endl;
-      amsi::log(vols) << "LOADSTEP, ITERATION, ENT_TAG, INIT_VOL, VOL, VOL - PREV_VOL, VOL - INIT_VOL" << std::endl;
+      amsi::log(vols) << "LOADSTEP, ENT_TAG, VOL" << std::endl;
       amsi::log(norms) << "LOADSTEP, ITERATION, NORM" << std::endl;
       amsi::log(cnstrnts) << "LOADSTEP, ITERATION, LAMBDA, BETA" << std::endl;
     }
@@ -108,6 +109,7 @@ namespace bio
     current_step = 0;
     updateTime();
     tissue->setSimulationTime(t);
+    logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getPart(), tissue->getUField());
     tissue->computeInitGuess(las);
     //apf::writeVtkFiles("init_guess",tissue->getMesh());
     tissue->initMicro();
@@ -149,7 +151,7 @@ namespace bio
         tissue->logCnstrntParams(current_step, iteration, rnk);
         // if we've converged on displacement, check the volume convergence and update the vols
         converged = converged ? dv_convergence.converged() : false;
-        dv_convergence.log(current_step, iteration, rnk);
+        dv_convergence.log(current_step, rnk);
         cs->couplingBroadcast(cplng,&converged);
         tissue->iter();
         iteration++;
@@ -160,11 +162,7 @@ namespace bio
       }
       tissue->updatePrevVolumes();
 #     ifdef LOGRUN
-      if(rnk == 0)
-      {
-        std::fstream fs(state_file.c_str(), std::ios::out | std::ios::app);
-        amsi::flushToStream(state,fs);
-      }
+      // displacement log
       for(auto mdl_ent = dsp_itms.begin(); mdl_ent != dsp_itms.end(); ++mdl_ent)
       {
         //amsi::PrintField(tissue->getUField(),std::cout).run();
@@ -176,11 +174,7 @@ namespace bio
         if(rnk == 0)
           amsi::log(disps) << current_step << ", " << GEN_tag((pGEntity)*mdl_ent) << ", " << dsp[0] << ", " << dsp[1] << ", " << dsp[2] << std::endl;
       }
-      if(rnk == 0)
-      {
-        std::fstream fs(disps_file.c_str(), std::ios::out | std::ios::app);
-        amsi::flushToStream(disps,fs);
-      }
+      // force log
       for(auto mdl_ent = frc_itms.begin(); mdl_ent != frc_itms.end(); ++mdl_ent)
       {
         double frc[3] = {};
@@ -188,13 +182,19 @@ namespace bio
         if(rnk == 0)
           amsi::log(loads) << GEN_tag((pGEntity)*mdl_ent) << ", " << frc[0] << ", " << frc[1] << ", " << frc[2] << std::endl;
       }
+      logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getPart(), tissue->getUField());
+      // write all streams
+      std::fstream st_fs(state_file.c_str(), std::ios::out | std::ios::app);
+      amsi::flushToStream(state,st_fs);
       if(rnk == 0)
       {
         std::fstream lds_fs(loads_file.c_str(), std::ios::out | std::ios::app);
+        std::fstream dsp_fs(disps_file.c_str(), std::ios::out | std::ios::app);
         std::fstream vls_fs(vols_file.c_str(), std::ios::out | std::ios::app);
         std::fstream nrms_fs(norms_file.c_str(), std::ios::out | std::ios::app);
         std::fstream cnst_fs(cnstrnts_file.c_str(), std::ios::out | std::ios::app);
         amsi::flushToStream(loads,lds_fs);
+        amsi::flushToStream(disps,dsp_fs);
         amsi::flushToStream(vols,vls_fs);
         amsi::flushToStream(norms,nrms_fs);
         amsi::flushToStream(cnstrnts,cnst_fs);
