@@ -208,7 +208,7 @@ namespace bio
       stpstrm << current_step;
       std::string msh_prfx("msh_stp_");
       apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + msh_prfx + stpstrm.str()).c_str(),tissue->getMesh());
-      amsi::writePvdFile(pvd,msh_prfx,current_step);
+      amsi::writePVDFile(pvd,msh_prfx,current_step);
       if (current_step >= num_load_steps)
       {
         complete = true;
