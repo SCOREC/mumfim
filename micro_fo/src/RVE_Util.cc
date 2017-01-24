@@ -40,7 +40,7 @@ namespace bio
     amsi::Log micro_fo_timing     = amsi::activateLog("micro_fo_timing");
     amsi::log(micro_fo_efficiency) << "MACRO_STEP, MACRO_ITER, TIME, STATUS, DESCRIPTION" << std::endl;
     amsi::log(micro_fo_efficiency) << "0, 0, 0.0, ACTIVE, START" << std::endl;
-    amsi::log(micro_fo_weights)    << "MACRO_STEP, WEIGHT" << std::endl;
+    amsi::log(micro_fo_weights)    << "MACRO_STEP, COUNT, WEIGHT" << std::endl;
     amsi::log(micro_fo_timing)     << "MACRO_STEP, TIME, NUM_MACRO_ITER" << std::endl;
 #   endif
     // Read in all the fiber networks
@@ -387,6 +387,7 @@ namespace bio
 #         endif
       }
 #       if defined(LOGRUN) && defined(SCOREC)
+      std::cout << "[" << local_rank << "] Total local count: " << rves.size() << std::endl;
       std::cout << "[" << local_rank << "] Total local weight: " << local_weight << std::endl;
       std::cout << "[" << local_rank << "] Total local time (sec): " << local_time << std::endl;
       std::cout << "[" << local_rank << "] number of macro iterations: " << step_iter[1] << std::endl;
@@ -408,7 +409,7 @@ namespace bio
       double post_continue_steps = amsi::getElapsedTime(micro_fo_efficiency);
       amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
                                      <<post_continue_steps << ", ACTIVE, POST_CONTINUE_STEPS" << std::endl;
-      amsi::log(micro_fo_weights) << step_iter[0] << ", " << local_weight << std::endl;
+      amsi::log(micro_fo_weights) << step_iter[0] << ", " << rves.size() << ", " << local_weight << std::endl;
       amsi::log(micro_fo_timing) << step_iter[0] << ", " << local_time << ", " << step_iter[1] << std::endl;
 #       endif
       step_iter[0]++;
