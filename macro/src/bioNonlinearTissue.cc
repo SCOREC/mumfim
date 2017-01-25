@@ -3,6 +3,7 @@
 #include "bioMultiscaleIntegrator.h"
 #include "bioULMultiscaleIntegrator.h"
 #include "bioNeoHookeanIntegrator.h"
+#include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
 #include "StressStrainIntegrator.h"
 #include "bioPreserveVolConstraintIntegrator.h"
@@ -93,8 +94,12 @@ namespace bio
                                                                     youngs_modulus,poisson_ratio);
     }
     GRIter_delete(ri);
-    double shear_modulus = ( 3.0 * youngs_modulus * (1.0 - 2.0 * poisson_ratio) )/( 2.0 * (1.0 + poisson_ratio) );
-    constitutive =  new NeoHookeanIntegrator(this,apf_primary_field,shear_modulus,poisson_ratio,1);
+//    double shear_modulus = ( 3.0 * youngs_modulus * (1.0 - 2.0 * poisson_ratio) )/( 2.0 * (1.0 + poisson_ratio) );
+    double shear_modulus = youngs_modulus/(2.0*(1.0+poisson_ratio));
+    double axial_shear_modulus = shear_modulus * 1.0;
+    double axial_youngs_modulus = youngs_modulus * 100.0;
+//    constitutive =  new NeoHookeanIntegrator(this,apf_primary_field,shear_modulus,poisson_ratio,1);
+    constitutive = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,shear_modulus,poisson_ratio,axial_shear_modulus,axial_youngs_modulus,1);
     int dir_tps[] = {amsi::FieldUnit::displacement};
     amsi::buildSimBCQueries(pd,amsi::BCType::dirichlet,&dir_tps[0],(&dir_tps[0])+1,std::back_inserter(dir_bcs));
     int neu_tps[] = {amsi::NeuBCType::traction, amsi::NeuBCType::pressure};
