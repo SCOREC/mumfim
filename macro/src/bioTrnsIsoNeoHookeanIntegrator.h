@@ -139,7 +139,7 @@ namespace bio
       leftCauchyGreen = F*FT;
       rightCauchyGreen = FT*F;
       // Specify Axial direction
-      apf::Vector3 A(1.0,0.0,0.0);
+      apf::Vector3 A(1.0/sqrt(2.0),1.0/sqrt(2.0),0.0);
       apf::Vector3 a(0.0,0.0,0.0);
       a = F*A;
       /*
@@ -188,7 +188,9 @@ namespace bio
       for (int ii = 0; ii < 3; ++ii)
         for (int jj = 0; jj < 3; ++jj)
         {
-	  Cauchy_nh[ii][jj] = mu/detF * ( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda * ( detF - 1.0 ) * kronDel(ii,jj);
+//	  Cauchy_nh[ii][jj] = mu/detF * ( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda * ( detF - 1.0 ) * kronDel(ii,jj);
+	  // From Bonet and Wood PP.163
+	  Cauchy_nh[ii][jj] = mu/detF*( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda/detF * log(detF) * kronDel(ii,jj);
 	  Cauchy_trns[ii][jj] = 2.0*beta/detF * ( a*a - 1.0 ) * kronDel(ii,jj)
 	    + 2.0/detF * ( alpha + beta * (Trace(rightCauchyGreen,3,3) - 3.0) + 2*gamma*(a*a - 1.0) ) * a[ii]*a[jj]
 	    - alpha/detF * ((leftCauchyGreen*a)[ii]*a[jj] + a[ii]*(leftCauchyGreen*a)[jj]);
@@ -237,7 +239,7 @@ namespace bio
       D(4,5) = SpatialElasticityTensor(1,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma); D(5,4) = D(4,5);
       
       D(5,5) = SpatialElasticityTensor(0,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma);
-      
+
       apf::DynamicMatrix K0(nedof,nedof);
       apf::DynamicMatrix BLT(nedof,6);
       apf::DynamicMatrix DBL(6,nedof);
@@ -378,7 +380,9 @@ namespace bio
       }	
       double mu = ShearModulus;
       double c = 0.0; double c_nh = 0.0; double c_trns = 0.0;
-      c_nh = lambda * (2.0 * detF - 1.0)*kronDel(ii,jj)*kronDel(kk,ll) + 2.0/detF*(mu - lambda * detF * (2*detF - 1.0))*kronDel(ii,kk) * kronDel(jj,ll);
+//      c_nh = lambda * (2.0 * detF - 1.0)*kronDel(ii,jj)*kronDel(kk,ll) + 2.0/detF*(mu - lambda * detF * (2*detF - 1.0))*kronDel(ii,kk) * kronDel(jj,ll);
+      // From Bonet and Wood PP.164
+      c_nh = lambda/detF*kronDel(ii,jj)*kronDel(kk,ll) + 2.0/detF*(mu - lambda*log(detF))*0.5*(kronDel(ii,kk) * kronDel(jj,ll) + kronDel(ii,ll)*kronDel(jj,kk));
       c_trns = 8.0*gamma/detF*a[ii]*a[jj]*a[kk]*a[ll]
 	+ 4.0*beta/detF*( a[ii]*a[jj]*kronDel(kk,ll) + kronDel(ii,jj)*a[kk]*a[ll] )
 	- alpha/detF*( a[ii]*a[ll]*b[jj][kk] + b[ii][kk]*a[jj]*a[ll] )
