@@ -11,6 +11,12 @@ namespace bio
    */
   template <typename I>
     void logVolumes(I bgn_mdl_itm, I nd_mdl_itm, amsi::Log log, int stp, pMesh msh, apf::Field * U);
+  /**
+   * @brief for each model item in the range [bgn_mdl_itm,nd_mdl_tm),
+   *  print the step, entity tag, and x, y, and z average displacement
+   */
+  template <typename I>
+    void logDisps(I bgn_mdl_itm, I nd_mdl_itm, amsi::Log log, int stp, pMesh msh, apf::Field * U);
 }
 #include "bioAnalysis_impl.h"
 #endif
