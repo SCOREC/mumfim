@@ -114,11 +114,13 @@ namespace bio
        */
       apf::NewArray<apf::Vector3> grads0;
       apf::getShapeGrads(e,p,grads0); // derivative of shape function with respect to initial configuration.
-      apf::Matrix<3,3> F; // Deformation gradient tensor
+      apf::Matrix3x3 F(0.0, 0.0, 0.0,
+		       0.0, 0.0, 0.0,
+		       0.0, 0.0, 0.0); // Deformation gradient tensor
       apf::DynamicVector u(nedofs);
       getDisplacements(u);
-      for (int ii = 0; ii < 3; ii++)
-        for(int jj = 0; jj < 3; jj++)
+      for (int ii = 0; ii < 3; ++ii)
+        for(int jj = 0; jj < 3; ++jj)
         {
           F[ii][jj] = (ii == jj);
           for (int kk = 0; kk < nen; kk++)
@@ -139,7 +141,7 @@ namespace bio
       leftCauchyGreen = F*FT;
       rightCauchyGreen = FT*F;
       // Specify Axial direction
-      apf::Vector3 A(1.0/sqrt(2.0),1.0/sqrt(2.0),0.0);
+      apf::Vector3 A(1.0,0.0,0.0);
       apf::Vector3 a(0.0,0.0,0.0);
       a = F*A;
       /*
@@ -165,9 +167,9 @@ namespace bio
       double nu = PoissonsRatio;
       double GA = AxialShearModulus;
       double EA = AxialYoungsModulus;
-      double n = EA / (2.0 * mu * (1.0 + nu) );
+      double n = EA / ( 2.0 * mu * (1.0 + nu) );
       double m = 1 - nu - 2.0 * n * nu * nu;
-      double lambda = ( 2.0 * mu * nu )/( 1.0 - 2.0 * nu );
+      double lambda = ( 2.0 * mu * ( nu + n * nu * nu ) )/m;
       double alpha = mu - GA;
       double beta = ( mu * nu * nu * (1.0 - n) )/( 2.0 * m );
       double gamma = EA * (1.0 - nu )/( 8.0 * m ) - ( lambda + 2.0 * mu )/8.0 + alpha/2.0 - beta;
@@ -188,23 +190,20 @@ namespace bio
       for (int ii = 0; ii < 3; ++ii)
         for (int jj = 0; jj < 3; ++jj)
         {
+	  // From Bonet and Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164 Eq.(37)
 //	  Cauchy_nh[ii][jj] = mu/detF * ( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda * ( detF - 1.0 ) * kronDel(ii,jj);
-	  // From Bonet and Wood PP.163
-	  Cauchy_nh[ii][jj] = mu/detF*( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda/detF * log(detF) * kronDel(ii,jj);
-	  Cauchy_trns[ii][jj] = 2.0*beta/detF * ( a*a - 1.0 ) * kronDel(ii,jj)
-	    + 2.0/detF * ( alpha + beta * (Trace(rightCauchyGreen,3,3) - 3.0) + 2*gamma*(a*a - 1.0) ) * a[ii]*a[jj]
-	    - alpha/detF * ((leftCauchyGreen*a)[ii]*a[jj] + a[ii]*(leftCauchyGreen*a)[jj]);
+          // From Bonet and Wood PP.163
+	  Cauchy_nh[ii][jj] = mu/detF * ( leftCauchyGreen[ii][jj] - kronDel(ii,jj) ) + lambda/detF * log(detF) * kronDel(ii,jj);
+	  // From Bonet and Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164 Eq.(68)
+	  Cauchy_trns[ii][jj] = 2.0 * beta/detF * ( a * a - 1.0 ) * kronDel(ii,jj)
+	    + 2.0/detF * ( alpha + 2.0 * beta * log(detF) + 2 * gamma * ( a * a - 1.0 ) ) * a[ii] * a[jj]
+	    - alpha/detF * ( (leftCauchyGreen*a)[ii] * a[jj] + a[ii] * (leftCauchyGreen*a)[jj] );
         }
       Cauchy = Cauchy_nh + Cauchy_trns;
+      std::cout<<"Cauchy:"<<std::endl;
+      std::cout<<Cauchy<<std::endl;
       /*
-	Spatial Elasticity Tensor
-	- c = c_nh + c_trns (see J. Bonet and A.J. Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164)
-	- c_nh_ijkl = lambda*(2*J-1)*I_ij*I_kl + 2/J( mu - lambda*J*(2*J-1) )delta_ik*delta_jl
-	- c_trns_ijkl = 8*gamma/J*a_i*a_j*a_k*a_l
-	              + 4*beta/J*(a_i*a_j*delta_kl + delta_ij*a_k*a_l)
-		      - alpha/J*(a_i*a_l*b_jk + b_ik*a_j*a_l)
-		      - 4*beta/J(a_r*a_r - 1.0)*delta_ik*delta_jl
-	- Voigt Format (c++ index begins with 0)
+	Voigt Format for spatial elasticity tensor (c++ index begins with 0)
 	  [ c_0000 c_0011 c_0022 c_0001 c_0012 c_0002 ]   [ D_00 D_01 D_02 D_03 D_04 D_05 ]
 	  [        c_1111 c_1122 c_1101 c_1112 c_1102 ]   [      D_11 D_12 D_13 D_14 D_15 ]
 	  [               c_2222 c_2201 c_2212 c_2202 ] = [           D_22 D_23 D_24 D_25 ]
@@ -239,7 +238,8 @@ namespace bio
       D(4,5) = SpatialElasticityTensor(1,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma); D(5,4) = D(4,5);
       
       D(5,5) = SpatialElasticityTensor(0,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma);
-
+      std::cout<<"D:"<<std::endl;
+      std::cout<<D<<std::endl;
       apf::DynamicMatrix K0(nedof,nedof);
       apf::DynamicMatrix BLT(nedof,6);
       apf::DynamicMatrix DBL(6,nedof);
@@ -337,18 +337,6 @@ namespace bio
 	r = 1.0;
       return r; 
     }
-    double Trace(apf::Matrix3x3 const& A, int const M, int const N)
-    {
-      /*
-	Trace of Matrix is simply the sum of it's diagonal.
-       */
-      double r = 0.0;
-      for (int i = 0; i < M; ++i)
-	for (int j = 0; j < N; ++j)
-	  if (i == j)
-	    r += A[i][j];
-      return r;
-    }
     double SpatialElasticityTensor(int const ii, int const jj, int const kk, int const ll, apf::Vector3 const& a, apf::Matrix3x3 const& b,
                                    double detF, double lambda, double alpha, double beta, double gamma)
     {
@@ -380,13 +368,15 @@ namespace bio
       }	
       double mu = ShearModulus;
       double c = 0.0; double c_nh = 0.0; double c_trns = 0.0;
-//      c_nh = lambda * (2.0 * detF - 1.0)*kronDel(ii,jj)*kronDel(kk,ll) + 2.0/detF*(mu - lambda * detF * (2*detF - 1.0))*kronDel(ii,kk) * kronDel(jj,ll);
+      // From Bonet and Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164 Eq.(39)
+//      c_nh = lambda * ( 2.0 * detF - 1.0 ) * kronDel(ii,jj) * kronDel(kk,ll) + 2.0/detF * ( mu - lambda * detF * ( 2.0 * detF - 1.0 ) ) * kronDel(ii,kk) * kronDel(jj,ll);
       // From Bonet and Wood PP.164
-      c_nh = lambda/detF*kronDel(ii,jj)*kronDel(kk,ll) + 2.0/detF*(mu - lambda*log(detF))*0.5*(kronDel(ii,kk) * kronDel(jj,ll) + kronDel(ii,ll)*kronDel(jj,kk));
-      c_trns = 8.0*gamma/detF*a[ii]*a[jj]*a[kk]*a[ll]
-	+ 4.0*beta/detF*( a[ii]*a[jj]*kronDel(kk,ll) + kronDel(ii,jj)*a[kk]*a[ll] )
-	- alpha/detF*( a[ii]*a[ll]*b[jj][kk] + b[ii][kk]*a[jj]*a[ll] )
-	- 4*beta/detF*(a*a - 1.0)*kronDel(ii,kk)*kronDel(jj,ll);
+      c_nh = lambda/detF * kronDel(ii,jj) * kronDel(kk,ll) + 2.0/detF * ( mu - lambda * log(detF) ) * 0.5 * ( kronDel(ii,kk) * kronDel(jj,ll) + kronDel(ii,ll) * kronDel(jj,kk) );
+      // From Bonet and Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164 Eq.(70)
+      c_trns = 8.0 * gamma/detF * a[ii] * a[jj] * a[kk] * a[ll]
+	+ 4.0 * beta/detF * ( a[ii] * a[jj] * kronDel(kk,ll) + kronDel(ii,jj) * a[kk] * a[ll] )
+	- alpha/detF * ( a[ii] * a[ll] * b[jj][kk] + b[ii][kk] * a[jj] * a[ll] )
+	- 4.0 * beta/detF * ( a * a - 1.0 ) * kronDel(ii,kk) * kronDel(jj,ll);
       c = c_nh + c_trns;
       return c;
     }
