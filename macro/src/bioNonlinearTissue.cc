@@ -265,14 +265,14 @@ namespace bio
     //#ifdef SCOREC
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
-    std::stringstream filename;
-    filename << amsi::fs->getResultsDir()
-             << "mesh_quality_step" << load_step << "." << rnk << ".dat";
+    std::stringstream fnm;
+    fnm << amsi::fs->getResultsDir()
+             << "/qlty.stp_" << load_step << ".rnk_" << rnk << ".dat";
     // analyze and print the quality of the elements
-    apf::Field * quality_field = amsi::analyzeMeshQuality(apf_mesh,apf_primary_field);
-    std::ofstream file(filename.str().c_str(),std::ofstream::out);
-    amsi::PrintField(quality_field,file).run();
-    apf::destroyField(quality_field);
+    apf::Field * qfld = amsi::analyzeMeshQuality(apf_mesh,apf_primary_field);
+    std::ofstream file(fnm.str().c_str(),std::ofstream::out);
+    amsi::PrintField(qfld,file).run();
+    apf::destroyField(qfld);
     //#endif
   }
   void NonlinearTissue::storeStrain(apf::MeshElement * me, double* strain)

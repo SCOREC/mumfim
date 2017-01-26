@@ -163,17 +163,7 @@ namespace bio
       tissue->updatePrevVolumes();
 #     ifdef LOGRUN
       // displacement log
-      for(auto mdl_ent = dsp_itms.begin(); mdl_ent != dsp_itms.end(); ++mdl_ent)
-      {
-        //amsi::PrintField(tissue->getUField(),std::cout).run();
-        std::list<pEntity> ents;
-        int dm = amsi::modelItemTypeDim(GEN_type((pGEntity)*mdl_ent));
-        amsi::getClassifiedDimEnts(part,(pGEntity)*mdl_ent,0,dm,std::back_inserter(ents));
-        double dsp[3] = {};
-        amsi::getAvgFieldValue(tissue->getUField(),ents.begin(),ents.end(),&dsp[0]);
-        if(rnk == 0)
-          amsi::log(disps) << current_step << ", " << GEN_tag((pGEntity)*mdl_ent) << ", " << dsp[0] << ", " << dsp[1] << ", " << dsp[2] << std::endl;
-      }
+      logDisps(dsp_itms.begin(),dsp_itms.end(),disps,current_step,tissue->getPart(),tissue->getUField());
       // force log
       for(auto mdl_ent = frc_itms.begin(); mdl_ent != frc_itms.end(); ++mdl_ent)
       {
