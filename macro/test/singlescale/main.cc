@@ -186,10 +186,12 @@ int main(int argc, char ** argv)
           bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu.getPart(),tssu.getUField());
           if(rnk == 0)
           {
-            std::fstream ds_st(std::string(amsi::fs->getResultsDir() + "/dsps.log"),std::ios::out | std::ios::app);
-            amsi::flushToStream(dsps,ds_st);
-            std::fstream vl_st(std::string(amsi::fs->getResultsDir() + "/vols.log"),std::ios::out | std::ios::app);
+	    std::string vl_fl(amsi::fs->getResultsDir() + std::string("/vols.log"));
+	    std::fstream vl_st(vl_fl.c_str(),std::ios::out | std::ios::app);
             amsi::flushToStream(vols,vl_st);
+	    std::string ds_fl(amsi::fs->getResultsDir() + std::string("/dsps.log"));
+	    std::fstream ds_st(ds_fl.c_str(),std::ios::out | std::ios::app);
+            amsi::flushToStream(dsps,ds_st);
           }
           std::cout << "Load step " << stp << " completed successfully, continuing..." << std::endl;
         }

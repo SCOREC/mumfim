@@ -81,7 +81,7 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
   int rnk = MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs(fiber_network_filename,1);
+  bio::P_computeRVEs(fiber_network_filename,10);
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
