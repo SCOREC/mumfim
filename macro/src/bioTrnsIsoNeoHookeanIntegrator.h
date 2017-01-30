@@ -141,7 +141,7 @@ namespace bio
       leftCauchyGreen = F*FT;
       rightCauchyGreen = FT*F;
       // Specify Axial direction
-      apf::Vector3 A(1.0,0.0,0.0);
+      apf::Vector3 A(0.0,0.0,1.0);
       apf::Vector3 a(0.0,0.0,0.0);
       a = F*A;
       /*
@@ -167,7 +167,7 @@ namespace bio
       double nu = PoissonsRatio;
       double GA = AxialShearModulus;
       double EA = AxialYoungsModulus;
-      double n = EA / ( 2.0 * mu * (1.0 + nu) );
+      double n = ( 2.0 * mu * (1.0 + nu) )/EA; // Note typo in paper.
       double m = 1 - nu - 2.0 * n * nu * nu;
       double lambda = ( 2.0 * mu * ( nu + n * nu * nu ) )/m;
       double alpha = mu - GA;
@@ -200,8 +200,6 @@ namespace bio
 	    - alpha/detF * ( (leftCauchyGreen*a)[ii] * a[jj] + a[ii] * (leftCauchyGreen*a)[jj] );
         }
       Cauchy = Cauchy_nh + Cauchy_trns;
-      std::cout<<"Cauchy:"<<std::endl;
-      std::cout<<Cauchy<<std::endl;
       /*
 	Voigt Format for spatial elasticity tensor (c++ index begins with 0)
 	  [ c_0000 c_0011 c_0022 c_0001 c_0012 c_0002 ]   [ D_00 D_01 D_02 D_03 D_04 D_05 ]
@@ -238,8 +236,6 @@ namespace bio
       D(4,5) = SpatialElasticityTensor(1,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma); D(5,4) = D(4,5);
       
       D(5,5) = SpatialElasticityTensor(0,2,0,2,a,leftCauchyGreen,detF,lambda,alpha,beta,gamma);
-      std::cout<<"D:"<<std::endl;
-      std::cout<<D<<std::endl;
       apf::DynamicMatrix K0(nedof,nedof);
       apf::DynamicMatrix BLT(nedof,6);
       apf::DynamicMatrix DBL(6,nedof);
