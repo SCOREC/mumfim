@@ -1,6 +1,7 @@
 set(biotissue_public_headers
   bioAnalysis.h
-  bioAnalysis_impl.h
+  bioAnalysisIO.h
+  bioAnalysisIO_impl.h
   bioMultiscaleTissue.h
   bioTissueAnalysis.h
   bioMultiscaleIntegrator.h
@@ -17,8 +18,9 @@ set(biotissue_public_headers
   bioVariableRecovery_impl.h)
 
 set(biotissue_src_files
-  bioMultiscaleTissue.cc
+  bioAnalysis.cc
   bioLinearTissue.cc
+  bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
   bioTissueMultiscaleAnalysis.cc
   bioVariableRecovery.cc)

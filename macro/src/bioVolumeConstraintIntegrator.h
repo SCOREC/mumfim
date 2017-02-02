@@ -142,7 +142,7 @@ namespace bio
       // BVG = Beta * DeltaV * G
       // Lambda * H modified to Lambda * H + Beta * (GG^T + DeltaV * H)
       // Second Derivative is not used (see N2P106 for details).
-      /* 
+      /*
       apf::DynamicMatrix A(nedofs,nedofs);
       apf::DynamicMatrix GT(nedofs,1);
       apf::transpose(dVdu,GT);
@@ -152,7 +152,7 @@ namespace bio
       VH *= DeltaV;
       A += VH;
       A *= Beta;
-      A /= initVol_glb; //scale entire A by V0^2.
+      A /= initVol_glb; //scale entire A by V0
       Lambda_d2Vdu2 += A;
       */
       apf::DynamicMatrix BVG(1,nedofs);
