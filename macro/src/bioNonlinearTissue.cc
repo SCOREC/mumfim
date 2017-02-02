@@ -86,11 +86,11 @@ namespace bio
       if(cnst_type == isotropic_neohookian) // push evaluation inside of elemental system constructor?
       {
         // should check to make sure the continuum model is iso lin ela for init solve?
-        pAttributeTensor0 shr = (pAttributeTensor0)Attribute_childByType(cm,"shear modulus");
+        pAttributeTensor0 yng = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
         pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
-        double G = AttributeTensor0_value(shr);
+        double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
-        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,G,v,1);
+        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,E,v,1);
       }
       else if(cnst_type == transverse_isotropic)
       {

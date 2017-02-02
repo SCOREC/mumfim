@@ -14,7 +14,7 @@ namespace bio
   public:
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
-                       double shear_modulus,
+                       double youngs_modulus,
                        double poisson_ratio,
                        double * axis,
                        double axial_shear_modulus,
@@ -24,11 +24,12 @@ namespace bio
       , current_integration_point(0)
       , analysis(n)
       , dim(0)
-      , ShearModulus(shear_modulus)
+      , ShearModulus(0.0)
       , PoissonsRatio(poisson_ratio)
       , AxialShearModulus(axial_shear_modulus)
       , AxialYoungsModulus(axial_youngs_modulus)
     {
+      ShearModulus = youngs_modulus / (2.0 * (1.0 + poisson_ratio));
       Axis[0] = axis[0];
       Axis[1] = axis[1];
       Axis[2] = axis[2];
