@@ -35,7 +35,7 @@
 
 // true if there is additional column in RVE file that specifies fiber type.
 // used to distinguish between fibers with different properties.
-#define SPECIFY_FIBER_TYPE true
+#define SPECIFY_FIBER_TYPE false
 
 // If using truss
 // true for nonlinear force: f = E A / B (exp(B/2 (lambda^2 - 1)) - 1)
