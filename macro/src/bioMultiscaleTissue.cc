@@ -236,7 +236,7 @@ namespace bio
     switch(tp)
     {
     case NONE:
-      return constitutive;
+      return constitutives[R_whatIn((pRegion)me)];
     case FIBER_ONLY:
       return mltscl;
     default:

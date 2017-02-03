@@ -14,16 +14,18 @@ namespace bio
   public:
   NeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
-                       double shear_modulus,
+                       double youngs_modulus,
                        double poisson_ratio,
                        int o)
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , analysis(n)
       , dim(0)
-      , ShearModulus(shear_modulus)
+      , ShearModulus(0.0)
       , PoissonsRatio(poisson_ratio)
-    { }
+    {
+      ShearModulus = youngs_modulus / (2.0 * ( 1.0 + poisson_ratio ) );
+    }
     void inElement(apf::MeshElement * me)
     {
       ElementalSystem::inElement(me);

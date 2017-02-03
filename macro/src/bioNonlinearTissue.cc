@@ -1,8 +1,7 @@
 #include "bioNonlinearTissue.h"
-#include "bioBatheMultiscale.h"
-#include "bioMultiscaleIntegrator.h"
-#include "bioULMultiscaleIntegrator.h"
+#include "bioAnalysis.h"
 #include "bioNeoHookeanIntegrator.h"
+#include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
 #include "StressStrainIntegrator.h"
 #include "bioPreserveVolConstraintIntegrator.h"
@@ -30,8 +29,7 @@ namespace bio
   NonlinearTissue::NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm)
     : FEA(cm)
     , apfSimFEA(imdl,imsh,pd,cm)
-    , poisson_ratio(0.236249)
-    , youngs_modulus(43200000)
+    , constitutives()
     , dv_prev(0.0)
     , load_step(0)
     , iteration(0)
@@ -82,19 +80,35 @@ namespace bio
       }
       pAttribute mm = GEN_attrib(rgn,"material model");
       pAttribute cm = Attribute_childByType(mm,"continuum model");
-      // should check to make sure the continuum model is iso lin ela for init solve?
-      pAttributeTensor0 yngs = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
-      pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
-      youngs_modulus = AttributeTensor0_value(yngs);
-      poisson_ratio = AttributeTensor0_value(psn);
-      stress_strain_system = new amsi::LinearStressStrainIntegrator(apf_primary_field,
-                                                                    strn,
-                                                                    strs,
-                                                                    youngs_modulus,poisson_ratio);
+      char * img_cls = Attribute_imageClass(cm);
+      int cnst_type = getConstitutiveTypeFromString(img_cls);
+      Sim_deleteString(img_cls);
+      if(cnst_type == isotropic_neohookian) // push evaluation inside of elemental system constructor?
+      {
+        // should check to make sure the continuum model is iso lin ela for init solve?
+        pAttributeTensor0 yng = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
+        pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
+        double E = AttributeTensor0_value(yng);
+        double v = AttributeTensor0_value(psn);
+        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,E,v,1);
+      }
+      else if(cnst_type == transverse_isotropic)
+      {
+        pAttributeTensor0 yng = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
+        pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
+        pAttributeTensor1 trnsvrs_axs = (pAttributeTensor1)Attribute_childByType(cm,"axis");
+        pAttributeTensor0 trnsvrs_shr = (pAttributeTensor0)Attribute_childByType(cm,"axial shear modulus");
+        pAttributeTensor0 trnsvrs_ygn = (pAttributeTensor0)Attribute_childByType(cm,"axial youngs modulus");
+        double E = AttributeTensor0_value(yng);
+        double v = AttributeTensor0_value(psn);
+        double axs[3] = {0.0,0.0,0.0}; // axis must be constant for now
+        AttributeTensor1_evalTensorDT(trnsvrs_axs,0.0,&axs[0]);
+        double tG = AttributeTensor0_value(trnsvrs_shr);
+        double tE = AttributeTensor0_value(trnsvrs_ygn);
+        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,E,v,&axs[0],tG,tE,1);
+      }
     }
     GRIter_delete(ri);
-    double shear_modulus = ( 3.0 * youngs_modulus * (1.0 - 2.0 * poisson_ratio) )/( 2.0 * (1.0 + poisson_ratio) );
-    constitutive =  new NeoHookeanIntegrator(this,apf_primary_field,shear_modulus,poisson_ratio,1);
     int dir_tps[] = {amsi::FieldUnit::displacement};
     amsi::buildSimBCQueries(pd,amsi::BCType::dirichlet,&dir_tps[0],(&dir_tps[0])+1,std::back_inserter(dir_bcs));
     int neu_tps[] = {amsi::NeuBCType::traction, amsi::NeuBCType::pressure};
@@ -173,6 +187,7 @@ namespace bio
     auto it = apf_mesh->begin(analysis_dim);
     while((me = apf_mesh->iterate(it)))
     {
+      amsi::ElementalSystem * constitutive = constitutives[R_whatIn((pRegion)me)];
       apf::MeshElement * mlmt = apf::createMeshElement(apf_mesh,me);
       //amsi::ElementalSystem * sys = getElementalSystem(me,0); // assumes 1 type of system per element
       constitutive->process(mlmt);
@@ -221,7 +236,8 @@ namespace bio
     apf::synchronize(apf_primary_field);
     apf::synchronize(delta_u);
   }
-  void NonlinearTissue::ComputeDispL2Norm(double & norm)
+  // this is just a field op... should be replacable with what we currently provide in amsi
+  void NonlinearTissue::computeDispL2Norm(double & norm)
   {
     norm = 0.0;
     double sqrtnorm;
@@ -346,8 +362,8 @@ namespace bio
     {
       // Update lambda
       std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      //(*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
-      (*cnst)->setLambda(0.0);
+      (*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
+      //(*cnst)->setLambda(0.0);
       std::cout << "dv = " << dv << std::endl;
       std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
       (*cnst)->setGflag(true);

@@ -22,16 +22,13 @@ namespace bio
   {
   protected:
     std::vector<VolumeConstraintSurface*> vol_cnst;
-    amsi::ElementalSystem * constitutive;
+    std::map<pGEntity,amsi::ElementalSystem*> constitutives;
     apf::Field * delta_u;
   private:
-    amsi::ElementalSystem * stress_strain_system;
     apf::Field * strs;
     apf::Field * rcvrd_strs;
     apf::Field * strn;
     apf::Field * previous_rve;
-    double poisson_ratio;
-    double youngs_modulus;
     std::vector<double> rgn_vols;
     std::vector<double> init_rgn_vols;
     std::vector<double> prev_rgn_vols;
@@ -73,12 +70,10 @@ namespace bio
       apf::copyData(apf_primary_field,lt.getField());
       //amsi::PrintField(delta_u,std::cout).run();
     }
-    void ComputeDispL2Norm(double &);
+    void computeDispL2Norm(double &);
     void recoverSecondaryVariables(int);
     void storeStress(apf::MeshElement * me, double * stress);
     void storeStrain(apf::MeshElement * me, double * strain);
-    double getPoissonRatio(){return poisson_ratio;}
-    double getYoungsModulus(){return youngs_modulus;}
     int numVolumeConstraints()
     {
       return vol_cnst.size();

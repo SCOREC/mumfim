@@ -298,7 +298,7 @@ namespace bio
         lG *= -1.0;
         amsi::assembleMatrix(las,nedofs,&ids[0],nedofs,&ids[0],&lH(0,0));
         amsi::assembleVector(las,nedofs,&ids[0],&lG(0,0));
-	elem_num++;
+        elem_num++;
       }
     }
     void inElement(apf::MeshElement * me)
@@ -450,19 +450,19 @@ namespace bio
       BVG *= DeltaV;
       BVG *= Beta;
       Lambda_dVdu += BVG;
-	
+        
       /** Augmented Lagrangian method with relative volume constraint (V-Vp)/Vp 
       // prevVol is updated subsequently in NonLinTissue::updatePrevVolumes(); 
       double prevV = 0.0;
       if (std::abs(prevVol[elem_num]) < 1e-10)
       {
-	DeltaV = Vol - initVol;
-	prevV = initVol;
+        DeltaV = Vol - initVol;
+        prevV = initVol;
       }
       else
       {
-	DeltaV = Vol - prevVol[elem_num];
-	prevV = prevVol[elem_num];
+        DeltaV = Vol - prevVol[elem_num];
+        prevV = prevVol[elem_num];
       }
       prevV = 1.0; ///< This will remove relative difference implementation.
       Lambda_dVdu /= prevV; ///<relative volume constraint modification on lambda G
@@ -497,7 +497,7 @@ namespace bio
       BVG /= std::pow(prevV,2); ///<relative volume constraint modification on RHS term.
       Lambda_dVdu += BVG;
       */
-	
+        
       /** Augmented Lagrangian method with relative volume constraint (V-V0)/V0 
       DeltaV = Vol - initVol;
       Lambda_dVdu /= initVol; ///<relative volume constraint modification on lambda G
