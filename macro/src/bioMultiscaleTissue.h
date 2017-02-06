@@ -33,6 +33,9 @@ namespace bio
     size_t snd_ptrns[MICROSCALE_TYPE_COUNT];
     size_t ini_ptrns[MICROSCALE_TYPE_COUNT];
     size_t rcv_ptrns[MICROSCALE_TYPE_COUNT];
+    size_t M2m_id;
+    size_t m2M_id;
+    std::map<std::string,int> rve_tps;
     MicroFOMultiscaleDataTypes mtd;
   public:
     MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm);
@@ -60,6 +63,7 @@ namespace bio
     amsi::ElementalSystem * getIntegrator(apf::MeshEntity * me, int ii);
     template <typename O>
       void serializeRVEData(O o);
+    int computeNumRVETypes();
   };
 }
 #include "bioMultiscaleTissue_impl.h"

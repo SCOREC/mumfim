@@ -19,6 +19,8 @@ namespace bio
     , snd_ptrns()
     , ini_ptrns()
     , rcv_ptrns()
+    , M2m_id()
+    , m2M_id()
     , mtd()
   {
     // primary field created in NonlinearTissue
@@ -26,6 +28,8 @@ namespace bio
     prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
     fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
     mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
+    M2m_id = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");
+    m2M_id = amsi::getRelationID(amsi::cm,amsi::tm,"micro_fo","macro");
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
@@ -64,6 +68,13 @@ namespace bio
   void MultiscaleTissue::computeRVEs()
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
+    computeRVETypeInfo();
+    int num_rve_tps = rve_tps.size();
+    cs->couplingBroadcast(M2m_id,&nm_rve_tps);
+    for(auto tp = rve_types.begin(); tp != rve_types.end(); ++tp)
+    {
+      MPI_Send(&tp.c_str(),
+    }
     std::vector<micro_fo_data> fo_data;
     rslts.clear(); // make output param
     rslt_mp.clear();
@@ -241,6 +252,25 @@ namespace bio
       return mltscl;
     default:
       return NULL;
+    }
+  }
+  int computeRVETypeInfo()
+  {
+    pGEntity rgn = NULL;
+    GRIter ri = GM_regionIter(imdl);
+    while((rgn = (pGEntity)GRIter_nest(ri)))
+    {
+      pAttribute mdl = GEN_attrib(rgn,"material model");
+      pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+      if(sm)
+      {
+        pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
+        pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
+        pAttributeInt cnt = (pAttributeInt)Attribute_childByType(sm,"count");
+        std::string tp(std::string(dir) + std::string(prfx));
+        if(rve_tps.find(tp) != rve_tps.end())
+          rve_tps[tp] = AttributeInt_value(cnt);
+      }
     }
   }
 }

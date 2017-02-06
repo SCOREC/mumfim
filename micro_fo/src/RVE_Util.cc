@@ -34,6 +34,8 @@ namespace bio
     amsi::Task * local_task = amsi::getLocal();
     amsi::DataDistribution * dd_rve = local_task->getDD(local_task->createDD("macro_fo_data"));
     int local_rank = local_task->localRank();
+    size_t M2m_id = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");
+    size_t m2M_id = amsi::getRelationID(amsi::cm,amsi::tm,"micro_fo","macro");
 #   ifdef LOGRUN
     amsi::Log micro_fo_efficiency = amsi::activateLog("micro_fo_efficiency");
     amsi::Log micro_fo_weights    = amsi::activateLog("micro_fo_weights");
@@ -43,6 +45,24 @@ namespace bio
     amsi::log(micro_fo_weights)    << "MACRO_STEP, COUNT, WEIGHT" << std::endl;
     amsi::log(micro_fo_timing)     << "MACRO_STEP, TIME, NUM_MACRO_ITER" << std::endl;
 #   endif
+    int num_rve_tps = 1;
+    cs->couplingBroadcast(M2m_id,&num_rve_tps);
+    char ** rve_tp_dirs = new char * [num_rve_tps];
+    for(int ii = 0; ii < num_rve_tps; ++ii)
+    {
+      MPI_Status sts;
+      MPI_Probe(MPI_ANY_SOURCE,
+                MPI_ANY_TAG,
+                AMSI_COMM_WORLD,
+                &sts);
+      int l = 0;
+      MPI_Get_count(&sts,MPI_CHAR,&l);
+      rve_tp_dirs[ii] = new char[l];
+      MPI_Recv(&rve_tp_dirs[ii][0],l,MPI_CHAR,
+               sts.MPI_SOURCE,sts.MPI_TAG,
+               AMSI_COMM_WORLD,sts);
+    }
+    int num_fiber_files;
     // Read in all the fiber networks
     std::vector<FiberNetwork*> networks;
     std::vector<SparseMatrix*> sparse_structs;
