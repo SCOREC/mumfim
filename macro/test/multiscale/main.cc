@@ -81,7 +81,7 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
   int rnk = MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs(fiber_network_filename,10);
+  bio::P_computeRVEs();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
@@ -140,7 +140,6 @@ int main(int argc, char **argv)
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
     amsi::ControlService * control = amsi::ControlService::Instance();
-//    control->setSuppressOutput(true);
     control->setScaleMain("macro",&run_macro);
     control->setScaleMain("micro_fo",&run_micro_fo);
     result = control->Execute(argc,argv);

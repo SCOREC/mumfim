@@ -26,7 +26,7 @@ namespace bio
 {
   int rve_load_balancing = -2;
   bool lb_per_iteration = false;
-  int P_computeRVEs(const std::string & fiber_network_filename, int num_fiber_files)
+  int P_computeRVEs()
   {
     int result = 0;
     // AMSI communication variables

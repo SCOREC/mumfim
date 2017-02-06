@@ -17,7 +17,7 @@ namespace bio
 {
   extern int rve_load_balancing;
   extern bool lb_per_iteration;
-  int P_computeRVEs(const std::string & fiber_network_filename, int num_fiber_files);
+  int P_computeRVEs();
   int P_computeFiberOnlyRVE(MicroFO*,double*,double*);
   void initCoupling(size_t &,size_t &);
   int NumElementNodes(int element_type);
