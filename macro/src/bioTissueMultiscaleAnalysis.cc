@@ -100,7 +100,7 @@ namespace bio
   {
     int result = 0;
     amsi::ControlService * cs = amsi::ControlService::Instance();
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");
+    size_t cplng = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");
 #   ifdef LOGRUN
     initLogs();
 #   endif
@@ -248,8 +248,7 @@ namespace bio
         << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
         )
       amsi::ControlService * cs = amsi::ControlService::Instance();
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");
-    cs->couplingBroadcast(cplng,&converged);
+    cs->couplingBroadcast(rltn_id,&converged);
     return converged;
   }
 } // end of namespace Biotissue

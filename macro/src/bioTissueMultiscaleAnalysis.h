@@ -338,6 +338,7 @@ namespace bio
     MultiscaleTissueIteration * iter;
     MultiscaleTissueAnalysis * analysis;
     double eps;
+    size_t rltn_id;
     // std::vector<double> norm_history;
   public:
     MultiscaleTissueConvergence(MultiscaleTissueAnalysis * a,
@@ -347,6 +348,7 @@ namespace bio
       , iter(i)
       , analysis(a)
       , eps(e)
+      , rltn_id(amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo"))
     { }
     bool converged();
     double & epsilon() {return eps;}
