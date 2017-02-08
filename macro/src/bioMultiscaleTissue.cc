@@ -24,7 +24,8 @@ namespace bio
     // primary field created in NonlinearTissue
     crt_rve = apf::createIPField(apf_mesh,"current_rve",apf::SCALAR,1);
     prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
-    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
+//    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
+    fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
     mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
   }
   MultiscaleTissue::~MultiscaleTissue()
@@ -87,9 +88,12 @@ namespace bio
       info.order = 1;
       info.derivS = &it->data[0];
       // todo (m) : fix hacky hard-coded bs
+      /*
       apf::setMatrix(fbr_ornt,*me,0,apf::Matrix3x3(it->data[81],it->data[82],it->data[83],
                                                    it->data[84],it->data[85],it->data[86],
                                                    it->data[87],it->data[88],it->data[89]));
+      */
+      apf::setScalar(fbr_ornt,*me,0,it->data[81]);
       if(ent_rve == ent_rves-1)
       {
         ent_rve = 0;
