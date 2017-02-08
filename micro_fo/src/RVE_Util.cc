@@ -68,7 +68,7 @@ namespace bio
       dof_max = dofs > dof_max ? dofs : dof_max;
     }
     SparskitBuffers * buffers = new SparskitBuffers(dof_max);
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");;
+    size_t cplng = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");;
     size_t recv_pattern_id = -1;
     size_t recv_pattern_init_id = -1;
     size_t send_pattern_id = -1;

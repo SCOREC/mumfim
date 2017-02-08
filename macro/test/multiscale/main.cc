@@ -37,13 +37,13 @@ bool parse_options(int & argc, char ** & argv)
       {
         {"fibernetwork", required_argument, 0, 'f'},
         {"help",        no_argument,        0, 'h'},
-        {"model",       required_argument,  0, 's'},
+        {"model",       required_argument,  0, 'g'},
         {"mesh",        required_argument,  0, 'm'},
         {"balancing",   required_argument,  0, 'b'},
         {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hf:l:m:s:b:c:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hf:l:m:g:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
@@ -53,7 +53,7 @@ bool parse_options(int & argc, char ** & argv)
     case 'f':
       fiber_network_filename = optarg;
       break;
-    case 's':
+    case 'g':
       model_filename = optarg;
       break;
     case 'm':
@@ -132,8 +132,6 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::use_simmetrix = true;
-    amsi::use_petsc = true;
     amsi::initMultiscale(argc,argv);
     amsi::initAnalysis(argc,argv);
 #   ifdef LOGRUN
