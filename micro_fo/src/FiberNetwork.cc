@@ -4,6 +4,7 @@
 //#include <amsiConfig.h>
 #include <iostream>
 #include <cassert> // assert
+#include <numeric> // accumulate
 namespace bio
 {
   FiberNetwork * FiberNetwork::clone()
@@ -264,6 +265,30 @@ namespace bio
     rslt[6] /= total_len;
     rslt[7] /= total_len;
     rslt[8] /= total_len;
+  }
+
+  void calcP2(const FiberNetwork & fn, double & rslt)
+  {
+    int num_elements = fn.numElements();
+    std::vector<double> len(num_elements);
+    std::vector<double> cos2(num_elements);
+    calcFiberLengths(fn,len);
+    // Specify axis of alignment.
+    static double axis[3] = {1.0,0.0,0.0};
+    for (int ii = 0; ii < num_elements; ii++)
+    {
+      const Element & e = fn.element(ii);
+      const Node & n1 = fn.node(e.node1_id);
+      const Node & n2 = fn.node(e.node2_id);
+      // direction cosines
+      double alpha = (n2.x - n1.x) / len[ii];
+      double beta  = (n2.y - n1.y) / len[ii];
+      double gamma = (n2.z - n1.z) / len[ii];
+      cos2[ii] += ( alpha * axis[0] + beta * axis[1] + gamma * axis[2] ) * ( alpha * axis[0] + beta * axis[1] + gamma * axis[2] );
+    }
+    double cos2sum = std::accumulate(cos2.begin(), cos2.end(), 0.0);
+    double cos2avg = cos2sum / cos2.size();
+    rslt = ( 3.0 * cos2avg - 1.0 ) / 2.0;
   }
   
   void calcAvgFiberDirection(const FiberNetwork & fn,

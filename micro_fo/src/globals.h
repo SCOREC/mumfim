@@ -35,7 +35,7 @@
 
 // true if there is additional column in RVE file that specifies fiber type.
 // used to distinguish between fibers with different properties.
-#define SPECIFY_FIBER_TYPE false
+#define SPECIFY_FIBER_TYPE true
 
 // True to include several segments of code helpful for size effects tests
 #define FIBER_ONLY_SIZE_EFFECT_TEST false
