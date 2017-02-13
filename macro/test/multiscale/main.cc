@@ -15,7 +15,6 @@
 void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"
-            << "  [-f, --fibernetwork fiber_network_file]   filename for fiber network (.vect)\n"
             << "  [-h, --help]                              display this help text\n"
             << "  [-s, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
@@ -24,7 +23,6 @@ void display_help_string()
 }
 std::string model_filename("");
 std::string mesh_filename("");
-std::string fiber_network_filename("");
 std::string analysis_case("");
 bool parse_options(int & argc, char ** & argv)
 {
@@ -35,7 +33,6 @@ bool parse_options(int & argc, char ** & argv)
   {
     static struct option long_options[] =
       {
-        {"fibernetwork", required_argument, 0, 'f'},
         {"help",        no_argument,        0, 'h'},
         {"model",       required_argument,  0, 's'},
         {"mesh",        required_argument,  0, 'm'},
@@ -43,15 +40,12 @@ bool parse_options(int & argc, char ** & argv)
         {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hf:l:m:s:b:c:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hl:m:s:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
       display_help_string();
       result = false;
-      break;
-    case 'f':
-      fiber_network_filename = optarg;
       break;
     case 's':
       model_filename = optarg;
@@ -132,8 +126,6 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::use_simmetrix = true;
-    amsi::use_petsc = true;
     amsi::initMultiscale(argc,argv);
     amsi::initAnalysis(argc,argv);
 #   ifdef LOGRUN

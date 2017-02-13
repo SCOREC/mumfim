@@ -63,7 +63,7 @@ namespace bio
     amsi::ElementalSystem * getIntegrator(apf::MeshEntity * me, int ii);
     template <typename O>
       void serializeRVEData(O o);
-    int computeNumRVETypes();
+    void computeRVETypeInfo();
   };
 }
 #include "bioMultiscaleTissue_impl.h"

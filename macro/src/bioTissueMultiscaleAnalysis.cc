@@ -100,7 +100,7 @@ namespace bio
   {
     int result = 0;
     amsi::ControlService * cs = amsi::ControlService::Instance();
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");
+    size_t cplng = getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
 #   ifdef LOGRUN
     initLogs();
 #   endif
@@ -152,7 +152,7 @@ namespace bio
         // if we've converged on displacement, check the volume convergence and update the vols
         converged = converged ? dv_convergence.converged() : false;
         dv_convergence.log(current_step, rnk);
-        cs->couplingBroadcast(cplng,&converged);
+        cs->scaleBroadcast(cplng,&converged);
         tissue->iter();
         iteration++;
 #       ifdef LOGRUN
@@ -218,7 +218,7 @@ namespace bio
         stpstrm << current_step;
         apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str() + "_").c_str(),tissue->getMesh());
       */
-      cs->couplingBroadcast(cplng,&complete);
+      cs->scaleBroadcast(cplng,&complete);
     } // while(!complete)
     deleteLogs();
     return result;
@@ -248,8 +248,8 @@ namespace bio
         << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
         )
       amsi::ControlService * cs = amsi::ControlService::Instance();
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");
-    cs->couplingBroadcast(cplng,&converged);
+    size_t cplng = getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
+    cs->scaleBroadcast(cplng,&converged);
     return converged;
   }
 } // end of namespace Biotissue

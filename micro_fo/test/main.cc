@@ -110,6 +110,7 @@ int main(int argc, char **argv)
   std::cout<<"Initializing RVEs..."<<std::endl;
   int nn=0;
   micro_fo_header hdr;
+  hdr.data[RVE_TYPE] = 0;
   hdr.data[ELEMENT_TYPE] = 4; // tet
   hdr.data[GAUSS_ID] = 0;
   hdr.data[FIBER_REACTION] = NONLINEAR;

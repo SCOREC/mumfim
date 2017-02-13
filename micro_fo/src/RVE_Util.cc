@@ -34,8 +34,8 @@ namespace bio
     amsi::Task * local_task = amsi::getLocal();
     amsi::DataDistribution * dd_rve = local_task->getDD(local_task->createDD("macro_fo_data"));
     int local_rank = local_task->localRank();
-    size_t M2m_id = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");
-    size_t m2M_id = amsi::getRelationID(amsi::cm,amsi::tm,"micro_fo","macro");
+    size_t M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
+    size_t m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
 #   ifdef LOGRUN
     amsi::Log micro_fo_efficiency = amsi::activateLog("micro_fo_efficiency");
     amsi::Log micro_fo_weights    = amsi::activateLog("micro_fo_weights");
@@ -45,54 +45,49 @@ namespace bio
     amsi::log(micro_fo_weights)    << "MACRO_STEP, COUNT, WEIGHT" << std::endl;
     amsi::log(micro_fo_timing)     << "MACRO_STEP, TIME, NUM_MACRO_ITER" << std::endl;
 #   endif
-    int num_rve_tps = 1;
-    cs->couplingBroadcast(M2m_id,&num_rve_tps);
-    char ** rve_tp_dirs = new char * [num_rve_tps];
-    for(int ii = 0; ii < num_rve_tps; ++ii)
-    {
-      MPI_Status sts;
-      MPI_Probe(MPI_ANY_SOURCE,
-                MPI_ANY_TAG,
-                AMSI_COMM_WORLD,
-                &sts);
-      int l = 0;
-      MPI_Get_count(&sts,MPI_CHAR,&l);
-      rve_tp_dirs[ii] = new char[l];
-      MPI_Recv(&rve_tp_dirs[ii][0],l,MPI_CHAR,
-               sts.MPI_SOURCE,sts.MPI_TAG,
-               AMSI_COMM_WORLD,sts);
-    }
-    int num_fiber_files;
-    // Read in all the fiber networks
-    std::vector<FiberNetwork*> networks;
-    std::vector<SparseMatrix*> sparse_structs;
-    networks.reserve(num_fiber_files);
-    std::stringstream current_file;
-    int dof_max = -1;
-    for(int ii = 0; ii < num_fiber_files; ii++)
-    {
-      //  Temporarily commented out for purposes of parameterizing model...num_fiber_files set to 1 in main.cc.
-      //  TO DO: Need to figure out more elegant way to parameterize.
-      current_file << fiber_network_filename << ii+1 << ".txt"; // Files count from 1
-//        current_file << fiber_network_filename << ".txt";
-      FiberNetwork * fn = NULL;
-      if (SPECIFY_FIBER_TYPE) //SPECIFY_FIBER_TYPE is true
-        fn = new SupportFiberNetwork();
-      else
-        fn = new FiberNetwork();
-      fn->readFromFile(current_file.str());
-      networks.push_back(fn);
-      current_file.str("");
-      sparse_structs.push_back(Make_Structure(networks.back()));
-      int dofs = networks.back()->numDofs();
-      dof_max = dofs > dof_max ? dofs : dof_max;
-    }
-    SparskitBuffers * buffers = new SparskitBuffers(dof_max);
-    size_t cplng = cs->CommRelation_GetID("macro","micro_fo");;
     size_t recv_pattern_id = -1;
     size_t recv_pattern_init_id = -1;
     size_t send_pattern_id = -1;
     initCoupling(recv_pattern_id,send_pattern_id);
+    int num_rve_tps = 1;
+    cs->scaleBroadcast(M2m_id,&num_rve_tps);
+    char ** rve_tp_dirs = new char * [num_rve_tps];
+    for(int ii = 0; ii < num_rve_tps; ++ii)
+    {
+      int cnt = 0;
+      while((cnt = cs->aRecvBroadcastSize<char>(M2m_id)) == 0)
+      { }
+      rve_tp_dirs[ii] = new char [cnt];
+      MPI_Request rqst;
+      cs->aRecvBroadcast(&rqst,M2m_id,&rve_tp_dirs[ii][0],cnt);
+      // don't have to block to wait since we know the message was available for size info
+    }
+    MPI_Request hdr_rqst;
+    int rve_tp_cnts[num_rve_tps];
+    cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnts[0],num_rve_tps);
+    // Read in all the fiber networks
+    std::vector<FiberNetwork**> fbr_ntwrks;
+    std::vector<SparseMatrix**> sprs_strcts;
+    for(int ii = 0; ii < num_rve_tps; ++ii)
+    {
+      fbr_ntwrks[ii] = new FiberNetwork* [rve_tp_cnts[ii]];
+      sprs_strcts[ii] = new SparseMatrix* [rve_tp_cnts[ii]];
+    }
+    int dof_max = -1;
+    for(int ii = 0; ii < num_rve_tps; ii++)
+    {
+      for(int jj = 0; jj < rve_tp_cnts[ii]; ++jj)
+      {
+        std::stringstream fl;
+        fl << rve_tp_dirs[ii] << jj+1 << ".txt";
+        FiberNetwork * fn = fbr_ntwrks[ii][jj] = new SupportFiberNetwork();
+        fn->readFromFile(fl.str());
+        sprs_strcts[ii][jj] = Make_Structure(fn);
+        int dofs = fn->numDofs();
+        dof_max = dofs > dof_max ? dofs : dof_max;
+      }
+    }
+    SparskitBuffers * buffers = new SparskitBuffers(dof_max);
     // Declare and commit (to mpi) multiscale data types
     MicroFOMultiscaleDataTypes mdt;
     mdt.MultiscaleDataTypesMPICommit();
@@ -163,13 +158,13 @@ namespace bio
           apf::getGaussPoint(hdr.data[ELEMENT_TYPE],1,hdr.data[GAUSS_ID],gauss_pt);
           gauss_pt.toArray(pt);
           int num_nodes = NumElementNodes(hdr.data[ELEMENT_TYPE]);
-          // select one of the preloaded fiber-networks to associate with this RVE
-          int rand_network = rand() % networks.size();
+          int tp = hdr.data[RVE_TYPE];
+          int rnd = rand() % rve_tp_cnts[tp];
           (*currentRVE) = new MicroFO(&hdr.data[0],
                                       pt,
-                                      rand_network,
-                                      networks[rand_network],
-                                      sparse_structs[rand_network],
+                                      rnd,
+                                      fbr_ntwrks[tp][rnd],
+                                      sprs_strcts[tp][rnd],
                                       buffers,
                                       &prms.data[0],
                                       &init.init_data[0],
@@ -309,7 +304,7 @@ namespace bio
               {
                 (*rve) = new MicroFO(/*rve_data[jj]*/);
                 (*rve)->setMigrationData(rve_data[jj]);
-                (*rve)->constructRVEFromMigrationData(&networks[0],&sparse_structs[0],buffers);
+                (*rve)->constructRVEFromMigrationData(&fbr_ntwrks[0],&sprs_strcts[0],buffers);
                 jj++;
               }
             }
@@ -377,7 +372,7 @@ namespace bio
         amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
                                        << pre_continue_iters << ", IDLE, PRE_CONTINUE_ITERS" << std::endl;
 #         endif
-        cs->couplingBroadcast(cplng,&converged);
+        cs->scaleBroadcast(M2m_id,&converged);
         AMSI_DEBUG(std::cout << "Has the current pseudo-timestep converged: " << (converged ? "true" : "false") << std::endl);
 #         ifdef LOGRUN
         double post_continue_iters = amsi::getElapsedTime(micro_fo_efficiency);
@@ -423,7 +418,7 @@ namespace bio
       amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
                                      << pre_continue_steps << ", IDLE, PRE_CONTINUE_STEPS" << std::endl;
 #       endif
-      cs->couplingBroadcast(cplng,&sim_complete);
+      cs->scaleBroadcast(M2m_id,&sim_complete);
       AMSI_DEBUG(std::cout << "Is the simulation complete : " << sim_complete << std::endl);
 #       ifdef LOGRUN
       double post_continue_steps = amsi::getElapsedTime(micro_fo_efficiency);

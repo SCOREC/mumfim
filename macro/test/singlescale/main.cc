@@ -107,8 +107,6 @@ int main(int argc, char ** argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::use_simmetrix = true;
-    amsi::use_petsc = true;
     amsi::initAnalysis(argc,argv);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
