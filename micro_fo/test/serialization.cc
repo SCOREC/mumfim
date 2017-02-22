@@ -9,7 +9,9 @@ int main(int argc, char ** argv)
   amsi::Log l = amsi::activateLog("serialization");
   FiberNetwork * network = new FiberNetwork;
   network->readFromFile("fiber_networks/clipped_del_1.txt");
+  FiberNetwork ** fbr_ntwrks = & network;
   SparseMatrix * sparse_struct(Make_Structure(network));
+  SparseMatrix ** sprs_strcts = & sparse_struct;
   SparskitBuffers buffers(network->numDofs());
   std::vector<MicroFO*> rve(num_rves);
   std::vector< std::vector<char> > rve_data;
@@ -72,7 +74,9 @@ int main(int argc, char ** argv)
   {
     rve[ii] = new MicroFO();
     rve[ii]->setMigrationData(rve_data[ii]);
-    rve[ii]->constructRVEFromMigrationData(&network,&sparse_struct,&buffers);
+    rve[ii]->constructRVEFromMigrationData(&fbr_ntwrks,
+                                           &sprs_strcts,
+                                           &buffers);
   }
   double t_3 = amsi::getElapsedTime(l);
   amsi::log(l) << num_rves << " DESERIALIZATION_STOP " << t_3 << std::endl;

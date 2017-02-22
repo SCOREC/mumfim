@@ -23,14 +23,15 @@ namespace bio
   { }
   MicroFO::MicroFO(int * hdr,
                    double * gauss,
-                   int id,
+                   int ri,
                    FiberNetwork * fn,
                    SparseMatrix * st,
                    SparskitBuffers * b,
                    double * prms,
                    double * init_coords,
                    int num_nodes)
-    : network_id(id)
+    : rve_tp(hdr[RVE_TYPE])
+    , rnd_id(ri)
     , buffers(b)
     , sparse_structure(st)
     , init_fiber_network(NULL)
@@ -426,7 +427,8 @@ void MicroFO::collectMigrationData()
   for(int ii=0;ii<num_rve_doubles;ii++)
     doubleMigrationData.push_back(initial_coords[ii]);
   // Network id for getting info from file
-  intMigrationData.push_back(network_id);
+  intMigrationData.push_back(rve_tp);
+  intMigrationData.push_back(rnd_id);
   // Current node x,y,z coords
   fiber_network->getNodeCoordinates(doubleMigrationData);
   // RVE edges info
@@ -446,8 +448,8 @@ void MicroFO::collectMigrationData()
   // Set first int to number of ints
   intMigrationData[0] = intMigrationData.size();
 }
-void MicroFO::constructRVEFromMigrationData(FiberNetwork ** networks,
-                                            SparseMatrix ** sparse_structs,
+void MicroFO::constructRVEFromMigrationData(FiberNetwork *** fbr_ntwrks,
+                                            SparseMatrix *** sprs_strcts,
                                             SparskitBuffers * b)
 {
   buffers = b;
@@ -474,11 +476,11 @@ void MicroFO::constructRVEFromMigrationData(FiberNetwork ** networks,
                         &doubleMigrationData[i_double]+num_rve_doubles);
   i_double += num_rve_doubles;
   // Reconstruct element info, initial nodes coords, and boundary nodes from networks data
-  network_id = intMigrationData[i_int++];
-  //fiber_network = new FiberNetwork(*networks[network_id]);
-  fiber_network = networks[network_id]->clone();
-  init_fiber_network = networks[network_id];
-  sparse_structure = sparse_structs[network_id];
+  rve_tp = intMigrationData[i_int++];
+  rnd_id = intMigrationData[i_int++];
+  fiber_network = fbr_ntwrks[rve_tp][rnd_id]->clone();
+  init_fiber_network = fbr_ntwrks[rve_tp][rnd_id]->clone();
+  sparse_structure = sprs_strcts[rve_tp][rnd_id];
   // Set current node coord data
   fiber_network->setNodeCoordinates(&doubleMigrationData[i_double]);
   i_double += fiber_network->numDofs();

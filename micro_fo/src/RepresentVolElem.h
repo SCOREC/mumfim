@@ -30,7 +30,7 @@ namespace bio
     MicroFO ();
     MicroFO(int * hdr,
             double * gpts,
-            int networkID,
+            int rnd_id,
             FiberNetwork * fn,
             SparseMatrix * st,
             SparskitBuffers * buffers,
@@ -65,8 +65,8 @@ namespace bio
     // Migration - need to pull into AMSI - almost entirely
     void collectMigrationData();
     void clearMigrationData();
-    void constructRVEFromMigrationData(FiberNetwork ** networks,
-                                       SparseMatrix ** matrices,
+    void constructRVEFromMigrationData(FiberNetwork *** networks,
+                                       SparseMatrix *** matrices,
                                        SparskitBuffers * b);
     std::vector<double> doubleMigrationData;
     std::vector<int> intMigrationData;
@@ -78,7 +78,8 @@ namespace bio
     void resetWeight() {rve_iterations.erase(rve_iterations.begin(),rve_iterations.end());}
     void resetTiming() {rve_timing.erase(rve_timing.begin(),rve_timing.end());}
   private:
-    int network_id;
+    int rve_tp;
+    int rnd_id;
     SparskitBuffers * buffers;
     FiberNetwork * fiber_network;
     SparseMatrix * sparse_structure;
