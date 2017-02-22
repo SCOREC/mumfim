@@ -121,20 +121,16 @@ namespace bio
     computeRVETypeInfo();
     int num_rve_tps = rve_tps.size();
     cs->scaleBroadcast(M2m_id,&num_rve_tps);
-    std::vector<MPI_Request> rqsts;
     int rve_cnts[num_rve_tps];
     int ii = 0;
     for(auto tp = rve_tps.begin(); tp != rve_tps.end(); ++tp)
     {
+      std::vector<MPI_Request> rqsts;
       cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->first.c_str(),tp->first.size()+1);
       rve_cnts[ii++] = tp->second;
     }
-    MPI_Status stss[num_rve_tps];
-    MPI_Waitall(num_rve_tps,&rqsts[0],&stss[0]);
     MPI_Request hdr_rqst;
     cs->aSendBroadcast(&hdr_rqst,M2m_id,&rve_cnts[0],num_rve_tps);
-    MPI_Status hdr_sts;
-    MPI_Waitall(1,&hdr_rqst,&hdr_sts);
   }
   int MultiscaleTissue::countRVEsOn(apf::MeshEntity * me)
   {

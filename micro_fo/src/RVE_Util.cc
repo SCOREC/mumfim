@@ -53,14 +53,15 @@ namespace bio
     cs->scaleBroadcast(M2m_id,&num_rve_tps);
     char ** rve_tp_dirs = new char * [num_rve_tps];
     MPI_Request rqsts[num_rve_tps];
+    // the order of receipt might be non-deterministic. need to handle that
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
       int cnt = 0;
       while((cnt = cs->aRecvBroadcastSize<char>(M2m_id)) == 0)
       { }
       rve_tp_dirs[ii] = new char [cnt];
-      cs->aRecvBroadcast(&rqsts[ii],M2m_id,&rve_tp_dirs[ii][0],cnt);
       // don't have to block to wait since we know the message was available for size info
+      cs->aRecvBroadcast(&rqsts[ii],M2m_id,&rve_tp_dirs[ii][0],cnt);
     }
     MPI_Status stss[num_rve_tps];
     MPI_Waitall(num_rve_tps,&rqsts[0],&stss[0]);
