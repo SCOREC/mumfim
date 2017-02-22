@@ -68,7 +68,7 @@ namespace bio
       dof_max = dofs > dof_max ? dofs : dof_max;
     }
     SparskitBuffers * buffers = new SparskitBuffers(dof_max);
-    size_t cplng = amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo");;
+    size_t cplng = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");;
     size_t recv_pattern_id = -1;
     size_t recv_pattern_init_id = -1;
     size_t send_pattern_id = -1;
@@ -357,7 +357,7 @@ namespace bio
         amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
                                        << pre_continue_iters << ", IDLE, PRE_CONTINUE_ITERS" << std::endl;
 #         endif
-        cs->couplingBroadcast(cplng,&converged);
+        cs->scaleBroadcast(cplng,&converged);
         AMSI_DEBUG(std::cout << "Has the current pseudo-timestep converged: " << (converged ? "true" : "false") << std::endl);
 #         ifdef LOGRUN
         double post_continue_iters = amsi::getElapsedTime(micro_fo_efficiency);
@@ -403,7 +403,7 @@ namespace bio
       amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
                                      << pre_continue_steps << ", IDLE, PRE_CONTINUE_STEPS" << std::endl;
 #       endif
-      cs->couplingBroadcast(cplng,&sim_complete);
+      cs->scaleBroadcast(cplng,&sim_complete);
       AMSI_DEBUG(std::cout << "Is the simulation complete : " << sim_complete << std::endl);
 #       ifdef LOGRUN
       double post_continue_steps = amsi::getElapsedTime(micro_fo_efficiency);
