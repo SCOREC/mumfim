@@ -280,7 +280,7 @@ namespace bio
         char * dir_str = AttributeString_value(dir);
         char * tp_str = AttributeString_value(prfx);
         std::string tp(std::string(dir_str) + std::string(tp_str));
-        if(rve_tps.find(tp) != rve_tps.end())
+        if(rve_tps.find(tp) == rve_tps.end())
           rve_tps[tp] = AttributeInt_value(cnt);
         Sim_deleteString(dir_str);
         Sim_deleteString(tp_str);
