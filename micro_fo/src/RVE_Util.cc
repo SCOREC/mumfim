@@ -52,26 +52,30 @@ namespace bio
     int num_rve_tps = 1;
     cs->scaleBroadcast(M2m_id,&num_rve_tps);
     char ** rve_tp_dirs = new char * [num_rve_tps];
+    MPI_Request rqsts[num_rve_tps];
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
       int cnt = 0;
       while((cnt = cs->aRecvBroadcastSize<char>(M2m_id)) == 0)
       { }
       rve_tp_dirs[ii] = new char [cnt];
-      MPI_Request rqst;
-      cs->aRecvBroadcast(&rqst,M2m_id,&rve_tp_dirs[ii][0],cnt);
+      cs->aRecvBroadcast(&rqsts[ii],M2m_id,&rve_tp_dirs[ii][0],cnt);
       // don't have to block to wait since we know the message was available for size info
     }
+    MPI_Status stss[num_rve_tps];
+    MPI_Waitall(num_rve_tps,&rqsts[0],&stss[0]);
     MPI_Request hdr_rqst;
     int rve_tp_cnts[num_rve_tps];
     cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnts[0],num_rve_tps);
+    MPI_Status hdr_sts;
+    MPI_Waitall(1,&hdr_rqst,&hdr_sts);
     // Read in all the fiber networks
     std::vector<FiberNetwork**> fbr_ntwrks;
     std::vector<SparseMatrix**> sprs_strcts;
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
-      fbr_ntwrks[ii] = new FiberNetwork* [rve_tp_cnts[ii]];
-      sprs_strcts[ii] = new SparseMatrix* [rve_tp_cnts[ii]];
+      fbr_ntwrks.push_back(new FiberNetwork* [rve_tp_cnts[ii]]);
+      sprs_strcts.push_back(new SparseMatrix* [rve_tp_cnts[ii]]);
     }
     int dof_max = -1;
     for(int ii = 0; ii < num_rve_tps; ii++)

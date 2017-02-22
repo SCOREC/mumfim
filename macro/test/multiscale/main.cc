@@ -16,7 +16,7 @@ void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"
             << "  [-h, --help]                              display this help text\n"
-            << "  [-s, --model model_file]                  the model file (.smd)\n"
+            << "  [-g, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
             << "  [-c, --case string]                       a string specifying the analysis case to run"
             << "  [-b, --balancing]                         specify if load balancing of RVEs is desired";
@@ -34,20 +34,20 @@ bool parse_options(int & argc, char ** & argv)
     static struct option long_options[] =
       {
         {"help",        no_argument,        0, 'h'},
-        {"model",       required_argument,  0, 's'},
+        {"model",       required_argument,  0, 'g'},
         {"mesh",        required_argument,  0, 'm'},
         {"balancing",   required_argument,  0, 'b'},
         {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hl:m:s:b:c:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hl:m:g:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
       display_help_string();
       result = false;
       break;
-    case 's':
+    case 'g':
       model_filename = optarg;
       break;
     case 'm':
