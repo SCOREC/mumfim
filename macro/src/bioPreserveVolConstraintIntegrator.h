@@ -47,7 +47,8 @@ namespace bio
     void apply(amsi::LAS * las, apf::Mesh * msh, pMesh prt, apf::Numbering * nm)
     {
       dim = msh->getDimension();
-      std::vector<pEntity> rgns;
+      std::vector<apf::MeshEntity*> rgns;
+      //std::vector<pEntity> rgns;
       amsi::getClassifiedEnts(prt,rgn,dim,std::back_inserter(rgns));
       for(std::vector<pEntity>::iterator mrgn = rgns.begin(); mrgn != rgns.end(); mrgn++)
       {
