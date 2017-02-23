@@ -22,6 +22,8 @@ namespace bio
   {
   protected:
     std::map<pGEntity,amsi::ElementalSystem*> constitutives;
+    std::vector<VolumeConstraintSurface*> vol_cnst;
+    std::vector<VolumeConstraintSurface*> pen_vol_cnst;
     apf::Field * delta_u;
   private:
     std::vector<VolumeConstraint*> vol_cnst;
@@ -220,7 +222,7 @@ namespace bio
       }
       if (rnk==0)
         amsi::log(vols) << ldstp << ", "
-                       << "entire domain" << ", "
+                        << "entire domain" << ", "
                         << v0 << ", "
                         << vi << ", "
                         << vi - vp << ", "
