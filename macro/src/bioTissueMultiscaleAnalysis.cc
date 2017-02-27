@@ -1,6 +1,7 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioAnalysisIO.h"
 #include "bioMultiscaleTissue.h"
+#include "bioVolumeConvergence.h"
 #include <Solvers.h>
 #include <ConvenienceFunctions.h>
 #include <amsiMultiscale.h>
@@ -113,8 +114,8 @@ namespace bio
     tissue->computeInitGuess(las);
     //apf::writeVtkFiles("init_guess",tissue->getMesh());
     tissue->initMicro();
-    // Calculate Volume after initial guess
-    tissue->updateVolumes();
+    // Calculate constraints after initial guess
+    tissue->updateConstraints();
     int complete = false;
     while(!complete)
     {

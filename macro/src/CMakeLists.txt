@@ -9,13 +9,13 @@ set(biotissue_public_headers
   bioNeoHookeanIntegrator.h
   bioHolmesMowIntegrator.h
   bioBatheMultiscale.h
-  bioPreserveVolConstraintIntegrator.h
-  bioVolumeConstraintIntegrator.h
   bioLinearTissue.h
   bioNonlinearTissue.h
   bioTissueMultiscaleAnalysis.h
   bioVariableRecovery.h
-  bioVariableRecovery_impl.h)
+  bioVariableRecovery_impl.h
+  bioVolumeConstraint.h
+  bioVolumeConvergence.h)
 
 set(biotissue_src_files
   bioAnalysis.cc
@@ -23,7 +23,8 @@ set(biotissue_src_files
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
   bioTissueMultiscaleAnalysis.cc
-  bioVariableRecovery.cc)
+  bioVariableRecovery.cc
+  bioVolumeConstraint.cc)
 
 find_package(amsi COMPONENTS util analysis multiscale)
 

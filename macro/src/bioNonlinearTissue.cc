@@ -4,7 +4,6 @@
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
 #include "StressStrainIntegrator.h"
-#include "bioPreserveVolConstraintIntegrator.h"
 #include "RVE_Util.h"
 #include "bioVariableRecovery.h"
 #include <ErrorEstimators.h>
@@ -42,52 +41,14 @@ namespace bio
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
+    std::vector<pANode> vol_cnst_nds;
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"incompressible"),std::back_inserter(vol_cnst_nds));
+    for(auto vol_nd = vol_cnst_nds.begin(); vol_nd != vol_cnst_nds.end(); ++vol_nd)
+      vol_cnst.push_back(buildVolumeConstraint(pd,*vol_nd,apf_primary_field));
     pGEntity rgn = NULL;
     GRIter ri = GM_regionIter(imdl);
     while((rgn = (pGEntity)GRIter_next(ri)))
     {
-      pAttribute inc = GEN_attrib(rgn,"specify incompressible");
-      if(inc)
-      {
-        // which version (surface, volume, etc)
-        // enforcement method
-        // parameters
-        double beta = 0.0;
-        pAttribute mthd = Attribute_childByType(inc,"incompressible enforcement");
-        char * mtd = Attribute_imageClass(mthd);
-        bool penalty = false;
-        if(std::string("penalty method").compare(mtd) == 0)
-        {
-          pAttributeDouble bt_att = (pAttributeDouble)Attribute_childByType(mthd,"beta");
-          beta = AttributeDouble_value(bt_att);
-          penalty = true;
-        }
-        if(std::string("lagrange multiplier").compare(mtd) == 0)
-        {
-          pAttributeDouble bt_att = (pAttributeDouble)Attribute_childByType(mthd,"beta");
-          beta = AttributeDouble_value(bt_att);
-        }
-        Sim_deleteString(mtd);
-        pAttributeInt vrsn_att = (pAttributeInt)Attribute_childByType(inc,"version");
-        if(AttributeInt_value(vrsn_att) == 0)
-        {
-          pPList fcs = GR_faces((pGRegion)rgn);
-          void * itr = 0;
-          pGFace fc;
-          while((fc = (pGFace)PList_next(fcs,&itr)))
-          {
-            auto cnst = new VolumeConstraintSurface(fc,GEN_tag((pGRegion)rgn),part,delta_u,1);
-            cnst->setBeta(beta);
-            vol_cnst.push_back(cnst);
-            cnst->setPenalty(penalty);
-            if(penalty)
-              pen_vol_cnst.push_back(cnst);
-          }
-          PList_delete(fcs);
-        }
-        else
-          std::cout << "WARNING: unsupported incompressibility version specified!" << std::endl;
-      }
       pAttribute mm = GEN_attrib(rgn,"material model");
       pAttribute cm = Attribute_childByType(mm,"continuum model");
       char * img_cls = Attribute_imageClass(cm);
@@ -123,19 +84,6 @@ namespace bio
     amsi::buildSimBCQueries(pd,amsi::BCType::dirichlet,&dir_tps[0],(&dir_tps[0])+1,std::back_inserter(dir_bcs));
     int neu_tps[] = {amsi::NeuBCType::traction, amsi::NeuBCType::pressure};
     amsi::buildSimBCQueries(pd,amsi::BCType::neumann,&neu_tps[0],(&neu_tps[0])+2,std::back_inserter(neu_bcs));
-    /// Initialize rgn_vols vectors.
-    calcInitVolumes(); ///< init_rgn_vols initialized here.
-    double vol_temp = 0.0;
-    for (uint ii=0; ii<init_rgn_vols.size(); ii++)
-      vol_temp += init_rgn_vols[ii];
-    // Initialize initial and current (global) volumes for each instant of VolumeConstraintSurface class.
-    for(std::vector<VolumeConstraintSurface*>::iterator cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++){
-      (*cnst)->setInitVol(vol_temp);
-      (*cnst)->setVol(vol_temp);
-      (*cnst)->setPrevVol(vol_temp);
-    }
-    rgn_vols = init_rgn_vols;
-    prev_rgn_vols = init_rgn_vols;
   }
   NonlinearTissue::~NonlinearTissue()
   {
@@ -143,6 +91,15 @@ namespace bio
     apf::destroyField(strs);
     apf::destroyField(rcvrd_strs);
     apf::destroyField(strn);
+  }
+  void NonlinearTissue::computeInitGuess(amsi::LAS * las)
+  {
+    LinearTissue lt(model,mesh,prob_def,analysis_comm);
+    lt.setSimulationTime(T);
+    LinearSolver(&lt,las);
+    las->iter();
+    apf::copyData(delta_u,lt.getField());
+    apf::copyData(apf_primary_field,lt.getField());
   }
   void NonlinearTissue::ApplyBC_Dirichlet()
   {
@@ -160,16 +117,6 @@ namespace bio
     //amsi::MergeFields(delta_u,nw_dlta_u,&wrtr).run();
     //amsi::PrintField(delta_u,std::cout).run();
     //apf::destroyField(nw_dlta_u);
-  }
-  void NonlinearTissue::RenumberDOFs()
-  {
-    //constraint_dofs = vol_cnst.size(); // implicit input the renumbering function
-    amsi::apfFEA::RenumberDOFs();
-    //int cntr = 1;
-    /*
-      for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->setDof(global_dof_count - cntr); // implicit output from the renumbering function
-    */
   }
   void NonlinearTissue::step()
   {
@@ -217,8 +164,7 @@ namespace bio
     apf_mesh->end(it);
     // process constraints
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->apply(las,apf_mesh,part,apf_primary_numbering);
-
+      (*cnst)->apply(las,apf_primary_numbering);
 #   ifdef LOGRUN
     double post_assmbl = amsi::getElapsedTime(macro_efficiency);
     amsi::log(macro_efficiency)  << load_step << ", " << iteration << ", " << post_assmbl << ", IDLE, POST_ASSEMBLE" << std::endl;
@@ -293,7 +239,7 @@ namespace bio
     MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
     std::stringstream fnm;
     fnm << amsi::fs->getResultsDir()
-             << "/qlty.stp_" << load_step << ".rnk_" << rnk << ".dat";
+        << "/qlty.stp_" << load_step << ".rnk_" << rnk << ".dat";
     // analyze and print the quality of the elements
     apf::Field * qfld = amsi::analyzeMeshQuality(apf_mesh,apf_primary_field);
     std::ofstream file(fnm.str().c_str(),std::ofstream::out);
@@ -317,85 +263,12 @@ namespace bio
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
   }
+  void NonlinearTissue::updateConstraints()
+  {
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+      (*cnst)->update();
+  }
   /*
-  void NonlinearTissue::updateConstraints()
-  {
-    // Update beta and lambda based on values of dv and v calculated above.
-    double max_beta = 128;
-    double max_iter = 15;
-    double idx = 0;
-    double eps = 1e-2;
-    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    {
-      double dv = rgn_vols[idx] - init_rgn_vols[idx]; // dv is calculated with respect to initial (target) volume.
-      double dv_prev = prev_rgn_vols[idx] - init_rgn_vols[idx];
-      if (std::abs(dv) > eps * init_rgn_vols[idx])    // criteria for volume difference constraint.
-      {
-        // beta update
-        if (std::abs(dv_prev) > 1e-10 && dv > 0.5 * dv_prev)
-        {
-          double beta = 0.0;
-          if (iteration < max_iter && (*cnst)->getBeta() < max_beta)
-          {
-            beta = (*cnst)->getBeta() * 2.0;
-            (*cnst)->setBeta(beta);
-          }
-          else
-          {
-            beta = (*cnst)->getBeta() * 0.5;
-            (*cnst)->setBeta(beta);
-          }
-        }
-        // Update lambda
-        std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-        //(*cnst)->setLambda((*cnst)->getLambda() + (dv * (*cnst)->getBeta()));
-        (*cnst)->setLambda(0.0);
-        std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
-      }
-      idx++;
-    }
-  }
-  void NonlinearTissue::updateConstraintsAccm()
-  {
-    // Determine accumulated volume change
-    double dv = 0.0;
-    double v = 0.0;
-    double v0 = 0.0;
-    int rgns = numVolumeConstraints();
-    for (int ii=0; ii<rgns; ii++)
-    {
-      v += rgn_vols[ii];
-      v0 += init_rgn_vols[ii];
-    }
-    dv = v - v0;
-    // Update beta and lambda based on values of dv and v calculated above.
-    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-    {
-      // Update lambda
-      std::cout << "Beta = " << (*cnst)->getBeta() << std::endl;
-      (*cnst)->setLambda((*cnst)->getLambda() + (dv/v0 * (*cnst)->getBeta()));
-      //(*cnst)->setLambda(0.0);
-      std::cout << "dv = " << dv << std::endl;
-      std::cout << "Lambda = " << (*cnst)->getLambda() << std::endl;
-      (*cnst)->setGflag(true);
-    }
-  }
-  */
-  void NonlinearTissue::updateConstraints()
-  {
-    double dv = 0.0;
-    double vp = 0.0;
-    int rgns = numVolumeConstraints();
-    for (int ii = 0; ii < rgns; ii++)
-    {
-      double dv_rgn = rgn_vols[ii] - prev_rgn_vols[ii];
-      dv += dv_rgn;
-      vp += prev_rgn_vols[ii];
-    }
-    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->update(dv,vp);
-    dv_prev = dv;
-  }
   void NonlinearTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
   {
     amsi::Log cnstrnts = amsi::activateLog("constraints");
@@ -411,4 +284,5 @@ namespace bio
                           << beta << std::endl;
     }
   }
+  */
 } // end of namespace Biotissue
