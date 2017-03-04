@@ -44,7 +44,7 @@ namespace bio
     std::vector<pANode> vol_cnst_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"incompressible"),std::back_inserter(vol_cnst_nds));
     for(auto vol_nd = vol_cnst_nds.begin(); vol_nd != vol_cnst_nds.end(); ++vol_nd)
-      vol_cnst.push_back(buildVolumeConstraint(pd,*vol_nd,apf_primary_field));
+      vol_cnst.push_back(buildVolumeConstraint(pd,*vol_nd,apf_primary_numbering));
     pGEntity rgn = NULL;
     GRIter ri = GM_regionIter(imdl);
     while((rgn = (pGEntity)GRIter_next(ri)))
@@ -164,7 +164,7 @@ namespace bio
     apf_mesh->end(it);
     // process constraints
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->apply(las,apf_primary_numbering);
+      (*cnst)->apply(las);
 #   ifdef LOGRUN
     double post_assmbl = amsi::getElapsedTime(macro_efficiency);
     amsi::log(macro_efficiency)  << load_step << ", " << iteration << ", " << post_assmbl << ", IDLE, POST_ASSEMBLE" << std::endl;

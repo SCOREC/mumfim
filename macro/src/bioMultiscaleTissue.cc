@@ -63,7 +63,7 @@ namespace bio
     }
     apf_mesh->end(it);
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->apply(las,apf_primary_numbering);
+      (*cnst)->apply(las);
   }
   void MultiscaleTissue::computeRVEs()
   {

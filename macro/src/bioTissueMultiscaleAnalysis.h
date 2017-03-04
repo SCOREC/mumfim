@@ -168,8 +168,8 @@ namespace bio
     double t; // [0,1] 0-initial configuration, 1-final configuration
     double initial_volume;
     std::vector<pModelItem> frc_itms;
-    std::vector<pModelItem> dsp_itms;
-    std::vector<pModelItem> vol_itms;
+    std::vector<apf::ModelEntity*> dsp_itms;
+    std::vector<apf::ModelEntity*> vol_itms;
     amsi::Log state;
     amsi::Log cnstrnts;
     amsi::Log norms;
@@ -207,15 +207,12 @@ namespace bio
     void iterate();
     int getIteration() {return iter;}
   };
-  /*
   class MultiscaleTissueConvergence : public amsi::Convergence
   {
   protected:
     MultiscaleTissueIteration * iter;
     MultiscaleTissueAnalysis * analysis;
     double eps;
-    size_t rltn_id;
-    // std::vector<double> norm_history;
   public:
     MultiscaleTissueConvergence(MultiscaleTissueAnalysis * a,
                                 MultiscaleTissueIteration * i,
@@ -224,11 +221,9 @@ namespace bio
       , iter(i)
       , analysis(a)
       , eps(e)
-      , rltn_id(amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo"))
     { }
     bool converged();
     double & epsilon() {return eps;}
   };
-  */
 } // end of namespace Biotissue
 #endif

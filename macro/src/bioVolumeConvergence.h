@@ -4,8 +4,8 @@
 namespace bio
 {
   // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
-    template <typename T>
-      class VolumeConvergence : public amsi::UpdatingConvergence<T>
+  template <typename T>
+    class VolumeConvergence : public amsi::UpdatingConvergence<T>
   {
   protected:
     int rnk;
@@ -14,10 +14,9 @@ namespace bio
   public:
     VolumeConvergence(VolumeConstraint * c,T e)
       : amsi::UpdatingConvergence<T>(e)
+      , rnk(-1)
       , vols(amsi::activateLog("volume"))
       , cnst(c)
-      , rnk(-1)
-      , stp(s)
     {
       MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
     }
@@ -27,7 +26,7 @@ namespace bio
       bool converged = false;
       double vol = cnst->getVolume();
       double prev_vol = cnst->getPrevVolume();
-      double dv = abs(vol - prv_vol);
+      double dv = abs(vol - prev_vol);
       // convergence based on volume change
       converged = dv < amsi::UpdatingConvergence<T>::eps * prev_vol  ;
       std::cout << "current volume: " << vol << std::endl;

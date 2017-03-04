@@ -1,5 +1,7 @@
 #ifndef BIO_VOLUME_CONSTRAINT_H_
 #define BIO_VOLUME_CONSTRAINT_H_
+#include "bioConstraint.h"
+#include <amsiDofHolder.h>
 #include <amsiLAS.h>
 #include <ElementalSystem.h>
 #include <simAnalysis.h>
@@ -9,61 +11,94 @@
 namespace bio
 {
   class VolumeConstraint;
-  VolumeConstraint * buildVolumeConstraint(pACase cs, pANode nd, apf::Field * u);
-  class VolumeConstraint : public amsi::ElementalSystem
+  VolumeConstraint * buildVolumeConstraint(pACase cs, pANode nd, apf::Numbering * un);
+  class VolumeConstraint : public Constraint, public apf::Integrator
   {
   protected:
     std::vector<apf::ModelEntity*> mdl_ents;
+    apf::Numbering * nm;
+    apf::Element * e;
+    apf::MeshElement * me;
+    int nen;
+    int nedofs;
     double vol;
     double init_vol;
     double prev_vol;
-    virtual void _inElement(apf::MeshEntity * me);
+    virtual void _update() = 0;
+    virtual void _inElement(apf::MeshEntity * me) = 0;
   public:
     template <typename I>
-      VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Field * fld);
+      VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm);
     virtual double calcVolume();
-    virtual void update();
-    virtual void _update() = 0;
-    virtual void apply(amsi::LAS * las, apf::Numbering * nm) = 0;
+    virtual void apply(amsi::LAS * las) = 0;
+    void update();
+    void inElement(apf::MeshEntity * me);
+    void outElement();
     double getVolume() { return vol; }
     double getInitVolume() { return init_vol; }
     double getPrevVolume() { return prev_vol; }
     bool includesBodyForces() { return true; }
   };
-  class LagrangeConstraint_Volume : public VolumeConstraint
+  class LagrangeConstraint_Volume : public VolumeConstraint , public amsi::DofHolder
   {
   protected:
     apf::DynamicMatrix dVdu;
     apf::DynamicMatrix d2Vdu2;
-    double dV;
     double lambda; // Lagrange multiplier for volume Preservation.
     double beta;   // Penalty parameter for Augmented Lagrangian Method.
-    void _inElement(apf::MeshEntity * me);
+    virtual void _inElement(apf::MeshEntity * me);
+    virtual void _update();
   public:
     template <typename I>
-      LagrangeConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Field * fld);
-    virtual void update(); // called each iteration..
-    virtual void apply(amsi::LAS * las, apf::Mesh * msh, apf::Numbering * nm);
+      LagrangeConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
+    void apply(amsi::LAS * las);
     void atPoint(apf::Vector3 const &p, double w, double dV);
     apf::DynamicMatrix& getdVdu(){return dVdu;}
     apf::DynamicMatrix& getd2Vdu2(){return d2Vdu2;}
     double getLambda() { return lambda; }
-    double getdV() { return dV; }
-  };
-  class PenaltyConstraint_Volume : public VolumeConstraint
-  {
-  public:
-    template <typename I>
-      PenaltyConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Field * fld, int o);
-  };
-  class LagrangeConstraint_VolumeSurface : public VolumeConstraint
-  {
-
   };
   class PenaltyConstraint_VolumeSurface : public VolumeConstraint
   {
-
+  protected:
+    apf::ModelEntity * crt_rgn;
+    apf::ModelEntity * crt_fc;
+    apf::DynamicMatrix dVdu;
+    double lambda;
+    double beta;
+    virtual void _update() {}
+    virtual void _inElement(apf::MeshEntity *);
+    void calcdVdu(apf::Vector3 const & pt0, apf::Vector3 const & pt1, apf::Vector3 const & pt2);
+    //void calcd2Vdu2(apf::Vector3 const & pt0, apf::Vector3 const & pt1, apf::Vector3 const & pt2);
+  public:
+    template <typename I>
+      PenaltyConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
+    void apply(amsi::LAS *);
+    void atPoint(apf::Vector3 const &, double, double);
   };
+  /*
+  class PenaltyConstraint_Volume : public VolumeConstraint
+  {
+  protected:
+    double beta;
+    virtual void _update() {};
+  public:
+    template <typename I>
+      PenaltyConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
+    void apply(amsi::LAS *) {}
+    void atPoint(apf::Vector3 const &, double, double) {}
+  };
+  class LagrangeConstraint_VolumeSurface : public VolumeConstraint
+  {
+  protected:
+    double beta;
+    virtual void _update();
+  public:
+    template <typename I>
+      LagrangeConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
+    void apply(amsi::LAS *, apf::Numbering *) {}
+    void atPoint(apf::Vector3 const &, double, double) {}
+  };
+  */
   /*
   class VolumeConstraintADMM : public VolumeConstraint
   {
@@ -71,7 +106,7 @@ namespace bio
     std::vector<double> prev_vols;
     int elem_num; // keeps count of element number within region.
   public:
-    VolumeConstraintADMM(apf::ModelEntity * me, apf::Field * fld, int o);
+    VolumeConstraintADMM(apf::ModelEntity * me, apf::Numbering ** fld, int o);
     void apply(amsi::LAS * las, apf::Mesh * msh, apf::Numbering * nm);
     void atPoint(apf::Vector3 const &p, double w, double dV);
     //void setPrevVol(int idx, double vol) { prev_vols[idx] = vol; }
@@ -94,7 +129,7 @@ namespace bio
     int elem_num; // keeps count of element number within region.
     virtual void _inElement(apf::MeshElement * me);
   public:
-    LagrangeVolumeConstraint_Surface(apf::ModelEntity * me, apf::Field * fld, int o);
+    LagrangeVolumeConstraint_Surface(apf::ModelEntity * me, apf::Numbering * nm);
     void apply(amsi::LAS * las, apf::Mesh * msh, apf::Numbering * nm);
     void atPoint(apf::Vector3 const &p, double w, double dV);
     void calcG(apf::Vector3 const & pt0,
@@ -113,13 +148,7 @@ namespace bio
     void setInitVol(double vol) { init_vol = vol;}
     void setPrevVol(double vol) { prev_vol = vol;}
   };
-  class PenaltyVolumeConstraint_Surface : public LagrangeVolumeConstraint_Surface
-  {
-  public:
-    PenaltyVolumeConstraint_Surface(apf::ModelEntity * me, apf::Field * fld, int o)
-      : LagrangeVolumeConstraint_Surface(me,fld,o)
-    { }
-  };
   */
 }
+#include "bioVolumeConstraint_impl.h"
 #endif

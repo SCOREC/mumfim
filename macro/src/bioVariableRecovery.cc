@@ -1,6 +1,6 @@
 #include "bioVariableRecovery.h"
 #include <SimFEA.h>
-#include <apfField.h>
+#include <apfShape.h>
 #include <apfSIM.h>
 #include <cassert>
 #include <list>
@@ -10,7 +10,8 @@ namespace bio
   void getEntFieldComponent(apf::Field * fld, int crd, std::vector<double>& crds, pEntity ent)
   {
     apf::MeshEntity * apf_ent = apf::castEntity(ent);
-    int cnt = fld->countNodesOn(apf_ent);
+    apf::FieldShape * fs = apf::getShape(fld);
+    int cnt = fs->countNodesOn(apf::getMesh(fld)->getType(apf_ent));
     for(int nde = 0; nde < cnt; nde++)
     {
       int cmpnts = apf::countComponents(fld);

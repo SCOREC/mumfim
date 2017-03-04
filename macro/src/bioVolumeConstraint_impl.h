@@ -1,11 +1,12 @@
 namespace bio
 {
   template <typename I>
-    VolumeConstraint::VolumeConstraint(I mdl_ent_bgn,
-                                       I mdl_ent_end,
-                                       apf::Field * fld)
-    : ElementalSystem(fld,fld->getShape()->getOrder())
+    VolumeConstraint::VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * n)
+    : apf::Integrator(apf::getShape(apf::getField(n))->getOrder())
     , mdl_ents()
+    , nm(n)
+    , nen(0)
+    , nedofs(0)
     , vol(0.0)
     , init_vol(0.0)
     , prev_vol(0.0)
@@ -14,16 +15,32 @@ namespace bio
     vol = init_vol = prev_vol = calcVolume();
   }
   template <typename I>
-    LagrangeConstraint_Volume(I mdl_ent_bgn,
-                              I mdl_ent_end,
-                              apf::Field * fld)
-    : VolumeConstraint(mdl_ent_bgn,
-                       mdl_ent_end,
-                       fld)
+    LagrangeConstraint_Volume::LagrangeConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b)
+    : VolumeConstraint(mdl_ent_bgn, mdl_ent_end, nm)
     , dVdu()
     , d2Vdu2()
-    , dV(0.0)
     , lambda(0.0)
-    , beta(0.0)
+    , beta(b)
   { }
+  template <typename I>
+    PenaltyConstraint_VolumeSurface::PenaltyConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b)
+    : VolumeConstraint(mdl_ent_bgn, mdl_ent_end, nm)
+    , crt_rgn()
+    , crt_fc()
+    , dVdu()
+    , lambda(0.0)
+    , beta(b)
+  { }
+  /*
+  template <typename I>
+    PenaltyConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b)
+    : VolumeConstraint(mdl_ent_bgn, mdl_ent_end, nm)
+    , beta(b)
+  { }
+  template <typename I>
+    LagrangeConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b)
+    : VolumeConstraint(mdl_ent_bgn, mdl_ent_end, nm)
+    , beta(b)
+  { }
+  */
 }

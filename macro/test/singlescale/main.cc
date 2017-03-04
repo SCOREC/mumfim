@@ -2,6 +2,7 @@
 #include "bioTissueAnalysis.h"
 #include "bioTissueMultiscaleAnalysis.h" // only for convergence ops, delete after
 #include <amsiAnalysis.h>
+#include <amsiCasters.h>
 #include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
@@ -118,7 +119,7 @@ int main(int argc, char ** argv)
     MPI_Comm_size(MPI_COMM_WORLD,&sz);
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
+    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; )
     {
       amsi::initCase(mdl,cs);
@@ -135,16 +136,20 @@ int main(int argc, char ** argv)
       pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
       pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
       // discover output policies
-      std::vector<pModelItem> vol_itms;
-      amsi::getTrackedModelItems(cs,"output volume",std::back_inserter(vol_itms));
-      std::vector<pModelItem> dsp_itms;
-      amsi::getTrackedModelItems(cs,"output displacement",std::back_inserter(dsp_itms));
+      std::vector<pModelItem> dp_itms;
+      std::vector<apf::ModelEntity*> dsp_itms;
+      amsi::getTrackedModelItems(cs,"output displacement",std::back_inserter(dp_itms));
+      std::transform(dp_itms.begin(),dp_itms.end(),std::back_inserter(dsp_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
+      std::vector<pModelItem> vl_itms;
+      std::vector<apf::ModelEntity*> vol_itms;
+      amsi::getTrackedModelItems(cs,"output volume",std::back_inserter(vl_itms));
+      std::transform(vl_itms.begin(),vl_itms.end(),std::back_inserter(vol_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
       int nm_stps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
       bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
       tssu.recoverSecondaryVariables(0);
       amsi::PetscLAS las;
-      bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,0,tssu.getPart(),tssu.getUField());
-      bio::logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,0,tssu.getPart(),tssu.getUField());
+      bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,0,tssu.getUField());
+      bio::logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,0,tssu.getUField());
       for(int stp = 1; stp <= nm_stps; ++stp)
       {
         bio::TissueIteration itr(&tssu,&las);
@@ -153,11 +158,11 @@ int main(int argc, char ** argv)
         amsi::RelativeResidualConvergence<decltype(eps_scheme)> rs_cnvrg(&las,eps_scheme);
         double dv_eps = 1e-3;
         int dv_its = 0;
-        dv_updt dv_eps_scheme(dv_its,dv_eps);
-        bio::VolumeConvergenceAccm_Incrmt<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
-        amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
+        //dv_updt dv_eps_scheme(dv_its,dv_eps);
+        //bio::VolumeConvergence<decltype(dv_eps_scheme)> dv_cnvrg(&tssu,dv_eps_scheme); // %dv
+        //amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
         tssu.setSimulationTime((double)stp/nm_stps);
-        if(amsi::numericalSolve(&itr,&mcnvrg))
+        if(amsi::numericalSolve(&itr,&rs_cnvrg))
         {
           tssu.recoverSecondaryVariables(stp);
           tssu.step();
@@ -168,8 +173,8 @@ int main(int argc, char ** argv)
           apf::writeVtkFiles(fnm.str().c_str(),tssu.getMesh());
           std::string pvd("/out.pvd");
           amsi::writePvdFile(pvd,msh_prfx,stp);
-          bio::logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,stp,tssu.getPart(),tssu.getUField());
-          bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu.getPart(),tssu.getUField());
+          bio::logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,stp,tssu.getUField());
+          bio::logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu.getUField());
           if(rnk == 0)
           {
             std::string vl_fl(amsi::fs->getResultsDir() + std::string("/vols.log"));
