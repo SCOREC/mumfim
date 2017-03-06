@@ -32,7 +32,7 @@ namespace bio
     // AMSI communication variables
     amsi::ControlService * cs = amsi::ControlService::Instance();
     amsi::Task * local_task = amsi::getLocal();
-    amsi::DataDistribution * dd_rve = local_task->getDD(local_task->createDD("macro_fo_data"));
+    amsi::DataDistribution * dd_rve = amsi::createDataDistribution(local_task,"macro_fo_data");
     int local_rank = local_task->localRank();
     size_t M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     size_t m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
@@ -350,7 +350,7 @@ namespace bio
           double w = (*rve)->getWeight();
           //std::cout << w << std::endl;
           local_weight += w;
-          dd_rve->setWeight(local_rank,ii,w);
+          (*dd_rve).getWeight(local_rank,ii) = w;
           (*rve)->resetWeight();
           ii++;
         }
@@ -397,7 +397,7 @@ namespace bio
       {
         double w = (*rve)->getWeight();
         local_weight += w;
-        dd_rve->setWeight(local_rank,ii++,w);
+        (*dd_rve).getWeight(local_rank,ii++) = w;
         (*rve)->resetWeight();
 #         ifdef LOGRUN
         double time = (*rve)->getTiming();

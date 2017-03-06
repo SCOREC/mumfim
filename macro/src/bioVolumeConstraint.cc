@@ -13,7 +13,7 @@ namespace bio
     std::vector<pModelItem> mdl_itms;
     amsi::getAssociatedModelItems(cs,nd,std::back_inserter(mdl_itms));
     std::transform(mdl_itms.begin(),mdl_itms.end(),std::back_inserter(mdl_ents),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
-    std::cout << "Volume constraint discovered effecting model entities : ";
+    std::cout << "Volume constraint discovered, effects model entities : ";
     for(auto mdl_ent = mdl_itms.begin(); mdl_ent != mdl_itms.end(); ++mdl_ent)
     {
       assert(ModelItem_isGEntity(*mdl_ent));

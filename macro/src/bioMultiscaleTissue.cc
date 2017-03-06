@@ -111,9 +111,9 @@ namespace bio
     mtd.MultiscaleDataTypesMPICommit();
     amsi::ControlService * cs = amsi::ControlService::Instance();
     amsi::Task * macro = amsi::getLocal();
-    macro->createDD("micro_fo_data");
-    macro->setLocalDDValue("micro_fo_data",0);
-    macro->assembleDD("micro_fo_data");
+    amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
+    (*dd) = 0;
+    amsi::Assemble(dd,macro->comm());
     snd_ptrns[FIBER_ONLY] = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
     cs->CommPattern_Reconcile(snd_ptrns[FIBER_ONLY]);
     rcv_ptrns[FIBER_ONLY] = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
@@ -230,8 +230,9 @@ namespace bio
     std::fill(to_add.begin(),to_add.end(),0);
     size_t add_id = cs->AddData(snd_ptrns[FIBER_ONLY],rve_ents,to_add);
     nm_rves += to_add.size();
-    lt->setLocalDDValue("micro_fo_data",nm_rves);
-    lt->assembleDD("micro_fo_data");
+    amsi::DataDistribution * dd = lt->getDD("micro_fo_data");
+    (*dd) = nm_rves;
+    amsi::Assemble(dd,lt->comm());
     cs->CommPattern_Assemble(snd_ptrns[FIBER_ONLY]);
     cs->Communicate(add_id,nw_hdrs,mtd.micro_fo_header_data_type);
     cs->Communicate(add_id,nw_prms,mtd.micro_fo_parameter_data_type);

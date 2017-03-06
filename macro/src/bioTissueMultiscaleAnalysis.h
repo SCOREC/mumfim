@@ -185,6 +185,7 @@ namespace bio
     pGModel model;
     pParMesh mesh;
     pMesh part;
+    std::vector<amsi::Convergence*> cnvrg;
     MultiscaleTissue * tissue; // actual multiscale iterations
     amsi::LAS * las; // Linear solver used for both analyses
   };

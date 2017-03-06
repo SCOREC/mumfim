@@ -70,6 +70,12 @@ namespace bio
     std::transform(vl_itms.begin(),vl_itms.end(),std::back_inserter(vol_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     num_load_steps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
+    std::vector<pANode> cnvrg_nds;
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"convergence operator"),std::back_inserter(cnvrg_nds));
+    /*
+    for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != convrg.end(); ++cnvrg_nd)
+      cnvrg.push_back(buildConvergenceOperator(ss,*cnvrg_nd));
+    */
   }
   void TissueMultiScaleAnalysis::initLogs()
   {

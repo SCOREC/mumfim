@@ -3,6 +3,7 @@
 #include "amsiNonlinearAnalysis.h"
 namespace bio
 {
+  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn);
   // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
   template <typename T>
     class VolumeConvergence : public amsi::UpdatingConvergence<T>
