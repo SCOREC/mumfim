@@ -64,6 +64,7 @@ namespace bio
     template <typename O>
       void serializeRVEData(O o);
     void computeRVETypeInfo();
+    int getRVEType(apf::ModelEntity *);
   };
 }
 #include "bioMultiscaleTissue_impl.h"

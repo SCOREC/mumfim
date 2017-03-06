@@ -280,12 +280,33 @@ namespace bio
         pAttributeInt cnt = (pAttributeInt)Attribute_childByType(sm,"count");
         char * dir_str = AttributeString_value(dir);
         char * tp_str = AttributeString_value(prfx);
-        std::string tp(std::string(dir_str) + std::string(tp_str));
+        std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
         if(rve_tps.find(tp) == rve_tps.end())
           rve_tps[tp] = AttributeInt_value(cnt);
         Sim_deleteString(dir_str);
         Sim_deleteString(tp_str);
       }
     }
+  }
+  int MultiscaleTissue::getRVEType(apf::ModelEntity * ent)
+  {
+    int ii = -1;
+    pGEntity rgn = reinterpret_cast<pGEntity>(ent);
+    pAttribute mdl = GEN_attrib(rgn,"material model");
+    pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+    if(sm)
+    {
+      pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
+      pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
+      char * dir_str = AttributeString_value(dir);
+      char * tp_str = AttributeString_value(prfx);
+      std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
+      auto fnd = rve_tps.find(tp);
+      if(fnd != rve_tps.end())
+	ii = std::distance(rve_tps.begin(),fnd);
+      Sim_deleteString(dir_str);
+      Sim_deleteString(tp_str);
+    }
+    return ii;
   }
 }
