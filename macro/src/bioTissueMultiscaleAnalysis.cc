@@ -33,6 +33,7 @@ namespace bio
     : rnk(-1)
     , num_load_steps(1)
     , current_step(0)
+    , iteration(0)
     , t(0.0)
     , frc_itms()
     , dsp_itms()
@@ -74,7 +75,7 @@ namespace bio
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"convergence operator"),std::back_inserter(cnvrg_nds));
     /*
     for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != convrg.end(); ++cnvrg_nd)
-      cnvrg.push_back(buildConvergenceOperator(ss,*cnvrg_nd));
+      cnvrg.push_back(buildConvergenceOperator(ss,*cnvrg_nd,*iteration));
     */
   }
   void TissueMultiScaleAnalysis::initLogs()
@@ -137,7 +138,6 @@ namespace bio
       //double eps_v = 4.0;
       // accm. volume constraint V - V0
       //double eps_v = 1e-3;
-      unsigned iteration = 0;
       tissue->updateMicro();
 #     ifdef LOGRUN
       if (rnk == 0)

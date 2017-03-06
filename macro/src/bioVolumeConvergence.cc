@@ -1,7 +1,7 @@
 #include "bioVolumeConvergence.h"
 namespace bio
 {
-  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn)
+  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, const int & it)
   {
     amsi::Convergence * cnvg = NULL;
     char * tp = AttNode_imageClass(cn);
@@ -21,6 +21,8 @@ namespace bio
       pANode type = AttNode_childByType(cn,"type");
       pANode ref  = AttNode_childByType(cn,"reference");
       pANode eps = AttNode_childByType(cn,"epsilon");
+      amsi::UpdatingEpsilon(eps,it)
+        VolumeConvergence<amsi::UpdatingEpsilon>(
     }
     /*
     else

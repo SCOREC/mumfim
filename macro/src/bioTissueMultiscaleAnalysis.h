@@ -165,6 +165,7 @@ namespace bio
     int rnk;
     unsigned num_load_steps;
     unsigned current_step;
+    unsigned iteration;
     double t; // [0,1] 0-initial configuration, 1-final configuration
     double initial_volume;
     std::vector<pModelItem> frc_itms;
