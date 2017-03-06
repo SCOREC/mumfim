@@ -1,5 +1,5 @@
-#include "simClassified.h"
-#include "apfField.h"
+#include <simClassified.h>
+#include <apf.h>
 #include <cassert>
 namespace bio
 {
@@ -12,10 +12,10 @@ namespace bio
   {
     for(int ent_dim = 0; ent_dim < 3; ent_dim++)
     {
-      amsi::SimIterator bgn = amsi::beginClassified(apf::getMesh(fld),
-                                                    mdl_ent,
-                                                    ent_dim);
-      amsi::SimIterator end = amsi::endClassified(bgn);
+      amsi::SimClassifiedIter bgn = amsi::beginClassified(apf::getMesh(fld),
+                                                          mdl_ent,
+                                                          ent_dim);
+      amsi::SimClassifiedIter end = amsi::endClassified(bgn);
       getFieldComponentsOn(fld,nm_cmps,cmps,bgn,end,out);
     }
   }
@@ -37,7 +37,8 @@ namespace bio
                                  int * cmps,
                                  O out)
   {
-    int cnt = fld->countNodesOn(ent);
+    apf::FieldShape * fs = apf::getShape(fld);
+    int cnt = fs->countNodesOn(apf::getMesh(fld)->getType(ent));
     for(int nde = 0; nde < cnt; nde++)
     {
       int fld_cmps = apf::countComponents(fld);
