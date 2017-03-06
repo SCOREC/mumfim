@@ -5,11 +5,12 @@ namespace bio
 {
   enum header_fields
   {
-    ELEMENT_TYPE = 0,
-    GAUSS_ID = 1,
-    FIBER_REACTION = 2,
-    IS_ORIENTED = 3,
-    NUM_HEADER_FIELDS = 4
+    RVE_TYPE = 0,
+    ELEMENT_TYPE = 1,
+    GAUSS_ID = 2,
+    FIBER_REACTION = 3,
+    IS_ORIENTED = 4,
+    NUM_HEADER_FIELDS = 5
   };
   struct micro_fo_header
   {

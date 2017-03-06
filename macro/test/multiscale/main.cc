@@ -15,16 +15,14 @@
 void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"
-            << "  [-f, --fibernetwork fiber_network_file]   filename for fiber network (.vect)\n"
             << "  [-h, --help]                              display this help text\n"
-            << "  [-s, --model model_file]                  the model file (.smd)\n"
+            << "  [-g, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
             << "  [-c, --case string]                       a string specifying the analysis case to run"
             << "  [-b, --balancing]                         specify if load balancing of RVEs is desired";
 }
 std::string model_filename("");
 std::string mesh_filename("");
-std::string fiber_network_filename("");
 std::string analysis_case("");
 bool parse_options(int & argc, char ** & argv)
 {
@@ -35,7 +33,6 @@ bool parse_options(int & argc, char ** & argv)
   {
     static struct option long_options[] =
       {
-        {"fibernetwork", required_argument, 0, 'f'},
         {"help",        no_argument,        0, 'h'},
         {"model",       required_argument,  0, 'g'},
         {"mesh",        required_argument,  0, 'm'},
@@ -43,15 +40,12 @@ bool parse_options(int & argc, char ** & argv)
         {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hf:l:m:g:b:c:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hl:m:g:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
       display_help_string();
       result = false;
-      break;
-    case 'f':
-      fiber_network_filename = optarg;
       break;
     case 'g':
       model_filename = optarg;
@@ -81,7 +75,7 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
   int rnk = MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs(fiber_network_filename,10);
+  bio::P_computeRVEs();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
@@ -138,7 +132,6 @@ int main(int argc, char **argv)
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
     amsi::ControlService * control = amsi::ControlService::Instance();
-//    control->setSuppressOutput(true);
     control->setScaleMain("macro",&run_macro);
     control->setScaleMain("micro_fo",&run_micro_fo);
     result = control->Execute(argc,argv);

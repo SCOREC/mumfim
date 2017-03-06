@@ -348,7 +348,7 @@ namespace bio
       , iter(i)
       , analysis(a)
       , eps(e)
-      , rltn_id(amsi::getRelationID(amsi::cm,amsi::tm,"macro","micro_fo"))
+      , rltn_id(amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo"))
     { }
     bool converged();
     double & epsilon() {return eps;}

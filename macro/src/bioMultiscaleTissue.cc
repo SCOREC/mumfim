@@ -19,6 +19,8 @@ namespace bio
     , snd_ptrns()
     , ini_ptrns()
     , rcv_ptrns()
+    , M2m_id()
+    , m2M_id()
     , mtd()
   {
     // primary field created in NonlinearTissue
@@ -27,6 +29,8 @@ namespace bio
 //    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
     mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
+    M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
+    m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
@@ -118,6 +122,19 @@ namespace bio
     cs->CommPattern_Reconcile(snd_ptrns[FIBER_ONLY]);
     rcv_ptrns[FIBER_ONLY] = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
     cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
+    computeRVETypeInfo();
+    int num_rve_tps = rve_tps.size();
+    cs->scaleBroadcast(M2m_id,&num_rve_tps);
+    int rve_cnts[num_rve_tps];
+    int ii = 0;
+    for(auto tp = rve_tps.begin(); tp != rve_tps.end(); ++tp)
+    {
+      std::vector<MPI_Request> rqsts;
+      cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->first.c_str(),tp->first.size()+1);
+      rve_cnts[ii++] = tp->second;
+    }
+    MPI_Request hdr_rqst;
+    cs->aSendBroadcast(&hdr_rqst,M2m_id,&rve_cnts[0],num_rve_tps);
   }
   int MultiscaleTissue::countRVEsOn(apf::MeshEntity * me)
   {
@@ -245,6 +262,29 @@ namespace bio
       return mltscl;
     default:
       return NULL;
+    }
+  }
+  void MultiscaleTissue::computeRVETypeInfo()
+  {
+    pGEntity rgn = NULL;
+    GRIter ri = GM_regionIter(model);
+    while((rgn = (pGEntity)GRIter_next(ri)))
+    {
+      pAttribute mdl = GEN_attrib(rgn,"material model");
+      pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+      if(sm)
+      {
+        pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
+        pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
+        pAttributeInt cnt = (pAttributeInt)Attribute_childByType(sm,"count");
+        char * dir_str = AttributeString_value(dir);
+        char * tp_str = AttributeString_value(prfx);
+        std::string tp(std::string(dir_str) + std::string(tp_str));
+        if(rve_tps.find(tp) == rve_tps.end())
+          rve_tps[tp] = AttributeInt_value(cnt);
+        Sim_deleteString(dir_str);
+        Sim_deleteString(tp_str);
+      }
     }
   }
 }

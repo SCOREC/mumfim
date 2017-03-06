@@ -22,8 +22,7 @@ set(biotissue_src_files
   bioLinearTissue.cc
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
-  bioTissueMultiscaleAnalysis.cc
-  bioVariableRecovery.cc)
+  bioTissueMultiscaleAnalysis.cc)
 
 find_package(amsi COMPONENTS util analysis multiscale)
 
