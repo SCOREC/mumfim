@@ -87,11 +87,11 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
-  amsi::getLocal()->createDD("micro_fo_data"); // coupling data sent every newton iteration
+  amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
   try
   {
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
+    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
     {
       amsi::initCase(mdl,cs);

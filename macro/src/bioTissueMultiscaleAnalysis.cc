@@ -1,8 +1,10 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioAnalysisIO.h"
 #include "bioMultiscaleTissue.h"
+#include "bioVolumeConvergence.h"
 #include <Solvers.h>
 #include <ConvenienceFunctions.h>
+#include <amsiCasters.h>
 #include <amsiMultiscale.h>
 #include <apfFunctions.h>
 #include <apfWrapper.h>
@@ -31,6 +33,7 @@ namespace bio
     : rnk(-1)
     , num_load_steps(1)
     , current_step(0)
+    , iteration(0)
     , t(0.0)
     , frc_itms()
     , dsp_itms()
@@ -60,10 +63,20 @@ namespace bio
     pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
     tissue = new MultiscaleTissue(imdl,imsh,pd,cm);
     amsi::getTrackedModelItems(cs,"output force",std::back_inserter(frc_itms));
-    amsi::getTrackedModelItems(cs,"output displacement",std::back_inserter(dsp_itms));
-    amsi::getTrackedModelItems(cs,"output volume",std::back_inserter(vol_itms));
+    std::vector<pModelItem> dp_itms;
+    amsi::getTrackedModelItems(cs,"output displacement",std::back_inserter(dp_itms));
+    std::transform(dp_itms.begin(),dp_itms.end(),std::back_inserter(dsp_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
+    std::vector<pModelItem> vl_itms;
+    amsi::getTrackedModelItems(cs,"output volume",std::back_inserter(vl_itms));
+    std::transform(vl_itms.begin(),vl_itms.end(),std::back_inserter(vol_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     num_load_steps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
+    std::vector<pANode> cnvrg_nds;
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"convergence operator"),std::back_inserter(cnvrg_nds));
+    /*
+    for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != convrg.end(); ++cnvrg_nd)
+      cnvrg.push_back(buildConvergenceOperator(ss,*cnvrg_nd,*iteration));
+    */
   }
   void TissueMultiScaleAnalysis::initLogs()
   {
@@ -109,12 +122,12 @@ namespace bio
     current_step = 0;
     updateTime();
     tissue->setSimulationTime(t);
-    logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getPart(), tissue->getUField());
+    logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getUField());
     tissue->computeInitGuess(las);
     //apf::writeVtkFiles("init_guess",tissue->getMesh());
     tissue->initMicro();
-    // Calculate Volume after initial guess
-    tissue->updateVolumes();
+    // Calculate constraints after initial guess
+    tissue->updateConstraints();
     int complete = false;
     while(!complete)
     {
@@ -124,17 +137,15 @@ namespace bio
       // embedded_cell_resize:
       //double eps_v = 4.0;
       // accm. volume constraint V - V0
-      double eps_v = 1e-3;
-      unsigned iteration = 0;
+      //double eps_v = 1e-3;
       tissue->updateMicro();
 #     ifdef LOGRUN
       if (rnk == 0)
         amsi::log(loads) << current_step << ", ";
 #     endif
       /// Create convergence objects.
-      dv_updt dv_eps(eps_v);
-      //auto dv_eps = [&]()->double {return eps_v;};
-      VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
+      //dv_updt dv_eps(eps_v);
+      //VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
       LASResidualConvergence convergence(las,eps);
       while(!converged)
       {
@@ -148,10 +159,9 @@ namespace bio
         las->iter();
         converged = convergence.converged();
         convergence.log(current_step, iteration, rnk);
-        tissue->logCnstrntParams(current_step, iteration, rnk);
         // if we've converged on displacement, check the volume convergence and update the vols
-        converged = converged ? dv_convergence.converged() : false;
-        dv_convergence.log(current_step, rnk);
+        //converged = converged ? dv_convergence.converged() : false;
+        //dv_convergence.log(current_step, rnk);
         cs->scaleBroadcast(cplng,&converged);
         tissue->iter();
         iteration++;
@@ -160,10 +170,9 @@ namespace bio
                          << amsi::getElapsedTime(state) << ", ACTIVE, END_ITER" << std::endl;
 #       endif
       }
-      tissue->updatePrevVolumes();
 #     ifdef LOGRUN
       // displacement log
-      logDisps(dsp_itms.begin(),dsp_itms.end(),disps,current_step,tissue->getPart(),tissue->getUField());
+      logDisps(dsp_itms.begin(),dsp_itms.end(),disps,current_step,tissue->getUField());
       // force log
       for(auto mdl_ent = frc_itms.begin(); mdl_ent != frc_itms.end(); ++mdl_ent)
       {
@@ -172,7 +181,7 @@ namespace bio
         if(rnk == 0)
           amsi::log(loads) << GEN_tag((pGEntity)*mdl_ent) << ", " << frc[0] << ", " << frc[1] << ", " << frc[2] << std::endl;
       }
-      logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getPart(), tissue->getUField());
+      logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getUField());
       // write all streams
       std::fstream st_fs(state_file.c_str(), std::ios::out | std::ios::app);
       amsi::flushToStream(state,st_fs);
@@ -211,13 +220,6 @@ namespace bio
         tissue->setSimulationTime(t);
       }
       tissue->recoverSecondaryVariables(current_step);
-      //      deleteLogs();
-      // write mesh to file
-      /*
-      std::stringstream stpstrm;
-        stpstrm << current_step;
-        apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/msh_stp_" + stpstrm.str() + "_").c_str(),tissue->getMesh());
-      */
       cs->scaleBroadcast(cplng,&complete);
     } // while(!complete)
     deleteLogs();

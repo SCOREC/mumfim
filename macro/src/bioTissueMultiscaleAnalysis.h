@@ -12,131 +12,6 @@
 #include <stdexcept>
 namespace bio
 {
-  /* Volume convergence class that considers current volume - initial volume of each individual region */
-  class VolumeConvergence : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissue * ts;
-    double eps;
-    amsi::Log vols;
-  public:
-    VolumeConvergence(MultiscaleTissue * tssu, double e)
-      : amsi::Convergence()
-      , ts(tssu)
-      , eps(e)
-      , vols(amsi::activateLog("volume"))
-    { }
-    bool converged()
-    {
-      int rgns = ts->numVolumeConstraints();
-      bool converged = true;
-      for(int ii = 0; ii < rgns; ii++)
-      {
-//      VolumeConstraintADMM * cnstrnt = ts->getVolumeConstraint(ii);
-        VolumeConstraintSurface * cnstrnt = ts->getVolumeConstraint(ii);
-        double v0 = amsi::measureEntity(cnstrnt->getFace(),ts->getPart(),ts->getMesh());
-        double vi = amsi::measureDisplacedEntity(cnstrnt->getFace(),ts->getPart(),ts->getUField());
-        double dv = vi - v0;
-        /** convergence based on volume change */
-        converged = std::abs(dv) < eps  * v0;
-        std::cout << "incremental volume " << ii << " convergence: " << std::endl
-                  << "\t" << dv << " < " << eps * v0 << std::endl
-                  << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-        if(!converged)
-          break;
-      }
-      return converged;
-    }
-    bool failed()
-    {
-      return false;
-    }
-    void log(int ldstp, int iteration, int rnk)
-    {
-      int rgns = ts->numVolumeConstraints();
-      for (int ii = 0; ii < rgns; ii++)
-      {
-//        VolumeConstraintADMM * cnstrnt = ts->getVolumeConstraint(ii);
-        VolumeConstraintSurface * cnstrnt = ts->getVolumeConstraint(ii);
-        double v0 = amsi::measureEntity(cnstrnt->getFace(),ts->getPart(),ts->getMesh());
-        double vi = amsi::measureDisplacedEntity(cnstrnt->getFace(),ts->getPart(),ts->getUField());
-        if (rnk==0)
-          amsi::log(vols) << ldstp << ", "
-                          << iteration << ", "
-                          << GEN_tag(cnstrnt->getFace()) << ", "
-                          << v0 << ", "
-                          << vi << ", "
-                          << vi - v0 << std::endl;
-      }
-    }
-  };
-  /** Volume convergence class that considers accumulated volume of all regions */
-  class VolumeConvergenceAccm : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissue * ts;
-    double eps;
-    amsi::Log vols;
-  public:
-    VolumeConvergenceAccm(MultiscaleTissue * tssu, double e)
-      : amsi::Convergence()
-      , ts(tssu)
-      , eps(e)
-      , vols(amsi::activateLog("volume"))
-    { }
-    bool converged()
-    {
-      int rgns = ts->numVolumeConstraints();
-      bool converged = true;
-      double vi = 0.0; ///<Accumulated Current Volume
-      double v0 = 0.0; ///<Accumulated Initial Volume
-      double dv = 0.0; ///<Accumulated Volume Difference
-      /** If volume constraint is turned off, volume convergence criteria always true. */
-      if (rgns == 0)
-        v0 = 1.0;
-      for(int ii = 0; ii < rgns; ii++)
-      {
-        double v0_rgn = ts->getRgnVolInit(ii);
-        double vi_rgn = ts->getRgnVol(ii);
-        double dv_rgn = vi_rgn - v0_rgn;
-        vi += vi_rgn;
-        v0 += v0_rgn;
-        dv += dv_rgn;
-      }
-      /** convergence based on volume change */
-      converged = std::abs(dv) < eps * v0;
-      std::cout << "current volume: " << vi << std::endl;
-      std::cout << "initial volume: " << v0 << std::endl;
-      std::cout << "accumulated volume convergence: " << std::endl
-                << "\t" << dv << " < " << eps * v0  << std::endl
-                << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-      return converged;
-    }
-    bool failed()
-    {
-      return false;
-    }
-    void log(int ldstp, int iteration, int rnk)
-    {
-      int rgns = ts->numVolumeConstraints();
-      double v0 = 0;
-      double vi = 0;
-      for (int ii = 0; ii < rgns; ii++)
-      {
-        double v0_rgn = ts->getRgnVolInit(ii);
-        double vi_rgn = ts->getRgnVol(ii);
-        v0 += v0_rgn;
-        vi += vi_rgn;
-      }
-      if (rnk==0)
-        amsi::log(vols) << ldstp << ", "
-                        << iteration << ", "
-                        << "entire domain" << ", "
-                        << v0 << ", "
-                        << vi << ", "
-                        << vi - v0 << std::endl;
-    }
-  };
   class RelativeFieldNorm : public amsi::Convergence
   {
   protected:
@@ -290,11 +165,12 @@ namespace bio
     int rnk;
     unsigned num_load_steps;
     unsigned current_step;
+    unsigned iteration;
     double t; // [0,1] 0-initial configuration, 1-final configuration
     double initial_volume;
     std::vector<pModelItem> frc_itms;
-    std::vector<pModelItem> dsp_itms;
-    std::vector<pModelItem> vol_itms;
+    std::vector<apf::ModelEntity*> dsp_itms;
+    std::vector<apf::ModelEntity*> vol_itms;
     amsi::Log state;
     amsi::Log cnstrnts;
     amsi::Log norms;
@@ -310,6 +186,7 @@ namespace bio
     pGModel model;
     pParMesh mesh;
     pMesh part;
+    std::vector<amsi::Convergence*> cnvrg;
     MultiscaleTissue * tissue; // actual multiscale iterations
     amsi::LAS * las; // Linear solver used for both analyses
   };
@@ -338,8 +215,6 @@ namespace bio
     MultiscaleTissueIteration * iter;
     MultiscaleTissueAnalysis * analysis;
     double eps;
-    size_t rltn_id;
-    // std::vector<double> norm_history;
   public:
     MultiscaleTissueConvergence(MultiscaleTissueAnalysis * a,
                                 MultiscaleTissueIteration * i,
@@ -348,7 +223,6 @@ namespace bio
       , iter(i)
       , analysis(a)
       , eps(e)
-      , rltn_id(amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo"))
     { }
     bool converged();
     double & epsilon() {return eps;}
