@@ -12,10 +12,10 @@ namespace bio
   {
     for(int ent_dim = 0; ent_dim < 3; ent_dim++)
     {
-      amsi::SimIterator * bgn = amsi::beginClassified(apf::getMesh(fld),
-                                                      mdl_ent,
-                                                      ent_dim);
-      amsi::SimIterator * end = amsi::endClassified(bgn);
+      amsi::SimIterator bgn = amsi::beginClassified(apf::getMesh(fld),
+                                                    mdl_ent,
+                                                    ent_dim);
+      amsi::SimIterator end = amsi::endClassified(bgn);
       getFieldComponentsOn(fld,nm_cmps,cmps,bgn,end,out);
     }
   }
