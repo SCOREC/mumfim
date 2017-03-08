@@ -1,39 +1,70 @@
 #ifndef BIO_VOLUME_CONVERGENCE_H_
 #define BIO_VOLUME_CONVERGENCE_H_
-#include "amsiNonlinearAnalysis.h"
+#include "bioNonlinearTissue.h"
+#include <simNonlinearAnalysis.h>
+#include <apfMeasure.h>
 namespace bio
 {
-  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, const int & it);
+  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, amsi::Iteration * it, apf::Field * fld);
   // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
-  template <typename T>
-    class VolumeConvergence : public amsi::UpdatingConvergence<T>
+  template <typename I>
+  struct volCalc : public amsi::to_R1
+  {
+  public:
+  private:
+    double v0;
+    double v;
+    double pv;
+    std::vector<apf::ModelEntity*> mdl_ents;
+    apf::Field * u;
+  };
+  template <typename EPS>
+    class VolumeConvergence : public amsi::UpdatingConvergence<EPS>
   {
   protected:
     int rnk;
+    double v0;
+    double v;
+    double pv;
     amsi::Log vols;
-    VolumeConstraint * cnst; // remove this, changed to collection of model regions
+
+    apf::Field * u;
+    double calcVolume()
+    {
+      return amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+    }
   public:
-    VolumeConvergence(VolumeConstraint * c,T e)
-      : amsi::UpdatingConvergence<T>(e)
+    template <typename I>
+      VolumeConvergence(I b, I n,EPS e,apf::Field * u_)
+      : amsi::UpdatingConvergence<EPS>(e)
       , rnk(-1)
+      , v(0.0)
+      , pv(0.0)
       , vols(amsi::activateLog("volume"))
-      , cnst(c)
+      , mdl_ents()
+      , u(u_)
     {
       MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
+      std::copy(b,n,std::back_inserter(mdl_ents));
+      v = v0 = pv = calcVolume();
+    }
+    virtual void update()
+    {
+      pv = v;
+      v = calcVolume();
+      amsi::UpdatingConvergence<EPS>::update();
     }
     bool converged()
     {
-      amsi::UpdatingConvergence<T>::update();
+      update();
       bool converged = false;
-      double vol = cnst->getVolume();
-      double prev_vol = cnst->getPrevVolume();
-      double dv = abs(vol - prev_vol);
+      double dv = abs(v - pv);
       // convergence based on volume change
-      converged = dv < amsi::UpdatingConvergence<T>::eps * prev_vol  ;
-      std::cout << "current volume: " << vol << std::endl;
-      std::cout << "previous volume: " << prev_vol << std::endl;
+      converged = dv < amsi::UpdatingConvergence<EPS>::eps * pv ;
+      std::cout << "current volume: " << v << std::endl;
+      std::cout << "previous volume: " << pv << std::endl;
       std::cout << "accumulated incremental volume convergence: " << std::endl
-                << "\t" << dv << " < " << amsi::UpdatingConvergence<T>::eps * prev_vol << std::endl
+                << "\t" << dv << " < " << amsi::UpdatingConvergence<EPS>::eps * pv << std::endl
                 << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
       return converged;
     }
@@ -43,16 +74,13 @@ namespace bio
     }
     void log(int ldstp, int rnk)
     {
-      double v0 = cnst->getInitVolume();
-      double vp = cnst->getPrevVolume();
-      double vi = cnst->getVolume();
       if (rnk==0)
         amsi::log(vols) << ldstp << ", "
-                                  << "region tags..." << ", "
-                                  << v0 << ", "
-                                  << vi << ", "
-                                  << vi - vp << ", "
-                                  << vi - v0 << std::endl;
+                        << "region tags..." << ", "
+                        << v0 << ", "
+                        << v << ", "
+                        << v - pv << ", "
+                        << v - v0 << std::endl;
     }
   };
   /*

@@ -18,22 +18,19 @@
 #include <fstream>
 namespace bio
 {
-  struct dv_updt
+  void MultiscaleTissueIteration::iterate()
   {
-    double & eps_v;
-    double operator()()
-    {
-      return eps_v;
-    }
-    dv_updt(double & e)
-      : eps_v(e)
-    {}
-  };
+    std::cout << "Multiscale Nonlinear Iteration : " << iter << std::endl;
+    tssu->updateMicro();
+    las->iter();
+    LinearSolver(tssu,las);
+    tssu->iter();
+    amsi::Iteration::iterate();
+  }
   TissueMultiScaleAnalysis::TissueMultiScaleAnalysis(pGModel imdl,pParMesh imsh,pACase cs,MPI_Comm cm)
     : rnk(-1)
     , num_load_steps(1)
     , current_step(0)
-    , iteration(0)
     , t(0.0)
     , frc_itms()
     , dsp_itms()
@@ -71,12 +68,18 @@ namespace bio
     std::transform(vl_itms.begin(),vl_itms.end(),std::back_inserter(vol_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     num_load_steps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
+    itr = new MultiscaleTissueIteration(tssu,las);
     std::vector<pANode> cnvrg_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"convergence operator"),std::back_inserter(cnvrg_nds));
-    /*
-    for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != convrg.end(); ++cnvrg_nd)
-      cnvrg.push_back(buildConvergenceOperator(ss,*cnvrg_nd,*iteration));
-    */
+    for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != cnvrg_nds.end(); ++cnvrg_nd)
+    {
+      char * tp = AttNode_imageClass(cn);
+      amsi::Convergence * cvg = NULL;
+      if(std::string("volume convergence").compare(tp) == 0)
+        cvg = buildBioConvergenceOperator(ss,*cnvrg_nd,itr,tissue->getUField());
+      else
+        cvg = amsi::buildSimConvergenceOperator(ss,*cnvrg_nd,itr,las);
+    }
   }
   void TissueMultiScaleAnalysis::initLogs()
   {
@@ -109,6 +112,10 @@ namespace bio
     }
     amsi::deleteLog(state);
   }
+  void TissueMultiscaleAnalysis::updateTime()
+  {
+    t = ((double)current_step+1.0)/num_load_steps;
+  }
   int TissueMultiScaleAnalysis::run()
   {
     int result = 0;
@@ -118,57 +125,31 @@ namespace bio
     initLogs();
 #   endif
     std::vector<std::pair< double, double > > norm_hist;
-    // Run the analysis
-    current_step = 0;
     updateTime();
     tissue->setSimulationTime(t);
     logVolumes(vol_itms.begin(), vol_itms.end(), vols, current_step, tissue->getUField());
     tissue->computeInitGuess(las);
-    //apf::writeVtkFiles("init_guess",tissue->getMesh());
     tissue->initMicro();
     // Calculate constraints after initial guess
     tissue->updateConstraints();
     int complete = false;
     while(!complete)
     {
-      bool converged = false;
-      double eps = 1e-4;
-      // incremental volume constraint
-      // embedded_cell_resize:
-      //double eps_v = 4.0;
-      // accm. volume constraint V - V0
-      //double eps_v = 1e-3;
-      tissue->updateMicro();
-#     ifdef LOGRUN
-      if (rnk == 0)
-        amsi::log(loads) << current_step << ", ";
-#     endif
-      /// Create convergence objects.
-      //dv_updt dv_eps(eps_v);
-      //VolumeConvergenceAccm_Incrmt<decltype(dv_eps)> dv_convergence(tissue,dv_eps);
-      LASResidualConvergence convergence(las,eps);
-      while(!converged)
+      std::cout << "Current load step = " << current_step << "." << std::endl;
+      updateTime();
+      tissue->setSimulationTime(t);
+      if(amsi::numericalSolve(&itr,&cvg))
       {
-#       ifdef LOGRUN
-        amsi::log(state) << current_step << ", " << iteration << ", "
-                         << amsi::getElapsedTime(state) << ", ACTIVE, BEGIN_ITER" << std::endl;
-#       endif
-        std::cout << "Current load step = " << current_step << "." << std::endl;
-        std::cout << "Current nonlinear iteration = " << iteration << "." << std::endl;
-        LinearSolver(tissue,las);
-        las->iter();
-        converged = convergence.converged();
-        convergence.log(current_step, iteration, rnk);
-        // if we've converged on displacement, check the volume convergence and update the vols
-        //converged = converged ? dv_convergence.converged() : false;
-        //dv_convergence.log(current_step, rnk);
+        // needs to broadcast whether or not each iteration has converged
         cs->scaleBroadcast(cplng,&converged);
-        tissue->iter();
-        iteration++;
-#       ifdef LOGRUN
-        amsi::log(state) << current_step << ", " << iteration << ", "
-                         << amsi::getElapsedTime(state) << ", ACTIVE, END_ITER" << std::endl;
-#       endif
+        if (current_step >= num_load_steps)
+        {
+          complete = true;
+          std::cout << "Final load step converged! Simulation complete. Exiting..." << std::endl;
+        }
+        else
+          tissue->step();
+        current_step++;
       }
 #     ifdef LOGRUN
       // displacement log
@@ -199,7 +180,6 @@ namespace bio
         amsi::flushToStream(cnstrnts,cnst_fs);
       }
 #     endif
-      current_step++;
       // write mesh to file
       std::stringstream stpstrm;
       std::string pvd("/out.pvd");
@@ -208,50 +188,10 @@ namespace bio
       std::string msh_prfx("msh_stp_");
       apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + msh_prfx + stpstrm.str()).c_str(),tissue->getMesh());
       amsi::writePvdFile(pvd,msh_prfx,current_step);
-      if (current_step >= num_load_steps)
-      {
-        complete = true;
-        std::cout << "Final load step converged! Simulation complete. Exiting..." << std::endl;
-      }
-      else
-      {
-        tissue->step();
-        updateTime();
-        tissue->setSimulationTime(t);
-      }
       tissue->recoverSecondaryVariables(current_step);
       cs->scaleBroadcast(cplng,&complete);
     } // while(!complete)
     deleteLogs();
     return result;
-  }
-  void MultiscaleTissueIteration::iterate()
-  {
-    std::cout << "Nonlinear Iteration : " << iter << std::endl;
-    LinearSolver(analysis->tissue_fea,analysis->linear_solver);
-    // this really should be taken care of elsewhere...
-    analysis->linear_solver->iter(); // accumulates the solution vector internally
-    iter++;
-  }
-  bool MultiscaleTissueConvergence::converged()
-  {
-    double current_norm = 0.0;
-    double accum_norm = 0.0;
-    analysis->linear_solver->GetSolutionNorm(current_norm);
-    analysis->linear_solver->GetAccumSolutionNorm(current_norm);
-    int iteration = iter->getIteration();
-    if(iteration >= 20 && iteration % 5 == 0)
-      eps *= 10.0;
-    bool converged = (current_norm / accum_norm) < eps;
-    AMSI_DEBUG
-      (
-        std::cout << "Convergence condition: " << std::endl
-        << "\t" << current_norm / accum_norm << " < " << eps << std::endl
-        << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-        )
-      amsi::ControlService * cs = amsi::ControlService::Instance();
-    size_t cplng = getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
-    cs->scaleBroadcast(cplng,&converged);
-    return converged;
   }
 } // end of namespace Biotissue

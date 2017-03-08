@@ -23,7 +23,8 @@ set(biotissue_src_files
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
   bioTissueMultiscaleAnalysis.cc
-  bioVolumeConstraint.cc)
+  bioVolumeConstraint.cc
+  bioVolumeConvergence.cc)
 
 find_package(amsi COMPONENTS util analysis multiscale)
 

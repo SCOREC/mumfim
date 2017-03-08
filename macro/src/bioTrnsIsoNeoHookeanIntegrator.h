@@ -13,13 +13,13 @@ namespace bio
   {
   public:
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
-                       apf::Field * field,
-                       double youngs_modulus,
-                       double poisson_ratio,
-                       double * axis,
-                       double axial_shear_modulus,
-                       double axial_youngs_modulus,
-                       int o)
+                              apf::Field * field,
+                              double youngs_modulus,
+                              double poisson_ratio,
+                              double * axis,
+                              double axial_shear_modulus,
+                              double axial_youngs_modulus,
+                              int o)
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , analysis(n)

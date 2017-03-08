@@ -12,6 +12,20 @@
 #include <stdexcept>
 namespace bio
 {
+  class MultiscaleTissueIteration : public amsi::Iteration
+  {
+  protected:
+    MultiscaleTissue * analysis;
+    amsi::LAS * las;
+  public:
+    MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
+      : amsi::Iteration()
+      , analysis(a)
+      , las(l)
+    { }
+    void iterate();
+  };
+  /*
   class RelativeFieldNorm : public amsi::Convergence
   {
   protected:
@@ -105,6 +119,7 @@ namespace bio
                         << nrm/accm_nrm << std::endl;
     }
   };
+  */
   /*
   class LASSubvectorConvergence : public amsi::RelativeResidualConvergence
   {
@@ -156,16 +171,12 @@ namespace bio
     TissueMultiScaleAnalysis(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm);
     void initLogs();
     void deleteLogs();
-    void updateTime()
-    {
-      t = ((double)current_step+1.0)/num_load_steps;
-    }
+    void updateTime();
     int run();
   private:
     int rnk;
     unsigned num_load_steps;
     unsigned current_step;
-    unsigned iteration;
     double t; // [0,1] 0-initial configuration, 1-final configuration
     double initial_volume;
     std::vector<pModelItem> frc_itms;
@@ -186,46 +197,10 @@ namespace bio
     pGModel model;
     pParMesh mesh;
     pMesh part;
+    MultiscaleTissueIteration * itr;
     std::vector<amsi::Convergence*> cnvrg;
     MultiscaleTissue * tissue; // actual multiscale iterations
     amsi::LAS * las; // Linear solver used for both analyses
-  };
-  struct MultiscaleTissueAnalysis
-  {
-    amsi::LAS * linear_solver;
-    MultiscaleTissue * tissue_fea;
-  };
-  class MultiscaleTissueIteration : public amsi::Iteration
-  {
-  protected:
-    MultiscaleTissueAnalysis * analysis;
-    int iter;
-  public:
-    MultiscaleTissueIteration(MultiscaleTissueAnalysis * a)
-      : amsi::Iteration()
-      , analysis(a)
-      , iter(0)
-    { }
-    void iterate();
-    int getIteration() {return iter;}
-  };
-  class MultiscaleTissueConvergence : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissueIteration * iter;
-    MultiscaleTissueAnalysis * analysis;
-    double eps;
-  public:
-    MultiscaleTissueConvergence(MultiscaleTissueAnalysis * a,
-                                MultiscaleTissueIteration * i,
-                                double e = 1e-8)
-      : amsi::Convergence()
-      , iter(i)
-      , analysis(a)
-      , eps(e)
-    { }
-    bool converged();
-    double & epsilon() {return eps;}
   };
 } // end of namespace Biotissue
 #endif

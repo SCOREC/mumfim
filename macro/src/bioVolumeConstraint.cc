@@ -63,10 +63,7 @@ namespace bio
   }
   double VolumeConstraint::calcVolume()
   {
-    double vol = 0.0;
-    for(auto mdl_ent = mdl_ents.begin(); mdl_ent != mdl_ents.end(); ++mdl_ent)
-      vol += amsi::measureDisplacedModelEntity(*mdl_ent,apf::getField(nm));
-    return vol;
+    return amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),apf::getField(nm));
   }
   void VolumeConstraint::update()
   {
