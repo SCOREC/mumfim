@@ -27,6 +27,7 @@ namespace bio
     apf::Field * rcvrd_strs;
     apf::Field * strn;
     apf::Field * previous_rve;
+    apf::Field * stf_vrtn;
     double dv_prev;
     int load_step;
     int iteration;
