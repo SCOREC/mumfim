@@ -34,7 +34,7 @@ namespace bio
       std::cout << ModelItem_tag(*mdl_ent) << " ";
     }
     std::cout << std::endl;
-    stfvar = new Axon_StiffnessVariation(mdl_src_ents.begin(), mdl_src_ents.end(), mdl_snk_ents.begin(), mdl_snk_ents.end(),un);
+    stfvar = new StiffnessVariation(mdl_src_ents.begin(), mdl_src_ents.end(), mdl_snk_ents.begin(), mdl_snk_ents.end(),un);
     return stfvar;
   }
   void StiffnessVariation::inElement(apf::MeshEntity * msh_ent)
@@ -43,19 +43,40 @@ namespace bio
     me = apf::createMeshElement(apf::getMesh(fld),msh_ent);
     e = apf::createElement(fld,me);
     nedofs = nen * apf::countComponents(fld);
-    _inElement(m);
   }
   void StiffnessVariation::outElement()
   {
     apf::destroyMeshElement(me);
     apf::destroyElement(e);
   }
-  double StiffnessVariation::calcClosestPt()
+  void StiffnessVariation::calcStf_Vrtn_Fld()
   {
-    double dist = 0.0;
-    for (auto 
+    apf::Mesh * msh = apf::getMesh(apf::getField(nm));
+    int dm = msh->getDimension();
+    for (auto snk = mdl_snk_ents.begin(); snk != mdl_snk_ents.end(); ++snk)
+    {
+      /* Identify faces that are adjacent to model region entity snk. */
+      adj_mdl_snk_fcs GR_faces((pGRegion)snk);
+      void *iter = 0;
+      while (adj_mdl_snk_fc = PList_next(adj_mdl_snk_fcs, &iter))
+      {
+	for (auto src = mdl_src_ents.begin(); src != mdl_src_ents.end(); ++src)
+	{
+	  /* if adjacent model sink face is in closure of model source region. */
+	  if (GR_inClosure((pGRegion)src,adj_mdl_snk_fc))
+	  {
+	    for (auto msh_rgn = amsi::beginClassified(msh,(pGRegion)src,dm); msh_rgn != amsi::endClassified(ent); ++msh_rgn)
+	    {
+	      (*this)->set_mdl_src_fc(adj_mdl_snk_fc);
+	      apf::MeshElement * msh_elmt = apf::createMeshElement(msh,msh_rgn);
+	      (*this)->process(msh_elmt);
+	    }
+	  }
+	}
+      }
+    }
   }
-  void Axon_StiffnessVariation::atPoint(apf::Vector3 const &p, double w, double dV)
+  void StiffnessVariation::atPoint(apf::Vector3 const &p, double w, double dV)
   {
     /* Find global coordinates for Gauss Integration Point */
     apf::Mesh * msh = apf::getMesh(apf::getField(nm));
@@ -64,10 +85,10 @@ namespace bio
     apf::getGaussPoint(apf::getType(msh),0,p,gauss_pt);
     /* Find closest point to model face entity that has been identified as a source. */
     double gp[3] = {0};
-    double mdl_fc_src_xyz[3] = {0};
-    double mdl_fc_src_uv[2] = {0};
+    double mdl_src_fc_xyz[3] = {0};
+    double mdl_src_fc_uv[2] = {0};
     gauss_pt->toArray(gp);
-    GF_closestPoint(mdl_fc_src,gp[],mdl_fc_src_xyz[],mdl_fc_src_uv[]);
+    GF_closestPoint(mdl_src_fc,gp[],mdl_src_fc_xyz[],mdl_src_fc_uv[]);
     for (auto i=0; i<dm; ++i)
       dist += (gp[i] - mdl_fc_xyz[i]) * (gp[i] - mdl_fc_xyz[i]);
     dist = std::sqrt(dist);

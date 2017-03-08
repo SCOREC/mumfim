@@ -40,6 +40,7 @@ namespace bio
     strs = apf::createIPField(apf_mesh,"stress",apf::MATRIX,1);
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
+    stfvar = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
     std::vector<pANode> vol_cnst_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"incompressible"),std::back_inserter(vol_cnst_nds));
