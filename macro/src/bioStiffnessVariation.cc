@@ -117,7 +117,7 @@ namespace bio
     for (auto i=0; i<dm; ++i)
       dist += (gp[i] - mdl_src_fc_xyz[i]) * (gp[i] - mdl_src_fc_xyz[i]);
     dist = std::sqrt(dist);
-    // The expression from pANode fn is assumed to have the form 1.0 - dist/x, where x is specified in simmodeler.
+    // The expression from pANode fn is assumed to have the form 1-dist/x, where x is specified in simmodeler.
     double x_val = 10.0; //assume variation distance is 10 microns.    
     apf::setScalar(stf_vrtn_fld,msh_elmt,ip_integration_pt,1.0-dist/x_val);
     ip_integration_pt++;

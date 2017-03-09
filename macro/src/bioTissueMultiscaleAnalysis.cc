@@ -218,6 +218,7 @@ namespace bio
         tissue->step();
         updateTime();
         tissue->setSimulationTime(t);
+	iteration = 0; //local Newton iteration counter reset to 0.
       }
       tissue->recoverSecondaryVariables(current_step);
       cs->scaleBroadcast(cplng,&complete);

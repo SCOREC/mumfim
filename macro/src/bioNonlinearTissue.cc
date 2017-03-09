@@ -43,6 +43,7 @@ namespace bio
     stf_vrtn = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
 
+    apf::zeroField(stf_vrtn);
     std::vector<pANode> stf_vrtn_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"stiffness gradient"),std::back_inserter(stf_vrtn_nds));
     for(auto nd = stf_vrtn_nds.begin(); nd != stf_vrtn_nds.end(); ++nd)
@@ -76,16 +77,16 @@ namespace bio
       {
         pAttributeTensor0 yng = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
         pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
-        pAttributeTensor1 trnsvrs_axs = (pAttributeTensor1)Attribute_childByType(cm,"axis");
-        pAttributeTensor0 trnsvrs_shr = (pAttributeTensor0)Attribute_childByType(cm,"axial shear modulus");
-        pAttributeTensor0 trnsvrs_ygn = (pAttributeTensor0)Attribute_childByType(cm,"axial youngs modulus");
+        pAttributeTensor1 axial_axs = (pAttributeTensor1)Attribute_childByType(cm,"axis");
+        pAttributeTensor0 axial_shr = (pAttributeTensor0)Attribute_childByType(cm,"axial shear modulus");
+        pAttributeTensor0 axial_ygn = (pAttributeTensor0)Attribute_childByType(cm,"axial youngs modulus");
         double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
         double axs[3] = {0.0,0.0,0.0}; // axis must be constant for now
-        AttributeTensor1_evalTensorDT(trnsvrs_axs,0.0,&axs[0]);
-        double tG = AttributeTensor0_value(trnsvrs_shr);
-        double tE = AttributeTensor0_value(trnsvrs_ygn);
-        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,E,v,&axs[0],tG,tE,1);
+        AttributeTensor1_evalTensorDT(axial_axs,0.0,&axs[0]);
+        double axialG = AttributeTensor0_value(axial_shr);
+        double axialE = AttributeTensor0_value(axial_ygn);
+        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,stf_vrtn,E,v,&axs[0],axialG,axialE,1);
       }
     }
     GRIter_delete(ri);
