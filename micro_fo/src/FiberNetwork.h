@@ -147,6 +147,7 @@ namespace bio
                             double (&rslt)[3]);
   void calcFiberOrientationTensor(const FiberNetwork & fn,
 				  double (&rslt)[9]);
+  void calcP2(const FiberNetwork & fn, double & rslt);
   void calcAvgFiberDirection(const FiberNetwork & fn,
                              double (&rslt)[3]);
   void calcFiberDirection(const Node & n1,

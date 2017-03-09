@@ -69,10 +69,15 @@ namespace bio
     local_S23 = (stress[4] / vol) * scale_conversion;
     local_S33 = (stress[5] / vol) * scale_conversion;
     // todo (m) : hacky, change/fix this
+    /*
     double orientation_tensor[9]={};
     calcFiberOrientationTensor(*fiber_network,orientation_tensor);
     for (int ii=0; ii<9; ii++)
       rve_info[4*3*6+9+ii] = orientation_tensor[ii];
+    */
+    double P2 = 0.0;
+    calcP2(*fiber_network,P2);
+    rve_info[4 * 3 * 6 + 9 + 0] = P2;
     firstTimeThrough = false;
     return result;
   }
