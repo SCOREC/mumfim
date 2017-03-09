@@ -24,7 +24,9 @@ namespace bio
     assert(ref);
     assert(eps);
     //todo: parse types
-    amsi::SimUpdatingEpsilon up_eps((pAttInfoDouble)eps,it);
-    return new VolumeConvergence<amsi::SimUpdatingEpsilon>(mdl_ents.begin(),mdl_ents.end(),up_eps,fld);
+    VolCalc * dv = new CalcDV(mdl_itms.begin(),mdl_itms.end(),u);
+    amsi::SimUpdatingEpsiloneps = new amsi::SimUpdatingEpsilon((pAttInfoDouble)eps,it);
+    VolCalc * vp = new CalcPC(mdl_itms.begin(),mdl_itms.end(),u);
+    return new VolumeConvergence<VolCalc*,amsi::SimUpdatingEpsilon*,VolCalc*>(dv,eps,vp);
   }
 }

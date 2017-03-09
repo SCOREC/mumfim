@@ -6,81 +6,61 @@
 namespace bio
 {
   amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, amsi::Iteration * it, apf::Field * fld);
-  // Volume convergence class that considers accumulated volume of all regions where DeltaV = V-Vprev
-  template <typename I>
-  struct volCalc : public amsi::to_R1
+  struct VolCalc : public amsi::to_R1
   {
   public:
-  private:
+    template <typename I>
+      VolCalc(I bgn, I end, apf::Field * _u)
+      : v0(0.0)
+      , v(0.0)
+      , pv(0.0)
+      , mdl_ents()
+      , u(_u)
+    {
+      std::copy(bgn,end,std::back_inserter(mdl_ents));
+      v = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+    }
+    void update()
+    {
+      pv = v;
+      v = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+    }
+    protected:
     double v0;
     double v;
     double pv;
     std::vector<apf::ModelEntity*> mdl_ents;
     apf::Field * u;
   };
-  template <typename EPS>
-    class VolumeConvergence : public amsi::UpdatingConvergence<EPS>
+  struct CalcDV : public VolCalc
   {
-  protected:
-    int rnk;
-    double v0;
-    double v;
-    double pv;
-    amsi::Log vols;
-
-    apf::Field * u;
-    double calcVolume()
-    {
-      return amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
-    }
-  public:
-    template <typename I>
-      VolumeConvergence(I b, I n,EPS e,apf::Field * u_)
-      : amsi::UpdatingConvergence<EPS>(e)
-      , rnk(-1)
-      , v(0.0)
-      , pv(0.0)
-      , vols(amsi::activateLog("volume"))
-      , mdl_ents()
-      , u(u_)
-    {
-      MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
-      std::copy(b,n,std::back_inserter(mdl_ents));
-      v = v0 = pv = calcVolume();
-    }
-    virtual void update()
-    {
-      pv = v;
-      v = calcVolume();
-      amsi::UpdatingConvergence<EPS>::update();
-    }
-    bool converged()
+    double operator()()
     {
       update();
-      bool converged = false;
-      double dv = abs(v - pv);
-      // convergence based on volume change
-      converged = dv < amsi::UpdatingConvergence<EPS>::eps * pv ;
-      std::cout << "current volume: " << v << std::endl;
-      std::cout << "previous volume: " << pv << std::endl;
-      std::cout << "accumulated incremental volume convergence: " << std::endl
-                << "\t" << dv << " < " << amsi::UpdatingConvergence<EPS>::eps * pv << std::endl
-                << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-      return converged;
+      return abs(v - pv);
     }
-    bool failed()
+  };
+  struct CalcPV : public VolCalc
+  {
+    double operator()()
     {
-      return false;
+      update();
+      return pv;
     }
-    void log(int ldstp, int rnk)
+  };
+  struct CalcV : public VolCalc
+  {
+    double operator()()
     {
-      if (rnk==0)
-        amsi::log(vols) << ldstp << ", "
-                        << "region tags..." << ", "
-                        << v0 << ", "
-                        << v << ", "
-                        << v - pv << ", "
-                        << v - v0 << std::endl;
+      update();
+      return v;
+    }
+  };
+  struct CalcV0 : public VolCalc
+  {
+    double operator()()
+    {
+      return v0;
     }
   };
   /*

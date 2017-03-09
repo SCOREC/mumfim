@@ -20,7 +20,7 @@ namespace bio
 {
   void MultiscaleTissueIteration::iterate()
   {
-    std::cout << "Multiscale Nonlinear Iteration : " << iter << std::endl;
+    std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
     tssu->updateMicro();
     las->iter();
     LinearSolver(tssu,las);
@@ -68,18 +68,21 @@ namespace bio
     std::transform(vl_itms.begin(),vl_itms.end(),std::back_inserter(vol_itms),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     num_load_steps = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
-    itr = new MultiscaleTissueIteration(tssu,las);
+    itr = new MultiscaleTissueIteration(tissue,las);
     std::vector<pANode> cnvrg_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"convergence operator"),std::back_inserter(cnvrg_nds));
     for(auto cnvrg_nd = cnvrg_nds.begin(); cnvrg_nd != cnvrg_nds.end(); ++cnvrg_nd)
     {
-      char * tp = AttNode_imageClass(cn);
+      char * tp = AttNode_imageClass(*cnvrg_nd);
       amsi::Convergence * cvg = NULL;
       if(std::string("volume convergence").compare(tp) == 0)
         cvg = buildBioConvergenceOperator(ss,*cnvrg_nd,itr,tissue->getUField());
       else
         cvg = amsi::buildSimConvergenceOperator(ss,*cnvrg_nd,itr,las);
+      cnvrgs.push_back(cvg);
+      Sim_deleteString(tp);
     }
+    mlti_cvg = new amsi::MultiConvergence(cnvrgs.begin(),cnvrgs.end());
   }
   void TissueMultiScaleAnalysis::initLogs()
   {

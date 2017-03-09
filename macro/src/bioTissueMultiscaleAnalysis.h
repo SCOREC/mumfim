@@ -15,12 +15,12 @@ namespace bio
   class MultiscaleTissueIteration : public amsi::Iteration
   {
   protected:
-    MultiscaleTissue * analysis;
+    MultiscaleTissue * tssu;
     amsi::LAS * las;
   public:
     MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
       : amsi::Iteration()
-      , analysis(a)
+      , tssu(a)
       , las(l)
     { }
     void iterate();
@@ -198,7 +198,8 @@ namespace bio
     pParMesh mesh;
     pMesh part;
     MultiscaleTissueIteration * itr;
-    std::vector<amsi::Convergence*> cnvrg;
+    amsi::MultiConvergence * mlti_cvg;
+    std::vector<amsi::Convergence*> cnvrgs;
     MultiscaleTissue * tissue; // actual multiscale iterations
     amsi::LAS * las; // Linear solver used for both analyses
   };
