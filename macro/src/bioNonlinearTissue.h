@@ -36,7 +36,7 @@ namespace bio
                  pParMesh imsh,
                  pACase pd,
                  MPI_Comm cm = AMSI_COMM_SCALE);
-    ~NonlinearTissue();
+    virtual ~NonlinearTissue();
     void computeInitGuess(amsi::LAS * las);
     virtual void ApplyBC_Dirichlet();
     void getLoadOn(pGEntity ent, double * frc);

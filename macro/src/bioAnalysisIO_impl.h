@@ -1,3 +1,4 @@
+#include "bioNonlinearTissue.h"
 #include <apfsimWrapper.h>
 #include <apfMeasure.h>
 #include <apfWrapper.h>
@@ -40,6 +41,22 @@ namespace bio
                        << ", " << dsp[0]
                        << ", " << dsp[1]
                        << ", " << dsp[2] << std::endl;
+      }
+    }
+  }
+  template <typename I>
+    void logForces(I bgn, I end, amsi::Log lg, int stp, NonlinearTissue * tssu)
+  {
+    int rnk = -1;
+    MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
+    for(auto mdl_ent = bgn; mdl_ent != end; ++mdl_ent)
+    {
+      double frc[3] = {};
+      tssu->getLoadOn((pGEntity)*mdl_ent,&frc[0]);
+      if(rnk == 0)
+      {
+        amsi::log(lg) << stp << ", " << GEN_tag((pGEntity)*mdl_ent) << ", "
+                      << frc[0] << ", " << frc[1] << ", " << frc[2] << std::endl;
       }
     }
   }

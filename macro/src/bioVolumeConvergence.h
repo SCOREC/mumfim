@@ -6,6 +6,25 @@
 namespace bio
 {
   amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, amsi::Iteration * it, apf::Field * fld);
+  class MultiscaleConvergence : public amsi::MultiConvergence
+  {
+  private:
+    amsi::ControlService * cs;
+    size_t cplg;
+  public:
+    template <typename I>
+      MultiscaleConvergence(I bgn, I end, size_t c)
+      : amsi::MultiConvergence(bgn,end)
+      , cs(amsi::ControlService::Instance())
+      , cplg(c)
+    { }
+    virtual bool converged()
+    {
+      bool rslt = MultiscaleConvergence::converged();
+      cs->scaleBroadcast(cplg,&rslt);
+      return rslt;
+    }
+  };
   struct VolCalc : public amsi::to_R1
   {
   public:
@@ -17,7 +36,7 @@ namespace bio
       , mdl_ents()
       , u(_u)
     {
-      std::copy(bgn,end,std::back_inserter(mdl_ents));
+      std::copy(bgn,end,std::back_inserter(mdl_ents)); //use amsi caster
       v = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
     void update()
@@ -34,14 +53,34 @@ namespace bio
   };
   struct CalcDV : public VolCalc
   {
+    template <typename I>
+      CalcDV(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
     double operator()()
     {
       update();
       return abs(v - pv);
     }
   };
+  struct CalcDV0 : public VolCalc
+  {
+    template <typename I>
+      CalcDV0(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
+    double operator()()
+    {
+      update();
+      return abs(v - v0);
+    }
+  };
   struct CalcPV : public VolCalc
   {
+    template <typename I>
+      CalcPV(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
     double operator()()
     {
       update();
@@ -50,6 +89,10 @@ namespace bio
   };
   struct CalcV : public VolCalc
   {
+    template <typename I>
+      CalcV(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
     double operator()()
     {
       update();
@@ -58,6 +101,10 @@ namespace bio
   };
   struct CalcV0 : public VolCalc
   {
+    template <typename I>
+      CalcV0(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
     double operator()()
     {
       return v0;

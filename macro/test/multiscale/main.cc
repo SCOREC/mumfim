@@ -95,8 +95,7 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
     {
       amsi::initCase(mdl,cs);
-      bio::TissueMultiScaleAnalysis TMSA(mdl,msh,cs,cm);
-      result += TMSA.run();
+      bio::MultiscaleTissueAnalysis(mdl,msh,cs,cm).run();
       amsi::freeCase(cs);
     }
   } catch (pSimError err) {
@@ -154,22 +153,4 @@ int main(int argc, char **argv)
   else
     result++;
   return result;
-  // speculative work on new amsi interface under here, mostly just here to see if things compile and link
-  feenableexcept(FE_DIVBYZERO | FE_INVALID);
-  if(parse_options(argc,argv))
-  {
-    amsi::Scale * scls[2];
-    scls[0] = new amsi::Scale;
-    scls[1] = new amsi::Scale;
-    double rts[2] = {1.0/128.0, 127.0/128.0};
-    amsi::DefaultRankSet rnks;
-    amsi::getGlobalRanks(&rnks);
-    amsi::assignRatios(&rnks,2,&rts[0],&scls[0]);
-    scls[0]->synchronize();
-    scls[1]->synchronize();
-    if(amsi::assignedTo(scls[0]))
-      run_macro(argc,argv,scls[0]->getComm());
-    else if(amsi::assignedTo(scls[1]))
-      run_micro_fo(argc,argv,scls[1]->getComm());
-  }
 }

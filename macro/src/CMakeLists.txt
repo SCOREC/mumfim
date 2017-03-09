@@ -11,6 +11,8 @@ set(biotissue_public_headers
   bioBatheMultiscale.h
   bioLinearTissue.h
   bioNonlinearTissue.h
+  bioTissueAnalysis.h
+  bioTissueAnalysis_impl.h
   bioTissueMultiscaleAnalysis.h
   bioVariableRecovery.h
   bioVariableRecovery_impl.h
@@ -22,6 +24,7 @@ set(biotissue_src_files
   bioLinearTissue.cc
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
+  bioTissueAnalysis.cc
   bioTissueMultiscaleAnalysis.cc
   bioVolumeConstraint.cc
   bioVolumeConvergence.cc)

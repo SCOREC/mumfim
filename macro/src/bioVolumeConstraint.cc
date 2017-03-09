@@ -10,15 +10,11 @@ namespace bio
   {
     VolumeConstraint * cnst = NULL;
     std::vector<apf::ModelEntity*> mdl_ents;
-    std::vector<pModelItem> mdl_itms;
-    amsi::getAssociatedModelItems(cs,nd,std::back_inserter(mdl_itms));
-    std::transform(mdl_itms.begin(),mdl_itms.end(),std::back_inserter(mdl_ents),amsi::reinterpret_caster<pModelItem,apf::ModelEntity*>());
+    amsi::getAssociatedModelItems(cs,nd,std::back_inserter(mdl_ents));
     std::cout << "Volume constraint discovered, effects model entities : ";
-    for(auto mdl_ent = mdl_itms.begin(); mdl_ent != mdl_itms.end(); ++mdl_ent)
-    {
-      assert(ModelItem_isGEntity(*mdl_ent));
-      std::cout << ModelItem_tag(*mdl_ent) << " ";
-    }
+    gmi_model * mdl = apf::getMesh(un)->getModel();
+    for(auto mdl_ent = mdl_ents.begin(); mdl_ent != mdl_ents.end(); ++mdl_ent)
+      std::cout << mdl->ops->tag(mdl,(gmi_ent*)*mdl_ent) << " ";
     std::cout << std::endl;
     pANode mthd = AttNode_childByType(nd,"constraint type");
     pANode vrsn = AttNode_childByType(nd,"version");
