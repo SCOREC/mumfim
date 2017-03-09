@@ -42,6 +42,14 @@ namespace bio
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
     stf_vrtn = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
+
+    std::vector<pANode> stf_vrtn_nds;
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"stiffness gradient"),std::back_inserter(stf_vrtn_nds));
+    for(auto nd = stf_vrtn_nds.begin(); nd != stf_vrtn_nds.end(); ++nd)
+      stf_vrtn_cnst.push_back(buildStiffnessVariation(pd,*nd,stf_vrtn));
+    for(auto cnst = stf_vrtn_cnst.begin(); cnst != stf_vrtn_cnst.end(); ++cnst)
+      (*cnst)->populate_stf_vrtn_fld();
+    
     std::vector<pANode> vol_cnst_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"incompressible"),std::back_inserter(vol_cnst_nds));
     for(auto vol_nd = vol_cnst_nds.begin(); vol_nd != vol_cnst_nds.end(); ++vol_nd)
@@ -264,11 +272,6 @@ namespace bio
                          stress[3],stress[1],stress[4],
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
-  }
-  void NonlinearTissue::storeStiffnessVariation(apf::MeshElement * me, double dist)
-  {
-    apf::MeshEntity * msh_ent = apf::getMeshEntity(me);
-    apf::setScalar(stf_vrtn,msh_ent,0,dist);
   }
   void NonlinearTissue::updateConstraints()
   {
