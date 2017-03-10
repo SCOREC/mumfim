@@ -15,13 +15,13 @@ namespace bio
     std::vector<apf::ModelEntity*> mdl_src_ents;
     std::vector<apf::ModelEntity*> mdl_snk_ents;
     apf::ModelEntity * mdl_src_fc;
-    apf::MeshEntity * msh_elmt;
+    apf::MeshEntity * msh_ent;
     int ip_integration_pt;
     pANode fn;
   public:
     template <typename I>
       StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_end_end, apf::Field * stf_vrtn_fld, pANode fn);
-    void inElement(apf::MeshEntity * msh_ent){msh_elmt = msh_ent; ip_integration_pt=0;}
+    void inElement(apf::MeshEntity * msh_ent_in){msh_ent = msh_ent_in; ip_integration_pt=0;}
     void outElement(){};
     void atPoint(apf::Vector3 const &, double, double);
     void set_mdl_src_fc(apf::ModelEntity * fc){mdl_src_fc = fc;}
