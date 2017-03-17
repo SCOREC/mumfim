@@ -153,7 +153,7 @@ int main(int argc, char ** argv)
       for(int stp = 1; stp <= nm_stps; ++stp)
       {
         bio::TissueIteration itr(&tssu,&las);
-        double eps = 1e-8;
+        double eps = 1e-6;
         eps_updt eps_scheme(&itr,eps);
         amsi::RelativeResidualConvergence<decltype(eps_scheme)> rs_cnvrg(&las,eps_scheme);
         double dv_eps = 1e-3;
