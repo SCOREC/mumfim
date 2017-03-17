@@ -168,7 +168,8 @@ namespace bio
       }
       else if(step == 130)
       {
-        std::cerr << "Warning: unusual number of newton iterations in micro_fo!" << std::endl;
+	std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl;
+        std::cerr << "Warning: unusual number of newton iterations in micro_fo! step = "<<step<<", relative_norm = "<<relative_norm <<std::endl;
         break;
       }
     } while (relative_norm > tolerance);
