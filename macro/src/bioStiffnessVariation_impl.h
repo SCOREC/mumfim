@@ -6,7 +6,7 @@ namespace bio
     , stf_vrtn_fld(f)
     , mdl_src_ents()
     , mdl_snk_ents()
-    , mdl_src_fc(NULL)
+    , mdl_fc_xyz()
     , ip_integration_pt(0)
     , fn(fn)
   {

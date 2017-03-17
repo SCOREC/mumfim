@@ -15,6 +15,7 @@ namespace bio
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
 		       apf::Field * stf_vrtn,
+		       apf::Field * axl_yngs_mod,
                        double youngs_modulus,
                        double poisson_ratio,
                        double * axis,
@@ -24,6 +25,7 @@ namespace bio
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , stf_vrtn_fld(stf_vrtn)
+      , EA_fld(axl_yngs_mod)
       , analysis(n)
       , dim(0)
       , ShearModulus(0.0)
@@ -183,7 +185,8 @@ namespace bio
 	EA = stf_vrtn_coeff * ET + (1.0 - stf_vrtn_coeff) * AxialYoungsModulus;
       else
 	EA = AxialYoungsModulus;
-            
+
+      apf::setScalar(EA_fld, apf::getMeshEntity(me), current_integration_point, EA);
       double n = ( 2.0 * mu * (1.0 + nu) )/EA; // Note typo in paper.
       double m = 1 - nu - 2.0 * n * nu * nu;
       double lambda = ( 2.0 * mu * ( nu + n * nu * nu ) )/m;
@@ -336,6 +339,7 @@ namespace bio
     int current_integration_point;
   private:
     apf::Field * stf_vrtn_fld;
+    apf::Field * EA_fld;
     NonlinearTissue * analysis;
     int dim;
     apf::FieldShape * fs;

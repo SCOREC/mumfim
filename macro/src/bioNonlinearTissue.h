@@ -30,6 +30,7 @@ namespace bio
     apf::Field * strn;
     apf::Field * previous_rve;
     apf::Field * stf_vrtn;
+    apf::Field * axl_yngs_mod;
     double dv_prev;
     int load_step;
     int iteration;

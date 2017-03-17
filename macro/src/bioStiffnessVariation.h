@@ -14,7 +14,7 @@ namespace bio
     apf::Field * stf_vrtn_fld;
     std::vector<apf::ModelEntity*> mdl_src_ents;
     std::vector<apf::ModelEntity*> mdl_snk_ents;
-    apf::ModelEntity * mdl_src_fc;
+    double * mdl_fc_xyz;
     apf::MeshEntity * msh_ent;
     int ip_integration_pt;
     pANode fn;
@@ -24,7 +24,7 @@ namespace bio
     void inElement(apf::MeshEntity * msh_ent_in){msh_ent = msh_ent_in; ip_integration_pt=0;}
     void outElement(){};
     void atPoint(apf::Vector3 const &, double, double);
-    void set_mdl_src_fc(apf::ModelEntity * fc){mdl_src_fc = fc;}
+    void set_mdl_fc_xyz(double * fc){mdl_fc_xyz = fc;}
     void populate_stf_vrtn_fld();
   };
 }

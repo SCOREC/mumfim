@@ -34,6 +34,8 @@ namespace bio
     , iteration(0)
     , iteration_beta(0)
   {
+//    char * filename = "simLogFile.txt";
+//    Sim_logOn(filename);
     apf_primary_field = apf::createLagrangeField(apf_mesh,"displacement",apf::VECTOR,1);
     delta_u = apf::createLagrangeField(apf_mesh,"displacement_delta",apf::VECTOR,1);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
@@ -41,16 +43,17 @@ namespace bio
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
     stf_vrtn = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
+    axl_yngs_mod = apf::createIPField(apf_mesh,"axial_youngs_modulus",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
 
-    apf::zeroField(stf_vrtn);
+    apf::zeroField(stf_vrtn); apf::zeroField(axl_yngs_mod);
     std::vector<pANode> stf_vrtn_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"stiffness gradient"),std::back_inserter(stf_vrtn_nds));
     for(auto nd = stf_vrtn_nds.begin(); nd != stf_vrtn_nds.end(); ++nd)
       stf_vrtn_cnst.push_back(buildStiffnessVariation(pd,*nd,stf_vrtn));
     for(auto cnst = stf_vrtn_cnst.begin(); cnst != stf_vrtn_cnst.end(); ++cnst)
       (*cnst)->populate_stf_vrtn_fld();
-    
+//    Sim_logOff();
     std::vector<pANode> vol_cnst_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"incompressible"),std::back_inserter(vol_cnst_nds));
     for(auto vol_nd = vol_cnst_nds.begin(); vol_nd != vol_cnst_nds.end(); ++vol_nd)
@@ -86,7 +89,7 @@ namespace bio
         AttributeTensor1_evalTensorDT(axial_axs,0.0,&axs[0]);
         double axialG = AttributeTensor0_value(axial_shr);
         double axialE = AttributeTensor0_value(axial_ygn);
-        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,stf_vrtn,E,v,&axs[0],axialG,axialE,1);
+        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,stf_vrtn,axl_yngs_mod,E,v,&axs[0],axialG,axialE,1);
       }
     }
     GRIter_delete(ri);
@@ -102,6 +105,7 @@ namespace bio
     apf::destroyField(rcvrd_strs);
     apf::destroyField(strn);
     apf::destroyField(stf_vrtn);
+    apf::destroyField(axl_yngs_mod);
   }
   void NonlinearTissue::computeInitGuess(amsi::LAS * las)
   {

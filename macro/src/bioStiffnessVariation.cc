@@ -2,6 +2,8 @@
 #include <amsiCasters.h>
 #include <gmi.h>
 #include <simClassified.h>
+#include <simWrapper.h>
+#include <apfWrapper.h>
 #include <math.h> // std::sqrt()
 namespace bio
 {
@@ -84,7 +86,18 @@ namespace bio
       for (int ii = 0; ii < adj_mdl_snk_fcs->n; ++ii)
       {
 	gmi_ent * mdl_snk_fc = adj_mdl_snk_fcs->e[ii];
-	std::cout<<"adj. snk model face is "<<gmi_tag(mdl,mdl_snk_fc)<<std::endl;
+	/* Find closest point to model face entity mdl_src_fc. */
+	auto bgn = amsi::beginClassified(msh,(apf::ModelEntity*)mdl_snk_fc,0); // vertex entities classified on model face entity.
+	auto end = amsi::endClassified(bgn);
+	double fc_xyz[3]={0.0};
+	amsi::getAvgFieldValue(msh->getCoordinateField(),bgn,end,fc_xyz);
+
+	/* Implementation if gmi_closest_point is working.   
+	   double mdl_src_fc_uv[2] = {0};
+	   std::cout<<"mdl_src_fc is"<<gmi_tag(msh->getModel(),(gmi_ent*)mdl_src_fc)<<std::endl;
+	   gmi_closest_point(msh->getModel(),(gmi_ent*)mdl_src_fc,gp,mdl_src_fc_xyz,mdl_src_fc_uv);
+	*/
+
 	for (auto src = mdl_src_ents.begin(); src != mdl_src_ents.end(); ++src)
 	{	  
 	  /* if adjacent model sink face is in closure of model source region.
@@ -95,9 +108,11 @@ namespace bio
 	  std::cout<<"face "<<gmi_tag(mdl,mdl_snk_fc)<<" in model region "<<gmi_tag(mdl,(gmi_ent*)(*src))<<"?"<<std::endl;
 	  if (gmi_is_in_closure_of(mdl,mdl_snk_fc,(gmi_ent*)(*src)))
 	  {
+	    std::cout<<"adj. snk model face is "<<gmi_tag(mdl,mdl_snk_fc)<<std::endl;
+	    std::cout<<"adj. snk model face coord. is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;	    
 	    for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
 	    {
-	      this->set_mdl_src_fc((apf::ModelEntity*)mdl_snk_fc);
+	      this->set_mdl_fc_xyz(fc_xyz);
 	      this->inElement(*msh_rgn);
 	      apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
 	      this->process(msh_elmt);
@@ -114,19 +129,15 @@ namespace bio
     int dm = msh->getDimension();
     apf::Vector3 gauss_pt_xyz;
     apf::mapLocalToGlobal(apf::createMeshElement(msh,msh_ent),p,gauss_pt_xyz);
-    /* Find closest point to model face entity that has been identified as a source. */
     double gp[3] = {0};
-    double mdl_src_fc_xyz[3] = {0};
-    double mdl_src_fc_uv[2] = {0};
     gauss_pt_xyz.toArray(gp);
-    std::cout<<"mdl_src_fc is"<<gmi_tag(msh->getModel(),(gmi_ent*)mdl_src_fc)<<std::endl;
-    gmi_closest_point(msh->getModel(),(gmi_ent*)mdl_src_fc,gp,mdl_src_fc_xyz,mdl_src_fc_uv);
+
     double dist = 0.0;
     for (auto i=0; i<dm; ++i)
-      dist += (gp[i] - mdl_src_fc_xyz[i]) * (gp[i] - mdl_src_fc_xyz[i]);
+      dist += (gp[i] - mdl_fc_xyz[i]) * (gp[i] - mdl_fc_xyz[i]);
     dist = std::sqrt(dist);
     // The expression from pANode fn is assumed to have the form 1-dist/x, where x is specified in simmodeler.
-    double x_val = 10.0; //assume variation distance is 10 microns.    
+    double x_val = 30.0; //assume variation distance is 10 microns.    
     apf::setScalar(stf_vrtn_fld,msh_ent,ip_integration_pt,1.0-dist/x_val);
     ip_integration_pt++;
   }
