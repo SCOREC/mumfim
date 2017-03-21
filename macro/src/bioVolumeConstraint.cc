@@ -248,7 +248,6 @@ namespace bio
   }
   void PenaltyConstraint_VolumeSurface::apply(amsi::LAS * las)
   {
-    apf::Mesh * msh = apf::getMesh(apf::getField(nm));
     int dm = msh->getDimension() - 1;
     for(auto rgn = mdl_ents.begin(); rgn != mdl_ents.end(); ++rgn)
     {
@@ -277,8 +276,6 @@ namespace bio
   // this is really only safe for mesh faces with a single integration point atm
   void PenaltyConstraint_VolumeSurface::atPoint(apf::Vector3 const &p, double w, double dV)
   {
-    apf::Field * u = apf::getField(nm);
-    apf::Mesh * msh = apf::getMesh(u);
     int dim = msh->getDimension();
     apf::Field * xyz = msh->getCoordinateField();
     apf::Element * xyz_elem = apf::createElement(xyz,me);
@@ -300,7 +297,7 @@ namespace bio
       pt2[jj] = xyz_u(2,jj);
     }
     calcdVdu(pt0, pt1, pt2);
-    int sd = amsi::side(crt_fc,msh,apf::getMeshEntity(me));
+    int sd = amsi::side(crt_rgn,msh,apf::getMeshEntity(me));
     assert(sd != 0); // if both adjacent regions are in the same model region, we haven't implemented a way to handle that, (should basically ignore)
     double dVol = vol - prev_vol;
     dVdu *= sd;

@@ -3,10 +3,10 @@
 #include <gmi.h>
 namespace bio
 {
-  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, amsi::Iteration * it, apf::Field * fld)
+  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pAttribute cn, amsi::Iteration * it, apf::Field * fld)
   {
-    pANode reg_nd_nd = AttNode_childByType(cn,"regions");
-    pANode rgn_nd = AttInfoRefNode_value((pAttInfoRefNode)reg_nd_nd);
+    pAttribute rgn_nd_att = Attribute_childByType(cn,"regions");
+    pANode rgn_nd = AttributeRefNode_value((pAttributeRefNode)rgn_nd_att);
     std::vector<apf::ModelEntity*> mdl_ents;
     amsi::getAssociatedModelItems(ss,rgn_nd,std::back_inserter(mdl_ents));
     std::cout << "Volume convergence operator discovered, effects model entitites : ";
@@ -14,9 +14,8 @@ namespace bio
     for(auto mdl_ent = mdl_ents.begin(); mdl_ent != mdl_ents.end(); ++mdl_ent)
       std::cout << mdl->ops->tag(mdl,(gmi_ent*)*mdl_ent) << " ";
     std::cout << std::endl;
-    pANode ref_nd = AttNode_childByType(cn,"reference");
-    pANode eps_nd = AttNode_childByType(cn,"epsilon");
-    int ref_tp = AttInfoInt_value((pAttInfoInt)ref_nd);
+    pAttribute ref_att = Attribute_childByType(cn,"reference value");
+    int ref_tp = AttributeInt_value((pAttributeInt)ref_att);
     VolCalc * dv = NULL;
     VolCalc * ref_v = NULL;
     if(ref_tp == 0) //  initial
@@ -26,16 +25,18 @@ namespace bio
     }
     else if (ref_tp == 1) // load_step
     {
-      std::cerr << "ERROR: Cannot use load step as reference for volume convergence! (unimplemented)" << std::endl;
-      //dv = new CalcDV0(mdl_ents.begin(),mdl_ents.end(),fld);
-      //ref_v = new Calc0(mdl_ents.begin(),mdl_ents.end(),fld);
+      dv = new CalcDVPS(mdl_ents.begin(),mdl_ents.end(),fld);
+      ref_v = new CalcVPS(mdl_ents.begin(),mdl_ents.end(),fld);
     }
     else if (ref_tp == 2) // iteration
     {
-      dv = new CalcDV0(mdl_ents.begin(),mdl_ents.end(),fld);
+      dv = new CalcDV(mdl_ents.begin(),mdl_ents.end(),fld);
       ref_v = new CalcPV(mdl_ents.begin(),mdl_ents.end(),fld);
     }
-    amsi::SimUpdatingEpsilon * eps = new amsi::SimUpdatingEpsilon((pAttInfoDouble)eps_nd);
-    return new amsi::UpdatingConvergence<VolCalc*,amsi::SimUpdatingEpsilon*,VolCalc*>(it,dv,eps,ref_v);
+    pAttribute eps_att = Attribute_childByType(cn,"epsilon");
+    return new amsi::UpdatingConvergence<VolCalc*,amsi::SimUpdatingEpsilon*,VolCalc*>(it,
+                                                                                      dv,
+                                                                                      new amsi::SimUpdatingEpsilon((pAttributeDouble)eps_att),
+                                                                                      ref_v);
   }
 }

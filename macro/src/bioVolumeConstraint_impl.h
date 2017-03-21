@@ -25,6 +25,7 @@ namespace bio
   template <typename I>
     PenaltyConstraint_VolumeSurface::PenaltyConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b)
     : VolumeConstraint(mdl_ent_bgn, mdl_ent_end, nm)
+    , msh(apf::getMesh(apf::getField(nm)))
     , crt_rgn()
     , crt_fc()
     , dVdu()

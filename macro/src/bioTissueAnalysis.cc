@@ -15,6 +15,7 @@ namespace bio
     , itr()
     , cvg()
     , cvg_stps()
+    , trkd_vols()
     , las(new amsi::PetscLAS(0,0))
     , completed(false)
     , state_fn()
@@ -60,7 +61,16 @@ namespace bio
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
     itr = new TissueIteration(tssu,las);
-    buildConvergenceOperators(ss,itr,las,tssu->getUField(),std::back_inserter(cvg_stps));
+    std::vector<pANode> trk_vols;
+    amsi::cutPaste<pANode>(AttCase_attributes(ss,"track volume"),std::back_inserter(trk_vols));
+    for(auto trk_vol = trk_vols.begin(); trk_vol != trk_vols; ++trk_vols)
+    {
+      std::vector<apf::ModelEntity*> mdl_ents;
+      amsi::getAssociatedModelItems(ss,trk_vol,std::back_inserter(mdl_ents));
+      trkd_vols[trk_vol] = new CalcVol(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
+    }
+    buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
+    buildVolConvergenceOperators(ss,itr,las,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
     std::stringstream cnvrt;
@@ -106,7 +116,11 @@ namespace bio
           std::cout << "Final load step converged. Case complete." << std::endl;
         }
         else
+        {
+          for(auto vol = trkd_vols.begin(); vol != trkd_vols.end(); ++vol)
+            vol->step();
           tssu->step();
+        }
       }
       else
       {

@@ -5,7 +5,7 @@
 #include <apfMeasure.h>
 namespace bio
 {
-  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pANode cn, amsi::Iteration * it, apf::Field * fld);
+  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pAttribute cn, amsi::Iteration * it, apf::Field * fld);
   class MultiscaleConvergence : public amsi::MultiConvergence
   {
   private:
@@ -31,21 +31,27 @@ namespace bio
     template <typename I>
       VolCalc(I bgn, I end, apf::Field * _u)
       : v0(0.0)
+      , vps(0.0)
       , v(0.0)
       , pv(0.0)
       , mdl_ents()
       , u(_u)
     {
-      std::copy(bgn,end,std::back_inserter(mdl_ents)); //use amsi caster
-      v = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+      std::copy(bgn,end,std::back_inserter(mdl_ents)); // use amsi caster
+      v = vps = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
-    void update()
+    void iter()
     {
       pv = v;
       v = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
+    void step()
+    {
+      vps = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+    }
     protected:
     double v0;
+    double vps;
     double v;
     double pv;
     std::vector<apf::ModelEntity*> mdl_ents;
@@ -59,8 +65,8 @@ namespace bio
     { }
     double operator()()
     {
-      update();
-      return abs(v - pv);
+      iter();
+      return fabs(v - pv);
     }
   };
   struct CalcDV0 : public VolCalc
@@ -71,8 +77,8 @@ namespace bio
     { }
     double operator()()
     {
-      update();
-      return abs(v - v0);
+      iter();
+      return fabs(v - v0);
     }
   };
   struct CalcPV : public VolCalc
@@ -83,7 +89,7 @@ namespace bio
     { }
     double operator()()
     {
-      update();
+      iter();
       return pv;
     }
   };
@@ -95,7 +101,7 @@ namespace bio
     { }
     double operator()()
     {
-      update();
+      iter();
       return v;
     }
   };
@@ -108,6 +114,30 @@ namespace bio
     double operator()()
     {
       return v0;
+    }
+  };
+  struct CalcDVPS : public VolCalc
+  {
+    template <typename I>
+      CalcDVPS(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
+    double operator()()
+    {
+      iter();
+      return fabs(v - vps);
+    }
+  };
+  struct CalcVPS : public VolCalc
+  {
+    template <typename I>
+      CalcVPS(I b, I e, apf::Field * u)
+      : VolCalc(b,e,u)
+    { }
+    double operator()()
+    {
+      iter();
+      return vps;
     }
   };
   /*

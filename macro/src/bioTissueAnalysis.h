@@ -5,7 +5,9 @@
 namespace bio
 {
   template <typename O>
-    void buildConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, apf::Field * u, O out);
+    void buildLASConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, O out);
+  template <typename I, typename O>
+    void buildVolumeConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::Field * u, O out);
   class TissueIteration : public amsi::Iteration
   {
   protected:
@@ -51,6 +53,7 @@ namespace bio
     amsi::Iteration * itr;
     amsi::Convergence * cvg;
     std::vector<amsi::Convergence*> cvg_stps;
+    std::map<pANode,CalcVol*> trkd_vols;
     amsi::LAS * las;
     bool completed;
     // log filenames

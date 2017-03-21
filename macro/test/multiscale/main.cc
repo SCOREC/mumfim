@@ -85,6 +85,7 @@ int run_micro_fm(int & argc, char ** & argv, MPI_Comm comm)
 }
 int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
+  amsi::initAnalysis(argc,argv);
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
@@ -117,6 +118,7 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   }
 # endif
   AMSI_DEBUG(Sim_logOff());
+  amsi::freeAnalysis();
   return result;
 }
 int main(int argc, char **argv)
@@ -126,7 +128,6 @@ int main(int argc, char **argv)
   if(parse_options(argc,argv))
   {
     amsi::initMultiscale(argc,argv);
-    amsi::initAnalysis(argc,argv);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
@@ -147,7 +148,6 @@ int main(int argc, char **argv)
     }
     amsi::deleteLog(execution_time);
 #   endif
-    amsi::freeAnalysis();
     amsi::freeMultiscale();
   }
   else

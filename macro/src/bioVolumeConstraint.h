@@ -60,6 +60,7 @@ namespace bio
   class PenaltyConstraint_VolumeSurface : public VolumeConstraint
   {
   protected:
+    apf::Mesh * msh;
     apf::ModelEntity * crt_rgn;
     apf::ModelEntity * crt_fc;
     apf::DynamicMatrix dVdu;
