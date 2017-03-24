@@ -5,7 +5,6 @@
 #include <apfMeasure.h>
 namespace bio
 {
-  amsi::Convergence * buildBioConvergenceOperator(pACase ss, pAttribute cn, amsi::Iteration * it, apf::Field * fld);
   class MultiscaleConvergence : public amsi::MultiConvergence
   {
   private:
@@ -25,7 +24,7 @@ namespace bio
       return rslt;
     }
   };
-  struct VolCalc : public amsi::to_R1
+  class VolCalc : public amsi::PerIter, public amsi::PerStep
   {
   public:
     template <typename I>
@@ -49,6 +48,26 @@ namespace bio
     {
       vps = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
+    double getV0() const
+    {
+      return v0;
+    }
+    double getVPS() const
+    {
+      return vps;
+    }
+    double getV() const
+    {
+      return v;
+    }
+    double getPV() const
+    {
+      return pv;
+    }
+    bool operator==(VolCalc & o)
+    {
+      return std::equal(mdl_ents.begin(),mdl_ents.end(),o.mdl_ents.begin()) && u == o.u;
+    }
     protected:
     double v0;
     double vps;
@@ -57,215 +76,10 @@ namespace bio
     std::vector<apf::ModelEntity*> mdl_ents;
     apf::Field * u;
   };
-  struct CalcDV : public VolCalc
-  {
-    template <typename I>
-      CalcDV(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return fabs(v - pv);
-    }
-  };
-  struct CalcDV0 : public VolCalc
-  {
-    template <typename I>
-      CalcDV0(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return fabs(v - v0);
-    }
-  };
-  struct CalcPV : public VolCalc
-  {
-    template <typename I>
-      CalcPV(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return pv;
-    }
-  };
-  struct CalcV : public VolCalc
-  {
-    template <typename I>
-      CalcV(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return v;
-    }
-  };
-  struct CalcV0 : public VolCalc
-  {
-    template <typename I>
-      CalcV0(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      return v0;
-    }
-  };
-  struct CalcDVPS : public VolCalc
-  {
-    template <typename I>
-      CalcDVPS(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return fabs(v - vps);
-    }
-  };
-  struct CalcVPS : public VolCalc
-  {
-    template <typename I>
-      CalcVPS(I b, I e, apf::Field * u)
-      : VolCalc(b,e,u)
-    { }
-    double operator()()
-    {
-      iter();
-      return vps;
-    }
-  };
-  /*
-  /// Volume convergence class that considers current volume - initial volume of each individual region
-  class VolumeConvergence : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissue * ts;
-    double eps;
-    amsi::Log vols;
-  public:
-    VolumeConvergence(MultiscaleTissue * tssu, double e)
-      : amsi::Convergence()
-      , ts(tssu)
-      , eps(e)
-      , vols(amsi::activateLog("volume"))
-    { }
-    bool converged()
-    {
-      int rgns = ts->numVolumeConstraints();
-      bool converged = true;
-      for(int ii = 0; ii < rgns; ii++)
-      {
-//      VolumeConstraintADMM * cnstrnt = ts->getVolumeConstraint(ii);
-        VolumeConstraintSurface * cnstrnt = ts->getVolumeConstraint(ii);
-        double v0 = amsi::measureEntity(cnstrnt->getFace(),ts->getPart(),ts->getMesh());
-        double vi = amsi::measureDisplacedEntity(cnstrnt->getFace(),ts->getPart(),ts->getUField());
-        double dv = vi - v0;
-        // convergence based on volume change
-        converged = std::abs(dv) < eps  * v0;
-        std::cout << "incremental volume " << ii << " convergence: " << std::endl
-                  << "\t" << dv << " < " << eps * v0 << std::endl
-                  << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-        if(!converged)
-          break;
-      }
-      return converged;
-    }
-    bool failed()
-    {
-      return false;
-    }
-    void log(int ldstp, int iteration, int rnk)
-    {
-      int rgns = ts->numVolumeConstraints();
-      for (int ii = 0; ii < rgns; ii++)
-      {
-//        VolumeConstraintADMM * cnstrnt = ts->getVolumeConstraint(ii);
-        VolumeConstraintSurface * cnstrnt = ts->getVolumeConstraint(ii);
-        double v0 = amsi::measureEntity(cnstrnt->getFace(),ts->getPart(),ts->getMesh());
-        double vi = amsi::measureDisplacedEntity(cnstrnt->getFace(),ts->getPart(),ts->getUField());
-        if (rnk==0)
-          amsi::log(vols) << ldstp << ", "
-                          << iteration << ", "
-                          << GEN_tag(cnstrnt->getFace()) << ", "
-                          << v0 << ", "
-                          << vi << ", "
-                          << vi - v0 << std::endl;
-      }
-    }
-  };
-  /// Volume convergence class that considers accumulated volume of all regions
-  class VolumeConvergenceAccm : public amsi::Convergence
-  {
-  protected:
-    MultiscaleTissue * ts;
-    double eps;
-    amsi::Log vols;
-  public:
-    VolumeConvergenceAccm(MultiscaleTissue * tssu, double e)
-      : amsi::Convergence()
-      , ts(tssu)
-      , eps(e)
-      , vols(amsi::activateLog("volume"))
-    { }
-    bool converged()
-    {
-      int rgns = ts->numVolumeConstraints();
-      bool converged = true;
-      double vi = 0.0; ///<Accumulated Current Volume
-      double v0 = 0.0; ///<Accumulated Initial Volume
-      double dv = 0.0; ///<Accumulated Volume Difference
-      // If volume constraint is turned off, volume convergence criteria always true.
-      if (rgns == 0)
-        v0 = 1.0;
-      for(int ii = 0; ii < rgns; ii++)
-      {
-        double v0_rgn = ts->getRgnVolInit(ii);
-        double vi_rgn = ts->getRgnVol(ii);
-        double dv_rgn = vi_rgn - v0_rgn;
-        vi += vi_rgn;
-        v0 += v0_rgn;
-        dv += dv_rgn;
-      }
-      // convergence based on volume change
-      converged = std::abs(dv) < eps * v0;
-      std::cout << "current volume: " << vi << std::endl;
-      std::cout << "initial volume: " << v0 << std::endl;
-      std::cout << "accumulated volume convergence: " << std::endl
-                << "\t" << dv << " < " << eps * v0  << std::endl
-                << "\t" << (converged ? "TRUE" : "FALSE") << std::endl;
-      return converged;
-    }
-    bool failed()
-    {
-      return false;
-    }
-    void log(int ldstp, int iteration, int rnk)
-    {
-      int rgns = ts->numVolumeConstraints();
-      double v0 = 0;
-      double vi = 0;
-      for (int ii = 0; ii < rgns; ii++)
-      {
-        double v0_rgn = ts->getRgnVolInit(ii);
-        double vi_rgn = ts->getRgnVol(ii);
-        v0 += v0_rgn;
-        vi += vi_rgn;
-      }
-      if (rnk==0)
-        amsi::log(vols) << ldstp << ", "
-                        << iteration << ", "
-                        << "entire domain" << ", "
-                        << v0 << ", "
-                        << vi << ", "
-                        << vi - v0 << std::endl;
-    }
-  };
-  */
+  amsi::Convergence * buildVolConvergenceOperator(pACase ss,
+                                                  pAttribute cn,
+                                                  amsi::Iteration * it,
+                                                  VolCalc * vl,
+                                                  apf::Field * fld);
 }
 #endif

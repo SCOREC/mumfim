@@ -30,7 +30,6 @@ namespace bio
     double dv_prev;
     int load_step;
     int iteration;
-    int iteration_beta;
   public:
     NonlinearTissue(pGModel imdl,
                  pParMesh imsh,
@@ -41,6 +40,7 @@ namespace bio
     virtual void ApplyBC_Dirichlet();
     void getLoadOn(pGEntity ent, double * frc);
     void step();
+    void iter();
     virtual void Assemble(amsi::LAS * las);
     virtual void UpdateDOFs(const double * );
     void UpdateLambda();
@@ -52,11 +52,9 @@ namespace bio
     void storeStress(apf::MeshElement * me, double * stress);
     void storeStrain(apf::MeshElement * me, double * strain);
     int getIteration(){return iteration;}
-    void iter() {iteration++;}
     apf::Numbering * getNumbering() { return apf_primary_numbering; }
     apf::Field * getdUField() { return delta_u; }
     apf::Field * getUField() {return apf_primary_field;}
-    void updateConstraints();
     //void logCnstrntParams(int ldstp, int iteration, int rnk);
   };
 }

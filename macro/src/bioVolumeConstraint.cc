@@ -48,8 +48,7 @@ namespace bio
         cnst = new LagrangeConstraint_Volume(mdl_ents.begin(),mdl_ents.end(),un,beta);
         break;
       case 1: // surface
-        //cnst = new LagrangeConstraint_VolumeSurface(mdl_ents.begin(),mdl_ents.end(),un,beta);
-        std::cerr << "WARNING: unimplemented constraint: Lagrange multiplier volume constraint." << std::endl;
+        cnst = new LagrangeConstraint_VolumeSurface(mdl_ents.begin(),mdl_ents.end(),un,0.0,beta);
         break;
       }
     }
@@ -61,11 +60,17 @@ namespace bio
   {
     return amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),apf::getField(nm));
   }
-  void VolumeConstraint::update()
+  void VolumeConstraint::iter()
   {
     prev_vol = vol;
     vol = calcVolume();
-    _update();
+    _iter();
+  }
+  void VolumeConstraint::step()
+  {
+    load_vol = calcVolume();
+    prev_vol = vol = load_vol;
+    _step();
   }
   void VolumeConstraint::inElement(apf::MeshEntity * m)
   {
@@ -81,7 +86,7 @@ namespace bio
     apf::destroyMeshElement(me);
     apf::destroyElement(e);
   }
-  void LagrangeConstraint_Volume::_update()
+  void LagrangeConstraint_Volume::_iter()
   {
     lambda += beta * ((vol-prev_vol)/prev_vol);
   }
@@ -241,9 +246,95 @@ namespace bio
     lambda_dVdu += BVG;
     */
   }
+  void calcdVdu(apf::DynamicMatrix & dVdu, apf::Vector3 const & pt0, apf::Vector3 const & pt1, apf::Vector3 const & pt2)
+  {
+    dVdu.zero();
+    // volume derivatives
+    // dVdu is of size 1 x nedofs, the below shouldn't be hardcoded for triangles in that case..
+    dVdu(0,0) = 0.5 * (pt2[1] * pt1[2] - pt1[1] * pt2[2]);  ///<dVdx1
+    dVdu(0,1) = 0.5 * (-pt2[0] * pt1[2] + pt1[0] * pt2[2]); ///<dVdy1
+    dVdu(0,2) = 0.5 * (pt2[0] * pt1[1] - pt1[0] * pt2[1]);  ///<dVdz1
+    dVdu(0,3) = 0.5 * (-pt2[1] * pt0[2] + pt0[1] * pt2[2]); ///<dVdx2
+    dVdu(0,4) = 0.5 * (pt2[0] * pt0[2] - pt0[0] * pt2[2]);  ///<dVdy2
+    dVdu(0,5) = 0.5 * (-pt2[0] * pt0[1] + pt0[0] * pt2[1]); ///<dVdz2
+    dVdu(0,6) = 0.5 * (pt1[1] * pt0[2] - pt0[1] * pt1[2]);  ///<dVdx3
+    dVdu(0,7) = 0.5 * (-pt1[0] * pt0[2] + pt0[0] * pt1[2]); ///<dVdy3
+    dVdu(0,8) = 0.5 * (pt1[0] * pt0[1] - pt0[0] * pt1[1]);  ///<dVdz3
+  }
+  void LagrangeConstraint_VolumeSurface::_inElement(apf::MeshEntity * me)
+  {
+    dVdu.setSize(1,nedofs);
+    dVdu.zero();
+  }
+  void LagrangeConstraint_VolumeSurface::_iter()
+  {
+    lambda += beta * ((vol - prev_vol)/prev_vol);
+  }
+  void LagrangeConstraint_VolumeSurface::apply(amsi::LAS * las)
+  {
+    int dm = msh->getDimension() - 1;
+    for(auto rgn = mdl_ents.begin(); rgn != mdl_ents.end(); ++rgn)
+    {
+      crt_rgn = *rgn;
+      gmi_model * mdl = msh->getModel();
+      gmi_set * fcs = mdl->ops->adjacent(mdl,(gmi_ent*)crt_rgn,2);
+      for(int ii = 0; ii < fcs->n; ++ii)
+      {
+        crt_fc = reinterpret_cast<apf::ModelEntity*>(fcs->e[ii]);
+        for(auto ent = amsi::beginClassified(msh,crt_fc,dm); ent != amsi::endClassified(ent); ++ent)
+        {
+          inElement(*ent);
+          apf::MeshElement * mlm = apf::createMeshElement(msh,*ent);
+          process(mlm);
+          apf::NewArray<int> ids;
+          apf::getElementNumbers(nm,*ent,ids);
+          apf::DynamicMatrix ndVdu = dVdu;
+          ndVdu *= -1.0;
+          amsi::assembleVector(las,nedofs,&ids[0],&ndVdu(0,0));
+          apf::destroyMeshElement(mlm);
+        }
+      }
+      gmi_free_set(fcs);
+    }
+  }
+  void LagrangeConstraint_VolumeSurface::atPoint(apf::Vector3 const & p, double w, double dV)
+  {
+    int dim = msh->getDimension();
+    apf::Field * xyz = msh->getCoordinateField();
+    apf::Element * xyz_elem = apf::createElement(xyz,me);
+    apf::NewArray<apf::Vector3> xyz_nds;
+    apf::getVectorNodes(xyz_elem,xyz_nds);
+    apf::NewArray<apf::Vector3> u_nds;
+    apf::getVectorNodes(e,u_nds);
+    apf::Vector3 xyz_u[3];
+    //apf::DynamicMatrix xyz_u(nen,dim);
+    for (int ii = 0; ii < nen; ii++)
+      for (int jj = 0; jj < dim; jj++)
+        xyz_u[ii][jj] = xyz_nds[ii][jj] + u_nds[ii][jj];
+    calcdVdu(dVdu,xyz_u[0], xyz_u[1], xyz_u[2]);
+    int sd = amsi::side(crt_rgn,msh,apf::getMeshEntity(me));
+    assert(sd != 0); // if both adjacent regions are in the same model region, we haven't implemented a way to handle that, (should basically ignore)
+    double dVol = vol - load_vol;
+    dVdu *= (lambda * sd) + (dVol * beta / prev_vol);
+    /*
+    apf::DynamicMatrix BVG = dVdu;
+    dVdu *= lambda; // <-- division by volume is contained in lambda via update of constraint.
+    // Modifications to force-vector.
+    // Augmented Lagrangian method:
+    // A   = beta * (GG^T + dVol * H)
+    // VH  = dVol * H
+    // BVG = beta * delta_v * G
+    // lambda * H modified to lambda * H + beta * (GG^T + dVol * H)
+    // Second Derivative is not used (see N2P106 for details).
+    BVG *= dVol;
+    BVG *= beta;
+    BVG /= prev_vol;
+    dVdu += BVG; // lambda * n * dVdu + (dVol * beta / pv) * dVdu;
+    */
+  }
   void PenaltyConstraint_VolumeSurface::_inElement(apf::MeshEntity * me)
   {
-    dVdu.setSize(nedofs,nedofs);
+    dVdu.setSize(1,nedofs);
     dVdu.zero();
   }
   void PenaltyConstraint_VolumeSurface::apply(amsi::LAS * las)
@@ -283,26 +374,19 @@ namespace bio
     apf::getVectorNodes(xyz_elem,xyz_nds);
     apf::NewArray<apf::Vector3> u_nds;
     apf::getVectorNodes(e,u_nds);
-    apf::DynamicMatrix xyz_u(nen,dim);
+    apf::Vector3 xyz_u[3];
+    //apf::DynamicMatrix xyz_u(nen,dim);
     for (int ii = 0; ii < nen; ii++)
       for (int jj = 0; jj < dim; jj++)
-        xyz_u(ii,jj) = xyz_nds[ii][jj] + u_nds[ii][jj];
-    apf::Vector3 pt0;
-    apf::Vector3 pt1;
-    apf::Vector3 pt2;
-    for (int jj = 0; jj < dim; jj++)
-    {
-      pt0[jj] = xyz_u(0,jj);
-      pt1[jj] = xyz_u(1,jj);
-      pt2[jj] = xyz_u(2,jj);
-    }
-    calcdVdu(pt0, pt1, pt2);
+        xyz_u[ii][jj] = xyz_nds[ii][jj] + u_nds[ii][jj];
+    calcdVdu(dVdu,xyz_u[0], xyz_u[1], xyz_u[2]);
     int sd = amsi::side(crt_rgn,msh,apf::getMeshEntity(me));
     assert(sd != 0); // if both adjacent regions are in the same model region, we haven't implemented a way to handle that, (should basically ignore)
-    double dVol = vol - prev_vol;
-    dVdu *= sd;
+    double dVol = vol - load_vol;
+    dVdu *= (sd * dVol * beta / prev_vol);
+    /*
     apf::DynamicMatrix BVG = dVdu;
-    dVdu *= lambda; //<--division by volume is contained in lambda via update of constraint.
+    dVdu *= lambda; // <-- division by volume is contained in lambda via update of constraint.
     // Modifications to force-vector.
     // Augmented Lagrangian method:
     // A   = beta * (GG^T + dVol * H)
@@ -313,22 +397,8 @@ namespace bio
     BVG *= dVol;
     BVG *= beta;
     BVG /= prev_vol;
-    dVdu += BVG;
-  }
-  void PenaltyConstraint_VolumeSurface::calcdVdu(apf::Vector3 const & pt0, apf::Vector3 const & pt1, apf::Vector3 const & pt2)
-  {
-    dVdu.zero();
-    // volume derivatives
-    // dVdu is of size 1 x nedofs, the below shouldn't be hardcoded for triangles in that case..
-    dVdu(0,0) = 0.5 * (pt2[1] * pt1[2] - pt1[1] * pt2[2]);  ///<dVdx1
-    dVdu(0,1) = 0.5 * (-pt2[0] * pt1[2] + pt1[0] * pt2[2]); ///<dVdy1
-    dVdu(0,2) = 0.5 * (pt2[0] * pt1[1] - pt1[0] * pt2[1]);  ///<dVdz1
-    dVdu(0,3) = 0.5 * (-pt2[1] * pt0[2] + pt0[1] * pt2[2]); ///<dVdx2
-    dVdu(0,4) = 0.5 * (pt2[0] * pt0[2] - pt0[0] * pt2[2]);  ///<dVdy2
-    dVdu(0,5) = 0.5 * (-pt2[0] * pt0[1] + pt0[0] * pt2[1]); ///<dVdz2
-    dVdu(0,6) = 0.5 * (pt1[1] * pt0[2] - pt0[1] * pt1[2]);  ///<dVdx3
-    dVdu(0,7) = 0.5 * (-pt1[0] * pt0[2] + pt0[0] * pt1[2]); ///<dVdy3
-    dVdu(0,8) = 0.5 * (pt1[0] * pt0[1] - pt0[0] * pt1[1]);  ///<dVdz3
+    dVdu += BVG; // lambda * n * dVdu + (dVol * beta / pv) * dVdu;
+    */
   }
   /*
   void PenaltyConstraint_VolumeSurface::calcd2Vdu2(apf::Vector3 const & pt0, apf::Vector3 const & pt1, apf::Vector3 const & pt2)

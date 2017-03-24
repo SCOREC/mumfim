@@ -15,7 +15,7 @@ namespace bio
     }
   }
   template <typename I, typename O>
-    void buildVolConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::FIeld * u, O out)
+    void buildVolConvergenceOperators(pACase ss, amsi::Iteration * it, apf::Field * u, I vl_tks, O out)
   {
     std::vector<pAttribute> cnvrg_atts;
     amsi::cutPaste<pAttribute>(AttCase_attributes(ss,"convergence operator"),std::back_inserter(cnvrg_atts));
@@ -23,7 +23,11 @@ namespace bio
     {
       char * tp = Attribute_imageClass(*cnvrg_att);
       if(std::string("volume convergence").compare(tp) == 0)
-        *out++ = buildVolConvergenceOperator(ss,*cnvrg_att,it,u);
+      {
+        pAttribute rgn_nd_att = Attribute_childByType(*cnvrg_att,"regions");
+        pANode rgn_nd = AttributeRefNode_value((pAttributeRefNode)rgn_nd_att);
+        *out++ = buildVolConvergenceOperator(ss,*cnvrg_att,it,vl_tks[rgn_nd],u);
+      }
       Sim_deleteString(tp);
     }
   }

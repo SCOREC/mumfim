@@ -1,6 +1,7 @@
 #ifndef BIO_TISSUE_ANALYSIS_H_
 #define BIO_TISSUE_ANALYSIS_H_
 #include "bioNonlinearTissue.h"
+#include "bioVolumeConvergence.h"
 #include <amsiNonlinearAnalysis.h>
 namespace bio
 {
@@ -21,9 +22,10 @@ namespace bio
     {}
     virtual void iterate()
     {
-      amsi::Iteration::iterate();
       LinearSolver(tssu,las);
+      tssu->iter();
       las->iter();
+      amsi::Iteration::iterate();
     }
   };
   class TissueAnalysis
@@ -53,7 +55,7 @@ namespace bio
     amsi::Iteration * itr;
     amsi::Convergence * cvg;
     std::vector<amsi::Convergence*> cvg_stps;
-    std::map<pANode,CalcVol*> trkd_vols;
+    std::map<pANode,VolCalc*> trkd_vols;
     amsi::LAS * las;
     bool completed;
     // log filenames

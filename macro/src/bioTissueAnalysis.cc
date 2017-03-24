@@ -58,19 +58,21 @@ namespace bio
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
     tssu = new NonlinearTissue(mdl,msh,pd,cm);
+    itr = new TissueIteration(tssu,las);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
-    itr = new TissueIteration(tssu,las);
     std::vector<pANode> trk_vols;
-    amsi::cutPaste<pANode>(AttCase_attributes(ss,"track volume"),std::back_inserter(trk_vols));
-    for(auto trk_vol = trk_vols.begin(); trk_vol != trk_vols; ++trk_vols)
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"track volume"),std::back_inserter(trk_vols));
+    std::vector<VolCalc*> vls;
+    for(auto trk_vol = trk_vols.begin(); trk_vol != trk_vols.end(); ++trk_vol)
     {
       std::vector<apf::ModelEntity*> mdl_ents;
-      amsi::getAssociatedModelItems(ss,trk_vol,std::back_inserter(mdl_ents));
-      trkd_vols[trk_vol] = new CalcVol(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
+      amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
+      trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
+      itr->addExtra(trkd_vols[*trk_vol]);
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
-    buildVolConvergenceOperators(ss,itr,las,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
+    buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
     std::stringstream cnvrt;
@@ -103,7 +105,6 @@ namespace bio
     tssu->setSimulationTime(t);
     logVolumes(vol_itms.begin(),vol_itms.end(), vols, stp, tssu->getUField());
     tssu->computeInitGuess(las);
-    tssu->updateConstraints();
     completed = false;
     while(!completed)
     {
@@ -118,7 +119,8 @@ namespace bio
         else
         {
           for(auto vol = trkd_vols.begin(); vol != trkd_vols.end(); ++vol)
-            vol->step();
+            vol->second->step();
+          las->step();
           tssu->step();
         }
       }
