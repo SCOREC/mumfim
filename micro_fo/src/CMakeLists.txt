@@ -1,25 +1,24 @@
 set(micro_fo_public_headers
-  RepresentVolElem.h
-  FiberNetwork.h
-  RVE_Util.h
-  globals.h
-  MicroFOMultiscaleTypes.h
-  SparseMatrix.h)
+  bioRVE.h
+  bioFiberNetwork.h
+  bioRVEUtil.h
+  bioMicroFOMultiscale.h
+  bioSparseMatrix.h)
 
 set(micro_fo_src_files
-  RepresentVolElem.cc
-  FiberNetwork.cc
-  FiberNetworkIO.cc
-  AlignFiberNetwork.cc
-  main_solver_psi.cc
-  solver_gmres_df.cc
-  solver_beam.cc
-  create_element_new.cc
-  make_structure_fict_i2.cc
-  avgvolstress.cc
-  RVE_Util.cc
-  SparseMatrix.cc
-  Sparskit_Externs.cc)
+  bioRVE.cc
+  bioFiberNetwork.cc
+  bioFiberNetworkIO.cc
+  bioAlignFiberNetwork.cc
+  bioSolverPsi.cc
+  bioSolverGMRES.cc
+  bioSolverBeam.cc
+  bioMacroElement.cc
+  bioSparseStructure.cc
+  bioMacroTerms.cc
+  bioRVEUtil.cc
+  bioSparseMatrix.cc
+  bioSparskitExterns.cc)
 
 find_package(sparskit REQUIRED)
 find_package(scorecutil REQUIRED)
