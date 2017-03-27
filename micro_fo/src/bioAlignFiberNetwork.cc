@@ -10,21 +10,21 @@ namespace bio
     double disp[6] = {};
     if (algn_vec[0] > 0)
     {
-      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[0])); 
+      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[0]));
       disp[0] = algn_vec[0];
       disp[1] = 0.0;
       disp[2] = d/2.0; disp[3] = -d/2.0; disp[4] = d/2.0; disp[5] = -d/2.0;
     }
     else if(algn_vec[1] > 0)
     {
-      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[1])); 
+      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[1]));
       disp[2] = algn_vec[1];
       disp[3] = 0.0;
       disp[0] = d/2.0; disp[1] = -d/2.0; disp[4] = d/2.0; disp[5] = -d/2.0;
     }
     else if(algn_vec[2] > 0)
     {
-      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[2])); 
+      double d = -1.0 + std::sqrt(1.0/(1.0 + algn_vec[2]));
       disp[4] = algn_vec[2];
       disp[5] = 0.0;
       disp[0] = d/2.0; disp[1] = -d/2.0; disp[2] = d/2.0; disp[3] = -d/2.0;
@@ -60,39 +60,32 @@ namespace bio
     rvedisp[2 * 3 + 2] = disp[4]; rvedisp[3 * 3 + 2] = disp[4]; rvedisp[6 * 3 + 2] = disp[4]; rvedisp[7 * 3 + 2] = disp[4];
     // negative z face of RVE
     rvedisp[0 * 3 + 2] = disp[5]; rvedisp[1 * 3 + 2] = disp[5]; rvedisp[4 * 3 + 2] = disp[5]; rvedisp[5 * 3 + 2] = disp[5];
-
     /// length of RVE box in x, y, z directions.
-    double xlen = std::abs( fn.sideCoord(FiberNetwork::RIGHT) - fn.sideCoord(FiberNetwork::LEFT) ); 
+    double xlen = std::abs( fn.sideCoord(FiberNetwork::RIGHT) - fn.sideCoord(FiberNetwork::LEFT) );
     double ylen = std::abs( fn.sideCoord(FiberNetwork::TOP) - fn.sideCoord(FiberNetwork::BOTTOM) );
     double zlen = std::abs( fn.sideCoord(FiberNetwork::FRONT) - fn.sideCoord(FiberNetwork::BACK) );
-
     int num_nodes = fn.numNodes();
     for (int ii = 0; ii < num_nodes; ii++)
     {
       Node n = fn.node(ii);
-      
       /// Shift coordinates from -0.5 to 0.5 --> 0 to 1.
       double xx = ( n.x + xlen/2.0 )/xlen;
       double yy = ( n.y + xlen/2.0 )/ylen;
       double zz = ( n.z + xlen/2.0 )/zlen;
-
       /// Affinely deform nodes according to rvedisp.
       n.x += (1.0 - zz ) * ( (rvedisp[0 * 3] * (1.0 - xx) + rvedisp[1 * 3] * xx) * (1.0 - yy) +
-	                     (rvedisp[4 * 3] * (1.0 - xx) + rvedisp[5 * 3] * xx) * yy ) 
-	   + zz *          ( (rvedisp[2 * 3] * (1.0 - xx) + rvedisp[3 * 3] * xx) * (1.0 - yy) +
-			     (rvedisp[6 * 3] * (1.0 - xx) + rvedisp[7 * 3] * xx) * yy );
-      
+                             (rvedisp[4 * 3] * (1.0 - xx) + rvedisp[5 * 3] * xx) * yy )
+           + zz *          ( (rvedisp[2 * 3] * (1.0 - xx) + rvedisp[3 * 3] * xx) * (1.0 - yy) +
+                             (rvedisp[6 * 3] * (1.0 - xx) + rvedisp[7 * 3] * xx) * yy );
       n.y += (1.0 - zz ) * ( (rvedisp[0 * 3 + 1] * (1.0 - xx) + rvedisp[1 * 3 + 1] * xx) * (1.0 - yy) +
-	                     (rvedisp[4 * 3 + 1] * (1.0 - xx) + rvedisp[5 * 3 + 1] * xx) * yy ) 
-	   + zz *          ( (rvedisp[2 * 3 + 1] * (1.0 - xx) + rvedisp[3 * 3 + 1] * xx) * (1.0 - yy) +
-			     (rvedisp[6 * 3 + 1] * (1.0 - xx) + rvedisp[7 * 3 + 1] * xx) * yy );
-
+                             (rvedisp[4 * 3 + 1] * (1.0 - xx) + rvedisp[5 * 3 + 1] * xx) * yy )
+           + zz *          ( (rvedisp[2 * 3 + 1] * (1.0 - xx) + rvedisp[3 * 3 + 1] * xx) * (1.0 - yy) +
+                             (rvedisp[6 * 3 + 1] * (1.0 - xx) + rvedisp[7 * 3 + 1] * xx) * yy );
       n.z += (1.0 - zz ) * ( (rvedisp[0 * 3 + 2] * (1.0 - xx) + rvedisp[1 * 3 + 2] * xx) * (1.0 - yy) +
-	                     (rvedisp[4 * 3 + 2] * (1.0 - xx) + rvedisp[5 * 3 + 2] * xx) * yy ) 
-	   + zz *          ( (rvedisp[2 * 3 + 2] * (1.0 - xx) + rvedisp[3 * 3 + 2] * xx) * (1.0 - yy) +
-			     (rvedisp[6 * 3 + 2] * (1.0 - xx) + rvedisp[7 * 3 + 2] * xx) * yy );
-
-      fn.setNode(ii,n);  
+                             (rvedisp[4 * 3 + 2] * (1.0 - xx) + rvedisp[5 * 3 + 2] * xx) * yy )
+           + zz *          ( (rvedisp[2 * 3 + 2] * (1.0 - xx) + rvedisp[3 * 3 + 2] * xx) * (1.0 - yy) +
+                             (rvedisp[6 * 3 + 2] * (1.0 - xx) + rvedisp[7 * 3 + 2] * xx) * yy );
+      fn.setNode(ii,n);
     }
   } /// end AffineDeformation
   void updateRVEBounds(FiberNetwork & fn, const double disp[6])
