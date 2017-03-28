@@ -25,7 +25,6 @@ struct NonlinearReaction : public FiberReaction
     double length_ratio = length / orig_length;
     double tension = E * fiber_area / B;
     if(length_ratio < length_ratio_trns)
-//    if(false)
     {
       double green_strain = 0.5 * (length_ratio * length_ratio - 1.0);
       double expBeps = exp(B * green_strain);
@@ -34,10 +33,9 @@ struct NonlinearReaction : public FiberReaction
     }
     else
     {
-      double length_trns = length_ratio_trns * orig_length;
       double green_strain_trns = 0.5 * (length_ratio_trns * length_ratio_trns - 1.0);
       double expBeps_trns = exp(B * green_strain_trns);
-      double m = ( (fiber_area * E * length_trns ) / (orig_length * orig_length) )  * expBeps_trns; // slope
+      double m = fiber_area * E * length_ratio_trns * expBeps_trns; // slope
       double b = tension * (expBeps_trns - 1.0) - m * length_ratio_trns; // y-intercept 
       result.first = m * length_ratio + b;
       result.second = m / orig_length;      
