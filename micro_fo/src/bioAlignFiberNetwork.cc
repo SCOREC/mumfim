@@ -1,5 +1,4 @@
-#include "FiberNetwork.h"
-// Standard libs
+#include "bioFiberNetwork.h"
 #include <cmath>
 #include <iostream>
 namespace bio

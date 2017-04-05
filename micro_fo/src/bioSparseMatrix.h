@@ -1,7 +1,6 @@
-#ifndef SPARSEMATRIX_H_
-#define SPARSEMATRIX_H_
-#include "FiberNetwork.h"
-//#include <memory>
+#ifndef BIO_SPARSEMATRIX_H_
+#define BIO_SPARSEMATRIX_H_
+#include "bioFiberNetwork.h"
 #include <vector>
 namespace bio
 {

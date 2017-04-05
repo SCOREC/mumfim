@@ -1,13 +1,14 @@
-#ifndef FIBERREACTIONS_H_
-#define FIBERREACTIONS_H_
+#ifndef BIO_FIBERREACTIONS_H_
+#define BIO_FIBERREACTIONS_H_
+#include <amsiEnumOps.h>
 #include <cmath>
 #include <cstddef>
 #include <utility>
-enum FiberConstitutive
+namespace bio
 {
-  LINEAR = 0,
-  NONLINEAR = 1
-};
+  #define FBR_RCT_TYPES(OP) OP(linear), OP(nonlinear), OP(num_fbr_constitutive)
+  enum FiberConstitutive { FBR_RCT_TYPES(MAKE_ENUM_OP) };
+  const char * getFiberConstitutiveString(int ii);
 struct FiberReaction
 {
   virtual std::pair<double,double> forceReaction(double,double) const= 0;
@@ -38,9 +39,9 @@ struct NonlinearReaction : public FiberReaction
       double green_strain_trns = 0.5 * (length_ratio_trns * length_ratio_trns - 1.0);
       double expBeps_trns = exp(B * green_strain_trns);
       double m = ( (fiber_area * E * length_trns ) / (orig_length * orig_length) )  * expBeps_trns; // slope
-      double b = tension * (expBeps_trns - 1.0) - m * length_ratio_trns; // y-intercept 
+      double b = tension * (expBeps_trns - 1.0) - m * length_ratio_trns; // y-intercept
       result.first = m * length_ratio + b;
-      result.second = m / orig_length;      
+      result.second = m / orig_length;
     }
     return result;
   }
@@ -69,7 +70,7 @@ struct LinearSupportReaction : public FiberReaction
        - modulus of support fiber is simply E
        - F = E(l/l0-1.0)
        - dF/dl = E/l0
-    */    
+    */
     result.first = E * (length_ratio - 1.0);
     result.second = E / orig_length;
     return result;
@@ -79,4 +80,5 @@ struct BeamReaction : public FiberReaction
 {
   double * forceReaction(double,double) {return NULL;}
 };
+}
 #endif

@@ -1,12 +1,37 @@
-#include "FiberNetwork.h"
-#include "globals.h" // CUBE_*, SPECIFY_FIBER_TYPE
-#include "Util.h"
+#include "bioFiberNetwork.h"
+//#include "globals.h" // CUBE_*, SPECIFY_FIBER_TYPE
+//#include "Util.h"
 //#include <amsiConfig.h>
 #include <iostream>
 #include <cassert> // assert
 #include <numeric> // accumulate
 namespace bio
 {
+  FiberNetwork::FiberNetwork(apf::Mesh * f)
+    : fn(f)
+    , fn_u(NULL)
+    , fn_dof(NULL)
+    , dim(f->getDimension())
+  {
+    assert(f);
+    fn_u = fn->findField("u");
+    if(!fn_u)
+      fn_u =  apf::createLagrangeField(f,"u",apf::VECTOR,1);
+    fn_du = fn->findField("du");
+    if(!fn_du)
+      fn_du = apf::createLagrangeField(f,"du",apf::VECTOR,1);
+    fn_dof = apf::createNumbering(fn_du);
+  }
+  void assembleElementalSystem(las::Mat * k,
+                               las::ec * f,
+                               const ElementalSystem * es,
+                               apf::NewArray<int> & dofs)
+  {
+    int nedofs = es->nedofs();
+    las::setVecValues(f,es->getfe(),dofs,nedofs,true);
+    las::setMatValues(k,es->getKe(),dofs,nedofs,dofs,nedofs,true);
+  }
+  /*
   FiberNetwork * FiberNetwork::clone()
   {
     return new FiberNetwork(*this);
@@ -59,10 +84,7 @@ namespace bio
     , tb_bcs()
     , fb_bcs()
   {
-    if(TRUSS)
-      dofs_per_node = 3;
-    else
-      dofs_per_node = 6;
+    dofs_per_node = 3;
   }
   void FiberNetwork::collectPeriodicConnectionInfo(std::vector<PBCRelation> & bcs)
   {
@@ -130,13 +152,6 @@ namespace bio
       it->y = coords[ii+1];
       it->z = coords[ii+2];
       ii += 3;
-      if(!TRUSS)
-      {
-        it->rx = coords[ii+0];
-        it->ry = coords[ii+1];
-        it->rz = coords[ii+2];
-        ii += 3;
-      }
     }
   }
   void FiberNetwork::getNodeCoordinates(std::vector<double> & ns)
@@ -146,12 +161,6 @@ namespace bio
       ns.push_back(it->x);
       ns.push_back(it->y);
       ns.push_back(it->z);
-      if(!TRUSS)
-      {
-        ns.push_back(it->rx);
-        ns.push_back(it->ry);
-        ns.push_back(it->rz);
-      }
     }
   }
   void FiberNetwork::updateOrigLen()
@@ -167,8 +176,8 @@ namespace bio
       node2[1] = nodes[elements[ii].node2_id].y;
       node2[2] = nodes[elements[ii].node2_id].z;
       elements[ii].orig_len = sqrt(pow((node2[0] - node1[0]),2) +
-				   pow((node2[1] - node1[1]),2) +
-				   pow((node2[2] - node1[2]),2));
+                                   pow((node2[1] - node1[1]),2) +
+                                   pow((node2[2] - node1[2]),2));
     }
   }
   SupportFiberNetwork::SupportFiberNetwork() : FiberNetwork()
@@ -225,7 +234,7 @@ namespace bio
   }
 
   void calcFiberOrientationTensor(const FiberNetwork & fn,
-				  double (&rslt)[9])
+                                  double (&rslt)[9])
   {
     int num_elements = fn.numElements();
     std::vector<double> len(num_elements);
@@ -324,4 +333,5 @@ namespace bio
       rslt[2] *= -1.0;
     }
   }
+  */
 }

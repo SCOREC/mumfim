@@ -1,8 +1,6 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "RVE_Util.h"
-#include "Sparskit_Externs.h"
-#include "Util.h"
+#include "bioRVE.h"
+#include "bioRVEUtil.h"
+#include "bioSparskit.h"
 #include <iostream>
 #include <cstring>
 namespace bio

@@ -1,9 +1,9 @@
-#ifndef H_RepresentVolElem
-#define H_RepresentVolElem
-#include "MicroFOMultiscaleTypes.h"
-#include "FiberNetwork.h"
-#include "SparseMatrix.h"
-#include "Sparskit_Externs.h"
+#ifndef BIO_RVE_H_
+#define BIO_RVE_H_
+#include "bioMicroFOMultiscale.h"
+//#include "bioFiberNetwork.h"
+#include "bioSparseMatrix.h"
+#include "bioSparskitExterns.h"
 #include <apf.h>
 #include <apfMesh2.h>
 #include <iomanip>
