@@ -1,7 +1,7 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "RVE_Util.h"
-#include "FiberNetwork.h"
+#include "bioRVE.h"
+#include "bioRVEUtil.h"
+#include "bioFiberNetwork.h"
+#include "bioFiberReactions.h"
 #include "LagrangeMapping.h" // scorecutil to be phased out
 #include <amsiAnalysis.h>
 #include <apf.h>
@@ -18,9 +18,6 @@
 #include <valarray>
 namespace bio
 {
-  MicroFO::MicroFO() :
-    num_field_comp(3)
-  { }
   MicroFO::MicroFO(int * hdr,
                    double * gauss,
                    int ri,
@@ -68,7 +65,7 @@ namespace bio
     gauss_pt[2] = gauss[2];
     initial_coords.assign(init_coords,init_coords+num_rve_doubles);
     init();
-    if(hdr[FIBER_REACTION] == NONLINEAR)
+    if(hdr[FIBER_REACTION] == FiberConstitutive::nonlinear)
     {
       NonlinearReaction * nlr = new NonlinearReaction;
       nlr->E = prms[YOUNGS_MODULUS];
@@ -89,7 +86,7 @@ namespace bio
       slr->E = prms[YOUNGS_MODULUS] * fiber_area * 0.15;
       fiber_types[1] = slr;
     }
-    else
+    else if(hdr[FIBER_REACTION] == FiberConstitutive::linear)
     {
       LinearReaction * lr = new LinearReaction;
       lr->E = prms[YOUNGS_MODULUS];

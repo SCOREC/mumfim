@@ -1,7 +1,7 @@
-#ifndef RVEUTIL_H_
-#define RVEUTIL_H_
-#include "RepresentVolElem.h"
-#include "SparseMatrix.h"
+#ifndef BIO_RVEUTIL_H_
+#define BIO_RVEUTIL_H_
+#include "bioRVE.h"
+#include "bioSparseMatrix.h"
 #ifdef UNIX
 #include <sys/types.h>
 #include <sys/times.h>
@@ -50,5 +50,5 @@ namespace bio
                 double ddett[]);
   void calc_deriv(double x[], double y[], double z[], double ux[], double uy[], double uz[], double phic[], double phie[], double phis[], double *dudx, double *dudy, double *dudz, double *dvdx, double *dvdy, double *dvdz, double *dgdx, double *dgdy, double *dgdz, double *dett);
   double calc_norm(double fvec[], int gsize);
-} // end of namespace Biotissue
+}
 #endif
