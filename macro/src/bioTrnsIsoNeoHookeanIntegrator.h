@@ -14,14 +14,15 @@ namespace bio
   public:
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
-		       apf::Field * stf_vrtn,
-		       apf::Field * axl_yngs_mod,
+		                   apf::Field * stf_vrtn,
+		                   apf::Field * axl_yngs_mod,
                        double youngs_modulus,
                        double poisson_ratio,
                        double * axis,
                        double axial_shear_modulus,
                        double axial_youngs_modulus,
                        int o)
+
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , stf_vrtn_fld(stf_vrtn)

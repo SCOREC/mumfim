@@ -32,7 +32,6 @@ namespace bio
     , dv_prev(0.0)
     , load_step(0)
     , iteration(0)
-    , iteration_beta(0)
   {
 //    char * filename = "simLogFile.txt";
 //    Sim_logOn(filename);
@@ -109,7 +108,7 @@ namespace bio
   }
   void NonlinearTissue::computeInitGuess(amsi::LAS * las)
   {
-    LinearTissue lt(model,mesh,prob_def,analysis_comm);
+    LinearTissue lt(model,mesh,prob_def,strs,strn,analysis_comm);
     lt.setSimulationTime(T);
     LinearSolver(&lt,las);
     las->iter();
@@ -135,14 +134,16 @@ namespace bio
   }
   void NonlinearTissue::step()
   {
-    //apf::zeroField(delta_u);
-    //amsi::displaceMesh(delta_u);
-    //amsi::displaceMesh(apf_primary_field);
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+      (*cnst)->step();
     iteration = 0;
-    iteration_beta = 0;
-    // maybe update the neumann bcs values HERE?
     load_step++;
-    //apf::zeroField(apf_primary_field);
+  }
+  void NonlinearTissue::iter()
+  {
+    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
+      (*cnst)->iter();
+    iteration++;
   }
   void NonlinearTissue::Assemble(amsi::LAS * las)
   {
@@ -177,9 +178,12 @@ namespace bio
       apf::destroyMeshElement(mlmt);
     }
     apf_mesh->end(it);
+    double nrm = 0.0;
+    las->GetVectorNorm(nrm);
     // process constraints
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
+    las->GetVectorNorm(nrm);
 #   ifdef LOGRUN
     double post_assmbl = amsi::getElapsedTime(macro_efficiency);
     amsi::log(macro_efficiency)  << load_step << ", " << iteration << ", " << post_assmbl << ", IDLE, POST_ASSEMBLE" << std::endl;
@@ -278,26 +282,4 @@ namespace bio
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
   }
-  void NonlinearTissue::updateConstraints()
-  {
-    for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->update();
-  }
-  /*
-  void NonlinearTissue::logCnstrntParams(int ldstp, int iteration, int rnk)
-  {
-    amsi::Log cnstrnts = amsi::activateLog("constraints");
-    double lmbda = 0.0;
-    double beta = 0.0;
-    if (rnk == 0 && vol_cnst.size() > 0)
-    {
-      lmbda = vol_cnst[0]->getLambda();
-      beta = vol_cnst[0]->getBeta();
-      amsi::log(cnstrnts) << ldstp << ", "
-                          << iteration << ", "
-                          << lmbda << ", "
-                          << beta << std::endl;
-    }
-  }
-  */
-} // end of namespace Biotissue
+}
