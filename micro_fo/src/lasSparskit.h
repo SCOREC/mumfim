@@ -3,19 +3,25 @@
 #include <amsiLAS2.h>
 namespace las
 {
-  Mat * createSparskitMatrix(int n);
+  class CSR;
+  Mat * createSparskitMatrix(CSR * csr);
   Vec * createSparskitVector(int n);
   LasOps * initSparskitOps();
   class SparskitOps
   {
   public:
-    virtual void zero(Mat * m) = 0;
-    virtual void zero(Vec * v) = 0;
-    virtual void add(Vec * v, int cnt, int * rws, double * vls) = 0;
-    virtual void add(Mat * m, int cntr, int * rws, int cntc, int * cols, double * vls) = 0;
-    virtual void solve(const Mat * k, Vec * u, const Vec * f) = 0;
-    virtual void dot(Vec * v0, Vec * v1) = 0;
-    virtual void norm(Vec * v) = 0;
+    virtual void zero(Mat * m);
+    virtual void zero(Vec * v);
+    virtual void assemble(Vec * v, int cnt, int * rws, double * vls);
+    virtual void assemble(Mat * m, int cntr, int * rws, int cntc, int * cls, double * vls);
+    virtual void set(Vec * v, int cnt, int * rws, double * vls);
+    virtual void set(Mat * m, int cntr, int * rws, int cnts, int * cls, double * vls);
+    virtual void solve(Mat * k, Vec * u, Vec * f);
+    virtual double norm(Vec * v);
+    virtual double dot(Vec * v0, Vec * v1);
+    virtual void axpy(double a, Vec * x, Vec * y);
+    virtual void get(Vec * v, double *& vls);
+    virtual void get(Vec * v, double *& vls) {};
   };
 }
 #endif

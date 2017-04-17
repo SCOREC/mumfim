@@ -1,35 +1,26 @@
 #include "bioFiberNetwork.h"
-//#include "globals.h" // CUBE_*, SPECIFY_FIBER_TYPE
-//#include "Util.h"
-//#include <amsiConfig.h>
 #include <iostream>
 #include <cassert> // assert
 #include <numeric> // accumulate
 namespace bio
 {
-  FiberNetwork::FiberNetwork(apf::Mesh * f)
+  FiberNetwork::FiberNetwork(apf::Mesh * f, FiberMember t)
     : fn(f)
-    , fn_u(NULL)
-    , fn_dof(NULL)
+    , u(NULL)
+    , du(NULL)
+    , dw(NULL)
+    , udof(NULL)
+    , wdof(NULL)
+    , tp(t)
     , dim(f->getDimension())
   {
     assert(f);
-    fn_u = fn->findField("u");
-    if(!fn_u)
-      fn_u =  apf::createLagrangeField(f,"u",apf::VECTOR,1);
-    fn_du = fn->findField("du");
-    if(!fn_du)
-      fn_du = apf::createLagrangeField(f,"du",apf::VECTOR,1);
-    fn_dof = apf::createNumbering(fn_du);
-  }
-  void assembleElementalSystem(las::Mat * k,
-                               las::ec * f,
-                               const ElementalSystem * es,
-                               apf::NewArray<int> & dofs)
-  {
-    int nedofs = es->nedofs();
-    las::setVecValues(f,es->getfe(),dofs,nedofs,true);
-    las::setMatValues(k,es->getKe(),dofs,nedofs,dofs,nedofs,true);
+    du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
+    u  = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
+    if(tp == FiberMember::euler_bernoulli || tp == FiberMember::timoshenko)
+      apf::createLagrangeField(fn,"dw",apf::VECTOR,1);
+    udof = apf::createNumbering(du);
+    wdof = apf::createNumbering(dw);
   }
   /*
   FiberNetwork * FiberNetwork::clone()

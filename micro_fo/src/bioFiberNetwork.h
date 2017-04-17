@@ -1,7 +1,9 @@
 #ifndef BIO_FIBER_NETWORK_H_
 #define BIO_FIBER_NETWORK_H_
 #include "bioFiberReactions.h"
-#include "bioRVE2.h"
+#include "bioFiber.h"
+#include <apf.h>
+#include <apfNumbering.h>
 #include <string>
 #include <vector>
 namespace bio
@@ -14,9 +16,12 @@ namespace bio
   {
   private:
     apf::Mesh * fn;
-    apf::Field * fn_u;
-    apf::Field * fn_du;
-    apf::Numbering * fn_dof;
+    apf::Field * u;
+    apf::Field * du;
+    apf::Field * dw;
+    apf::Numbering * udof;
+    apf::Numbering * wdof;
+    FiberMember tp;
     int dim;
   protected:
   public:
@@ -25,35 +30,24 @@ namespace bio
      * @param f A pointer to a fiber network mesh (contains only vertices and edges)
      *          typically loaded using the NetworkLoader classes
      */
-    FiberNetwork(apf::Mesh * f);
+    FiberNetwork(apf::Mesh * f, FiberMember t);
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)
      */
     int getDim() const { return fn->getDimension(); }
-    /**
-     * Calculate the current length of each fiber in the network
-     * @param lngths A vector containing the lengths of all fibers in the network;
-     * @note Possibly implement local caching of the answer instead of recalculating
-     * @todo switch to template output
-     */
-    void calcFiberLengths(std::vector<double> & lngths) const
-    {
-      calcDimMeasures(fn,1,lngths);
-    }
-    apf::Mesh * getNetworkMesh() { return fn; }
-    apf::Field * getDisplacementField() { return fn_u; }
-    apf::Field * getIncrementalDispField() { return fn_du; }
-    apf::Numbering * getNumbering() { return fn_dof; }
+    FiberMember getFiberMember()      { return tp;   }
+    apf::Mesh * getNetworkMesh()      { return fn;   }
+    apf::Field * getUField()          { return u;    }
+    apf::Field * getdUField()         { return du;   }
+    apf::Field * getdWField()         { return dw;   }
+    apf::Numbering * getUNumbering()  { return udof; }
+    apf::Numbering * getdWNumbering() { return wdof; }
   };
   /**
    * TODO (m) Bill : move to FiberNetworkIO files
    */
   FiberNetwork * loadFromFile(const std::string & fnm);
-  void assembleElementalSystem(las::skMat * k,
-                               las::skVec * f,
-                               const ElementalSystem * es,
-                               apf::NewArray<int> & dofs);
   /*
   struct Element
   {
@@ -108,17 +102,6 @@ namespace bio
   class FiberNetwork
   {
   public:
-    enum Side
-    {
-      TOP = 0,
-      BOTTOM = 1,
-      LEFT = 2,
-      RIGHT = 3,
-      FRONT = 4,
-      BACK = 5,
-      ALL = 6,
-      BOUNDARY_TYPES = 7
-    };
     // CONSTRUCTORS ============================================ //
     FiberNetwork();
     virtual FiberNetwork * clone();
@@ -193,22 +176,22 @@ namespace bio
   {
     return sqrt((n2.x-n1.x)*(n2.x-n1.x) + (n2.y-n1.y)*(n2.y-n1.y) + (n2.z-n1.z)*(n2.z-n1.z));
   }
+  */
   double calcNetworkOrientation(const FiberNetwork & fn);
+  /*
   void calcFiberOrientation(const Node & n1,
                             const Node & n2,
                             double (&rslt)[3]);
+  */
   void calcFiberOrientationTensor(const FiberNetwork & fn,
 				  double (&rslt)[9]);
   void calcP2(const FiberNetwork & fn, double & rslt);
   void calcAvgFiberDirection(const FiberNetwork & fn,
                              double (&rslt)[3]);
+  /*
   void calcFiberDirection(const Node & n1,
                           const Node & n2,
                           double (&rslt)[3]);
-  void AlignFiberNetwork(FiberNetwork & fn, const double align_vec[3]);
-  void AffineDeformation(FiberNetwork & fn, const double disp[6]);
-  void updateRVEBounds(FiberNetwork & fn, const double disp[6]);
-  double calcFiberDensity(const FiberNetwork & fn);
   */
 }
 #endif

@@ -1,6 +1,6 @@
 #include "bioRVE.h"
 #include "bioRVEUtil.h"
-#include "bioSparskit.h"
+#include "lasSparskit.h"
 #include <iostream>
 #include <cstring>
 namespace bio
@@ -29,10 +29,9 @@ namespace bio
     // Fill vector with x,y,z,(rx,ry,rz) coords of nodes
     update_coordinate_vector();
     // Solution of the microscopic problem
-    if(TRUSS)
-      result += Solver();
-    else // Beam
-      result += Solver_Beam();
+    result += Solver();
+    //else // Beam
+    //  result += Solver_Beam();
     /* Sum up forces of fiber nodes that lie on the boundary of the RVE. This is the summation part of Eq. (7) in
        T. Stylianopoulos, V. H. Barocas, Comput. Methods Appl. Mech. Engrg. 196 (2007) 2981-2990:
        \sum_{boundary cross-links} x_i F_j.
@@ -79,6 +78,7 @@ namespace bio
     firstTimeThrough = false;
     return result;
   }
+  /*
   // For size effect testing. Hardcoded
   double MicroFO::calc_stiffness()
   {
@@ -97,12 +97,14 @@ namespace bio
     double stiffness = traction/pow(lateral_length,2.0);
     return stiffness;
   }
+  */
+  /*
   void MicroFO::calc_stress(double * stress)
   {
     double xfx = 0.0, xfy = 0.0, xfz = 0.0;
     double yfx = 0.0, yfy = 0.0, yfz = 0.0;
     double zfx = 0.0, zfy = 0.0, zfz = 0.0;
-    /* for decomposing forces on x faces. "p" and "n" denote positive and negative, respectively */
+    // for decomposing forces on x faces. "p" and "n" denote positive and negative, respectively
     //double fxp = 0.0, fxn = 0.0;
     int num_dofs_per_node = fiber_network->dofsPerNode();
     int num_boundary_nodes = fiber_network->numBoundaryNodes(FiberNetwork::ALL);
@@ -143,12 +145,14 @@ namespace bio
     stress[4] = 0.5 * (yfz + zfy);
     stress[5] = zfz;
 
-    /*
+    / *
   std::cout << "Microscale stress: " << stress[0] << " " << stress[1] << " "
   << stress[2] << " " << stress[3] << " "
   << stress[4] << " " << stress[5] << std::endl;
-    */
+    * /
   }
+  */
+  /*
   void MicroFO::calc_tdydxr()
   {
     buffers->zero();
@@ -192,6 +196,8 @@ namespace bio
       memset(&solution[0],0,sizeof(double)*num_dofs);
     }
   }
+  */
+  /*
   void MicroFO::calc_femjacob_newmethod(double * dSdx,
                                         double vol,
                                         double * dvol,
@@ -207,18 +213,18 @@ namespace bio
 //      memset(dsdxr,0,sizeof(double)*144);
     // The purpose of this function is to calculate the dSdx. In order to do this we have first
     // to calculate some other derivatives and particularly the dridx, dydx, dsdxr, dSdxr, dxrdx
-    /* Multiply ttdSdy and tdydxr to obtain dsdxr.
+    / * Multiply ttdSdy and tdydxr to obtain dsdxr.
        - ttdSdy is the change of microscale stresses on the boundary of RVE as function of fiber node positions.
        Calculated with calc_pre_cond function in solver_gmres_df.cc.
        - tdydxr is the change of fiber node positions as function of RVE vertex positions.
        Calculated with calc_tdydxr function in main_solver_psi.cc.
        - dsdxr is the change of microscale stresses on the boundary of RVE as function of RVE vertex positions.
-    */
+    * /
     matrix_multiply(ttdSdy.data(),6,num_dofs,tdydxr.data(),num_dofs,24,dsdxr);
-    /* dSdxr is the macroscopic (volume-averaged) stress as a function of the RVE vertex positions.
+    / * dSdxr is the macroscopic (volume-averaged) stress as a function of the RVE vertex positions.
        The expression to determine dSdxr is obtained (I believe) by taking the directional derivative
        of the volume averaged stresses with respect to the positions of the RVE vertex positions.
-    */
+    * /
     for(int jj = 0; jj < 24; jj++)
     {
       dSdxr[0*24 + jj] = ((dsdxr[0*24 + jj]/vol) - (dvol[jj]*stress[0]) / (vol*vol)) * scale_conversion;
@@ -235,6 +241,8 @@ namespace bio
     matrix_multiply(dSdxr,6,24,dxrdx,24,num_rve_doubles,dSdx);
     delete [] dxrdx;
   }
+  */
+  /*
   void MicroFO::calc_quantities(int side,
                                 double * dridx,
                                 int node,
@@ -255,9 +263,7 @@ namespace bio
     double right  = fiber_network->sideCoord(FiberNetwork::RIGHT);
     double back   = fiber_network->sideCoord(FiberNetwork::BACK);
     double front  = fiber_network->sideCoord(FiberNetwork::FRONT);
-    double area0 = (front-back)
-      * (top-bottom)
-      * (right-left); // area of the whole RVE ... volume
+    double area0 = (front-back) * (top-bottom) * (right-left); // area of the whole RVE ... volume
     double area1,area2,area3,area4;
     // initialize area variables.
     area1=0.0; area2=0.0; area3=0.0; area4=0.0;
@@ -313,6 +319,8 @@ namespace bio
     dridx[(node * dofs_per_node + 2) * 24 + (local_node3 * dofs_per_node + 2)] = area3 / area0;
     dridx[(node * dofs_per_node + 2) * 24 + (local_node4 * dofs_per_node + 2)] = area4 / area0;
   }
+  */
+  /*
   void MicroFO::calc_dridx(double * dridx)
   {
     // need to assert that the allocated memory for dridx is enough to hold num_dofs*24
@@ -383,4 +391,5 @@ namespace bio
       }
     }
   }
+  */
 }

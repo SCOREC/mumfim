@@ -1,12 +1,12 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "Sparskit_Externs.h"
-#include "RVE_Util.h"
-#include "Util.h"
+#include "bioRVE2.h"
+#include "bioSparskitExterns.h"
+#include "bioRVEUtil.h"
+#include "bioUtil.h"
 #include <cstring> //memset
 #include <amsiUtil.h>
 namespace bio
 {
+  /*
   int MicroFO::Solver()
   {
     int result = 0;
@@ -30,18 +30,11 @@ namespace bio
     std::vector<double> len(num_elements);
     calcFiberLengths(*fiber_network,len);
     // Calculates the fiber force
-    calc_fiber_str(&len[0],
-                   &fib_str[0],
-                   &dfdl[0]);
+    calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
     // Assembles the Jacobian matrix
-    calc_precond(&matrix[0],
-                 &len[0],
-                 &fib_str[0],
-                 &dfdl[0],
-                 false);
+    calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],false);
     // Calculates the x,y,z conponents of the fiber force
-    calc_force_vector(&len[0],
-                      &fib_str[0]); // resets the force vector to 0.0 before accumulating values...
+    calc_force_vector(&len[0],&fib_str[0]); // resets the force vector to 0.0 before accumulating values...
     // Calculates boundary conditions of the microscopic problem
     force_vector_bcs();
     // Calculates the norm of the microscopic residuals
@@ -83,10 +76,10 @@ namespace bio
              buffers->rowsBuffer());
       for(int ii = 0; ii < num_dofs; ii++)
       {
-        /*
+        / *
           if(fabs(solution[ii]) > 1.0)
           std::cerr << "solution at position " << ii << " is " << solution[ii] << std::endl;
-        */
+        * /
         coordinate_vector[ii] += solution[ii];
       }
       double df = 1.0;
@@ -129,14 +122,6 @@ namespace bio
 	relative_norm = fabs(previous_norm - current_norm);
       else
 	relative_norm = current_norm;
-      /*
-        AMSI_DEBUG
-        (
-        std::cout << "Micro relative norm: " << relative_norm << " < " << tolerance << std::endl;
-        std::cout << "Micro current norm: " << current_norm << std::endl;
-        std::cout << "Micro previous norm: " << previous_norm << std::endl;
-        )
-      */
       previous_norm = current_norm;
       calc_precond(&matrix[0],
                    &len[0],
@@ -195,6 +180,7 @@ namespace bio
     delete [] dfdl;
     return result;
   }
+  */
   void MicroFO::force_vector_bcs()
   {
     int num_boundary_nodes = fiber_network->numBoundaryNodes(FiberNetwork::ALL);
@@ -236,9 +222,11 @@ namespace bio
       double dfcdx2 = gfunc(ii,1,lengths,fib_str,dfdl);
       double dfcdy2 = gfunc(ii,2,lengths,fib_str,dfdl);
       double dfcdz2 = gfunc(ii,5,lengths,fib_str,dfdl);
+
       double dfsdx2 = dfcdy2;
       double dfsdy2 = gfunc(ii,4,lengths,fib_str,dfdl);
       double dfsdz2 = gfunc(ii,6,lengths,fib_str,dfdl);
+
       double dfzdx2 = dfcdz2;
       double dfzdy2 = dfsdz2;
       double dfzdz2 = gfunc(ii,7,lengths,fib_str,dfdl);

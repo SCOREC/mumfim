@@ -1,9 +1,12 @@
-#include "bioFiberNetwork.h"
+#include "bioRVE2.h"
+#include <apfFunctions.h>
+#include <apfMeasure.h>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 namespace bio
 {
-  void AlignFiberNetwork( FiberNetwork & fn, const double algn_vec[3])
+  void alignFiberNetwork( RVE * rve, FiberNetwork * fn, const double algn_vec[3] )
   {
     /// Populate disp array based on direction of alignment vector.
     double disp[6] = {};
@@ -28,23 +31,26 @@ namespace bio
       disp[5] = 0.0;
       disp[0] = d/2.0; disp[1] = -d/2.0; disp[2] = d/2.0; disp[3] = -d/2.0;
     }
-    double init_dens = calcFiberDensity(fn);
-    AffineDeformation(fn, disp); ///< Align fibers via affine deformation.
-    updateRVEBounds(fn, disp);   ///< update RVE boundaries
+    double init_dens = calcFiberDensity(rve,fn);
+    affineDeformation(rve, fn, disp); ///< Align fibers via affine deformation.
+    // apply disp to rve nodes
+    amsi::AccumOp acc;
+    amsi::ApplyVector(rve->getNumbering(),rve->getField(),disp,0,&acc).run();
+    //updateRVEBounds(rve, fn, disp);   ///< update RVE boundaries
     /// calculate size of hydrostatic expansion based on density
-    double dens = calcFiberDensity(fn);
+    double dens = calcFiberDensity(rve,fn);
     double r = -(dens - init_dens)/dens;
     double a = -3.995; double b = -3.995; double c=0.00127;
     double d = (-b - std::sqrt(b * b - 4 * a * (c - r)) )/(2*a);
     disp[0] = d; disp[1] = -d;
     disp[2] = d; disp[3] = -d;
     disp[4] = d; disp[5] = -d;
-    AffineDeformation(fn, disp);
-    updateRVEBounds(fn, disp);
+    affineDeformation(rve, fn, disp);
+    updateRVEBounds(rve, fn, disp);
   } /// End AlignFiberNetwork function.
   /// Function to affinely deform RVE box.
   //  - Input variabl disp = [positive x, negative x, positive y, negative y, positive z, negative z]
-  void AffineDeformation(FiberNetwork & fn, const double disp[6])
+  void affineDeformation( RVE * rve, FiberNetwork * fn, const double disp[6] )
   {
     double rvedisp[24] = {};
     // positive x face of RVE
@@ -60,9 +66,10 @@ namespace bio
     // negative z face of RVE
     rvedisp[0 * 3 + 2] = disp[5]; rvedisp[1 * 3 + 2] = disp[5]; rvedisp[4 * 3 + 2] = disp[5]; rvedisp[5 * 3 + 2] = disp[5];
     /// length of RVE box in x, y, z directions.
-    double xlen = std::abs( fn.sideCoord(FiberNetwork::RIGHT) - fn.sideCoord(FiberNetwork::LEFT) );
-    double ylen = std::abs( fn.sideCoord(FiberNetwork::TOP) - fn.sideCoord(FiberNetwork::BOTTOM) );
-    double zlen = std::abs( fn.sideCoord(FiberNetwork::FRONT) - fn.sideCoord(FiberNetwork::BACK) );
+    double xlen = std::abs( rve->sideCoord(RVE::side::rgt) - rve->sideCoord(RVE::side::lft) );
+    double ylen = std::abs( rve->sideCoord(RVE::side::top) - rve->sideCoord(RVE::side::bot) );
+    double zlen = std::abs( rve->sideCoord(RVE::side::frt) - rve->sideCoord(RVE::side::bck) );
+    /*
     int num_nodes = fn.numNodes();
     for (int ii = 0; ii < num_nodes; ii++)
     {
@@ -71,7 +78,7 @@ namespace bio
       double xx = ( n.x + xlen/2.0 )/xlen;
       double yy = ( n.y + xlen/2.0 )/ylen;
       double zz = ( n.z + xlen/2.0 )/zlen;
-      /// Affinely deform nodes according to rvedisp.
+      /// Affinely deform nodes according to rvedisp. (trilinterpelation?)
       n.x += (1.0 - zz ) * ( (rvedisp[0 * 3] * (1.0 - xx) + rvedisp[1 * 3] * xx) * (1.0 - yy) +
                              (rvedisp[4 * 3] * (1.0 - xx) + rvedisp[5 * 3] * xx) * yy )
            + zz *          ( (rvedisp[2 * 3] * (1.0 - xx) + rvedisp[3 * 3] * xx) * (1.0 - yy) +
@@ -86,8 +93,10 @@ namespace bio
                              (rvedisp[6 * 3 + 2] * (1.0 - xx) + rvedisp[7 * 3 + 2] * xx) * yy );
       fn.setNode(ii,n);
     }
-  } /// end AffineDeformation
-  void updateRVEBounds(FiberNetwork & fn, const double disp[6])
+    */
+  }
+  /*
+  void updateRVEBounds(RVE * rve, FiberNetwork * fn, const double disp[6])
   {
     fn.updateSideCoord(FiberNetwork::RIGHT, disp[0]);
     fn.updateSideCoord(FiberNetwork::LEFT, disp[1]);
@@ -96,16 +105,13 @@ namespace bio
     fn.updateSideCoord(FiberNetwork::FRONT, disp[4]);
     fn.updateSideCoord(FiberNetwork::BACK, disp[5]);
   }
-  double calcFiberDensity(const FiberNetwork & fn)
+  */
+  double calcFiberDensity(RVE * rve, FiberNetwork * fn)
   {
-    std::vector<double> lengths;
-    calcFiberLengths(fn, lengths);
-    double total_length = 0.0;
-    for (uint ii=0; ii<lengths.size(); ii++)
-      total_length += lengths[ii];
-    double volume = std::abs( fn.sideCoord(FiberNetwork::RIGHT) - fn.sideCoord(FiberNetwork::LEFT) ) *
-                    std::abs( fn.sideCoord(FiberNetwork::TOP) - fn.sideCoord(FiberNetwork::BOTTOM) ) *
-                    std::abs( fn.sideCoord(FiberNetwork::FRONT) - fn.sideCoord(FiberNetwork::BACK) );
-    return total_length/volume;
+    std::vector<double> lngths;
+    calcDimMeasures(fn->getNetworkMesh(),1,lngths); // calc lengths
+    double ttl = std::accumulate(lngths.begin(),lngths.end(),0.0);
+    double vol = amsi::measureDisplacedMeshEntity(rve->getMeshEnt(),rve->getField());
+    return ttl / vol;
   }
 } /// end bio namespace

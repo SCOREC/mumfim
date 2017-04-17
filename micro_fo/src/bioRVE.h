@@ -41,7 +41,6 @@ namespace bio
     void init();
     void SetRveCorners();
     void UpdateNodeArray();
-    double calc_stiffness(); // Temporary for size effect test
     // setup the current coordinates and the disp - need to be updated incrementally
     void SetDisplacement(double * displacement);
     void SetDeformationGradient(int gauss_pt, double * grad);  // get deformation gradient at gauss point i
@@ -107,10 +106,6 @@ namespace bio
     double * coords;
     std::vector<double> initial_coords;
     double * displacement;
-    // Macroscale element information
-    //apf::Mesh2 * element_mesh;
-    //apf::MeshEntity * macro_entity;
-    //apf::MeshElement * macro_element;
     int element_type;
     int num_field_comp;
     int num_element_nodes;
@@ -200,12 +195,12 @@ namespace bio
     void calc_matrix_beam(double * matrix, double * matrix_axial, double * lengths);
     void calc_force_vector_beam(double * x);
     void matrix_bcs_beam();
-    void matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs);
+    //void matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs);
     void make_material_stiffness_matrix(double * matrix,int ielem,double L);
     void make_geometry_stiffness_matrix(double * matrix,int ielem,double L);
     double calc_norm_beam(double * x);
     void force_vector_bcs_beam();
-    void force_vector_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs);
+    //void force_vector_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs);
     void calc_dsdy_beam();
     //PHI FUNCTION TO COMPUTE THE BASE FUNCTION FOR DIFFERENT TOPOLOGY ELEMENT
     double PHI(int, double, double, double);

@@ -545,6 +545,7 @@ void MicroFO::matrix_bcs_beam()
     }
   }
 }
+/*
 void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs)
 {
   // This is a bit of a mess, but trying to avoid using sparseLocation()
@@ -601,6 +602,7 @@ void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, i
     matrix[bcs[ii].Ke2[2*ddof]] = 1.0;
   }
 }
+*/
 // Calculates dSdy from beam values
 void MicroFO::calc_dsdy_beam()
 {

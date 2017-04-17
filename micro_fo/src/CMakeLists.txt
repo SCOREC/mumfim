@@ -6,6 +6,8 @@ set(micro_fo_public_headers
   bioSparseMatrix.h
   bioTrussIntegrator.h
   bioUtil.h
+  bioUtil_impl.h
+  lasCSR.h
   lasSparskit.h)
 
 set(micro_fo_src_files
@@ -23,6 +25,8 @@ set(micro_fo_src_files
   bioSparseMatrix.cc
   bioSparskitExterns.cc
   bioUtil.cc
+  lasCSR.cc
+  lasCSRBuilder.cc
   lasSparskit.cc)
 
 find_package(sparskit REQUIRED)

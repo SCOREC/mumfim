@@ -18,6 +18,7 @@
 #include <valarray>
 namespace bio
 {
+  /*
   MicroFO::MicroFO(int * hdr,
                    double * gauss,
                    int ri,
@@ -43,14 +44,14 @@ namespace bio
 //    fiber_radius = 3.49911271e-8;
     fiber_radius = prms[FIBER_RADIUS];
     fiber_volume_fraction = prms[VOLUME_FRACTION];
-    /** Determine init_rve_dim before alignment of fiber network.*/
+    // Determine init_rve_dim before alignment of fiber network.
     std::vector<double> lngths;
     calcFiberLengths(*fn,lngths);
 //    init_rve_dim = std::sqrt(std::accumulate(lngths.begin(),lngths.end(),0.0) * M_PI * fiber_radius * fiber_radius / fiber_volume_fraction);
     init_rve_dim = 1.0;
 //    scale_conversion = 1.0 / (init_rve_dim * init_rve_dim);
     scale_conversion = 1.0;
-    /** Align fiber network */
+    // Align fiber network
     fiber_network = fn->clone();
     if(hdr[IS_ORIENTED])
     {
@@ -91,7 +92,7 @@ namespace bio
     }
 
     // build a single-element mesh using the passed information about the corresponding element in macroscale
-    /*
+    / *
     apf::Vector3 verts[num_element_nodes];
     for(int ii = 0; ii < num_element_nodes; ii++)
       verts[ii] = apf::Vector3(&init_coords[ii*num_field_comp]);
@@ -112,7 +113,7 @@ namespace bio
     element_mesh->end(it);
     macro_element = apf::createMeshElement(element_mesh,
                                          macro_entity);
-    */
+                                         * /
   }
   MicroFO::~MicroFO()
   {
@@ -130,11 +131,12 @@ namespace bio
     coordinate_vector.resize(num_dofs);
     tdydxr.resize(24*num_dofs);
     ttdSdy.resize(6*num_dofs);
-    /** parameter calculation
-     * rve_dim         : calculated based on current state (aligned) of fiber network.
-     * scale_conversion: calculated based on initial fiber network (prior to alignment)
+    // parameter calculation
+    // rve_dim         : calculated based on current state (aligned) of fiber network.
+    // scale_conversion: calculated based on initial fiber network (prior to alignment)
                          and stays constant for entire simulation.
-                         scale_conversion is calculated in constructor. */
+                         scale_conversion is calculated in constructor.
+                         * /
     /// calculation of rve_dim.
     std::vector<double> lngths;
     calcFiberLengths(*fiber_network,lngths);
@@ -319,12 +321,12 @@ void MicroFO::outputFiber(const std::string & filename) const
     {
       int node1 = fiber_network->element(ii).node1_id;
       int node2 = fiber_network->element(ii).node2_id;
-/*
+/ *
       std::cout<<ii+1<<","<<node1<<","<<node2<<","
                <<fiber_network->node(node1).x<<","<<fiber_network->node(node1).y<<","<<fiber_network->node(node1).z<<","
                <<fiber_network->node(node2).x<<","<<fiber_network->node(node2).y<<","<<fiber_network->node(node2).z<<","
                <<fiber_network->element(ii).fiber_type<<std::endl;
-*/
+* /
       fprintf(fp, "%d %d %d %lf %lf %lf %lf %lf %lf %i\n",
               ii+1,
               node1,
@@ -364,7 +366,7 @@ void MicroFO::setResults(double * ss)
 {
   rve_info = ss;
 }
-/*
+/ *
 void MicroFO::eval_stress(SCOREC::Util::mTensor2 & T)
 {
   T[0][0] = rve_info[0]; T[0][1] = rve_info[1]; T[0][2] = rve_info[2];
@@ -375,7 +377,7 @@ void MicroFO::eval_balancestress(SCOREC::Util::mVector & V)
 {
   V[0] = rve_info[6]; V[1] = rve_info[7]; V[2] = rve_info[8];
 }
-*/
+* /
 void MicroFO::eval_derivstress(double * dSdx)
 {
   memcpy(dSdx, rve_info + 9, 6 * num_rve_doubles * sizeof(double));
@@ -535,4 +537,5 @@ double MicroFO::getTiming()
     timing += *iter;
   return timing;
 }
+*/
  }
