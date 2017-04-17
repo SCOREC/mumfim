@@ -4,6 +4,7 @@
 #include "MicroFOMultiscaleTypes.h"
 #include "RepresentVolElem.h"       // should be able to take this out... (needed for RVE_Info struct)
 #include "bioVolumeConstraint.h"
+#include "bioStiffnessVariation.h"
 #include <apfFEA.h>
 #include <Solvers.h>
 #include <NonLinElasticity.h>
@@ -21,12 +22,15 @@ namespace bio
   {
   protected:
     std::map<pGEntity,amsi::ElementalSystem*> constitutives;
+    std::vector<StiffnessVariation*> stf_vrtn_cnst;
     std::vector<VolumeConstraint*> vol_cnst;
     apf::Field * delta_u;
     apf::Field * strs;
     apf::Field * rcvrd_strs;
     apf::Field * strn;
     apf::Field * previous_rve;
+    apf::Field * stf_vrtn;
+    apf::Field * axl_yngs_mod;
     double dv_prev;
     int load_step;
     int iteration;

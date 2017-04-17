@@ -20,6 +20,7 @@ namespace bio
     double current_norm = std::numeric_limits<double>::max();
     double previous_norm = std::numeric_limits<double>::max();
     double relative_norm = std::numeric_limits<double>::max();
+    relative_norm = 0.0; previous_norm = 1.0;
     int ierr = 0;
     double * solution = new double[num_dofs]();
     double * fib_str = new double[num_elements]();
@@ -112,6 +113,7 @@ namespace bio
         // or nan; when it keeps oscillating even after a lot of iterations
         // (Damping)
         // checking for NaN (f != f is only true if f=NaN)
+/* COMMENT OUT DAMPING PORTION OF CODE.
         if( current_norm != current_norm || ( (current_norm/previous_norm) > 100.0) || (ncv == 1) )
         {
           std::cout << "damping!" << std::endl;
@@ -124,11 +126,14 @@ namespace bio
           cont = 1;
           ncv = 0;
         }
+*/
       } while(cont == 1);
+      //relative_norm = current_norm;
       if (current_norm != 0)
 	relative_norm = fabs(previous_norm - current_norm);
       else
 	relative_norm = current_norm;
+      
       /*
         AMSI_DEBUG
         (
@@ -145,30 +150,31 @@ namespace bio
                    false);
       step++;
       if((step == 50)||(step == 100)||(step == 150)||(step == 200))
-        ncv = 1;
+        ncv = 1; //Damping is required when ncv = 1.
       if(step == 60)
       {
-        tolerance = 1e-10;
+        tolerance = tolerance * 10.0;
         AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
       }
       else if(step == 80)
       {
-        tolerance = 1e-8;
+        tolerance = tolerance * 10.0;
         AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
       }
       else if(step == 100)
       {
-        tolerance = 1e-7;
-        AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
+        tolerance = tolerance * 10.0;
+        std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl;
       }
       else if(step == 120)
       {
-        tolerance = 1e-6;
+        tolerance = tolerance * 10.0;
         AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
       }
       else if(step == 130)
       {
-        std::cerr << "Warning: unusual number of newton iterations in micro_fo!" << std::endl;
+	std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl;
+        std::cerr << "Warning: unusual number of newton iterations in micro_fo! step = "<<step<<", relative_norm = "<<relative_norm <<std::endl;
         break;
       }
     } while (relative_norm > tolerance);
