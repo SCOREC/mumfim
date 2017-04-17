@@ -13,10 +13,22 @@ namespace bio
   class FiberNetwork;
   class RVE
   {
+  public:
+    enum side // [ -y -z x z -x y]
+    {
+      bot = 0,
+      frt = 1,
+      rgt = 2,
+      bck = 3,
+      lft = 4,
+      top = 5,
+      all = 6
+    };
   protected:
     int dim;
-    double hd;
+    double crd;
     apf::Mesh * cbe;
+    apf::MeshEntity * cbe_e;
     apf::Element * cbe_u_e;
     apf::Field * cbe_u;
     apf::Numbering * cbe_dof;
@@ -36,11 +48,10 @@ namespace bio
      *           in keeping with the standard ordering of faces on a hexahedral element.
      * @return The primary coordinate for the side specified by the parameter.
      */
-    double sideCoord(int sd) const
+    double sideCoord(side sd) const
     {
-      assert(sd >= 0 && sd < 6);
       static const double op[6] = {-1.0,-1.0,1.0,1.0,-1.0,1.0};
-      return hd * op[sd];
+      return crd * op[sd];
     }
     /**
      * Determine whether a given coordinate in the dimensionless RVE space is on
@@ -51,16 +62,26 @@ namespace bio
      * @return Whether any coordinate of the parameter is within \f$ \epsilon \f$
      *         of an initial boundary of the RVE.
      */
-    bool onBoundary(const apf::Vector3 & crd) const
+    bool onBoundary(const apf::Vector3 & crd, side sd, double eps = 1e-8) const
     {
-      return fabs(sideCoord(2) - crd[0]) < 1e-8 ||
-             fabs(sideCoord(4) - crd[0]) < 1e-8 ||
-             fabs(sideCoord(0) - crd[1]) < 1e-8 ||
-             fabs(sideCoord(5) - crd[1]) < 1e-8 ||
-             fabs(sideCoord(1) - crd[2]) < 1e-8 ||
-             fabs(sideCoord(3) - crd[2]) < 1e-8;
+      if(sd == side::all)
+        return fabs(sideCoord(side::rgt) - crd[0]) < eps ||
+               fabs(sideCoord(side::lft) - crd[0]) < eps ||
+               fabs(sideCoord(side::bot) - crd[1]) < eps ||
+               fabs(sideCoord(side::top) - crd[1]) < eps ||
+               fabs(sideCoord(side::frt) - crd[2]) < eps ||
+               fabs(sideCoord(side::bck) - crd[2]) < eps;
+      int idx = -1;
+      if(sd == side::lft || sd == side::rgt)
+        idx = 0;
+      else if (sd == side::bot || sd == side::top)
+        idx = 1;
+      else if (sd == side::frt || sd == side::bck)
+        idx = 2;
+      return fabs(sideCoord(sd) - crd[idx]) < eps;
     }
-    apf::Element * getElement() { return cbe_u_e;}
+    apf::MeshEntity * getMeshEnt() { return cbe_e; }
+    apf::Element * getElement() { return cbe_u_e; }
     apf::Numbering * getNumbering() { return cbe_dof; }
     apf::Field * getField() { return cbe_u; }
   };
@@ -123,14 +144,9 @@ namespace bio
   /**
    * Compile a list of MeshEntities in the fiber network which have at least a single
    * node classified 'on' the boundary of the RVE.
-   * @param rve The RVE to check against.
-   * @param fn The FiberNetwork to check all nodes for being of the RVE boundary.
-   * @param bnds The MeshEntities determined to lie on the boundary of the RVE.
-   * @note Only checks against the reference configuration of the RVE
    */
-  void calcBoundaryNodes(const RVE * rve,
-			 const FiberNetwork * fn,
-			 std::vector<apf::MeshEntity*> & bnds);
+  template <typename O>
+    void getBoundaryVerts(const RVE * rve, const FiberNetwork * fn, RVE::side sd,  O nds);
   /**
    * Set the force vector value associated with dofs on nodes lying on the RVE
    *  boundaries to zero.
@@ -150,5 +166,11 @@ namespace bio
    */
   void displaceRVE(RVE * rve,
                    const apf::DynamicVector & du);
+  //
+  void alignFiberNetwork(RVE * rve, FiberNetwork * fn, const double align_vec[3]);
+  void affineDeformation(RVE * rve, FiberNetwork * fn, const double disp[6]);
+  void updateRVEBounds(RVE * rve, FiberNetwork * fn, const double disp[6]);
+  double calcFiberDensity(RVE * rve,FiberNetwork * fn);
 }
+#include <bioRVE2_impl.h>
 #endif

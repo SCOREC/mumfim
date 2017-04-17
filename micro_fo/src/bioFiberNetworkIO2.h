@@ -1,6 +1,7 @@
 #ifndef BIO_FIBER_NETWORK_IO2_H_
 #define BIO_FIBER_NETWORK_IO2_H_
-#include <bioFiberReactions.h>
+#include "bioFiberNetwork.h"
+#include "bioFiberReactions.h"
 #include <iostream>
 #include <apf.h>
 #include <apfMesh2.h>
@@ -24,7 +25,7 @@ namespace bio
     std::vector<apf::MeshEntity*> vrts;
     std::vector<FiberReaction*> rctns;
     void processReactionLine(std::istream &);
-    void processVertLine(std::istream &, int, apf::Mesh2 *);
+    void processVertLine(std::istream &, apf::Mesh2 *);
     void processEdgeLine(std::istream &, apf::Mesh2 *);
     void processPeriodicity(std::istream &, apf::Mesh2 *);
     apf::MeshEntity * processVertex(apf::Mesh2 *, int, const apf::Vector3 &);
@@ -36,7 +37,7 @@ namespace bio
       , vrts()
       , rctns()
     {}
-    apf::Mesh2 * fromStream(std::istream &);
+    FiberNetwork * fromStream(std::istream &);
   };
 }
 #endif

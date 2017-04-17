@@ -1,12 +1,6 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "Util.h"
-#include "Sparskit_Externs.h"
-#include "RVE_Util.h"
-#include <cstring> //memset
-#include <iostream>
 namespace bio
 {
+  /*
   // Solver for beam network
   // Uses corotational formulation, K_e = T_e^T k_e T_e,
   // where k_e is the stiffness matrix for an element e
@@ -434,7 +428,7 @@ void MicroFO::make_material_stiffness_matrix(double * matrix, int ielem, double 
 void MicroFO::make_geometry_stiffness_matrix(double * matrix, int ielem, double L)
 {
     memset(matrix,0,144*sizeof(double));
-    /*
+    / *
     double dL = 1.0/L;
     double dL2 = 1.0/(L*L);
     double dL3 = 1.0/(L*L*L);
@@ -444,7 +438,7 @@ void MicroFO::make_geometry_stiffness_matrix(double * matrix, int ielem, double 
     double J = 0;  //fiber_J;
     double I1 = 0; //fiber_I1;
     double I2 = 0; //fiber_I2;
-    */
+    * /
     // Add shearing
     if(TIMOSHENKO)
     {
@@ -459,7 +453,7 @@ void MicroFO::calc_force_vector_beam(double * x)
   int num_dofs = fiber_network->numDofs();
   amux_(&num_dofs,
         x,
-        &force_vector[0] /*force_vector.data()*/,
+        &force_vector[0] / *force_vector.data()* /,
         &matrix[0],
         sparse_structure->getCols(),
         sparse_structure->getRows());
@@ -545,6 +539,7 @@ void MicroFO::matrix_bcs_beam()
     }
   }
 }
+/*
 void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs)
 {
   // This is a bit of a mess, but trying to avoid using sparseLocation()
@@ -601,6 +596,7 @@ void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, i
     matrix[bcs[ii].Ke2[2*ddof]] = 1.0;
   }
 }
+* /
 // Calculates dSdy from beam values
 void MicroFO::calc_dsdy_beam()
 {
@@ -675,4 +671,5 @@ void MicroFO::calc_dsdy_beam()
       con.erase(con.begin(),con.end());
     }
 }
+*/
 }

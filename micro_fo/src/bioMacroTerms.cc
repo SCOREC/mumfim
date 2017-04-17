@@ -1,8 +1,6 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "RVE_Util.h"
 namespace bio
 {
+  /*
   void MicroFO::avg_vol_stress(double * stress,
                                double & loc_vastrx,
                                double & loc_vastry,
@@ -264,5 +262,6 @@ namespace bio
                           stress[4]*dundy +
                           stress[5]*dundz) / vol) / vol;
     }
-  }
+ }
+  */
 }

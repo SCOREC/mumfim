@@ -2,7 +2,7 @@
 # Cmake config for biotissiue
 # usage ./config.sh [build_type] [logrun_flag]
 source $DEVROOT/scripts/util
-ROOT=$DEVROOT/biotissue
+ROOT=$DEVROOT/bio
 LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
   BUILD_TYPE=Debug
@@ -27,7 +27,7 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_C_COMPILER="mpicc" \
     -DCMAKE_CXX_COMPILER="mpicxx" \
-    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
+    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
     -DBUILD_TESTS=OFF \
     -DLOGRUN=$LOGRUN \
     -DSIM_MPI=bgmpi \
@@ -46,7 +46,7 @@ else
   -DCMAKE_C_COMPILER=$CC \
   -DCMAKE_CXX_COMPILER=$CXX \
   -DLOGRUN=TRUE \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
+  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
   -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
   -DSIM_MPI=openmpi110 \
   -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \

@@ -25,57 +25,49 @@ namespace bio
    class TrussIntegrator : public apf::Integrator
    {
    protected:
-    apf::Mesh * msh;
-    apf::MeshEntity * ment;
-    apf::MeshElement * crnt_elmnt;
     apf::Field * u;
-    apf::Numbering * num;
-    FiberReaction * fbr_rctn;
-    double lngth;
-    double lngth_o;
-    int nedofs;
+    apf::Mesh * msh;
+    apf::Numbering * nm;
+    apf::Element * elmt;
+    amsi::ElementalSystem2 * es;
+    double l;
+    double lo;
     int dim;
-    apf::NewArray<int> dofs;
-    ElementalSystem es;
+    FiberReaction * frs;
+    FiberReaction * fr;
+    apf::MeshTag * rct_tg;
+    las::LasOps * ops;
     las::Mat * k;
-    las::Vec * f;
+    las::Mat * f;
   public:
-    TrussIntegrator(int o,
-      apf::Numbering * nm,
-      FiberReaction * r,
-      las::skMat * K,
-      las::skVec * F)
-    : apf::Integrator(o)
-    , msh(NULL)
-    , crnt_elmnt(NULL)
-    , u(NULL)
-    , num(nm)
-    , fbr_rctn(r)
-    , lngth()
-    , lngth_o()
-    , nedofs()
-    , dim()
-    , es()
-    , k(K)
-    , f(F)
-    {
-      assert(fbr_rctn);
-      assert(num);
-      assert(k);
-      assert(f);
-      u = apf::getField(num);
-      msh = apf::getMesh(u);
-      dim = msh->getDimension();
-    }
-    // consider making an element since that makes getting the node values a bit easier?
+   TrussIntegrator(apf::Numbering * n, FiberReactions * f, las::LasOps op, las::Mat * k_, las::Vec * f_, int o)
+      : apf::Integrator(o)
+      , u(apf::getField(n))
+      , msh(apf::getMesh(u))
+      , nm(n)
+      , elmt(NULL)
+      , es(NULL)
+      , l(0.0)
+      , l_o(0.0)
+      , dim()
+      , frs(f)
+      , fr()
+      , rct_tg(msh->findTag("fiber_reaction",1))
+      , ops(op)
+      , k(k_)
+      , f(f_)
+    { }
     void inElement(apf::MeshElement * me)
     {
-      ment = apf::getMeshEntity(me);
-      lngth_o = apf::measure(me);
-      lngth = calcDeformedLength(u,ment);
-      nedofs = apf::getElementNumbers(num,ment,dofs);
-      es.resize(nedofs);
-      es.zero();
+      elmt = apf::createElement(u,me)
+      l_o = apf::measure(me);
+      apf::MeshEntity * ent = apf::getMeshEntity(me);
+      l = amsi::measureDisplacedMeshEntity(ent,u);
+      es = amsi::buildApfElementalSystem(elmt,nm);
+      int tg = -1;
+      msh->getIntTag(ent,rct_tg,&tg);
+      fr = frs[tg];
+      dim = msh->getDimension();
     }
     void atPoint(const apf::Vector3 & p, double w, double dV)
     {
@@ -84,16 +76,17 @@ namespace bio
       apf::Vector3 crds[2];
       getCoords(msh,&vs[0],&crds[0],2);
       apf::Vector3 frcs = (crds[1] - crds[0]) / lngth;
-      double f = fbr_rctn->F(lngth,lngth_o);
+      auto f_dfdl = fr->forceReaction(l,l_o);
+      double f = f_dfdl.first;
+      double dfdl = f_dfdl.second;
       double fl = f / lngth;
-      double dfdl = fbr_rctn->dFdl(lngth,lngth_o);
       double dfdl_fl = dfdl - fl;
       double frc = 0.0;
       for(int ii = 0; ii < dim; ii++)
       {
        frc = frcs[ii] * f;
-       es.addToVector(ii      ,-frc);
-       es.addToVector(2*dim+ii, frc);
+       es->fe(ii)       = -frc;
+       es->fe(2*dim+ii) =  frc;
      }
      apf::Matrix3x3 rctn = apf::tensorProduct(frcs,frcs*dfdl_fl) + eye()*fl;
      double op = -1.0;
@@ -105,15 +98,15 @@ namespace bio
          op *= -1.0;
          for(int kk = 0; kk < dim; kk++)
            for(int ll = 0; ll < dim; ll++)
-             es.addToMatrix(ii*dim + kk, jj*dim + ll, rctn[ii][jj] * op);
+             es->ke(ii*dim + kk, jj*dim + ll, rctn[ii][jj] * op);
          }
        }
      }
      void outElement()
      {
-      assembleElementalSystem(k,f,&es,dofs);
+       amsi::assemble(ops,k,f,es);
+       delete es;
     }
-    const ElementalSystem * getElementalSystem() {return &es;}
   };
 }
 #endif

@@ -4,25 +4,28 @@
 #include "lasSparskit.h"
 namespace bio
 {
-  void originCenterUnitCube(std::vector<apf::Vector3> & cbe_crnrs)
+  template <typename O>
+  void originCenterCube(O cbe_crnrs, double crd)
   {
     // ordering of these loops is important to order the nodes correctly from 0-7
     for(int y = -1; y <= 1; y += 2)
       for(int z = 1; z >= -1; z -= 2)
        for(int x = -1; x <= 1; x += 2)
-	 cbe_crnrs.push_back(apf::Vector3(0.5*x,0.5*y,0.5*z));
+	 *cbe_crnrs++ = apf::Vector3(crd*x,crd*y,crd*z);
   }
-  void originCenterUnitSquare(std::vector<apf::Vector3> & cbe_crnrs)
+  template <typename O>
+  void originCenterSquare(O cbe_crnrs, double crd)
   {
-    cbe_crnrs.push_back(apf::Vector3(-0.5,-0.5, 0.0));
-    cbe_crnrs.push_back(apf::Vector3( 0.5,-0.5, 0.0));
-    cbe_crnrs.push_back(apf::Vector3( 0.5, 0.5, 0.0));
-    cbe_crnrs.push_back(apf::Vector3(-0.5, 0.5, 0.0));
+    *cbe_crnrs++ = apf::Vector3(-crd,-crd, 0.0);
+    *cbe_crnrs++ = apf::Vector3( crd,-crd, 0.0);
+    *cbe_crnrs++ = apf::Vector3( crd, crd, 0.0);
+    *cbe_crnrs++ = apf::Vector3(-cdr, crd, 0.0);
   }
   RVE::RVE(int d)
   : dim(d)
-  , hd(0.5)
+  , crd(0.5)
   , cbe(NULL)
+  , cbe_e(NULL)
   , cbe_u_e(NULL)
   , cbe_u(NULL)
   , cbe_dof(NULL)
@@ -30,12 +33,12 @@ namespace bio
     assert(d == 2 | d == 3);
     std::vector<apf::Vector3> cbe_crnrs;
     if(dim == 3)
-      originCenterUnitCube(cbe_crnrs);
+      originCenterUnitCube(cbe_crnrs,hd);
     else if(dim == 2)
-      originCenterUnitSquare(cbe_crnrs);
+      originCenterUnitSquare(cbe_crnrs,hd);
     cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
     apf::MeshIterator * it = cbe->begin(3);
-    apf::MeshEntity * cbe_e = cbe->iterate(it);
+    cbe_e = cbe->iterate(it);
     cbe->end(it);
     cbe_u = apf::createLagrangeField(cbe,"u",apf::VECTOR,1);
     cbe_dof = apf::createNumbering(cbe_u);
@@ -67,35 +70,7 @@ namespace bio
       for(int jj = 0; jj < d; jj++)
 	rve_crds[ii][jj] = gbl_gss[jj] + rve_dim*op[ii+o][jj];
   }
-  // technically the vector should only return the nodes, since if an edge
-  //  had two mid-edge nodes one of them could theoretically by on the boundary
-  //  and the other not, but we will never run into this
-  //  also this is basically a FieldOp...
-  void calcBoundaryNodes(const RVE * rve,
-			 FiberNetwork * fn,
-			 std::vector<apf::MeshEntity*> & bnds)
-  {
-    apf::Mesh * fn_msh = fn->getNetworkMesh();
-    int dim = fn->getDim();
-    for(int d = 0; d < dim; d++)
-    {
-      apf::MeshEntity * me = NULL;
-      apf::MeshIterator * it = NULL;
-      for(it = fn_msh->begin(d); me = fn_msh->iterate(it);)
-      {
-	int nds = fn->getDisplacementField()->countNodesOn(me);
-	for(int nd = 0; nd < nds; nd++)
-	{
-	  apf::Vector3 crd;
-	  fn_msh->getPoint(me,nd,crd);
-	  if(rve->onBoundary(crd))
-	    bnds.push_back(me);
-	}
-      }
-      fn_msh->end(it);
-    }
-  }
-  void applyRVEForceBC(las::skVec * f,
+  void applyRVEForceBC(las::Vec * f,
 		       RVE * rve,
 		       FiberNetwork * fn)
   {

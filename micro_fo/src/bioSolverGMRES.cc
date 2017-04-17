@@ -1,12 +1,12 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "Sparskit_Externs.h"
-#include "RVE_Util.h"
-#include "Util.h"
+#include "bioRVE2.h"
+#include "bioSparskitExterns.h"
+#include "bioRVEUtil.h"
+#include "bioUtil.h"
 #include <cstring> //memset
 #include <amsiUtil.h>
 namespace bio
 {
+  /*
   int MicroFO::Solver()
   {
     int result = 0;
@@ -32,7 +32,7 @@ namespace bio
     // Assembles the Jacobian matrix
     calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],false);
     // Calculates the x,y,z conponents of the fiber force
-    calc_force_vector(&len[0],&fib_str[0]); // resets the force vector to 0.0
+    calc_force_vector(&len[0],&fib_str[0]); // resets the force vector to 0.0 before accumulating values...
     // Calculates boundary conditions of the microscopic problem
     force_vector_bcs();
     // Calculates the norm of the microscopic residuals
@@ -72,6 +72,11 @@ namespace bio
              buffers->colsBuffer(),
              buffers->rowsBuffer());
       for(int ii = 0; ii < num_dofs; ii++)
+      {
+        / *
+          if(fabs(solution[ii]) > 1.0)
+          std::cerr << "solution at position " << ii << " is " << solution[ii] << std::endl;
+        * /
         coordinate_vector[ii] += solution[ii];
       double df = 1.0;
       int ncv = 0;
@@ -93,7 +98,7 @@ namespace bio
         // or nan; when it keeps oscillating even after a lot of iterations
         // (Damping)
         // checking for NaN (f != f is only true if f=NaN)
-        /* COMMENT OUT DAMPING PORTION OF CODE. 
+        / * COMMENT OUT DAMPING PORTION OF CODE. 
         if( current_norm != current_norm || ( (current_norm/previous_norm) > 100.0) || (ncv == 1) )
         {
           std::cout << "damping!" << std::endl;
@@ -106,7 +111,6 @@ namespace bio
           cont = 1;
           ncv = 0;
         }
-	*/
       } while(cont == 1);
       //relative_norm = current_norm;
       if (current_norm != 0)
@@ -181,9 +185,11 @@ namespace bio
       double dfcdx2 = gfunc(ii,1,lengths,fib_str,dfdl);
       double dfcdy2 = gfunc(ii,2,lengths,fib_str,dfdl);
       double dfcdz2 = gfunc(ii,5,lengths,fib_str,dfdl);
+
       double dfsdx2 = dfcdy2;
       double dfsdy2 = gfunc(ii,4,lengths,fib_str,dfdl);
       double dfsdz2 = gfunc(ii,6,lengths,fib_str,dfdl);
+
       double dfzdx2 = dfcdz2;
       double dfzdy2 = dfsdz2;
       double dfzdz2 = gfunc(ii,7,lengths,fib_str,dfdl);
@@ -264,7 +270,7 @@ namespace bio
         matrix[sparse_structure->sparseLocation(node*3+2,node*3+2)] = 1.0;
         con.erase(con.begin(),con.end());
       }
-      /* Affinely deform supported fibers*/
+      // Affinely deform supported fibers
       SupportFiberNetwork * spfn = dynamic_cast<SupportFiberNetwork*>(fiber_network);
       if (spfn)
       {
@@ -376,4 +382,5 @@ namespace bio
       }
     }
   }
+  */
 }

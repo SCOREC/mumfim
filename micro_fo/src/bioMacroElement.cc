@@ -1,7 +1,3 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "RVE_Util.h"
-#include "LagrangeMapping.h"// scorecutil stuff to be taken out eventually
 #include <cstring>
 #include <vector>
 /*
@@ -11,6 +7,7 @@
 */
 namespace bio
 {
+  /*
   using namespace std;
   void MicroFO::create_element_shape_vars(double & vol, double * dvol, double * F)
   {
@@ -268,32 +265,32 @@ namespace bio
   // and with coords by calc_femjacob_newmethod
   void MicroFO::make_dRVEdFE(double * dRVEdFE, double * lcoords)
   {
-    /* Calculates the derivative dxrdx:
+  / * Calculates the derivative dxrdx:
        derivative of the position of RVE edges (nodes?) with respect to the position of the FE nodes
-    */
+    * /
     int rve_dof = 24; //total number of DOF at each RVE = number of vertices (8) x DOF of each vertex (3)
     double xgp=0.0;
     double ygp=0.0;
     double zgp=0.0;
-    /* Size of RVE in terms of physical domain in the
+    / * Size of RVE in terms of physical domain in the
        x, y, and z directions.
-    */
+    * /
     //todo: pull this out of here
     for(int ii = 0; ii < num_rve_doubles * rve_dof; ii++)
       dRVEdFE[ii] = 0;
-    /* find the Gauss (Integration) point where RVE is defined.
+    / * find the Gauss (Integration) point where RVE is defined.
        Gauss point is in terms of Barycentric coordinates (natural coordinates) of
        macroscale tetrahedral finite element.
-    */
+    * /
     double gpx = gauss_pt[0];
     double gpy = gauss_pt[1];
     double gpz = gauss_pt[2];
-    /* Set up the SCOREC lagrange mapping to
+    / * Set up the SCOREC lagrange mapping to
        1. determine xgp, ygp, and zgp, which defines the Gauss point
        in terms of the physical domain.
        2. determine u.x, u.y, and u.z, which define the coordinates of the RVE vertices with respect to
        the natural coordinates (isoparametric representation).
-    */
+    * /
     std::vector<mPoint> knots;
     for(int ii = 0; ii < num_element_nodes; ii++)
     {
@@ -306,14 +303,14 @@ namespace bio
     // determine Gauss points in terms of physical domain.
     if(firstTimeThrough)
     {
-      /*
+      / *
         apf::Vector3 local(gpx,gpy,gpz);
         apf::Vector3 global;
         apf::mapLocalToGlobal(macro_element,local,global);
         xgp = global[0];
         ygp = global[1];
         zgp = global[2];
-      */
+      * /
       lmp.eval(gpx,gpy,gpz,xgp,ygp,zgp);
       /*
       //std::cout<<"xgp, ygp, zgp = "<<xgp<<", "<<ygp<<", "<<zgp<<std::endl;
@@ -329,7 +326,7 @@ namespace bio
       // where PHI is linear tetrahedral shape function defined at gpx, gpy, gpz.
       // lcoords (input to function) contains the physical position of the vertices
       // of the macroscale tetrahedral element.
-      */
+      * /
     }
     int ex_sgn =  1;
     int ey_sgn =  1;
@@ -342,22 +339,22 @@ namespace bio
     {
       ey_sgn *= -1;
       ey = ey_sgn * half_rve_dim;
-      /*
+      / *
         if (ey_sgn < 0)
 	ey = fiber_network->sideCoord(FiberNetwork::BOTTOM)/0.5 * half_rve_dim;
         else
 	ey = fiber_network->sideCoord(FiberNetwork::TOP)/0.5 * half_rve_dim;
-      */
+      * /
       for(int jj = 0; jj < 2; jj++)
       {
 	ez_sgn *= -1;
 	ez = ez_sgn * half_rve_dim;
-	/*
+	/ *
           if (ez_sgn < 0)
 	  ez = fiber_network->sideCoord(FiberNetwork::BACK)/0.5 * half_rve_dim;
           else
 	  ez = fiber_network->sideCoord(FiberNetwork::FRONT)/0.5 * half_rve_dim;
-	*/
+	* /
         for(int kk = 0; kk < 2; kk++)
         {
 	  ex_sgn *= -1;
@@ -367,11 +364,11 @@ namespace bio
 	    ex = fiber_network->sideCoord(FiberNetwork::LEFT)/0.5 * half_rve_dim;
             else
 	    ex = fiber_network->sideCoord(FiberNetwork::RIGHT)/0.5 * half_rve_dim;
-	  */
+	  * /
           /* calculate the coordinates of the vertices of the RVE with respect to physical domain.
              (RVEs are centered at the Gauss point in terms of physical domain (xgp,ygp,zgp)).
              Therefore, the vertices of the RVE is plus/minus half the RVE dimensions in each direction).
-          */
+          * /
           if(firstTimeThrough)
           {
             // Position of the RVE vertices with respect to the physical domain
@@ -394,10 +391,10 @@ namespace bio
           }
           for(int ii = 0; ii < num_rve_doubles / 3; ii++)
           {
-            /* For each vertex of RVE, calculate difference of linear tetrahedral shape functions
+            / * For each vertex of RVE, calculate difference of linear tetrahedral shape functions
                defined on vertex positions (e,n,l) and Gauss point (gpx,gpy,gpz).
                Both are defined with respect to natural coordinates of macroscale tetrahedral element.
-            */
+            * /
             double diff = PHI(ii, e, n, l) - PHI(ii, gpx, gpy, gpz);
             double v = diff / rve_dim;
             dRVEdFE[(3*count)   * num_rve_doubles + ii*3    ] = v;
@@ -449,14 +446,14 @@ namespace bio
   }
   void getdRVEdFE(double* dRVEdFE, const double* FE_disp, const double* RVE_disp)
   {
-    /* Dimensions of variables
+    / * Dimensions of variables
        output:
        dRVEdFE: 24 x 12 = 288. 24 = 8 RVE corners x 3 dofs per corner. 12 = 4 FE nodes x 3 dofs per node.
        intput:
        FE_disp:  4 FE nodes x 3 dofs per node = 12.
        RVE_disp: 8 corner nodex x 3 dofs per node = 24.
-    */
-    /*1. Find displacement at Gauss point. The displacement at this point is identical for both micro and macroscale. */
-    
+    * /
+    / *1. Find displacement at Gauss point. The displacement at this point is identical for both micro and macroscale. * /
   }
+  */
 }

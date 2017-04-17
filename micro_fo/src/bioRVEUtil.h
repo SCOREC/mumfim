@@ -32,12 +32,14 @@ namespace bio
   void tsfun(double phi[], double phic[], double phie[], double phis[], double x, double y, double z);
   void tsfun_2d(double phi[], double phic[], double phie[], double x, double y);
   SparseMatrix * Make_Structure(FiberNetwork *);
+  /*
   void fill_extra_periodic_connections(const std::vector< PBCRelation > & bcs,
                                        FiberNetwork * fiber_network,
                                        SparseMatrix * sparse_struct);
   void store_periodic_locations(const std::vector<PBCRelation> & bcs,
                                 FiberNetwork * fiber_network,
                                 SparseMatrix * sparse_struct);
+  */
   void matrix_multiply(double *amat, int arow, int acol, double *bmat, int brow, int bcol, double *cmat);
   void matrix_multiply_ATranspose(double *amat, int arow, int acol, double *bmat, int brow, int bcol, double *cmat);
   void solve_matrix_system(double *A, double *B, double *soln, int order);

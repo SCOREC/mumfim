@@ -1,11 +1,7 @@
-#include "RVE_Util.h"
-#include "Util.h"
-#include "globals.h"
 // Fiber-only
-#include "RepresentVolElem.h"
-#include "MicroFOMultiscaleTypes.h"
-#include "SparseMatrix.h"
-#include "Sparskit_Externs.h"
+#include "bioRVE.h"
+#include "bioMicroFOMultiscale.h"
+#include "lasSparskit.h"
 // for integration point information (parametric coords)
 #include <apf.h>
 #include <apfMesh.h>
