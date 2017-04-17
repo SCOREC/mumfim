@@ -35,11 +35,11 @@ namespace bio
   };
   struct micro_fo_init_data
   {
-    double init_data[4 * 3];
+    double init_data[6];
   };
   struct micro_fo_data
   {
-    double data[4 * 6]; // 6 for each vertex, assuming tets atm
+    double data[6]; // 6 for each vertex, assuming tets atm
   };
   struct micro_fo_result
   {

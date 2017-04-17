@@ -93,7 +93,7 @@ namespace bio
   }
   void NonlinearTissue::computeInitGuess(amsi::LAS * las)
   {
-    LinearTissue lt(model,mesh,prob_def,analysis_comm);
+    LinearTissue lt(model,mesh,prob_def,strs,strn,analysis_comm);
     lt.setSimulationTime(T);
     LinearSolver(&lt,las);
     las->iter();
