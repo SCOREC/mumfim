@@ -1,3 +1,4 @@
+#include "amsiDeformation.h"
 namespace bio
 {
   template <typename O>
@@ -60,16 +61,15 @@ namespace bio
           algn = (pAttributeTensor0)Attribute_childByType(ornt,"alignment");
         }
         // create new data for microscale
-        apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
-        //apf::Element * eic = apf::createElement(apf_mesh->getCoordinateField(),mlm);
-        //apf::NewArray<apf::Vector3> ic;
-        //apf::getVectorNodes(eic,ic);
-        //int nds = apf::countNodes(eic);
-        apf::Matrix3x3 eps;
-        int ip = apf::countIntPoints(mlm,getOrder(mlm));
+        apf::MeshElement * ml = apf::createMeshElement(apf_mesh,me);
+        apf::Element * e = apf::createElement(apf_primary_field,ml);
+        apf::Matrix3x3 F;
+        int ip = apf::countIntPoints(ml,getOrder(ml));
         for(int ii = 0; ii < ip; ii++)
         {
-          apf::getMatrix(strn,me,ii,eps);
+          apf::Vector3 p;
+          apf::getIntPoint(ml,1,ip,p);
+          amsi::deformationGradient(e,p,F);
           int crt = apf::getScalar(crt_rve,me,ii);
           int prv = apf::getScalar(prv_rve,me,ii);
           if((crt == FIBER_ONLY && prv != FIBER_ONLY) || all)
@@ -97,70 +97,46 @@ namespace bio
             nw_prms = prms;
             ++nw_prms;
             micro_fo_init_data data;
-            //for(int jj = 0; jj < nds; jj++)
-            //ic[jj].toArray(&data.init_data[jj*3]);
-            data.init_data[0] = eps[0][0];
-            data.init_data[1] = eps[1][1];
-            data.init_data[2] = eps[2][2];
-            data.init_data[3] = eps[1][2];
-            data.init_data[4] = eps[0][2];
-            data.init_data[5] = eps[0][1];
-            *nw_data++ = data;
-            //++nw_data;
+            for(int jj = 0; jj < nds; jj++)
+              ic[jj].toArray(&data.init_data[jj*3]);
+            nw_data = data;
+            ++nw_data;
           }
-          apf::destroyMeshElement(mlm);
+          apf::destroyElement(e);
+          apf::destroyMeshElement(ml);
         }
       }
     }
     apf_mesh->end(it);
   }
+  // TODO switchover to using deformation gradient means that we need to know which integration point in the element we are talking about when
+  //      we serialize the RVE data, previously micro already knew this from initialization so it wasn't important at macro
   template <typename O>
     void MultiscaleTissue::serializeRVEData(O o)
   {
-    for(std::list<apf::MeshEntity*>::iterator me = rve_ents.begin(); me != rve_ents.end(); ++me)
+    for(auto me = rve_ents.begin(); me != rve_ents.end(); ++me)
     {
       int rve_cnt = countRVEsOn(*me);
       if(rve_cnt > 0)
       {
-        apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,*me);
-        // apf::Element * e_disp_delta = apf::createElement(delta_u,mlm);
-        // apf::Element * e_disp = apf::createElement(apf_primary_field,mlm);
-        // apf::Element * e_init_coords = apf::createElement(apf_mesh->getCoordinateField(),mlm);
+        apf::MeshElement * ml = apf::createMeshElement(apf_mesh,*me);
+        apf::Element * e = apf::createElement(apf_primary_field,ml);
+        apf::Matrix3x3 F;
+        //int ip = apf::countIntPoints(ml,getOrder(ml));
         rslt_mp[*me].resize(rve_cnt);
-        /*
-        // disp_deltas holds the solutions of the Newton-Raphson Procedure for the macroscale solve.
-        apf::NewArray<apf::Vector3> disp_deltas;
-        apf::getVectorNodes(e_disp_delta,disp_deltas);
-        // total_disp holds the accumulation of disp_deltas (total amount displaced from intial configuration).
-        apf::NewArray<apf::Vector3> total_disp;
-        apf::getVectorNodes(e_disp,total_disp);
-        apf::NewArray<apf::Vector3> init_coords;
-        apf::getVectorNodes(e_init_coords,init_coords);
-        int num_nodes = apf::countNodes(e_disp);
-        */
-        apf::Matrix3x3 eps;
         for(int ii = 0; ii < rve_cnt; ii++)
         {
-          apf::getMatrix(strn,*me,ii,eps);
-          micro_fo_data fo_data; // fo_data stores macroscale displacement data that is sent to microscale.
-          /*
-          for(int node = 0; node < num_nodes; node++)
-          {
-            apf::Vector3 current_coords = init_coords[node] + total_disp[node];
-            current_coords.toArray(&fo_data.data[node*3]);
-            apf::Vector3 disp_delta = disp_deltas[node];
-            disp_delta.toArray(&fo_data.data[node*3 + num_nodes*3]);
-          }
-          */
-          fo_data.data[0] = eps[0][0];
-          fo_data.data[1] = eps[1][1];
-          fo_data.data[2] = eps[2][2];
-          fo_data.data[3] = eps[1][2];
-          fo_data.data[4] = eps[0][2];
-          fo_data.data[5] = eps[0][1];
-          *o++ = fo_data;
+          apf::Vector3 p;
+          apf::getIntPoint(ml,1,ii,p);
+          amsi::deformationGradient(e,p,F);
+          micro_fo_data data;
+          for(int ii = 0; ii < 3; ++ii)
+              for(int jj = 0; jj < 3; ++jj)
+                data.data[ii*3 + jj] = F[ii][jj];
+          *o++ = data;
         }
-        apf::destroyMeshElement(mlm);
+        apf::destroyElement(e);
+        apf::destroyMeshElement(ml);
       }
     }
   }
