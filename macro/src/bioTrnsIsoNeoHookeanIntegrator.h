@@ -14,8 +14,8 @@ namespace bio
   public:
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
-		                   apf::Field * stf_vrtn,
-		                   apf::Field * axl_yngs_mod,
+                                   apf::Field * stf_vrtn,
+                                   apf::Field * axl_yngs_mod,
                        double youngs_modulus,
                        double poisson_ratio,
                        double * axis,
@@ -183,9 +183,9 @@ namespace bio
       double EA = 0.0;
       double stf_vrtn_coeff = apf::getScalar(stf_vrtn_fld, apf::getMeshEntity(me), current_integration_point);
       if (stf_vrtn_coeff > 0.0)
-	EA = stf_vrtn_coeff * ET + (1.0 - stf_vrtn_coeff) * AxialYoungsModulus;
+        EA = stf_vrtn_coeff * ET + (1.0 - stf_vrtn_coeff) * AxialYoungsModulus;
       else
-	EA = AxialYoungsModulus;
+        EA = AxialYoungsModulus;
 
       apf::setScalar(EA_fld, apf::getMeshEntity(me), current_integration_point, EA);
       double n = ( 2.0 * mu * (1.0 + nu) )/EA; // Note typo in paper.
