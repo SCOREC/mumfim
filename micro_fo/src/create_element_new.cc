@@ -24,6 +24,7 @@ namespace bio
       // Calculation of dxrdx
       make_dRVEdFE(dxrdx,&initial_coords[0]);
 //      make_dRVEdFE(dxrdx,coords);
+/* old implementation
       // Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
       double rvedisp[24];
       matrix_multiply(dxrdx,
@@ -33,6 +34,12 @@ namespace bio
                       num_rve_doubles,
                       1,
                       rvedisp);
+*/
+      /* New implementation using deformation gradient*/
+      double F[9] = {1,0,0,0,1,0,0,0,1}; // deformation gradient tensor will be passed in from macroscale.
+      double rvedisp[24] = {};
+      getRVECornerDisp(F,rvedisp);
+      
 /*
       AMSI_DEBUG(std::cout <<"fedisp:"<<"("<<fedisp[0]<<","<<fedisp[1]<<","<<fedisp[2]<<")"
                                      <<", ("<<fedisp[3]<<","<<fedisp[4]<<","<<fedisp[5]<<")"
@@ -452,5 +459,46 @@ namespace bio
         }
       }
     }
+  }
+  void MicroFO::getRVECornerDisp(const double F[], double rvedisp[])
+  {
+    int ex_sgn = 1;
+    int ey_sgn = 1;
+    int ez_sgn = -1;
+    double ex = 0; double ey = 0; double ez = 0;
+    int RVEnode = 0;
+    double I = 0;
+    double X[3] = {};
+    double u[3] = {};
+    double RVE_nondim_lngth = 1.0; // nondimensionalized length of RVE box.
+    for (int y = 0; y < 2; ++y)
+    {
+      ey_sgn *= -1;
+      ey = ey_sgn * RVE_nondim_lngth/2.0;
+      for (int z = 0; z < 2; ++z)
+      {
+	ez_sgn *= -1;
+	ez = ez_sgn * RVE_nondim_lngth/2.0;
+	for (int x = 0; x < 2; ++x)
+	{
+	  ex_sgn *= -1;
+	  ex = ex_sgn * RVE_nondim_lngth/2.0;
+	  X[0] = ex; X[1] = ey; X[2] = ez;
+	  for (int i = 0; i < 2; ++i)
+	    for (int j = 0; j < 2; ++j)
+	    {
+	      if (i == j)
+		I = 1.0;
+	      u[i] = (F[i*3 + j] - I)*X[j];
+	      I = 0.0;
+	    }
+	  RVEnode++;
+	  rvedisp[RVEnode * 3] = u[0];
+	  rvedisp[RVEnode * 3 + 1] = u[1];
+	  rvedisp[RVEnode * 3 + 2] = u[2];
+	}
+      }
+    }
+      
   }
 }
