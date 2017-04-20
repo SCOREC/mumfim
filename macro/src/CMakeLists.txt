@@ -29,9 +29,9 @@ set(biotissue_src_files
   bioTissueAnalysis.cc
   bioTissueMultiscaleAnalysis.cc
   bioVolumeConstraint.cc
-  bioStiffnessVariation.cc)
+  bioStiffnessVariation.cc
   bioVolumeConvergence.cc)
-  
+
 find_package(amsi COMPONENTS util analysis multiscale)
 
 add_library(biotissue ${biotissue_src_files} ${biotissue_public_headers})
