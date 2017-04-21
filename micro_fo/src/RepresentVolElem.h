@@ -153,6 +153,7 @@ namespace bio
                                    double * dvol,
                                    double * fedisp);
     void make_dRVEdFE(double * dRVEdFE,double * lcoords);
+    void getRVECornerDisp(const double F[], double rvedisp[]);
     int Solver();
     int Solver_Beam();
     void calc_precond(double * matrix,
