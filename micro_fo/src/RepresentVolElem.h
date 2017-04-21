@@ -43,9 +43,8 @@ namespace bio
     void UpdateNodeArray();
     double calc_stiffness(); // Temporary for size effect test
     // setup the current coordinates and the disp - need to be updated incrementally
-    void SetDisplacement(double * displacement);
-    void SetDeformationGradient(int gauss_pt, double * grad);  // get deformation gradient at gauss point i
-    void SetDeformationGradients(double * grads);
+    void setDisplacement(double * displacement);
+    void setDeformationGradient(double * grad){deformation_gradient = grad;}  // get deformation gradient at gauss point i
     void eval_derivstress( double *dSdx);
     void getRVEs(double *ss);
     void setResults(double * ss);
@@ -107,6 +106,8 @@ namespace bio
     double * coords;
     std::vector<double> initial_coords;
     double * displacement;
+    // The deformation gradient
+    double * deformation_gradient;
     // Macroscale element information
     //apf::Mesh2 * element_mesh;
     //apf::MeshEntity * macro_entity;
