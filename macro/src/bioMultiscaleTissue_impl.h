@@ -97,10 +97,10 @@ namespace bio
             nw_prms = prms;
             ++nw_prms;
             micro_fo_init_data data;
-            for(int jj = 0; jj < nds; jj++)
-              ic[jj].toArray(&data.init_data[jj*3]);
-            nw_data = data;
-            ++nw_data;
+            for(int ii = 0; ii < 3; ++ii)
+              for(int jj = 0; jj < 3; ++jj)
+                data.init_data[ii*3 + jj] = F[ii][jj];
+            *nw_data++ = data;
           }
           apf::destroyElement(e);
           apf::destroyMeshElement(ml);
@@ -131,8 +131,8 @@ namespace bio
           amsi::deformationGradient(e,p,F);
           micro_fo_data data;
           for(int ii = 0; ii < 3; ++ii)
-              for(int jj = 0; jj < 3; ++jj)
-                data.data[ii*3 + jj] = F[ii][jj];
+            for(int jj = 0; jj < 3; ++jj)
+              data.data[ii*3 + jj] = F[ii][jj];
           *o++ = data;
         }
         apf::destroyElement(e);
