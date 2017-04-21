@@ -14,7 +14,7 @@ namespace bio
   using namespace std;
   void MicroFO::create_element_shape_vars(double & vol,
                                           double * dvol,
-                                          double * fedisp)
+                                          double * F)
     {
       double ddett[24];
       double dett;
@@ -23,58 +23,11 @@ namespace bio
       double dxrdx[24 * num_rve_doubles];
       // Calculation of dxrdx
       make_dRVEdFE(dxrdx,&initial_coords[0]);
-//      make_dRVEdFE(dxrdx,coords);
-/* old implementation
-      // Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
-      double rvedisp[24];
-      matrix_multiply(dxrdx,
-                      24,
-                      num_rve_doubles,
-                      fedisp,
-                      num_rve_doubles,
-                      1,
-                      rvedisp);
-*/
+
       /* New implementation using deformation gradient*/
-      double F[9] = {1,0,0,0,1,0,0,0,1}; // deformation gradient tensor will be passed in from macroscale.
       double rvedisp[24] = {};
       getRVECornerDisp(F,rvedisp);
-      
-/*
-      AMSI_DEBUG(std::cout <<"fedisp:"<<"("<<fedisp[0]<<","<<fedisp[1]<<","<<fedisp[2]<<")"
-                                     <<", ("<<fedisp[3]<<","<<fedisp[4]<<","<<fedisp[5]<<")"
-                                     <<", ("<<fedisp[6]<<","<<fedisp[7]<<","<<fedisp[8]<<")"
-                                     <<", ("<<fedisp[9]<<","<<fedisp[10]<<","<<fedisp[11]<<")"
-                                     <<std::endl);
-      AMSI_DEBUG(std::cout <<"rvedisp:"<<"("<<rvedisp[0]<<","<<rvedisp[1]<<","<<rvedisp[2]<<")"
-                                     <<", ("<<rvedisp[3]<<","<<rvedisp[4]<<","<<rvedisp[5]<<")"
-                                     <<", ("<<rvedisp[6]<<","<<rvedisp[7]<<","<<rvedisp[8]<<")"
-                                     <<", ("<<rvedisp[9]<<","<<rvedisp[10]<<","<<rvedisp[11]<<")"
-                                     <<", ("<<rvedisp[12]<<","<<rvedisp[13]<<","<<rvedisp[14]<<")"
-                                     <<", ("<<rvedisp[15]<<","<<rvedisp[16]<<","<<rvedisp[17]<<")"
-                                     <<", ("<<rvedisp[18]<<","<<rvedisp[19]<<","<<rvedisp[20]<<")"
-                                     <<", ("<<rvedisp[21]<<","<<rvedisp[22]<<","<<rvedisp[23]<<")"
-                 <<std::endl);
 
-      // manually modify rvedisp set vertices 0, 2, 4, and 6 of rve to be (0,0,0).
-      // vertex 0
-      rvedisp[0] = 0.0; rvedisp[1] = 0.0; rvedisp[2] = 0.0;
-      // vertex 2
-      rvedisp[6] = 0.0; rvedisp[7] = 0.0; rvedisp[8] = 0.0;
-      // vertex 4
-      rvedisp[12] = 0.0; rvedisp[13] = 0.0; rvedisp[14] = 0.0;
-      // vertex 6
-      rvedisp[18] = 0.0; rvedisp[19] = 0.0; rvedisp[20] = 0.0;
-      std::cout <<"modified rvedisp:"<<"("<<rvedisp[0]<<","<<rvedisp[1]<<","<<rvedisp[2]<<")"
-                                                <<", ("<<rvedisp[3]<<","<<rvedisp[4]<<","<<rvedisp[5]<<")"
-                                                <<", ("<<rvedisp[6]<<","<<rvedisp[7]<<","<<rvedisp[8]<<")"
-                                                <<", ("<<rvedisp[9]<<","<<rvedisp[10]<<","<<rvedisp[11]<<")"
-                                                <<", ("<<rvedisp[12]<<","<<rvedisp[13]<<","<<rvedisp[14]<<")"
-                                                <<", ("<<rvedisp[15]<<","<<rvedisp[16]<<","<<rvedisp[17]<<")"
-                                                <<", ("<<rvedisp[18]<<","<<rvedisp[19]<<","<<rvedisp[20]<<")"
-                                                <<", ("<<rvedisp[21]<<","<<rvedisp[22]<<","<<rvedisp[23]<<")"
-      << std::endl;
-*/      
       // To test fiber only RVE (boundary conditions)
       if(FIBER_ONLY_SIZE_EFFECT_TEST)
       {

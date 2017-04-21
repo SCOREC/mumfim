@@ -136,8 +136,7 @@ namespace bio
     apf::Vector3 rve[8];
     apf::Vector3 u[8];
     //The following are the functions that must access the variables
-    int main_solver(double * coords_loc,
-                    double * fedisp,
+    int main_solver(double * deformation_grad,
                     double & local_S11, double & local_S12, double & local_S13,
                     double & local_S22, double & local_S23,
                     double & local_S33,
@@ -146,13 +145,14 @@ namespace bio
                     double & loc_vastry,
                     double & loc_vastrz,
                     double & fem_res_norm);
+
     // map node dof values to solution vector
     void update_coordinate_vector();
     // map solution vector values to node dof values
     void update_nodes();
     void create_element_shape_vars(double & vol,
                                    double * dvol,
-                                   double * fedisp);
+                                   double * deform_grad);
     void make_dRVEdFE(double * dRVEdFE,double * lcoords);
     void getRVECornerDisp(const double F[], double rvedisp[]);
     int Solver();

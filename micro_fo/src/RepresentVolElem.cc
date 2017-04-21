@@ -258,8 +258,7 @@ double MicroFO::PHI(int i, double u, double v, double w)
       post_migration = false;
     }
     // wrap on the main_solver
-    main_solver(coords,
-                displacement,
+    main_solver(deformation_gradient,
                 rve_info[0], rve_info[1], rve_info[2],
                 rve_info[3], rve_info[4],
                 rve_info[5], // average stress
