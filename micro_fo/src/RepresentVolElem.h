@@ -154,6 +154,7 @@ namespace bio
                                    double * dvol,
                                    double * deform_grad);
     void make_dRVEdFE(double * dRVEdFE,double * lcoords);
+    void getdRVEdFE(double * dRVEdFE, const double* FE_disp, const double* RVE_disp);
     void getRVECornerDisp(const double F[], double rvedisp[]);
     int Solver();
     int Solver_Beam();

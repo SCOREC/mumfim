@@ -446,12 +446,23 @@ namespace bio
 	      I = 0.0;
 	    }
 	  RVEnode++;
-	  rvedisp[RVEnode * 3] = u[0];
-	  rvedisp[RVEnode * 3 + 1] = u[1];
-	  rvedisp[RVEnode * 3 + 2] = u[2];
+	  rvedisp[RVEnode * 3] = u[0]/scale_conversion;
+	  rvedisp[RVEnode * 3 + 1] = u[1]/scale_conversion;
+	  rvedisp[RVEnode * 3 + 2] = u[2]/scale_conversion;
 	}
       }
     }
-      
+  }
+  void getdRVEdFE(double* dRVEdFE, const double* FE_disp, const double* RVE_disp)
+  {
+    /* Dimensions of variables
+       output:
+              dRVEdFE: 24 x 12 = 288. 24 = 8 RVE corners x 3 dofs per corner. 12 = 4 FE nodes x 3 dofs per node.
+       intput:
+              FE_disp:  4 FE nodes x 3 dofs per node = 12.
+	      RVE_disp: 8 corner nodex x 3 dofs per node = 24.
+    */
+    /*1. Find displacement at Gauss point. The displacement at this point is identical for both micro and macroscale. */
+    
   }
 }

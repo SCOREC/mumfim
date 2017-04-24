@@ -61,12 +61,12 @@ namespace bio
        S_ij = 1/V \sum_{boundary cross-links} x_i F_j
        Volume averaged stresses are dimensionalized by multiplying by scale_conversion.
     */
-    local_S11 = (stress[0] / vol) * scale_conversion;
-    local_S12 = (stress[1] / vol) * scale_conversion;
-    local_S13 = (stress[2] / vol) * scale_conversion;
-    local_S22 = (stress[3] / vol) * scale_conversion;
-    local_S23 = (stress[4] / vol) * scale_conversion;
-    local_S33 = (stress[5] / vol) * scale_conversion;
+    local_S11 = (stress[0] / vol) * scale_conversion * scale_conversion;
+    local_S12 = (stress[1] / vol) * scale_conversion * scale_conversion;
+    local_S13 = (stress[2] / vol) * scale_conversion * scale_conversion;
+    local_S22 = (stress[3] / vol) * scale_conversion * scale_conversion;
+    local_S23 = (stress[4] / vol) * scale_conversion * scale_conversion;
+    local_S33 = (stress[5] / vol) * scale_conversion * scale_conversion;
     // todo (m) : hacky, change/fix this
     /*
     double orientation_tensor[9]={};
