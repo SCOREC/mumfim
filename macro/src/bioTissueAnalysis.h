@@ -34,7 +34,6 @@ namespace bio
     TissueAnalysis(pGModel, pParMesh, pACase, MPI_Comm);
     ~TissueAnalysis();
     virtual void run();
-  protected:
     virtual void init();
     virtual void checkpoint();
     virtual void revert();

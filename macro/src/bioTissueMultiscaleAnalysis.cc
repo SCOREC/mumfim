@@ -58,6 +58,7 @@ namespace bio
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg = new MultiscaleConvergence(cvg_stps.begin(),cvg_stps.end(),cplng);
+    ((MultiscaleTissue*)tssu)->initMicro();
     // output params
     std::ostringstream cnvrt;
     cnvrt << rnk;

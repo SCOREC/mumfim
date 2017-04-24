@@ -33,9 +33,7 @@ namespace bio
     , frc_itms()
     , dsp_itms()
     , vol_itms()
-  {
-    init();
-  }
+  { }
   TissueAnalysis::~TissueAnalysis()
   {
     delete cvg;

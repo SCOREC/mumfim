@@ -19,7 +19,7 @@ namespace bio
     { }
     virtual bool converged()
     {
-      bool rslt = MultiscaleConvergence::converged();
+      bool rslt = MultiConvergence::converged();
       cs->scaleBroadcast(cplg,&rslt);
       return rslt;
     }
