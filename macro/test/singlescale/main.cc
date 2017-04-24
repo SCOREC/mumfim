@@ -123,7 +123,9 @@ int main(int argc, char ** argv)
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; )
     {
       amsi::initCase(mdl,cs);
-      bio::TissueAnalysis(mdl,msh,cs,AMSI_COMM_WORLD).run();
+      bio::TissueAnalysis an(mdl,msh,cs,AMSI_COMM_WORLD);
+      an.init();
+      an.run();
       amsi::freeCase(cs);
     }
     if(rnk > 0)

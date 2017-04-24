@@ -390,6 +390,19 @@ void MicroFO::eval_derivstress(double * dSdx)
 {
   memcpy(dSdx, rve_info + 9, 6 * num_rve_doubles * sizeof(double));
 }
+void MicroFO::SetDeformationGradient(int guass_pt, double * grad)
+{
+  for (int ii = 0; ii < 3; ii++) // ii = j
+    for (int jj = 0; jj < 3; jj++) // jj = k
+      F[ii][jj] = grad[guass_pt*9 + ii*3 + jj];
+}
+void MicroFO::SetDeformationGradients(double * grads)
+{
+  for(int ii = 0; ii < 8; ii++)  //loop over 8 vertices
+    for(int jj = 0; jj < 3; jj++)
+      for(int kk = 0; kk < 3; kk++)
+        FItp[ii][jj][kk] = grads[ii*9 + jj*3 + kk];
+}
 void MicroFO::collectMigrationData()
 {
   // Make sure lists are cleared
