@@ -44,7 +44,7 @@ namespace bio
     double calc_stiffness(); // Temporary for size effect test
     // setup the current coordinates and the disp - need to be updated incrementally
     void setDisplacement(double * displacement);
-    void setDeformationGradient(double * grad){deformation_gradient = grad;}  // get deformation gradient at gauss point i
+    void setDeformationGradient(double * grad) { deformation_gradient = grad; }  // set deformation gradient at gauss point i
     void eval_derivstress( double *dSdx);
     void getRVEs(double *ss);
     void setResults(double * ss);

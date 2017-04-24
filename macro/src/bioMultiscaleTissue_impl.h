@@ -62,8 +62,12 @@ namespace bio
         }
         // create new data for microscale
         apf::MeshElement * ml = apf::createMeshElement(apf_mesh,me);
-        apf::Element * e = apf::createElement(apf_primary_field,ml);
+        apf::Element * e  = apf::createElement(apf_primary_field,ml);
+        apf::Element * ce = apf::createElement(apf_mesh->getCoordinateField(),ml);
         apf::Matrix3x3 F;
+        apf::NewArray<apf::Vector3> Ni;
+        apf::getVectorNodes(ce,Ni);
+        int nds = apf::countNodes(ce);
         int ip = apf::countIntPoints(ml,getOrder(ml));
         for(int ii = 0; ii < ip; ii++)
         {
@@ -82,8 +86,7 @@ namespace bio
             hdr.data[GAUSS_ID]       = ii;
             hdr.data[FIBER_REACTION] = fbr_rctn;
             hdr.data[IS_ORIENTED]    = orntd;
-            nw_hdrs = hdr;
-            ++nw_hdrs;
+            *nw_hdrs++ = hdr;
             micro_fo_params prms;
             prms.data[FIBER_RADIUS]    = AttributeTensor0_value(fbr_rd);
             prms.data[VOLUME_FRACTION] = AttributeTensor0_value(vl_frc);
@@ -94,12 +97,10 @@ namespace bio
             prms.data[ORIENTATION_AXIS_Y] = orntd ? AttributeTensor1_value(axs,1) : 0.0;
             prms.data[ORIENTATION_AXIS_Z] = orntd ? AttributeTensor1_value(axs,2) : 0.0;
             prms.data[ORIENTATION_ALIGN]  = orntd ? AttributeTensor0_value(algn) : 0.0;
-            nw_prms = prms;
-            ++nw_prms;
+            *nw_prms++ = prms;
             micro_fo_init_data data;
-            for(int ii = 0; ii < 3; ++ii)
-              for(int jj = 0; jj < 3; ++jj)
-                data.init_data[ii*3 + jj] = F[ii][jj];
+            for(int jj = 0; jj < nds; ++jj)
+              Ni[jj].toArray(&data.init_data[jj*3]);
             *nw_data++ = data;
           }
           apf::destroyElement(e);
