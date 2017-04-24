@@ -22,7 +22,8 @@ namespace bio
   void MultiscaleTissueIteration::iterate()
   {
     std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
-    tssu->updateMicro();
+    if(iteration() == 0)
+      tssu->updateMicro();
     las->iter();
     LinearSolver(tssu,las);
     tssu->iter();
