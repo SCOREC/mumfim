@@ -437,18 +437,18 @@ namespace bio
 	  ex_sgn *= -1;
 	  ex = ex_sgn * RVE_nondim_lngth/2.0;
 	  X[0] = ex; X[1] = ey; X[2] = ez;
-	  for (int i = 0; i < 2; ++i)
-	    for (int j = 0; j < 2; ++j)
+	  for (int i = 0; i < 3; ++i)
+	    for (int j = 0; j < 3; ++j)
 	    {
 	      if (i == j)
 		I = 1.0;
-	      u[i] = (F[i*3 + j] - I)*X[j];
+	      u[i] += (F[i*3 + j] - I)*X[j];
 	      I = 0.0;
 	    }
-	  RVEnode++;
-	  rvedisp[RVEnode * 3] = u[0]/scale_conversion;
-	  rvedisp[RVEnode * 3 + 1] = u[1]/scale_conversion;
-	  rvedisp[RVEnode * 3 + 2] = u[2]/scale_conversion;
+	  rvedisp[RVEnode * 3] = u[0];
+	  rvedisp[RVEnode * 3 + 1] = u[1];
+	  rvedisp[RVEnode * 3 + 2] = u[2];
+	  RVEnode++; u[0] = 0.0; u[1] = 0.0; u[2] = 0.0;
 	}
       }
     }
