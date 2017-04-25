@@ -96,7 +96,9 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
     {
       amsi::initCase(mdl,cs);
-      bio::MultiscaleTissueAnalysis(mdl,msh,cs,cm).run();
+      bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
+      an.init();
+      an.run();
       amsi::freeCase(cs);
     }
   } catch (pSimError err) {

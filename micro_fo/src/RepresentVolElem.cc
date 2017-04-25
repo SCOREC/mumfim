@@ -391,8 +391,7 @@ void MicroFO::eval_derivstress(double * dSdx)
 {
   memcpy(dSdx, rve_info + 9, 6 * num_rve_doubles * sizeof(double));
 }
-void MicroFO::SetDeformationGradient(int guass_pt,
-                                     double * grad)
+void MicroFO::SetDeformationGradient(int guass_pt, double * grad)
 {
   for (int ii = 0; ii < 3; ii++) // ii = j
     for (int jj = 0; jj < 3; jj++) // jj = k
