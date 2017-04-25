@@ -71,6 +71,7 @@ namespace bio
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
+    cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
     std::stringstream cnvrt;
