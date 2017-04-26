@@ -415,42 +415,23 @@ namespace bio
   }
   void MicroFO::getRVECornerDisp(const double F[], double rvedisp[])
   {
-    int ex_sgn = 1;
-    int ey_sgn = 1;
-    int ez_sgn = -1;
-    double ex = 0; double ey = 0; double ez = 0;
-    int RVEnode = 0;
-    double I = 0;
-    double X[3] = {};
-    double u[3] = {};
-    double RVE_nondim_lngth = 1.0; // nondimensionalized length of RVE box.
-    for (int y = 0; y < 2; ++y)
+    double u[3] = {}; double I = 0;
+    for (int RVE_nd = 0; RVE_nd < 8; ++RVE_nd)
     {
-      ey_sgn *= -1;
-      ey = ey_sgn * RVE_nondim_lngth/2.0;
-      for (int z = 0; z < 2; ++z)
+      for (int i = 0; i < 3; ++i)
       {
-	ez_sgn *= -1;
-	ez = ez_sgn * RVE_nondim_lngth/2.0;
-	for (int x = 0; x < 2; ++x)
+	for (int j = 0; j < 3; ++j)
 	{
-	  ex_sgn *= -1;
-	  ex = ex_sgn * RVE_nondim_lngth/2.0;
-	  X[0] = ex; X[1] = ey; X[2] = ez;
-	  for (int i = 0; i < 3; ++i)
-	    for (int j = 0; j < 3; ++j)
-	    {
-	      if (i == j)
-		I = 1.0;
-	      u[i] += (F[i*3 + j] - I)*X[j];
-	      I = 0.0;
-	    }
-	  rvedisp[RVEnode * 3] = u[0];
-	  rvedisp[RVEnode * 3 + 1] = u[1];
-	  rvedisp[RVEnode * 3 + 2] = u[2];
-	  RVEnode++; u[0] = 0.0; u[1] = 0.0; u[2] = 0.0;
+	  if (i == j)
+	    I = 1.0;
+	  u[i] += (F[i*3 + j] - I)*rve[RVE_nd][j];
+	  I = 0.0;
 	}
       }
+      rvedisp[RVE_nd * 3] = u[0];
+      rvedisp[RVE_nd * 3 + 1] = u[1];
+      rvedisp[RVE_nd * 3 + 2] = u[2];
+      u[0] = 0.0; u[1] = 0.0; u[2] = 0.0;
     }
   }
   void getdRVEdFE(double* dRVEdFE, const double* FE_disp, const double* RVE_disp)

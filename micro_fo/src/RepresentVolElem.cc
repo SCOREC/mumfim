@@ -155,7 +155,7 @@ namespace bio
 //    rve_dim = 1.0;
     half_rve_dim = 0.5 * rve_dim;
 //    scale_conversion = 1.0 / (rve_dim * rve_dim);
-    scale_conversion = 7.0; //L
+    scale_conversion = 1.0; //L
     fiber_types.resize(1);
   }
   void MicroFO::SetRveCorners()
