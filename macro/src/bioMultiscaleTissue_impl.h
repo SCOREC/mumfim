@@ -121,8 +121,7 @@ namespace bio
       if(rve_cnt > 0)
       {
         apf::MeshElement * ml = apf::createMeshElement(apf_mesh,*me);
-//        apf::Element * e = apf::createElement(apf_primary_field,ml);
-	apf::Element * e = apf::createElement(delta_u,ml);
+        apf::Element * e = apf::createElement(apf_primary_field,ml);
         apf::Matrix3x3 F;
         //int ip = apf::countIntPoints(ml,getOrder(ml));
         rslt_mp[*me].resize(rve_cnt);

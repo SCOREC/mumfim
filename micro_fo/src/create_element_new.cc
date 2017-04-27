@@ -415,6 +415,20 @@ namespace bio
   }
   void MicroFO::getRVECornerDisp(const double F[], double rvedisp[])
   {
+    // Reference coordinates of RVE. X[node index][component index]:
+    apf::Vector3 X[8];
+    X[0][0] = -0.5; X[0][1] = -0.5; X[0][2] = 0.5;
+    X[1][0] = 0.5;  X[1][1] = -0.5; X[1][2] = 0.5;
+    X[2][0] = -0.5; X[2][1] = -0.5; X[2][2] = -0.5;
+    X[3][0] = 0.5;  X[3][1] = -0.5; X[3][2] = -0.5;
+    X[4][0] = -0.5; X[4][1] = 0.5;  X[4][2] = 0.5;
+    X[5][0] = 0.5;  X[5][1] = 0.5;  X[5][2] = 0.5;
+    X[6][0] = -0.5; X[6][1] = 0.5;  X[6][2] = -0.5;
+    X[7][0] = 0.5;  X[7][1] = 0.5;  X[7][2] = -0.5;
+
+    // incremental displacement, u_inc.
+    double u_inc[3] = {};
+    // total displacement, u.
     double u[3] = {}; double I = 0;
     for (int RVE_nd = 0; RVE_nd < 8; ++RVE_nd)
     {
@@ -424,14 +438,17 @@ namespace bio
 	{
 	  if (i == j)
 	    I = 1.0;
-	  u[i] += (F[i*3 + j] - I)*rve[RVE_nd][j];
+	  u[i] += (F[i*3 + j] - I)*X[RVE_nd][j];
 	  I = 0.0;
 	}
+	// rve - X = previous displacement.
+	u_inc[i] = u[i] - (rve[RVE_nd][i] - X[RVE_nd][i]);
       }
-      rvedisp[RVE_nd * 3] = u[0];
-      rvedisp[RVE_nd * 3 + 1] = u[1];
-      rvedisp[RVE_nd * 3 + 2] = u[2];
+      rvedisp[RVE_nd * 3] = u_inc[0];
+      rvedisp[RVE_nd * 3 + 1] = u_inc[1];
+      rvedisp[RVE_nd * 3 + 2] = u_inc[2];
       u[0] = 0.0; u[1] = 0.0; u[2] = 0.0;
+      u_inc[0] = 0.0; u_inc[1] = 0.0; u_inc[2] = 0.0;
     }
   }
   void getdRVEdFE(double* dRVEdFE, const double* FE_disp, const double* RVE_disp)
