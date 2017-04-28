@@ -61,13 +61,12 @@ namespace bio
        S_ij = 1/V \sum_{boundary cross-links} x_i F_j
        Volume averaged stresses are dimensionalized by multiplying by scale_conversion.
     */
-    double scaleL2 = scale_conversion * scale_conversion;
-    local_S11 = (stress[0] / vol) * scaleL2;
-    local_S12 = (stress[1] / vol) * scaleL2;
-    local_S13 = (stress[2] / vol) * scaleL2;
-    local_S22 = (stress[3] / vol) * scaleL2;
-    local_S23 = (stress[4] / vol) * scaleL2;
-    local_S33 = (stress[5] / vol) * scaleL2;
+    local_S11 = (stress[0] / vol) * scale_conversion;
+    local_S12 = (stress[1] / vol) * scale_conversion;
+    local_S13 = (stress[2] / vol) * scale_conversion;
+    local_S22 = (stress[3] / vol) * scale_conversion;
+    local_S23 = (stress[4] / vol) * scale_conversion;
+    local_S33 = (stress[5] / vol) * scale_conversion;
     // todo (m) : hacky, change/fix this
     /*
     double orientation_tensor[9]={};
@@ -221,15 +220,14 @@ namespace bio
        The expression to determine dSdxr is obtained (I believe) by taking the directional derivative
        of the volume averaged stresses with respect to the positions of the RVE vertex positions.
     */
-    double scaleL2 = scale_conversion * scale_conversion; //L^2
     for(int jj = 0; jj < 24; jj++)
     {
-      dSdxr[0*24 + jj] = ((dsdxr[0*24 + jj]/vol) - (dvol[jj]*stress[0]) / (vol*vol)) * scaleL2;
-      dSdxr[1*24 + jj] = ((dsdxr[1*24 + jj]/vol) - (dvol[jj]*stress[1]) / (vol*vol)) * scaleL2;
-      dSdxr[2*24 + jj] = ((dsdxr[2*24 + jj]/vol) - (dvol[jj]*stress[2]) / (vol*vol)) * scaleL2;
-      dSdxr[3*24 + jj] = ((dsdxr[3*24 + jj]/vol) - (dvol[jj]*stress[3]) / (vol*vol)) * scaleL2;
-      dSdxr[4*24 + jj] = ((dsdxr[4*24 + jj]/vol) - (dvol[jj]*stress[4]) / (vol*vol)) * scaleL2;
-      dSdxr[5*24 + jj] = ((dsdxr[5*24 + jj]/vol) - (dvol[jj]*stress[5]) / (vol*vol)) * scaleL2;
+      dSdxr[0*24 + jj] = ((dsdxr[0*24 + jj]/vol) - (dvol[jj]*stress[0]) / (vol*vol)) * scale_conversion;
+      dSdxr[1*24 + jj] = ((dsdxr[1*24 + jj]/vol) - (dvol[jj]*stress[1]) / (vol*vol)) * scale_conversion;
+      dSdxr[2*24 + jj] = ((dsdxr[2*24 + jj]/vol) - (dvol[jj]*stress[2]) / (vol*vol)) * scale_conversion;
+      dSdxr[3*24 + jj] = ((dsdxr[3*24 + jj]/vol) - (dvol[jj]*stress[3]) / (vol*vol)) * scale_conversion;
+      dSdxr[4*24 + jj] = ((dsdxr[4*24 + jj]/vol) - (dvol[jj]*stress[4]) / (vol*vol)) * scale_conversion;
+      dSdxr[5*24 + jj] = ((dsdxr[5*24 + jj]/vol) - (dvol[jj]*stress[5]) / (vol*vol)) * scale_conversion;
     }
     // calculate the derivative dxrdx: derivative of the position of the edges of the RVE with respect to the position of the FE nodes
 //      make_dRVEdFE(dxrdx,coords);

@@ -152,10 +152,9 @@ namespace bio
     total_fiber_length = std::accumulate(lngths.begin(),lngths.end(),0.0);
     fiber_area = M_PI * fiber_radius * fiber_radius;
     rve_dim = sqrt(total_fiber_length * fiber_area / fiber_volume_fraction);
-//    rve_dim = 1.0;
+    rve_dim = 7.0; // size of physical RVE. Units should be same as that or fiber radius specified in simmodeler.
     half_rve_dim = 0.5 * rve_dim;
-//    scale_conversion = 1.0 / (rve_dim * rve_dim);
-    scale_conversion = 1.0; //L
+    scale_conversion = 1.0 / (rve_dim * rve_dim);
     fiber_types.resize(1);
   }
   void MicroFO::SetRveCorners()
