@@ -14,6 +14,7 @@ namespace bio
   public:
   NeoHookeanIntegrator(NonlinearTissue * n,
                        apf::Field * field,
+		       apf::Field * det_dfm_grd,
                        double youngs_modulus,
                        double poisson_ratio,
                        int o)
@@ -21,6 +22,7 @@ namespace bio
       , current_integration_point(0)
       , analysis(n)
       , dim(0)
+      , dfm_grd_fld(det_dfm_grd)
       , ShearModulus(0.0)
       , PoissonsRatio(poisson_ratio)
     {
@@ -123,6 +125,7 @@ namespace bio
 //          F[ii][jj] += xyz(kk,ii) * grads0[kk][jj];
         }
       double detF = getDeterminant(F);
+      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point,detF);
       apf::DynamicMatrix leftCauchyGreen(3,3); leftCauchyGreen.zero();
       apf::DynamicMatrix FT(3,3); FT.zero();
       apf::transpose(fromMatrix(F),FT);
@@ -248,6 +251,7 @@ namespace bio
     apf::Mesh * msh;
     apf::NewArray<apf::Vector3> msh_xyz;
     apf::NewArray<apf::Vector3> fld_xyz;
+    apf::Field * dfm_grd_fld;
     double ShearModulus;
     double PoissonsRatio;
   };

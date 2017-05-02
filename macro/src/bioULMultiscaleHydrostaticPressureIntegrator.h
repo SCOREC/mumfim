@@ -12,13 +12,15 @@ namespace bio
   {
   public:
   ULMultiscaleHydrostaticPressureIntegrator(MultiscaleTissue * n,
-                         apf::Field * u,
-                         apf::Field * rve_tp,
-                         int o)
+					    apf::Field * u,
+					    apf::Field * rve_tp,
+					    apf::Field * det_dfm_grd,
+					    int o)
     : ElementalSystem(u,o)
       , current_integration_point(0)
       , analysis(n)
       , micro_type_field(rve_tp)
+      , dfm_grd_fld(det_dfm_grd)
     {
       matrixShearModulus  = 0.0;
       matrixPoissonsRatio = 0.45;
@@ -145,14 +147,16 @@ namespace bio
       apf::Matrix3x3 F; 
       amsi::deformationGradient(e,p,F);
       double detF = getDeterminant(F);
-      double coeff = 20.0; 
-      double HydroStaticP = (std::exp(coeff * (1.0-detF)) - 1.0)/(std::exp(coeff) - 1.0);
+      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point,detF);
+      double coeff = 5.0;
+      double P = 0.0;
+      double HydroStaticP = P*(std::exp(coeff * (1.0-detF)) - 1.0)/(std::exp(coeff) - 1.0);
       SV[0] = (rve_info->derivS[0]) + HydroStaticP; 
-      SV[1] = (rve_info->derivS[3]);
-      SV[2] = (rve_info->derivS[5]);
-      SV[3] = (rve_info->derivS[1]) + HydroStaticP;
+      SV[1] = (rve_info->derivS[3]) + HydroStaticP;
+      SV[2] = (rve_info->derivS[5]) + HydroStaticP;
+      SV[3] = (rve_info->derivS[1]);
       SV[4] = (rve_info->derivS[4]);
-      SV[5] = (rve_info->derivS[2]) + HydroStaticP;
+      SV[5] = (rve_info->derivS[2]);
       S[0][0] = S[0+3][0+3] = S[0+6][0+6] = SV[0];
       S[0][1] = S[0+3][1+3] = S[0+6][1+6] = SV[3];
       S[0][2] = S[0+3][2+3] = S[0+6][2+6] = SV[5];
@@ -416,6 +420,7 @@ namespace bio
     apf::FieldShape * fs;
     apf::EntityShape * es;
     apf::Field * micro_type_field;
+    apf::Field * dfm_grd_fld;
     double linearYoungsModulus;
     double linearPoissonsRatio;
     double matrixShearModulus;
