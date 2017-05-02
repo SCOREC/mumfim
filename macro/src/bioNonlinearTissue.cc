@@ -41,6 +41,7 @@ namespace bio
     strs = apf::createIPField(apf_mesh,"stress",apf::MATRIX,1);
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
     strn = apf::createIPField(apf_mesh,"strain",apf::MATRIX,1);
+    det_dfm_grd = apf::createIPField(apf_mesh,"detF",apf::SCALAR,1);
     stf_vrtn = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
     axl_yngs_mod = apf::createIPField(apf_mesh,"axial_youngs_modulus",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
@@ -73,7 +74,7 @@ namespace bio
         pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
         double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
-        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,E,v,1);
+        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,det_dfm_grd,E,v,1);
       }
       else if(cnst_type == transverse_isotropic)
       {
