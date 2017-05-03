@@ -1,4 +1,5 @@
 #include "bioFiberNetwork.h"
+#include <apfDynamicMatrix.h>
 namespace bio
 {
   template <typename O>

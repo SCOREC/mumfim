@@ -1,10 +1,6 @@
-#include "globals.h"
-#include "RepresentVolElem.h"
-#include "RVE_Util.h"
-#include <string.h>
-#include <iostream>
 namespace bio
 {
+  /*
   void fill_dof_ids(int * dof_ids, int n1, int n2)
   {
     if(TRUSS)
@@ -203,4 +199,5 @@ namespace bio
       }
     }
   }
+  */
 }

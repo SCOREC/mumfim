@@ -139,24 +139,14 @@ namespace bio
    * @param gbl_gss The macro-scale coordinate at the center of the RVE
    */
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
-			   double rve_dim,
-			   const apf::Vector3 & gbl_gss);
+                           double rve_dim,
+                           const apf::Vector3 & gbl_gss);
   /**
    * Compile a list of MeshEntities in the fiber network which have at least a single
    * node classified 'on' the boundary of the RVE.
    */
   template <typename O>
-    void getBoundaryVerts(const RVE * rve, const FiberNetwork * fn, RVE::side sd,  O nds);
-  /**
-   * Set the force vector value associated with dofs on nodes lying on the RVE
-   *  boundaries to zero.
-   * @param f The force vector
-   * @param rve The rve which defines which nodes are on the boundary
-   * @param fn The fiber network to check for boundary nodes
-   */
-  void applyRVEForceBC(las::Vec * f,
-                       RVE * rve,
-                       FiberNetwork * fn);
+    void getBoundaryVerts(const RVE * rve, const FiberNetwork * fn, RVE::side sd, O nds);
   /**
    * Apply a vector of displacements to the coordinates of the rve mesh
    * @param rve The rve to displace
@@ -164,8 +154,7 @@ namespace bio
    *           displacement values for each rve node in the typically finite element
    *           ordering for a cube
    */
-  void displaceRVE(RVE * rve,
-                   const apf::DynamicVector & du);
+  void displaceRVE(RVE * rve, const apf::DynamicVector & du);
   //
   void alignFiberNetwork(RVE * rve, FiberNetwork * fn, const double align_vec[3]);
   void affineDeformation(RVE * rve, FiberNetwork * fn, const double disp[6]);

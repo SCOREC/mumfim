@@ -14,11 +14,12 @@ namespace bio
     if(tp == FiberMemeber::truss)
       es = new TrussIntegrator();
   }
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn, RVE * rve)
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn)
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = fn;
-    an->rve = rve;
+    an->rve = new RVE(fn->getDim());
+    getBoundaryVerts(an->rve,an->fn,std::back_inserter(bnd_nds));
     apf::Numbering * udofs = an->fn->getUNumbering();
     int nudofs = apf::NaiveOrder(udofs);
     apf::Numbering * wdofs = an->fn->getdWNumbering();
@@ -30,6 +31,7 @@ namespace bio
     an->u = las::createSparskitVec(udofs);
     // todo : won't work when we have a field for moments.
     an->k = las::createSparskitMat(las::createCSR(udofs,nudofs));
+    an->ops = las::initSparskitOps();
   }
   void destroyAnalysis(FiberRVEAnalysis * fa)
   {
@@ -48,10 +50,25 @@ namespace bio
   void FiberRVEIteration::iterate()
   {
     an->itgr->process(an->fn->getNetworkMesh());
-    applyRVEForceBC(&an->f,an->rve,an->fn);
-    //solve(an->k,&an->u,&an->f);
-    an->accumsol->apply(an->fn->getIncrementalDispField());
-    an->writesol->apply(an->fn->getDisplacementField());
+    applyRVEForceBC(an->bnd_nds.begin(),
+                    an->bnd_nds.end(),
+                    an->fn->getUNumbering(),
+                    an->ops,
+                    an->f);
+    an->ops->solve(an->k,&an->u,&an->f);
+    amsi::WriteOp wrt;
+    amsi::AccumOp acm;
+    amsi::FreeApplyOp fr_wrt(an->fn->getUNumbering(),&wrt);
+    amsi::FreeApplyOp fr_acm(an->fn->getUNumbering(),&acm);
+    double * s = NULL;
+    an->ops->get(&an->u,s);
+    amsi::ApplyVector(an->fn->getUNumbering(),
+                      an->fn->getdUField(),
+                      s,0,&fr_wrt).run();
+    amsi::ApplyVector(an->fn->getUNumbering(),
+                      an->fn->getUField(),
+                      s,0,fr_acm).run();
+    an->ops->restore(&an->u,s);
   }
   FiberRVEConvergence::FiberRVEConvergence(FiberRVEAnalysis * a, double e)
     : num::Convergence()

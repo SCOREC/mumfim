@@ -181,6 +181,7 @@ namespace bio
     return result;
   }
   */
+  /*
   void MicroFO::force_vector_bcs()
   {
     int num_boundary_nodes = fiber_network->numBoundaryNodes(FiberNetwork::ALL);
@@ -205,6 +206,8 @@ namespace bio
       }
     }
   }
+  */
+  /*
   void MicroFO::calc_precond(double * matrix,
                              double * lengths,
                              double * fib_str,
@@ -307,7 +310,7 @@ namespace bio
         matrix[sparse_structure->sparseLocation(node*3+2,node*3+2)] = 1.0;
         con.erase(con.begin(),con.end());
       }
-      /* Affinely deform supported fibers*/
+      // Affinely deform supported fibers
       SupportFiberNetwork * spfn = dynamic_cast<SupportFiberNetwork*>(fiber_network);
       if (spfn)
       {
@@ -419,4 +422,5 @@ namespace bio
       }
     }
   }
+  */
 }

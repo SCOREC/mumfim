@@ -47,7 +47,8 @@ namespace bio
     // +9 at end to store orientation tensor information.
     double data[4 * 3 * 6 + 9 + 9]; // 6 sigma values for each vertex 3 q values, assuming tets atm
   };
-  class MicroFOMultiscaleDataTypes{
+  class MicroFOMultiscaleDataTypes
+  {
   public:
     MPI_Datatype micro_fo_header_data_type;
     MPI_Datatype micro_fo_parameter_data_type;

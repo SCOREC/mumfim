@@ -1,10 +1,3 @@
-#include "RepresentVolElem.h"
-#include "globals.h"
-#include "Util.h"
-#include "Sparskit_Externs.h"
-#include "RVE_Util.h"
-#include <cstring> //memset
-#include <iostream>
 namespace bio
 {
   // Solver for beam network
@@ -14,6 +7,7 @@ namespace bio
   // the transformation matrix, taking k_e to global coordinates.
   // This formulation is valid for small strain, but large
   // displacement and rotation.
+  /*
   int MicroFO::Solver_Beam()
   {
     int result = 0;
@@ -114,6 +108,8 @@ namespace bio
     //update_nodes();
     return result;
   }
+  */
+  /*
 void MicroFO::calc_current_disps_beam(double * solution)
 {
   int num_nodes = fiber_network->numNodes();
@@ -129,6 +125,8 @@ void MicroFO::calc_current_disps_beam(double * solution)
     solution[ii*6+5] = n.rz - in.rz;
   }
 }
+*/
+/*
 double MicroFO::calc_norm_beam(double * x)
 {
   double total = 0.0;
@@ -144,6 +142,8 @@ double MicroFO::calc_norm_beam(double * x)
   }
   return sqrt(total);
 }
+*/
+ /*
 void MicroFO::force_vector_bcs_beam()
 {
   // Boundary conditions on force vector for the microscopic problem
@@ -182,6 +182,8 @@ void MicroFO::force_vector_bcs_beam()
     }
   }
 }
+*/
+/*
 void MicroFO::force_vector_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs)
 {
   int num_bcs = bcs.size();
@@ -202,6 +204,9 @@ void MicroFO::force_vector_periodic_bcs_helper(const std::vector<PBCRelation> & 
     }
   }
 }
+*/
+
+ /*
 void MicroFO::calc_matrix_beam(double * matrix,double * lengths)
 {
   // Construct global stiffness matrix for beam frame
@@ -278,6 +283,8 @@ void MicroFO::calc_matrix_beam(double * matrix,double * lengths)
       matrix[e.Ke[jj]] -= material_matrix_access[jj]; //calculating -K (negative of tangent stiffness matrix).
   }
 }
+*/
+  /*
 // overloaded function
   void MicroFO::calc_matrix_beam(double * matrix,double * matrix_axial,double * lengths)
 {
@@ -379,6 +386,8 @@ void MicroFO::calc_matrix_beam(double * matrix,double * lengths)
     }
   }
 }
+*/
+/*
 void MicroFO::make_material_stiffness_matrix(double * matrix, int ielem, double L)
 {
     memset(matrix,0,144*sizeof(double));
@@ -431,20 +440,20 @@ void MicroFO::make_material_stiffness_matrix(double * matrix, int ielem, double 
       for(int kk=0;kk<jj;kk++)
         matrix[jj*12 + kk] = matrix[kk*12 + jj];
 }
+*/
+ /*
 void MicroFO::make_geometry_stiffness_matrix(double * matrix, int ielem, double L)
 {
     memset(matrix,0,144*sizeof(double));
-    /*
-    double dL = 1.0/L;
-    double dL2 = 1.0/(L*L);
-    double dL3 = 1.0/(L*L*L);
-    double E = 0; //fiber_get_E(ielem);
-    double A = fiber_area; //fiber_network->fiberArea();
-    double G = 0; //fiber_G;
-    double J = 0;  //fiber_J;
-    double I1 = 0; //fiber_I1;
-    double I2 = 0; //fiber_I2;
-    */
+    //double dL = 1.0/L;
+    //double dL2 = 1.0/(L*L);
+    //double dL3 = 1.0/(L*L*L);
+    //double E = 0; //fiber_get_E(ielem);
+    //double A = fiber_area; //fiber_network->fiberArea();
+    //double G = 0; //fiber_G;
+    //double J = 0;  //fiber_J;
+    //double I1 = 0; //fiber_I1;
+    //double I2 = 0; //fiber_I2;
     // Add shearing
     if(TIMOSHENKO)
     {
@@ -454,12 +463,14 @@ void MicroFO::make_geometry_stiffness_matrix(double * matrix, int ielem, double 
       for(int kk=0;kk<jj;kk++)
         matrix[jj*12 + kk] = matrix[kk*12 + jj];
 }
+ */
+/*
 void MicroFO::calc_force_vector_beam(double * x)
 {
   int num_dofs = fiber_network->numDofs();
   amux_(&num_dofs,
         x,
-        &force_vector[0] /*force_vector.data()*/,
+        &force_vector[0] //force_vector.data(),
         &matrix[0],
         sparse_structure->getCols(),
         sparse_structure->getRows());
@@ -474,6 +485,8 @@ void MicroFO::calc_force_vector_beam(double * x)
     force_vector_axial[ii] = -1.0*force_vector_axial[ii];
   } // to get correct sign for force vector because matrix and matrix_axial are -K.
 }
+*/
+ /*
 void MicroFO::matrix_bcs_beam()
 {
   // Boundary conditions on stiffness matrix for the microscopic problem
@@ -545,6 +558,7 @@ void MicroFO::matrix_bcs_beam()
     }
   }
 }
+ */
 /*
 void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, int ddof, int * pdofs)
 {
@@ -603,7 +617,7 @@ void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, i
   }
 }
 */
-// Calculates dSdy from beam values
+/*
 void MicroFO::calc_dsdy_beam()
 {
   int num_dofs = fiber_network->numDofs();
@@ -677,4 +691,5 @@ void MicroFO::calc_dsdy_beam()
       con.erase(con.begin(),con.end());
     }
 }
+*/
 }

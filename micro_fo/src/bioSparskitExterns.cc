@@ -1,4 +1,4 @@
-#include "Sparskit_Externs.h"
+#include "bioSparskitExterns.h"
 #ifdef BGQ
 void ilut_(int *n,double a[],int ja[],int ia[],int *lfil,double *droptol,double *alu,int *jlu,int *ju,int *iwk,double *w,int *jw,int *ierr)
 {

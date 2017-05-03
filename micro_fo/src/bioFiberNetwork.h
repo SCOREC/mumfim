@@ -21,6 +21,8 @@ namespace bio
     apf::Field * dw;
     apf::Numbering * udof;
     apf::Numbering * wdof;
+    int ucnt;
+    int wcnt;
     FiberMember tp;
     int dim;
   protected:
@@ -36,6 +38,7 @@ namespace bio
      *  @return the dimensionality of the fiber network (2 or 3)
      */
     int getDim() const { return fn->getDimension(); }
+    int getDofCount() const { return ucnt + wcnt; }
     FiberMember getFiberMember()      { return tp;   }
     apf::Mesh * getNetworkMesh()      { return fn;   }
     apf::Field * getUField()          { return u;    }

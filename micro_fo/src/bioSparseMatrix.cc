@@ -1,8 +1,7 @@
-#include "SparseMatrix.h"
-#include <cstdlib>
-#include <iostream>
+//#include "SparseMatrix.h"
 namespace bio
 {
+  /*
   SparseMatrix::SparseMatrix(int num_eqs)
     : num_nonzeros(0)
     , finalized(false)
@@ -85,4 +84,5 @@ namespace bio
       finalized = true;
     }
   }
+  */
 }

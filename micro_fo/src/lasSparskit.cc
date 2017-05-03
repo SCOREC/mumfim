@@ -25,6 +25,13 @@ namespace las
   class skMat
   {
   private:
+    double * vls;
+    CSR * csr;
+  public:
+    skMat(CSR * c)
+      : csr(c)
+    { }
+    
   };
   Mat * createSparskitMatrix(CSR * csr)
   {

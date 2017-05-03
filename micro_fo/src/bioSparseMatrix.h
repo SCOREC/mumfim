@@ -1,9 +1,8 @@
 #ifndef BIO_SPARSEMATRIX_H_
 #define BIO_SPARSEMATRIX_H_
-#include "bioFiberNetwork.h"
-#include <vector>
 namespace bio
 {
+  /*
   class SparseMatrix
   {
   private:
@@ -32,5 +31,6 @@ namespace bio
     int * getRows() {return &rows[0];}
     int * getCols() {return &cols[0];}
   };
+  */
 }
 #endif

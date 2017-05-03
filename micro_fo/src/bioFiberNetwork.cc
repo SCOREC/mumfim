@@ -11,6 +11,8 @@ namespace bio
     , dw(NULL)
     , udof(NULL)
     , wdof(NULL)
+    , ucnt(0)
+    , wcnt(0)
     , tp(t)
     , dim(f->getDimension())
   {
@@ -21,6 +23,9 @@ namespace bio
       apf::createLagrangeField(fn,"dw",apf::VECTOR,1);
     udof = apf::createNumbering(du);
     wdof = apf::createNumbering(dw);
+    ucnt = apf::AdjReorder(udof);
+    wcnt = apf::AdjReorder(wdof);
+    apf::SetNumberingOffset(wdof,ucnt);
   }
   /*
   FiberNetwork * FiberNetwork::clone()
