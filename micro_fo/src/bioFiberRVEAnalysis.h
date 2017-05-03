@@ -12,14 +12,16 @@ namespace bio
   {
     FiberNetwork * fn;
     RVE * rve;
+    std::vector<apf::MeshEntity*> bnd_nds;
     amsi::ElementalSystem * es
     las::Mat * k;
     las::Vec u;
     las::Vec f;
+    las::LasOps * ops;
   };
-  FiberRVEAnalysis * makeAnalysis(const std::string & fnm);
+  FiberRVEAnalysis * makeAnalysis(FiberNetwork *);
   void destroyAnalysis(FiberRVEAnalysis *);
-  class FiberRVEIteration : public num::Iteration
+  class FiberRVEIteration : public amsi::Iteration
   {
   protected:
     FiberRVEAnalysis * an;
@@ -27,7 +29,7 @@ namespace bio
     FiberRVEIteration(FiberRVEAnalysis * a);
     void iterate();
   };
-  class FiberRVEConvergence : public num::Convergence
+  class FiberRVEConvergence : public amsi::Convergence
   {
   protected:
     FiberRVEAnalysis * an;
@@ -38,6 +40,16 @@ namespace bio
     bool converged();
     double & epsilon() {return eps;}
   };
+  /**
+   * Set the force vector value associated with dofs on nodes lying on the RVE
+   *  boundaries to zero.
+   * @param f The force vector
+   * @param rve The rve which defines which nodes are on the boundary
+   * @param fn The fiber network to check for boundary nodes
+   */
+  template <typename I>
+    void applyRVEForceBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::LasOps * ops, las::Vec * f, las::Mat * k);
+  void calc_dSigma_du(FiberRVEAnalysis * fra);
   double calcStiffness(FiberRVEAnalysis * fra);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3 & sigma);
   void tdYdXr(FiberRVEAnalysis * fra);

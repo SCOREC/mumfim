@@ -7,7 +7,7 @@
 */
 namespace bio
 {
-  /*
+/*
   using namespace std;
   void MicroFO::create_element_shape_vars(double & vol, double * dvol, double * F)
   {
@@ -57,6 +57,8 @@ namespace bio
     {
       int num_nodes = fiber_network->numNodes();
       for(int ii = 0; ii < num_nodes; ii++)
+      // To test fiber only RVE (boundary conditions)
+      if(FIBER_ONLY_SIZE_EFFECT_TEST)
       {
         const Node & ni = init_fiber_network->node(ii);
         Node n = fiber_network->node(ii);
@@ -265,7 +267,11 @@ namespace bio
   // and with coords by calc_femjacob_newmethod
   void MicroFO::make_dRVEdFE(double * dRVEdFE, double * lcoords)
   {
+<<<<<<< HEAD
   / * Calculates the derivative dxrdx:
+=======
+    / * Calculates the derivative dxrdx:
+>>>>>>> continuing work on new microscale, starting in on multiscale coupling
        derivative of the position of RVE edges (nodes?) with respect to the position of the FE nodes
     * /
     int rve_dof = 24; //total number of DOF at each RVE = number of vertices (8) x DOF of each vertex (3)
@@ -312,7 +318,7 @@ namespace bio
         zgp = global[2];
       * /
       lmp.eval(gpx,gpy,gpz,xgp,ygp,zgp);
-      /*
+      / *
       //std::cout<<"xgp, ygp, zgp = "<<xgp<<", "<<ygp<<", "<<zgp<<std::endl;
       // Equivalent to:
       double xgp2 = 0.0; double ygp2 = 0.0; double zgp2 = 0.0;
@@ -360,15 +366,15 @@ namespace bio
 	  ex_sgn *= -1;
 	  ex = ex_sgn * half_rve_dim;
 	  /*
-            if (ex_sgn < 0)
+	  if (ex_sgn < 0)
 	    ex = fiber_network->sideCoord(FiberNetwork::LEFT)/0.5 * half_rve_dim;
             else
 	    ex = fiber_network->sideCoord(FiberNetwork::RIGHT)/0.5 * half_rve_dim;
 	  * /
-          /* calculate the coordinates of the vertices of the RVE with respect to physical domain.
-             (RVEs are centered at the Gauss point in terms of physical domain (xgp,ygp,zgp)).
-             Therefore, the vertices of the RVE is plus/minus half the RVE dimensions in each direction).
-          * /
+          / * calculate the coordinates of the vertices of the RVE with respect to physical domain.
+            (RVEs are centered at the Gauss point in terms of physical domain (xgp,ygp,zgp)).
+            Therefore, the vertices of the RVE is plus/minus half the RVE dimensions in each direction).
+           * /
           if(firstTimeThrough)
           {
             // Position of the RVE vertices with respect to the physical domain
@@ -394,7 +400,7 @@ namespace bio
             / * For each vertex of RVE, calculate difference of linear tetrahedral shape functions
                defined on vertex positions (e,n,l) and Gauss point (gpx,gpy,gpz).
                Both are defined with respect to natural coordinates of macroscale tetrahedral element.
-            * /
+             * /
             double diff = PHI(ii, e, n, l) - PHI(ii, gpx, gpy, gpz);
             double v = diff / rve_dim;
             dRVEdFE[(3*count)   * num_rve_doubles + ii*3    ] = v;

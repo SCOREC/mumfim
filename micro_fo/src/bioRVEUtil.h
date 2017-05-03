@@ -15,6 +15,7 @@
 #include <string>
 namespace bio
 {
+  /*
   extern int rve_load_balancing;
   extern bool lb_per_iteration;
   int P_computeRVEs();
@@ -32,14 +33,14 @@ namespace bio
   void tsfun(double phi[], double phic[], double phie[], double phis[], double x, double y, double z);
   void tsfun_2d(double phi[], double phic[], double phie[], double x, double y);
   SparseMatrix * Make_Structure(FiberNetwork *);
-  /*
+  / *
   void fill_extra_periodic_connections(const std::vector< PBCRelation > & bcs,
                                        FiberNetwork * fiber_network,
                                        SparseMatrix * sparse_struct);
   void store_periodic_locations(const std::vector<PBCRelation> & bcs,
                                 FiberNetwork * fiber_network,
                                 SparseMatrix * sparse_struct);
-  */
+  * /
   void matrix_multiply(double *amat, int arow, int acol, double *bmat, int brow, int bcol, double *cmat);
   void matrix_multiply_ATranspose(double *amat, int arow, int acol, double *bmat, int brow, int bcol, double *cmat);
   void solve_matrix_system(double *A, double *B, double *soln, int order);
@@ -52,5 +53,6 @@ namespace bio
                 double ddett[]);
   void calc_deriv(double x[], double y[], double z[], double ux[], double uy[], double uz[], double phic[], double phie[], double phis[], double *dudx, double *dudy, double *dudz, double *dvdx, double *dvdy, double *dvdz, double *dgdx, double *dgdy, double *dgdz, double *dett);
   double calc_norm(double fvec[], int gsize);
+  */
 }
 #endif

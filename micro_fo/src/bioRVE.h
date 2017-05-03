@@ -11,6 +11,7 @@
 #include <vector>
 namespace bio
 {
+  /*
   struct RVE_Info
   {
     int mType;
@@ -211,5 +212,6 @@ namespace bio
     //PHI FUNCTION TO COMPUTE THE BASE FUNCTION FOR DIFFERENT TOPOLOGY ELEMENT
     double PHI(int, double, double, double);
   };
+  */
 }
 #endif

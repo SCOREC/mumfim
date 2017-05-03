@@ -11,7 +11,7 @@ namespace bio
     for(int y = -1; y <= 1; y += 2)
       for(int z = 1; z >= -1; z -= 2)
        for(int x = -1; x <= 1; x += 2)
-	 *cbe_crnrs++ = apf::Vector3(crd*x,crd*y,crd*z);
+         *cbe_crnrs++ = apf::Vector3(crd*x,crd*y,crd*z);
   }
   template <typename O>
   void originCenterSquare(O cbe_crnrs, double crd)
@@ -52,40 +52,23 @@ namespace bio
     forward_u.apply(fn_u);
   }
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
-			   double rve_dim,
-			   const apf::Vector3 & gbl_gss)
+                           double rve_dim,
+                           const apf::Vector3 & gbl_gss)
   {
     static double op[8][3] = {{-1.0,-1.0, 1.0},
-			      { 1.0,-1.0, 1.0},
-			      {-1.0,-1.0,-1.0},
-			      { 1.0 -1.0,-1.0},
-			      {-1.0, 1.0, 1.0},
-			      { 1.0, 1.0, 1.0},
-			      {-1.0, 1.0,-1.0},
-			      { 1.0, 1.0,-1.0}};
+                              { 1.0,-1.0, 1.0},
+                              {-1.0,-1.0,-1.0},
+                              { 1.0 -1.0,-1.0},
+                              {-1.0, 1.0, 1.0},
+                              { 1.0, 1.0, 1.0},
+                              {-1.0, 1.0,-1.0},
+                              { 1.0, 1.0,-1.0}};
     int sz = rve_crds.getSize();
     int d = sz == 8 ? 3 : 2;
     int o = d == 3 ? 0 : 2;
     for(int ii = 0; ii < sz; ii++)
       for(int jj = 0; jj < d; jj++)
-	rve_crds[ii][jj] = gbl_gss[jj] + rve_dim*op[ii+o][jj];
-  }
-  void applyRVEForceBC(las::Vec * f,
-		       RVE * rve,
-		       FiberNetwork * fn)
-  {
-    apf::Numbering * nm = fn->getNumbering();
-    apf::Field * du = fn->getDisplacementField();
-    std::vector<apf::MeshEntity*> bnds;
-    calcBoundaryNodes(rve,fn,bnds);
-    for(std::vector<apf::MeshEntity*>::iterator it = bnds.begin(); it != bnds.end(); it++)
-    {
-      apf::NewArray<int> dofs;
-      int nedofs = apf::getElementNumbers(nm,*it,dofs);
-      apf::DynamicVector zeros(nedofs);
-      zeros.zero();
-      las::setVecValues(f,zeros,dofs,nedofs,false);
-    }
+        rve_crds[ii][jj] = gbl_gss[jj] + rve_dim*op[ii+o][jj];
   }
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {

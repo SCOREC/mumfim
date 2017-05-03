@@ -1,5 +1,6 @@
 // Fiber-only
-#include "bioRVE.h"
+#include "bioRVEUtil.h"
+#include "bioRVE2.h"
 #include "bioMicroFOMultiscale.h"
 #include "lasSparskit.h"
 // for integration point information (parametric coords)
@@ -8,11 +9,6 @@
 // Multiscale control stuff (AMSI)
 #include <amsiUtil.h>
 #include <amsiMultiscale.h>
-// Simmetrix libs
-#include <MeshSim.h>
-// Standard libs
-#include <cmath>
-#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -20,6 +16,7 @@
 #include <string>
 namespace bio
 {
+  /*
   int rve_load_balancing = -2;
   bool lb_per_iteration = false;
   int P_computeRVEs()
@@ -175,15 +172,15 @@ namespace bio
       }
       //  Update macro->micro communication
       // Update micro->macro communication
-      /*
+      / *
         cs->CommPattern_UpdateInverted(recv_pattern_id,send_pattern_id);
         cs->CommPattern_Assemble(send_pattern_id);
         cs->CommPattern_Reconcile(send_pattern_id);
-      */
+      * /
       // ***************************************
       // Migration of RVEs
       // ***************************************
-      /*
+      / *
         if(step_iter[0] > 0)
         {
         #         ifdef LOGRUN
@@ -252,17 +249,17 @@ namespace bio
         }
         // Share new comm pattern with Macroscale (macroscale will need to rearrange element list)
         cs->shareMigration(recv_pattern_id,dummy);
-      */
+      * /
       // Update micro->macro communication
       cs->CommPattern_UpdateInverted(recv_pattern_id,send_pattern_id);
       cs->CommPattern_Assemble(send_pattern_id);
       cs->CommPattern_Reconcile(send_pattern_id);
-      /*
+      / *
         #       ifdef LOGRUN
         double post_migration = amsi::getElapsedTime(micro_fo_efficiency);
         amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
         << post_migration << ", ACTIVE, POST_MIGRATION" << std::endl;
-      */
+      * /
 #       ifdef LOGRUN
       double pre_iterations = amsi::getElapsedTime(micro_fo_efficiency);
       amsi::log(micro_fo_efficiency) << step_iter[0] << ", " << step_iter[1] << ", "
@@ -303,7 +300,7 @@ namespace bio
             {
               if((*rve) == NULL)
               {
-                (*rve) = new MicroFO(/*rve_data[jj]*/);
+                (*rve) = new MicroFO();
                 (*rve)->setMigrationData(rve_data[jj]);
                 (*rve)->constructRVEFromMigrationData(&fbr_ntwrks[0],&sprs_strcts[0],buffers);
                 jj++;
@@ -694,10 +691,10 @@ namespace bio
                          double gpz)
   {
     int i, iter;
-    double F[3], dfdu[9], du[3];    /* F is the vector of the functions, dfdu is the Jacombian matrix, du is the error */
-    double x[8], y[8], z[8];        /* u is the solution, x,y,z are the coordinates of the FE in the physical domain */
+    double F[3], dfdu[9], du[3];    // F is the vector of the functions, dfdu is the Jacombian matrix, du is the error
+    double x[8], y[8], z[8];        // u is the solution, x,y,z are the coordinates of the FE in the physical domain
     double a[3], b[3], c[3], d[3], e[3], f[3], g[3], h[3];
-    double eps, norm;              /* tolerance and norm of residuals */
+    double eps, norm;              // tolerance and norm of residuals
     for (i = 0; i < 8; i++)
     {
       x[i] = init_coords_loc[3 * i];
@@ -728,8 +725,8 @@ namespace bio
     h[0] = x[0] - x[1] - x[2] + x[3] - x[4] + x[5] + x[6] - x[7];
     h[1] = y[0] - y[1] - y[2] + y[3] - y[4] + y[5] + y[6] - y[7];
     h[2] = z[0] - z[1] - z[2] + z[3] - z[4] + z[5] + z[6] - z[7];
-    /* Newton-Raphson to solve the system */
-    /* initial guess */
+    // Newton-Raphson to solve the system
+    // initial guess
     u[0] = gpx;
     u[1] = gpy;
     u[2] = gpz;
@@ -739,17 +736,17 @@ namespace bio
     while (norm > eps)
     {
       iter++;
-      /*
+      / *
         if(iter>1000)
         {
         printf("too many iterations in calc_ksi_eta_zeta %d\n",iter);
         }
-      */
-      /* Calculate Residuals */
+      * /
+      // Calculate Residuals
       F[0] = -(-8 * xr + a[0] + u[0] * b[0] + u[1] * c[0] + u[0] * u[1] * d[0] + u[2] * e[0] + u[0] * u[2] * f[0] + u[1] * u[2] * g[0] + u[0] * u[1] * u[2] * h[0]);
       F[1] = -(-8 * yr + a[1] + u[0] * b[1] + u[1] * c[1] + u[0] * u[1] * d[1] + u[2] * e[1] + u[0] * u[2] * f[1] + u[1] * u[2] * g[1] + u[0] * u[1] * u[2] * h[1]);
       F[2] = -(-8 * zr + a[2] + u[0] * b[2] + u[1] * c[2] + u[0] * u[1] * d[2] + u[2] * e[2] + u[0] * u[2] * f[2] + u[1] * u[2] * g[2] + u[0] * u[1] * u[2] * h[2]);
-      /* Calculate Jacobian */
+      // Calculate Jacobian
       dfdu[0] = b[0] + u[1] * d[0] + u[2] * f[0] + u[1] * u[2] * h[0];
       dfdu[1] = c[0] + u[0] * d[0] + u[2] * g[0] + u[0] * u[2] * h[0];
       dfdu[2] = e[0] + u[0] * f[0] + u[1] * g[0] + u[0] * u[1] * h[0];
@@ -759,16 +756,16 @@ namespace bio
       dfdu[6] = b[2] + u[1] * d[2] + u[2] * f[2] + u[1] * u[2] * h[2];
       dfdu[7] = c[2] + u[0] * d[2] + u[2] * g[2] + u[0] * u[2] * h[2];
       dfdu[8] = e[2] + u[0] * f[2] + u[1] * g[2] + u[0] * u[1] * h[2];
-      /* Solve Matrix System */
+      // Solve Matrix System
       solve_matrix_system(dfdu, F, du, 3);
-      /* Update the solution */
+      // Update the solution
       u[0] += du[0];
       u[1] += du[1];
       u[2] += du[2];
-      /* calculate the norm */
+      // calculate the norm
       norm = sqrt(du[0] * du[0] + du[1] * du[1] + du[2] * du[2]);
     }
-    /*  printf("%lf, %lf, %lf,%d\n",u[0],u[1],u[2],iter); */
+    //  printf("%lf, %lf, %lf,%d\n",u[0],u[1],u[2],iter);
   }
   void calc_dos(apf::Vector3 rve[8],
                 double phic[],
@@ -781,7 +778,7 @@ namespace bio
     int in, n, kk;
     double x1, x2, x3, y1, y2, y3, z1, z2, z3;
     double dx1[24], dx2[24], dx3[24], dy1[24], dy2[24], dy3[24], dz1[24], dz2[24], dz3[24];
-    /* isoparametric transformation */
+    // isoparametric transformation
     x1 = 0.0;
     x2 = 0.0;
     x3 = 0.0;
@@ -859,7 +856,7 @@ namespace bio
   {
     double x1(0), x2(0), x3(0), y1(0), y2(0), y3(0), z1(0), z2(0), z3(0);
     double ttky[8], ttkx[8], ttkz[8];
-    /* isoparametric transformation */
+    // isoparametric transformation
     *dudx = 0;
     *dudy = 0;
     *dudz = 0;
@@ -1098,4 +1095,5 @@ namespace bio
     AMSI_DEBUG(std::cerr << "mean fiber stretch is " << std::setprecision(16) << mean_fiber_stretch << std::endl);
     AMSI_DEBUG(std::cerr << "omega 11 is " << std::setprecision(16) << omega_11 << std::endl);
   }
+*/
 } // end of namespace Biotissue

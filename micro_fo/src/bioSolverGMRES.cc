@@ -148,6 +148,8 @@ namespace bio
     rve_timing.push_back(end_time - start_time);
     return result;
   }
+  */
+  /*
   void MicroFO::force_vector_bcs()
   {
     int num_boundary_nodes = fiber_network->numBoundaryNodes(FiberNetwork::ALL);
@@ -172,7 +174,13 @@ namespace bio
       }
     }
   }
-  void MicroFO::calc_precond(double * matrix,double * lengths,double * fib_str,double * dfdl,bool calc_dSdy)
+  */
+  /*
+  void MicroFO::calc_precond(double * matrix,
+                             double * lengths,
+                             double * fib_str,
+                             double * dfdl,
+                             bool calc_dSdy)
   {
     // Assembly of the Jacobian matrix for the microscopic problem
     // Also the derivative dSdy is also calculated and will be used in the function calc_femjacob_newmethod

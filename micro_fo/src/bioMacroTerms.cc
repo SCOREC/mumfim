@@ -262,6 +262,5 @@ namespace bio
                           stress[4]*dundy +
                           stress[5]*dundz) / vol) / vol;
     }
- }
   */
 }
