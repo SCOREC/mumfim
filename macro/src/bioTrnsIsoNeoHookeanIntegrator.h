@@ -15,6 +15,7 @@ namespace bio
   TrnsIsoNeoHookeanIntegrator(NonlinearTissue * n,
 			      apf::Field * field,
 			      apf::Field * stf_vrtn,
+			      apf::Field * det_dfm_grd,
 			      apf::Field * axl_yngs_mod,
 			      double youngs_modulus,
 			      double poisson_ratio,
@@ -27,6 +28,7 @@ namespace bio
       , current_integration_point(0)
       , stf_vrtn_fld(stf_vrtn)
       , EA_fld(axl_yngs_mod)
+      , dfm_grd_fld(det_dfm_grd)
       , analysis(n)
       , dim(0)
       , ShearModulus(0.0)
@@ -139,6 +141,7 @@ namespace bio
 //          F[ii][jj] += xyz(kk,ii) * grads0[kk][jj];
         }
       double detF = getDeterminant(F);
+      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, detF);
       apf::Matrix3x3 leftCauchyGreen(0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0,
                                      0.0, 0.0, 0.0);
@@ -341,6 +344,7 @@ namespace bio
   private:
     apf::Field * stf_vrtn_fld;
     apf::Field * EA_fld;
+    apf::Field * dfm_grd_fld;
     NonlinearTissue * analysis;
     int dim;
     apf::FieldShape * fs;
