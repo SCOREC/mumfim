@@ -7,24 +7,14 @@
 #include <cstring>
 namespace bio
 {
-  int MicroFO::main_solver(
-    double * coords_loc,
-    double * fedisp,
-    double & local_S11, double & local_S12, double & local_S13,
-    double & local_S22, double & local_S23,
-    double & local_S33,
-    double * loc_dSdx,
-    double & loc_vastrx, double & loc_vastry, double & loc_vastrz,
-    double & fem_res_norm)
+  int MicroFO::main_solver(double * coords_loc,double * fedisp)
   {
     int result = 0;
     // Give initial guess for the position of the micronodes,
     // Calculate the position of the RVE boundary and
     double vol = 0.0; // the volume of the RVE
     double dvol[24] = {};
-    create_element_shape_vars(vol,
-                              &dvol[0],
-                              &fedisp[0]);
+    create_element_shape_vars(vol,&dvol[0],&fedisp[0]);
     // Jacobian matrix of the microscopic problem
     matrix.resize(sparse_structure->numNonzeros());
     matrix_axial.resize(sparse_structure->numNonzeros());
@@ -39,35 +29,28 @@ namespace bio
        T. Stylianopoulos, V. H. Barocas, Comput. Methods Appl. Mech. Engrg. 196 (2007) 2981-2990:
        \sum_{boundary cross-links} x_i F_j.
     */
+    firstTimeThrough = false;
+    return result;
+  }
+  void MicroFO::post_processing(double * sigma, double * dSdx, double * Q, double & fem_res_norm)
+  {
     double stress[6];
     calc_stress(stress);
     // Calculate the components of the Q term of the macroscopic stress balance, loc_vastrx, loc_vastry, loc_vastrz
-    avg_vol_stress(stress,
-                   loc_vastrx,
-                   loc_vastry,
-                   loc_vastrz,
-                   vol,
-                   fem_res_norm);
+    avg_vol_stress(stress,Q[0],Q[1],Q[2],vol,fem_res_norm);
     /* calc_tdydxr calculates tdydxr, which is change of fiber node positions as a function of RVE vertex positions.
        calc_femjacob_method calculates dSdx, which is the change of macroscale stress as a function of the macroscale
        FE node positions.
     */
     calc_tdydxr();
-    calc_femjacob_newmethod(loc_dSdx,
-                            vol,
-                            dvol,
-                            stress);
+    calc_femjacob_newmethod(dSdx,vol,dvol,stress);
     /* Calculate the volume averaged (macroscale) stresses. This is the volume averaging part of Eq. (7) in
        T. Stylianopoulos, V. H. Barocas, Comput. Methods Appl. Mech. Engrg. 196 (2007) 2981-2990:
        S_ij = 1/V \sum_{boundary cross-links} x_i F_j
        Volume averaged stresses are dimensionalized by multiplying by scale_conversion.
     */
-    local_S11 = (stress[0] / vol) * scale_conversion;
-    local_S12 = (stress[1] / vol) * scale_conversion;
-    local_S13 = (stress[2] / vol) * scale_conversion;
-    local_S22 = (stress[3] / vol) * scale_conversion;
-    local_S23 = (stress[4] / vol) * scale_conversion;
-    local_S33 = (stress[5] / vol) * scale_conversion;
+    for(int ii = 0; ii < 6; ++ii)
+      sigma[ii] = (stress[ii] / vol) * scale_conversion;
     // todo (m) : hacky, change/fix this
     /*
     double orientation_tensor[9]={};
@@ -78,8 +61,6 @@ namespace bio
     double P2 = 0.0;
     calcP2(*fiber_network,P2);
     rve_info[4 * 3 * 6 + 9 + 0] = P2;
-    firstTimeThrough = false;
-    return result;
   }
   // For size effect testing. Hardcoded
   double MicroFO::calc_stiffness()

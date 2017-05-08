@@ -26,13 +26,7 @@ namespace bio
 //      make_dRVEdFE(dxrdx,coords);
       // Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
       double rvedisp[24];
-      matrix_multiply(dxrdx,
-                      24,
-                      num_rve_doubles,
-                      fedisp,
-                      num_rve_doubles,
-                      1,
-                      rvedisp);
+      matrix_multiply(dxrdx,24,num_rve_doubles,fedisp,num_rve_doubles,1,rvedisp);
 /*
       AMSI_DEBUG(std::cout <<"fedisp:"<<"("<<fedisp[0]<<","<<fedisp[1]<<","<<fedisp[2]<<")"
                                      <<", ("<<fedisp[3]<<","<<fedisp[4]<<","<<fedisp[5]<<")"

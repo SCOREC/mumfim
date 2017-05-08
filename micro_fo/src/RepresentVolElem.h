@@ -137,14 +137,11 @@ namespace bio
     //The following are the functions that must access the variables
     int main_solver(double * coords_loc,
                     double * fedisp,
-                    double & local_S11, double & local_S12, double & local_S13,
-                    double & local_S22, double & local_S23,
-                    double & local_S33,
-                    double * loc_dSdx,
-                    double & loc_vastrx,
-                    double & loc_vastry,
-                    double & loc_vastrz,
+                    double * stress,
+                    double * dSdx,
+                    double * Q,
                     double & fem_res_norm);
+    void post_processing(double * stress,double * dSdx,double * Q,double & fem_res_norm));
     // map node dof values to solution vector
     void update_coordinate_vector();
     // map solution vector values to node dof values

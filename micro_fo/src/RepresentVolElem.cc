@@ -243,29 +243,42 @@ double MicroFO::PHI(int i, double u, double v, double w)
       double dfdE[num_elements];
       std::vector<double> len(num_elements);
       calcFiberLengths(*fiber_network,len);
-      calc_fiber_str(&len[0],
-                     &fib_str[0],
-                     &dfdE[0]);
+      calc_fiber_str(&len[0],&fib_str[0],&dfdE[0]);
       // Construct "matrix" for following function
-      calc_precond(&matrix[0],
-                   &len[0],
-                   &fib_str[0],
-                   &dfdE[0],
-                   false);
+      calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdE[0],false);
       // Reconstruct tdydx which is needed at the beginning
       // of the solve for the first order continuation guess
       calc_tdydxr();
       post_migration = false;
     }
-    // wrap on the main_solver
-    main_solver(coords,
-                displacement,
-                rve_info[0], rve_info[1], rve_info[2],
-                rve_info[3], rve_info[4],
-                rve_info[5], // average stress
-                &rve_info[9],                          // derivative of stress
-                rve_info[6], rve_info[7], rve_info[8], // volume balance stress
-                fem_res_norm);
+    // setup subdividing microsteps
+    bool fully_updated = false;
+    int depth = 0;
+    int subd_step = 0;
+    int coupling_term_length = 12;
+    double * partial_disp = new double[coupling_term_length];
+    memcpy(&partial_disp[0],&displacement[0],coupling_term_length*sizeof(double));
+    while(!fully_updated)
+    {
+      // wrap on the main_solver
+      if(!main_solver(coords,partial_disp))
+      {
+        // the state should reset automatically if it fails to converge
+        // only logic at this level, no simulation data management
+        depth*=2;
+        subd_step*=2;
+        for(int ii = 0; ii < coupling_term_length; ++ii)
+          partial_disp[ii] /= 2.0;
+      }
+      else
+      {
+        if(subd_step == depth)
+          fully_updated = 1;
+        else
+          ++subd_step;
+      }
+    }
+    post_processing(&rve_info[0],&rve_info[9],&rve_info[6],fem_res_norm);
     return result;
   }
 void MicroFO::output(const std::string & filename)

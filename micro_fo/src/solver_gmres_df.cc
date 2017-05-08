@@ -12,10 +12,9 @@ namespace bio
     int result = 0;
     int num_dofs = fiber_network->numDofs();
     int num_elements = fiber_network->numElements();
-    //int num_nodes = fiber_network->numNodes();
     int step = 0;
     int cont = 0;
-    double tol = 1e-6; // tolerance for dropping relatively small off-diagonal terms during ilu factorization
+    double tol = 1e-6; // tolerance for dropping small off-diagonal terms
     double tolerance = 1e-8; // convergence tolerance
     double current_norm = std::numeric_limits<double>::max();
     double previous_norm = std::numeric_limits<double>::max();
@@ -41,8 +40,7 @@ namespace bio
                  &dfdl[0],
                  false);
     // Calculates the x,y,z conponents of the fiber force
-    calc_force_vector(&len[0],
-                      &fib_str[0]); // resets the force vector to 0.0 before accumulating values...
+    calc_force_vector(&len[0],&fib_str[0]); // resets the force vector to 0.0
     // Calculates boundary conditions of the microscopic problem
     force_vector_bcs();
     // Calculates the norm of the microscopic residuals
@@ -83,13 +81,7 @@ namespace bio
              buffers->colsBuffer(),
              buffers->rowsBuffer());
       for(int ii = 0; ii < num_dofs; ii++)
-      {
-        /*
-          if(fabs(solution[ii]) > 1.0)
-          std::cerr << "solution at position " << ii << " is " << solution[ii] << std::endl;
-        */
         coordinate_vector[ii] += solution[ii];
-      }
       double df = 1.0;
       int ncv = 0;
       do
@@ -130,24 +122,11 @@ namespace bio
       } while(cont == 1);
       //relative_norm = current_norm;
       if (current_norm != 0)
-	relative_norm = fabs(previous_norm - current_norm);
+        relative_norm = fabs(previous_norm - current_norm);
       else
-	relative_norm = current_norm;
-      
-      /*
-        AMSI_DEBUG
-        (
-        std::cout << "Micro relative norm: " << relative_norm << " < " << tolerance << std::endl;
-        std::cout << "Micro current norm: " << current_norm << std::endl;
-        std::cout << "Micro previous norm: " << previous_norm << std::endl;
-        )
-      */
+        relative_norm = current_norm;
       previous_norm = current_norm;
-      calc_precond(&matrix[0],
-                   &len[0],
-                   &fib_str[0],
-                   &dfdl[0],
-                   false);
+      calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],false);
       step++;
       if((step == 50)||(step == 100)||(step == 150)||(step == 200))
         ncv = 1; //Damping is required when ncv = 1.
