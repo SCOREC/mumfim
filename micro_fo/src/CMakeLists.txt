@@ -1,17 +1,22 @@
 set(micro_fo_public_headers
   bioRVE.h
+  bioRVE2.h
   bioFiberNetwork.h
+  bioFiberRVEAnalysis.h
+  bioFiberRVEAnalysis_impl.h
   bioRVEUtil.h
   bioMicroFOMultiscale.h
-  bioSparseMatrix.h
+  bioMultiscaleRVEAnalysis.h
   bioTrussIntegrator.h
   bioUtil.h
   bioUtil_impl.h
   lasCSR.h
-  lasSparskit.h)
+  lasSparskit.h
+  lasSparskitExterns.h)
 
 set(micro_fo_src_files
   bioRVE.cc
+  bioRVE2.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO2.cc
   bioAlignFiberNetwork.cc
@@ -19,15 +24,14 @@ set(micro_fo_src_files
   bioSolverGMRES.cc
   bioSolverBeam.cc
   bioMacroElement.cc
-  bioSparseStructure.cc
   bioMacroTerms.cc
+  bioMultiscaleRVEAnalysis.cc
   bioRVEUtil.cc
-  bioSparseMatrix.cc
-  bioSparskitExterns.cc
   bioUtil.cc
   lasCSR.cc
   lasCSRBuilder.cc
-  lasSparskit.cc)
+  lasSparskit.cc
+  lasSparskitExterns.cc)
 
 find_package(sparskit REQUIRED)
 find_package(scorecutil REQUIRED)

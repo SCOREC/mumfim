@@ -1,9 +1,13 @@
 #ifndef BIO_TRUSS_INTEGRATOR_H_
 #define BIO_TRUSS_INTEGRATOR_H_
 #include "bioFiberNetwork2.h"
-//#include <amsiLAS2.h>
+#include "bioFiberReactions.h"
+#include <amsiElementalSystem.h>
+#include <amsiLASAssembly.h>
 #include <apf.h>
 #include <apfDynamicMatrix.h>
+#include <apfElementalSystem.h> //amsi
+#include <apfMeasure.h> //amsi
 #include <cassert>
 namespace las
 {
@@ -32,15 +36,16 @@ namespace bio
     amsi::ElementalSystem2 * es;
     double l;
     double lo;
+    apf::Vector3 strn;
     int dim;
-    FiberReaction * frs;
+    FiberReaction ** frs;
     FiberReaction * fr;
     apf::MeshTag * rct_tg;
     las::LasOps * ops;
     las::Mat * k;
-    las::Mat * f;
+    las::Vec * f;
   public:
-   TrussIntegrator(apf::Numbering * n, FiberReactions * f, las::LasOps op, las::Mat * k_, las::Vec * f_, int o)
+   TrussIntegrator(apf::Numbering * n, FiberReaction ** frs_, las::LasOps * op, las::Mat * k_, las::Vec * f_, int o)
       : apf::Integrator(o)
       , u(apf::getField(n))
       , msh(apf::getMesh(u))
@@ -48,19 +53,20 @@ namespace bio
       , elmt(NULL)
       , es(NULL)
       , l(0.0)
-      , l_o(0.0)
+      , lo(0.0)
+      , strn()
       , dim()
-      , frs(f)
+      , frs(frs_)
       , fr()
-      , rct_tg(msh->findTag("fiber_reaction",1))
+      , rct_tg(msh->findTag("fiber_reaction"))
       , ops(op)
       , k(k_)
       , f(f_)
     { }
     void inElement(apf::MeshElement * me)
     {
-      elmt = apf::createElement(u,me)
-      l_o = apf::measure(me);
+      elmt = apf::createElement(u,me);
+      lo = apf::measure(me);
       apf::MeshEntity * ent = apf::getMeshEntity(me);
       l = amsi::measureDisplacedMeshEntity(ent,u);
       es = amsi::buildApfElementalSystem(elmt,nm);
@@ -68,27 +74,27 @@ namespace bio
       msh->getIntTag(ent,rct_tg,&tg);
       fr = frs[tg];
       dim = msh->getDimension();
+      apf::MeshEntity * vs[2];
+      msh->getDownward(ent,0,&vs[0]);
+      apf::Vector3 crds[2];
+      getCoords(msh,&vs[0],&crds[0],2);
+      strn = (crds[1] - crds[0]) / l;
     }
     void atPoint(const apf::Vector3 & p, double w, double dV)
     {
-      apf::MeshEntity * vs[2];
-      msh->getDownward(ment,0,&vs[0]);
-      apf::Vector3 crds[2];
-      getCoords(msh,&vs[0],&crds[0],2);
-      apf::Vector3 frcs = (crds[1] - crds[0]) / lngth;
-      auto f_dfdl = fr->forceReaction(l,l_o);
+      auto f_dfdl = fr->forceReaction(l,lo);
       double f = f_dfdl.first;
       double dfdl = f_dfdl.second;
-      double fl = f / lngth;
+      double fl = f / l;
       double dfdl_fl = dfdl - fl;
       double frc = 0.0;
       for(int ii = 0; ii < dim; ii++)
       {
-       frc = frcs[ii] * f;
+       frc = strn[ii] * f;
        es->fe(ii)       = -frc;
        es->fe(2*dim+ii) =  frc;
      }
-     apf::Matrix3x3 rctn = apf::tensorProduct(frcs,frcs*dfdl_fl) + eye()*fl;
+     apf::Matrix3x3 rctn = apf::tensorProduct(strn,strn*dfdl_fl) + eye()*fl;
      double op = -1.0;
      for(int ii = 0; ii < 2; ii++)
      {
@@ -98,7 +104,7 @@ namespace bio
          op *= -1.0;
          for(int kk = 0; kk < dim; kk++)
            for(int ll = 0; ll < dim; ll++)
-             es->ke(ii*dim + kk, jj*dim + ll, rctn[ii][jj] * op);
+             es->ke(ii*dim + kk, jj*dim + ll) = rctn[ii][jj] * op;
          }
        }
      }

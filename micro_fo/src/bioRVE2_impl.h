@@ -10,7 +10,7 @@ namespace bio
     apf::FieldShape * shp = apf::getShape(u);
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * it = NULL;
-    for(it = fn_msh->begin(0); me = fn_msh->iterate(it);)
+    for(it = fn_msh->begin(0); (me = fn_msh->iterate(it)) ; )
     {
       int cnt = shp->countNodesOn(fn_msh->getType(me));
       for(int nd = 0; nd < cnt; nd++)

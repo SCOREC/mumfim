@@ -101,41 +101,41 @@ namespace bio
         dof_max = dofs > dof_max ? dofs : dof_max;
       }
     }
-    bfrs = new SparskitBuffers(dof_max);
-  }
-  void MultiscaleRVEAnalysis::updateCoupling()
-  {
-    std::vector<micro_fo_header> hdrs;
-    std::vector<micro_fo_params> prms;
-    std::vector<micro_fo_init_data> inis;
-    std::vector<int> to_delete;
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    cs->RemoveData(recv_ptrn,to_delete);
-    for(auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
-      destroyAnalysis(ans[*idx]);
-    std::vector<int> to_add;
-    std::vector<int> empty;
-    size_t recv_init_ptrn = cs->addData(recv_ptrn,empty,to_add);
-    int ii = 0;
-    ans.resize(ans.size()+to_add.size());
-    cs->Communicate(recv_init_ptrn, hdrs, hdr_tp);
-    cs->Communicate(recv_init_ptrn, prms, prm_tp);
-    cs->Communicate(recv_init_ptrn, inis, ini_tp);
-    for(auto rve = ans.begin(); rve != ans.end(); ++rve)
-    {
-      if(*rve == NULL)
-      {
-        double pt[3];
-        micro_fo_header & hdr = hdrs[ii];
-        micro_fo_params & prm = prms[ii];
-        micro_fo_init_data & dat = dats[ii];
-        apf::Vector3 gp;
-        apf::getGaussPoint(hdr.data[ELEMENT_TYPE],1,hdr.data[GAUSS_ID],gp);
-        gp.toArray(pt);
-        int nenodes = NumElementNodes(hdr.data[ELEMENT_TYPE]);
-        int tp = hdr.data[RVE_TYPE];
-        int rnd = rand() % rve_tp_cnt[tp];
-        *rve = makeAnalysis(fns[tp][rnd]);
+     bfrs = new SparskitBuffers(dof_max);
+   }
+   void MultiscaleRVEAnalysis::updateCoupling()
+   {
+     std::vector<micro_fo_header> hdrs;
+     std::vector<micro_fo_params> prms;
+     std::vector<micro_fo_init_data> inis;
+     std::vector<int> to_delete;
+     amsi::ControlService * cs = amsi::ControlService::Instance();
+     cs->RemoveData(recv_ptrn,to_delete);
+     for(auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
+       destroyAnalysis(ans[*idx]);
+     std::vector<int> to_add;
+     std::vector<int> empty;
+     size_t recv_init_ptrn = cs->addData(recv_ptrn,empty,to_add);
+     int ii = 0;
+     ans.resize(ans.size()+to_add.size());
+     cs->Communicate(recv_init_ptrn, hdrs, hdr_tp);
+     cs->Communicate(recv_init_ptrn, prms, prm_tp);
+     cs->Communicate(recv_init_ptrn, inis, ini_tp);
+     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
+     {
+       if(*rve == NULL)
+       {
+         double pt[3];
+         micro_fo_header & hdr = hdrs[ii];
+         micro_fo_params & prm = prms[ii];
+         micro_fo_init_data & dat = dats[ii];
+         apf::Vector3 gp;
+         apf::getGaussPoint(hdr.data[ELEMENT_TYPE],1,hdr.data[GAUSS_ID],gp);
+         gp.toArray(pt);
+         int nenodes = NumElementNodes(hdr.data[ELEMENT_TYPE]);
+         int tp = hdr.data[RVE_TYPE];
+         int rnd = rand() % rve_tp_cnt[tp];
+         *rve = makeAnalysis(fns[tp][rnd]);
       }
     }
   }

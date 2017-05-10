@@ -8,7 +8,7 @@ namespace las
     , nnz(nz)
     , rws(rs,rs+ne)
     , cls(cs,cs+nz)
-  {  }
+  { }
   int CSR::operator()(int rw, int cl) const
   {
     int result = -1;
@@ -33,5 +33,4 @@ namespace las
         if((lc = (*csr)(ii,jj)) != -1)
           fll_mat[ii*neq + jj] = sprs_mat[lc];
   }
-  
 }

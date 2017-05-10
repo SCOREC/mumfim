@@ -1,6 +1,5 @@
-#include "RVE.h"
-#include "FiberNetwork.h"
-#include "las.h"
+#include "bioRVE2.h"
+#include "bioFiberNetwork.h"
 #include "lasSparskit.h"
 namespace bio
 {
@@ -19,7 +18,7 @@ namespace bio
     *cbe_crnrs++ = apf::Vector3(-crd,-crd, 0.0);
     *cbe_crnrs++ = apf::Vector3( crd,-crd, 0.0);
     *cbe_crnrs++ = apf::Vector3( crd, crd, 0.0);
-    *cbe_crnrs++ = apf::Vector3(-cdr, crd, 0.0);
+    *cbe_crnrs++ = apf::Vector3(-crd, crd, 0.0);
   }
   RVE::RVE(int d)
   : dim(d)
@@ -30,12 +29,12 @@ namespace bio
   , cbe_u(NULL)
   , cbe_dof(NULL)
   {
-    assert(d == 2 | d == 3);
+    assert(d == 2 || d == 3);
     std::vector<apf::Vector3> cbe_crnrs;
     if(dim == 3)
-      originCenterUnitCube(cbe_crnrs,hd);
+      originCenterCube(std::back_inserter(cbe_crnrs),crd);
     else if(dim == 2)
-      originCenterUnitSquare(cbe_crnrs,hd);
+      originCenterSquare(std::back_inserter(cbe_crnrs),crd);
     cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
     apf::MeshIterator * it = cbe->begin(3);
     cbe_e = cbe->iterate(it);
@@ -47,7 +46,7 @@ namespace bio
   void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn)
   {
     apf::Element * cbe_e = rve->getElement();
-    apf::Field * fn_u = fn->getDisplacementField();
+    apf::Field * fn_u = fn->getUField();
     InterpOnto forward_u(cbe_e,fn_u);
     forward_u.apply(fn_u);
   }

@@ -1,5 +1,5 @@
 #include "bioUtil.h"
-#include "maMap.h"
+#include <maAffine.h>
 namespace bio
 {
   void mapGlobalToLocal(apf::Mesh * msh,
