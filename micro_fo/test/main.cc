@@ -1,7 +1,4 @@
-#include "RepresentVolElem.h"
-#include "SparseMatrix.h"
-#include "Sparskit_Externs.h"
-#include "RVE_Util.h"
+#include "bioFiberRVEAnalysis.cc"
 #include <iostream>
 #include <list>
 #include <sstream>
@@ -18,34 +15,37 @@ int main(int argc, char **argv)
   out_file.open("results.dat");
   out_file << "cube_length stiffness11" << std::endl;
   out_file.close();
-  int num_networks = atoi(argv[1]);
-  std::vector<FiberNetwork*> networks;
-  std::vector<SparseMatrix*> sparse_structs;
-  bio::SparskitBuffers * buffers = NULL;
-  networks.reserve(num_networks);
-  std::stringstream current_file;
-  int max_dofs = -1;
-  for(int ii=0;ii<num_networks;ii++)
+  int num_fns = atoi(argv[1]);
+  std::string fn_prfx(argv[2]);
+  std::vector<FiberNetwork*> fns;
+  std::vector<las::CSR*> csrs;
+  int dof_max = -1;
+  NetworkLoader ldr;
+  for(int ii = 0; ii < num_fns; ++ii)
   {
-    current_file << "test_networks/perpendicular_trusses.txt";
-    // current_file <<"/fasttmp/chanv3/Develop/biotissue_amsi/macro/test/SimpleCube/fiber_networks/clipped_del_8.txt";
-    bio::FiberNetwork * fn = NULL;
-    if (SPECIFY_FIBER_TYPE)
-      fn = new SupportFiberNetwork();
-    else
-      fn = new FiberNetwork();
-    fn->readFromFile(current_file.str());
-    current_file.str(std::string());
-    sparse_structs.push_back(Make_Structure(networks.back()));
-    networks.push_back(fn);
-    int num_dofs = networks.back()->numDofs();
-    max_dofs = num_dofs > max_dofs ? num_dofs : max_dofs;
+    std::stringstream fl;
+    fl << fn_prfx.c_str() << ii+1 << ".txt";
+    std::ifstream strm(fl.str());
+    FiberNetwork * fn = ldr.fromStream(strm);
+    int dofs = fn->getDofCount();
+    fns.push_back(fn);
+    csrs.push_back(las::createCSR(fn->getUNumbering(),dofs));
+    dof_max = dofs > dof_max ? dofs : dof_max;
   }
-  buffers = new bio::SparskitBuffers(max_dofs);
+  las::SparskitBuffers bfrs(dof_max);
   // Number of RVEs
-  int n = num_networks;
-  std::list<bio::MicroFO*> rves;
-  rves.resize(n,NULL);
+  std::vector<FiberRVEAnalysis*> rves;
+  for(int ii = 0; ii < num_fns; ++ii)
+    rves.push_back(makeAnalysis(fns[ii],&bfrs));
+  // Compute RVEs
+  std::cout << "Running RVEs..." << std::endl;
+  for(auto rve = rves.begin(); rve != rves.end(); ++rve)
+  {
+    FiberRVEIteration itr(*rve);
+    FiberRVEConvergence cnvrg(*rve);
+    amsi::numericalSolve(&itr,&cnvrg);
+  }
+  /*
   // Setup test data (Not used for size effect test)
   double pt[3] = {0.25, 0.25, 0.25};
   double theta = -2 * atan(sqrt(2) - sqrt(3));
@@ -119,41 +119,6 @@ int main(int argc, char **argv)
   prms.data[VOLUME_FRACTION] = 0.003;
   prms.data[YOUNGS_MODULUS] = 43200000;
   prms.data[NONLINEAR_PARAM] = 1.2;
-  for(std::list<bio::MicroFO*>::iterator currentRVE = rves.begin(); currentRVE != rves.end(); ++currentRVE)
-  {
-    std::cout<<"Initializing RVEs ("<< nn <<")..."<<std::endl;
-    (*currentRVE) = new bio::MicroFO(&hdr.data[0],
-                                           &pt[0],
-                                           0,
-                                           networks[nn],
-                                           sparse_structs[nn],
-                                           buffers,
-                                           &prms.data[0],
-                                           init_coords,
-                                           4);
-    nn++;
-  }
-  // Compute RVEs
-  std::cout<<"Running RVEs..."<<std::endl;
-  nn = 0;
-  for(std::list<bio::MicroFO*>::iterator currentRVE = rves.begin(); currentRVE != rves.end(); ++currentRVE)
-  {
-    std::cout<<"Running RVEs ("<< nn <<")..."<<std::endl;
-    P_computeFiberOnlyRVE((*currentRVE),data,results);
-    nn++;
-  }
-  std::cout << "Dimensionalized stress: "
-            << results[0] << " " << results[1] << " "
-            << results[2] << " " << results[3] << " "
-            << results[4] << " " << results[5] << std::endl;
-  std::cout << "Unbalanced force term: " << results[6] << " " << results[7] << " " << results[8] << std::endl;
-  std::cout << "Dimensionalized stress derivatives: " << std::endl;
-  for(int ii = 0; ii < 6; ii++)
-  {
-    for(int jj = 0; jj < 12; jj++)
-      std::cout << results[9 + ii*12 + jj] << " ";
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
+  */
   return 0;
 }
