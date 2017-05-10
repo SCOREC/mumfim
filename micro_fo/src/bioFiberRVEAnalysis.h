@@ -13,13 +13,13 @@ namespace bio
     FiberNetwork * fn;
     RVE * rve;
     std::vector<apf::MeshEntity*> bnd_nds;
-    amsi::ElementalSystem * es
+    apf::Integrator * es;
     las::Mat * k;
-    las::Vec u;
-    las::Vec f;
+    las::Vec * u;
+    las::Vec * f;
     las::LasOps * ops;
   };
-  FiberRVEAnalysis * makeAnalysis(FiberNetwork *);
+  FiberRVEAnalysis * makeAnalysis(FiberNetwork *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);
   class FiberRVEIteration : public amsi::Iteration
   {
@@ -49,10 +49,6 @@ namespace bio
    */
   template <typename I>
     void applyRVEForceBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::LasOps * ops, las::Vec * f, las::Mat * k);
-  void calc_dSigma_du(FiberRVEAnalysis * fra);
-  double calcStiffness(FiberRVEAnalysis * fra);
-  void calcStress(FiberRVEAnalysis * fra, apf::Matrix3 & sigma);
-  void tdYdXr(FiberRVEAnalysis * fra);
-  void calcFEMJacob(FiberRVEAnalysis * fra);
+  void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
 }
 #endif

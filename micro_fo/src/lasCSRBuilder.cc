@@ -1,5 +1,5 @@
 #include "lasCSR.h"
-#include <apfField.h>
+#include <apfFieldOp.h>
 #include <cassert>
 namespace las
 {
@@ -38,7 +38,7 @@ namespace las
     }
     return result;
   }
-  class CSRBuilder : public apf::FieldOp
+  class CSRBuilder : public amsi::FieldOp
   {
   protected:
     apf::Numbering * nm;

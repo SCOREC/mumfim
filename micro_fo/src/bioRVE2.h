@@ -119,7 +119,7 @@ namespace bio
       apf::Vector3 p;
       apf::Vector3 u;
       apf::getVector(crd_fld,cur_ent,nde,p); // get xyz coord of fiber node
-      mapGlobalToLocal(apf::getMesh(crd_fld),apf::getMeshEntity(src_elmnt),p,u);
+      //mapGlobalToLocal(apf::getMesh(crd_fld),apf::getMeshEntity(src_elmnt),p,u);
       apf::getVector(src_elmnt,p,u);
       apf::setVector(dest_fld,cur_ent,nde,u);
     }

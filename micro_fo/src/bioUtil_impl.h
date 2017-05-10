@@ -2,6 +2,7 @@
 #define BIO_UTIL_IMPL_H_
 namespace bio
 {
+  /*
   template <typename I, typename O>
     void mapGlobalsToLocals(apf::Mesh * msh,
                             apf::MeshEntity * e,
@@ -16,5 +17,6 @@ namespace bio
       *lcl_crds++ = lcl;
     }
   }
+  */
 }
 #endif

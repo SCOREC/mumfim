@@ -1,6 +1,8 @@
 #include "bioUtil.h"
+//#include <maAffine.h>
 namespace bio
 {
+  /*
   void mapGlobalToLocal(apf::Mesh * msh,
                         apf::MeshEntity * ent,
                         apf::Vector3 const& global,
@@ -9,4 +11,5 @@ namespace bio
     ma::Affine i = ma::getMap(msh,ent));
     local = i * global;
   }
+  */
 }

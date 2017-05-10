@@ -7,95 +7,100 @@
 #include "lasSparskit.h"
 namespace bio
 {
-  amsi::ElementalSystem * createMicroElementalSystem(FiberNetwork * fn)
+  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn, las::LasOps * ops, las::Mat * k, las::Vec * f)
   {
-    amsi::ElementalSystem * es = NULL;
-    FiberMemeber tp = fn->getFiberMember();
-    if(tp == FiberMemeber::truss)
-      es = new TrussIntegrator();
+    apf::Integrator * es = NULL;
+    FiberMember tp = fn->getFiberMember();
+    if(tp == FiberMember::truss)
+      es = new TrussIntegrator(fn->getUNumbering(),fn->getFiberReactions(),ops,k,f,1);
+    return es;
   }
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn)
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn, las::SparskitBuffers * b)
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = fn;
     an->rve = new RVE(fn->getDim());
-    getBoundaryVerts(an->rve,an->fn,std::back_inserter(bnd_nds));
+    getBoundaryVerts(an->rve,an->fn,RVE::side::all,std::back_inserter(an->bnd_nds));
     apf::Numbering * udofs = an->fn->getUNumbering();
     int nudofs = apf::NaiveOrder(udofs);
     apf::Numbering * wdofs = an->fn->getdWNumbering();
     int nwdofs = apf::NaiveOrder(wdofs);
-    apf::SetNumberingOffset(wdof,nudofs);
+    apf::SetNumberingOffset(wdofs,nudofs);
     int ndofs = nudofs + nwdofs;
-    an->es = createMicroElementalSystem(fn);
-    an->f = las::createSparskitVec(udofs);
-    an->u = las::createSparskitVec(udofs);
+    an->f = las::createSparskitVector(ndofs);
+    an->u = las::createSparskitVector(ndofs);
     // todo : won't work when we have a field for moments.
-    an->k = las::createSparskitMat(las::createCSR(udofs,nudofs));
-    an->ops = las::initSparskitOps();
+    an->k = las::createSparskitMatrix(las::createCSR(udofs,nudofs));
+    if(b == NULL)
+      b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
+    an->ops = las::initSparskitOps(b);
+    an->es = createMicroElementalSystem(fn,an->ops,an->k,an->f);
+    return an;
   }
   void destroyAnalysis(FiberRVEAnalysis * fa)
   {
-    delete fa->k;
-    las::destroyVec(fa->u);
-    las::destroyVec(fa->f);
-    fa->rve = NULL;
+    las::deleteSparskitMatrix(fa->k);
+    las::deleteSparskitVector(fa->u);
+    las::deleteSparskitVector(fa->f);
+    delete fa->rve;
     fa->fn = NULL;
     delete fa;
-    fa = NULL;
   }
   FiberRVEIteration::FiberRVEIteration(FiberRVEAnalysis * a)
-    : num::Iteration()
+    : amsi::Iteration()
     , an(a)
   {}
   void FiberRVEIteration::iterate()
   {
-    an->itgr->process(an->fn->getNetworkMesh());
+    // need to apply dirichlet bcs possibly?
+    an->es->process(an->fn->getNetworkMesh());
     applyRVEForceBC(an->bnd_nds.begin(),
                     an->bnd_nds.end(),
                     an->fn->getUNumbering(),
                     an->ops,
-                    an->f);
-    an->ops->solve(an->k,&an->u,&an->f);
+                    an->f,
+                    an->k);
+    an->ops->solve(an->k,an->u,an->f);
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
     amsi::FreeApplyOp fr_wrt(an->fn->getUNumbering(),&wrt);
     amsi::FreeApplyOp fr_acm(an->fn->getUNumbering(),&acm);
     double * s = NULL;
-    an->ops->get(&an->u,s);
+    an->ops->get(an->u,s);
     amsi::ApplyVector(an->fn->getUNumbering(),
                       an->fn->getdUField(),
                       s,0,&fr_wrt).run();
     amsi::ApplyVector(an->fn->getUNumbering(),
                       an->fn->getUField(),
-                      s,0,fr_acm).run();
-    an->ops->restore(&an->u,s);
+                      s,0,&fr_acm).run();
+    an->ops->restore(an->u,s);
   }
   FiberRVEConvergence::FiberRVEConvergence(FiberRVEAnalysis * a, double e)
-    : num::Convergence()
+    : amsi::Convergence()
     , an(a)
     , eps(e)
     , resid_im(0.0)
   {}
   bool FiberRVEConvergence::converged()
   {
+    // don't bother recalculating force vector, just overconverge to get more accuracy
     bool result = false;
-    double resid = 0.0;
-    //double resid = norm(*(an->u));
+    double resid = an->ops->norm(an->f);
     if(resid < eps)
       result = true;
     return result;
   }
-  double calcStiffness(FiberRVEAnalysis *)
+  void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
   {
-    return 0.0;
-  }
-  void calcStress(FiberRVEAnalysis * fra, apf::Matrix3 & sigma)
-  {
-    sigma.zero();
+    for(int ii = 0; ii < 3; ++ii)
+      for(int jj = 0; jj < 3; ++jj)
+        sigma[ii][jj] = 0.0;
+    double * f = NULL;
+    fra->ops->get(fra->f,f);
     std::vector<apf::MeshEntity*> bnd;
     getBoundaryVerts(fra->rve,fra->fn,RVE::side::all,std::back_inserter(bnd));
-    apf::Numbering * nm = fra->fn->getNumbering();
-    apf::Field * u = fra->fn->getDisplacementField();
+    apf::Numbering * nm = fra->fn->getUNumbering();
+    apf::Field * uf = fra->fn->getUField();
     apf::Mesh * fn = fra->fn->getNetworkMesh();
     for(auto vrt = bnd.begin(); vrt != bnd.end(); ++vrt)
     {
@@ -106,27 +111,16 @@ namespace bio
       apf::Vector3 x;
       fn->getPoint(*vrt,0,x);
       apf::Vector3 u;
-      apf::getVector(u,*vrt,0,u);
+      apf::getVector(uf,*vrt,0,u);
       x += u;
       for(int ii = 0; ii < 3; ++ii)
         for(int jj = 0; jj < 3; ++jj)
-          sigma(ii,jj) += fra->f(dof[ii]) * x(jj);
+          sigma[ii][jj] += f[dof[ii]] * x[jj];
     }
+    fra->ops->restore(fra->f,f);
     // this is just the symmetric part of the matrix, there should be a standalone operation for this...
-    sigma(0,1) = sigma(1,0) = 0.5 * (sigma(0,1) + sigma(1,0));
-    sigma(0,2) = sigma(2,0) = 0.5 * (sigma(0,2) + sigma(2,0));
-    sigma(1,2) = sigma(2,1) = 0.5 * (sigma(1,2) + sigma(2,1));
-  }
-  void tdYdXr(FiberRVEAnalysis * fra)
-  {
-
-  }
-  void calcFEMJacobian(FiberRVEAnalysis * fra)
-  {
-
-  }
-  void solver(FiberRVEAnalysis * fra)
-  {
-    
+    sigma[0][1] = sigma[1][0] = 0.5 * (sigma[0][1] + sigma[1][0]);
+    sigma[0][2] = sigma[2][0] = 0.5 * (sigma[0][2] + sigma[2][0]);
+    sigma[1][2] = sigma[2][1] = 0.5 * (sigma[1][2] + sigma[2][1]);
   }
 };

@@ -38,7 +38,7 @@ namespace bio
       processPeriodicity(is,msh);
     msh->acceptChanges();
     apf::printStats(msh);
-    return new FiberNetwork(msh,(FiberMember)et);
+    return new FiberNetwork(msh,(FiberMember)et,rctns.begin(),rctns.end());
   }
   void NetworkLoader::processReactionLine(std::istream & is)
   {

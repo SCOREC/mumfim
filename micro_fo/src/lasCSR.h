@@ -1,5 +1,7 @@
 #ifndef LAS_CSR_H_
 #define LAS_CSR_H_
+#include <apfNumbering.h>
+#include <vector>
 namespace las
 {
   /**
