@@ -167,8 +167,8 @@ namespace bio
       node2[1] = nodes[elements[ii].node2_id].y;
       node2[2] = nodes[elements[ii].node2_id].z;
       elements[ii].orig_len = sqrt(pow((node2[0] - node1[0]),2) +
-				   pow((node2[1] - node1[1]),2) +
-				   pow((node2[2] - node1[2]),2));
+                                   pow((node2[1] - node1[1]),2) +
+                                   pow((node2[2] - node1[2]),2));
     }
   }
   SupportFiberNetwork::SupportFiberNetwork() : FiberNetwork()
@@ -182,6 +182,7 @@ namespace bio
   {
     return static_cast<FiberNetwork*>(new SupportFiberNetwork(*this));
   }
+  // pure function
   void calcFiberLengths(const FiberNetwork & fn, std::vector<double> & lengths)
   {
     int num_elements = fn.numElements();
@@ -225,7 +226,7 @@ namespace bio
   }
 
   void calcFiberOrientationTensor(const FiberNetwork & fn,
-				  double (&rslt)[9])
+  double (&rslt)[9])
   {
     int num_elements = fn.numElements();
     std::vector<double> len(num_elements);

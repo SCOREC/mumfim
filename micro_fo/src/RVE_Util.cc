@@ -933,9 +933,8 @@ namespace bio
     return avg;
   }
   // T. Stylianopolous, V.H. Barocas, Volume-averaging theory for the study of the mechanics of collangen networks (2006), equation (1)
-  void MicroFO::calc_fiber_str(double * len,
-                               double * fib_str,
-                               double * dfdl)
+  // pure function
+  void MicroFO::calc_fiber_str(double * len, double * fib_str, double * dfdl)
   {
     int num_elements = fiber_network->numElements();
     for(int ii = 0; ii < num_elements; ii++)
@@ -948,8 +947,7 @@ namespace bio
       dfdl[ii] = force_reaction.second;
     }
   }
-  void MicroFO::calc_force_vector(double * lengths,
-                                  double * fib_str)
+  void MicroFO::calc_force_vector(double * lengths, double * fib_str)
   {
     int num_dofs = fiber_network->numDofs();
     force_vector.assign(num_dofs,0.0);
