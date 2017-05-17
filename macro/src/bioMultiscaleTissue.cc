@@ -208,6 +208,20 @@ namespace bio
       return NONE;
       }
     */
+    apf::Matrix3x3 F;
+    apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
+    apf::Element * e = apf::createElement(apf_primary_field,mlm);
+    apf::Vector3 pcoords;
+    int pt_num = 0; // assuming element with one integration point.
+    apf::getIntPoint(mlm,1,pt_num,pcoords); // assume polynomial order of accuracy = 1.
+    amsi::deformationGradient(e,pcoords,F);
+    double detF = getDeterminant(F);
+    /*
+    if (detF > 0.6)
+      return FIBER_ONLY;
+    else
+      return NONE;
+    */
     // multiscale based purely off of simmodeler specification, no adaptivity, need differentiate between initialization and updating
     pEntity snt = reinterpret_cast<pEntity>(me);
     pGEntity gsnt = EN_whatIn(snt);
