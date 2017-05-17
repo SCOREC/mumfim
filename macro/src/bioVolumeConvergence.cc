@@ -104,7 +104,10 @@ namespace bio
       ref_v = r;
     }
     pAttribute eps_att = Attribute_childByType(cn,"epsilon");
+    pAttribute cap_att = Attribute_childByType(cn,"iteration cap");
     amsi::SimUpdatingEpsilon * eps = new amsi::SimUpdatingEpsilon((pAttributeDouble)eps_att);
+    if(cap_att)
+      eps->setCap(AttributeInt_value((pAttributeInt)cap_att));
     return new amsi::UpdatingConvergence<amsi::to_R1*,decltype(eps),amsi::to_R1*>(it,dv,eps,ref_v);
   }
 }
