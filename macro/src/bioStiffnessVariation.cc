@@ -75,11 +75,11 @@ namespace bio
              - mdl_src    : type apf::ModelEntity **.
              - mdl_snk_fc : type gmi_ent *.
 	  */
-          std::cout<<"face "<<gmi_tag(mdl,mdl_src_fc)<<" in model region "<<gmi_tag(mdl,(gmi_ent*)(*snk))<<"?"<<std::endl;
+          std::cout<<"face "<<gmi_tag(mdl,mdl_src_fc)<<" of src mdl rgn "<<gmi_tag(mdl,(gmi_ent*)(*src))<< " in closure of snk mdl rgn "
+			    <<gmi_tag(mdl,(gmi_ent*)(*snk))<<"?"<<std::endl;
 	  if (gmi_is_in_closure_of(mdl,mdl_src_fc,(gmi_ent*)(*snk)))
 	  {
-	  std::cout<<"adj. src model face is "<<gmi_tag(mdl,mdl_src_fc)<<std::endl;
-	  std::cout<<"adj. src model face coord. is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
+	    std::cout<<" Yes, coord. of face "<<gmi_tag(mdl,mdl_src_fc)<<" is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
 	    /* 6. Iterate through msh regions that are classified in "snk" and process each msh region. */
 	    for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
 	    {
