@@ -93,7 +93,8 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   {
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
+    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;
+        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
     {
       amsi::initCase(mdl,cs);
       bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
