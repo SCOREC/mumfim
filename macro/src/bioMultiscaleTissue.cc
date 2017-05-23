@@ -33,6 +33,7 @@ namespace bio
     mltscl = new ULMultiscaleHydrostaticPressureIntegrator(this,apf_primary_field,crt_rve,det_dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
+    apf::zeroField(fbr_ornt);
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
