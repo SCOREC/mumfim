@@ -46,55 +46,59 @@ namespace bio
   void StiffnessVariation::populate_stf_vrtn_fld()
   {
     /* Outline
-       1. Iterate through model sink regions (std::vector<apf::ModelEntity*> mdl_snk_ents).
-       2. For each region of model sink regions, identify adjacent faces (gmi_set * adj_mdl_snk_fcs).
-       3. For each adjacent face (gmi_ent * mdl_snk_fc), iterate through model source regions (std::vector<apf::ModelEntity*> mdl_src_ents).
-       4. If adjacent face is in closure of source region in model source regions, iterate through mesh regions that are classified on sink region.
-       5. For each classified mesh region, set the target model face to adjacent face and process MeshElement.
-     */
+       1. Iterate through model regions labeled as "src" (std::vector<apf::ModelEntity*> mdl_src_ents).
+       2. Identify model faces that are adjacent to each model region in mdl_src_ents (gmi_set * adj_mdl_src_fcs).
+       3. For each adjacent face (gmi_ent * mdl_src_fc), calculate average coordinate.
+       4. Iterate through model regions labeled as "snk" (std::vector<apf::ModelEntity*> mdl_snk_ents).
+       5. If mdl_src_fc is in closure of snk.
+       6. Iterate through msh regions classified on snk and process each msh region.
+    */
+    /* 1. Iterate through model regions labeled as "src" */
     apf::Mesh * msh = apf::getMesh(stf_vrtn_fld);
     int dm = msh->getDimension();
     gmi_model * mdl = msh->getModel();
-    for (auto snk = mdl_snk_ents.begin(); snk != mdl_snk_ents.end(); ++snk)
+    for (auto src = mdl_src_ents.begin(); src != mdl_src_ents.end(); ++src)
     {
-      /* Identify faces that are adjacent to model region entity snk. snk if of type apf::ModelEntity**. */
-      gmi_set * adj_mdl_snk_fcs = mdl->ops->adjacent(mdl,(gmi_ent*)(*snk),2);
-      for (int ii = 0; ii < adj_mdl_snk_fcs->n; ++ii)
+      /* 2. identify model faces that are adjacent to each model region in mdl_src_ents. */
+      gmi_set * adj_mdl_src_fcs = mdl->ops->adjacent(mdl,(gmi_ent*)(*src),2);
+      for (int ii = 0; ii < adj_mdl_src_fcs->n; ++ii)
       {
-        gmi_ent * mdl_snk_fc = adj_mdl_snk_fcs->e[ii];
-        /* Find closest point to model face entity mdl_src_fc. */
-        auto bgn = amsi::beginClassified(msh,(apf::ModelEntity*)mdl_snk_fc,0); // vertex entities classified on model face entity.
-        auto end = amsi::endClassified(bgn);
-        double fc_xyz[3]={0.0};
-        amsi::getAvgFieldValue(msh->getCoordinateField(),bgn,end,fc_xyz);
-        /* Implementation if gmi_closest_point is working.
-           double mdl_src_fc_uv[2] = {0};
-           std::cout<<"mdl_src_fc is"<<gmi_tag(msh->getModel(),(gmi_ent*)mdl_src_fc)<<std::endl;
-           gmi_closest_point(msh->getModel(),(gmi_ent*)mdl_src_fc,gp,mdl_src_fc_xyz,mdl_src_fc_uv);
-        */
-        for (auto src = mdl_src_ents.begin(); src != mdl_src_ents.end(); ++src)
-        {
-          /* if adjacent model sink face is in closure of model source region.
+	gmi_ent * mdl_src_fc = adj_mdl_src_fcs->e[ii]; // extract ii^th adj. face from adj_mdl_src_fcs.
+	double fc_xyz[3] = {0.0};
+	/* 3. Calculate average coordinate of adjacent face, mdl_src_fc */
+	calculate_mdl_fc_coord((apf::ModelEntity*)mdl_src_fc, fc_xyz);
+	/* 4. Iterate through model regions labeled as "snk" */
+	for (auto snk = mdl_snk_ents.begin(); snk != mdl_snk_ents.end(); ++snk)
+	{
+	  /* 5. if adjacent model src face is in closure of model sink region, process the model sink region
              - mdl        : type gmi_model*.
              - mdl_src    : type apf::ModelEntity **.
              - mdl_snk_fc : type gmi_ent *.
-           */
-          std::cout<<"face "<<gmi_tag(mdl,mdl_snk_fc)<<" in model region "<<gmi_tag(mdl,(gmi_ent*)(*src))<<"?"<<std::endl;
-          if (gmi_is_in_closure_of(mdl,mdl_snk_fc,(gmi_ent*)(*src)))
-          {
-            std::cout<<"adj. snk model face is "<<gmi_tag(mdl,mdl_snk_fc)<<std::endl;
-            std::cout<<"adj. snk model face coord. is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
-            for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
-            {
-              this->set_mdl_fc_xyz(fc_xyz);
-              this->inElement(*msh_rgn);
-              apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
-              this->process(msh_elmt);
-            }
-          }
-        }
-      }
+	  */
+          std::cout<<"face "<<gmi_tag(mdl,mdl_src_fc)<<" of src mdl rgn "<<gmi_tag(mdl,(gmi_ent*)(*src))<< " in closure of snk mdl rgn "
+			    <<gmi_tag(mdl,(gmi_ent*)(*snk))<<"?"<<std::endl;
+	  if (gmi_is_in_closure_of(mdl,mdl_src_fc,(gmi_ent*)(*snk)))
+	  {
+	    std::cout<<" Yes, coord. of face "<<gmi_tag(mdl,mdl_src_fc)<<" is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
+	    /* 6. Iterate through msh regions that are classified in "snk" and process each msh region. */
+	    for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
+	    {
+	      this->set_target_xyz(fc_xyz);
+	      this->inElement(*msh_rgn);
+	      apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
+	      this->process(msh_elmt);
+	    }
+	  }
+	}
+      }   
     }
+  }
+  void StiffnessVariation::calculate_mdl_fc_coord(apf::ModelEntity * mdl_fc, double * mdl_fc_xyz)
+  {
+    apf::Mesh * msh = apf::getMesh(stf_vrtn_fld);
+    auto bgn = amsi::beginClassified(msh, mdl_fc, 0);
+    auto end = amsi::endClassified(bgn);
+    amsi::getAvgFieldValue(msh->getCoordinateField(),bgn,end,mdl_fc_xyz);
   }
   void StiffnessVariation::atPoint(apf::Vector3 const &p, double w, double dV)
   {
@@ -107,11 +111,13 @@ namespace bio
     gauss_pt_xyz.toArray(gp);
     double dist = 0.0;
     for (auto i=0; i<dm; ++i)
-      dist += (gp[i] - mdl_fc_xyz[i]) * (gp[i] - mdl_fc_xyz[i]);
+      dist += (gp[i] - target_xyz[i]) * (gp[i] - target_xyz[i]);
     dist = std::sqrt(dist);
     // The expression from pANode fn is assumed to have the form 1-dist/x, where x is specified in simmodeler.
-    double x_val = 30.0; //assume variation distance is 30 microns.
-    apf::setScalar(stf_vrtn_fld,msh_ent,ip_integration_pt,1.0-dist/x_val);
+    double x_val = 100.0; //assume variation distance is 30 microns.
+    // src region is processed multiple times, therefore take maximum value of 1-dist/x_val among all process instances. 
+    double  stf_vrtn_coeff = std::max(1.0-dist/x_val,apf::getScalar(stf_vrtn_fld,msh_ent,ip_integration_pt));
+    apf::setScalar(stf_vrtn_fld,msh_ent,ip_integration_pt,stf_vrtn_coeff);
     ip_integration_pt++;
   }
 }

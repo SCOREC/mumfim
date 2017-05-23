@@ -148,14 +148,21 @@ namespace bio
       double detF = getDeterminant(F);
       apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, detF);
       double coeff = 5.0;
+//      double P = (rve_info->derivS[0] + rve_info->derivS[3] + rve_info->derivS[5])/3.0;
       double P = 0.0;
       double HydroStaticP = P * (std::exp(coeff * (1.0-detF)) - 1.0)/(std::exp(coeff) - 1.0);
-      SV[0] = (rve_info->derivS[0]) + HydroStaticP; 
-      SV[1] = (rve_info->derivS[3]) + HydroStaticP;
-      SV[2] = (rve_info->derivS[5]) + HydroStaticP;
+      SV[0] = (rve_info->derivS[0]); 
+      SV[1] = (rve_info->derivS[3])*detF + HydroStaticP*(1-detF);
+      SV[2] = (rve_info->derivS[5])*detF + HydroStaticP*(1-detF);
       SV[3] = (rve_info->derivS[1]);
       SV[4] = (rve_info->derivS[4]);
       SV[5] = (rve_info->derivS[2]);
+/*
+      std::cout<<"sigma 11:"<<rve_info->derivS[0]<<std::endl;
+      std::cout<<"sigma 22:"<<rve_info->derivS[3]<<std::endl;
+      std::cout<<"sigma 33:"<<rve_info->derivS[5]<<std::endl;
+      std::cout<<"Hydro P:"<<HydroStaticP<<std::endl;
+*/
       S[0][0] = S[0+3][0+3] = S[0+6][0+6] = SV[0];
       S[0][1] = S[0+3][1+3] = S[0+6][1+6] = SV[3];
       S[0][2] = S[0+3][2+3] = S[0+6][2+6] = SV[5];
