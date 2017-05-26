@@ -49,7 +49,7 @@ namespace bio
     amsi::ModularIteration * mdlr = NULL;
     itr = mdlr = new MultiscaleTissueIteration(mt,las);
     std::vector<pANode> trk_vols;
-    amsi::cutPaste<pANode>(AttCase_attributes(ss,"track volume"),std::back_inserter(trk_vols));
+    amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"track volume"),std::back_inserter(trk_vols));
     std::vector<VolCalc*> vls;
     for(auto trk_vol = trk_vols.begin(); trk_vol != trk_vols.end(); ++trk_vol)
     {
