@@ -38,7 +38,7 @@ namespace bio
     for (auto mdl_ent = mdl_snk_ents.begin(); mdl_ent != mdl_snk_ents.end(); ++mdl_ent)
       std::cout << mdl->ops->tag(mdl,(gmi_ent*)*mdl_ent) << " ";
     std::cout << std::endl;
-    pAttribute stf_att = AttCase_attrib(cs,"stiffness variation");
+    pAttribute stf_att = AttCase_attrib(cs,"stiffness gradient");
     pAttributeDouble fn = (pAttributeDouble)Attribute_childByType(stf_att,"function");
     //fn_nd = AttNode_childByType(nd,"function");
     stfvar = new StiffnessVariation(mdl_src_ents.begin(), mdl_src_ents.end(), mdl_snk_ents.begin(), mdl_snk_ents.end(), stf_vrtn_fld, fn);
