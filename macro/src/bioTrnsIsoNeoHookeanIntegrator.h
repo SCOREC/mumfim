@@ -23,7 +23,6 @@ namespace bio
 			      double axial_shear_modulus,
 			      double axial_youngs_modulus,
 			      int o)
-
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , stf_vrtn_fld(stf_vrtn)

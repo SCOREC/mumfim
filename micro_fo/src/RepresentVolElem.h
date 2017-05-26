@@ -145,7 +145,6 @@ namespace bio
                     double & loc_vastry,
                     double & loc_vastrz,
                     double & fem_res_norm);
-
     // map node dof values to solution vector
     void update_coordinate_vector();
     // map solution vector values to node dof values

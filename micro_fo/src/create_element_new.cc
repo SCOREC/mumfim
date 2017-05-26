@@ -23,8 +23,27 @@ namespace bio
       double dxrdx[24 * num_rve_doubles];
       // Calculation of dxrdx
       make_dRVEdFE(dxrdx,&initial_coords[0]);
-
-      /* New implementation using deformation gradient*/
+//      make_dRVEdFE(dxrdx,coords);
+      // Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
+      double rvedisp[24];
+      matrix_multiply(dxrdx,24,num_rve_doubles,fedisp,num_rve_doubles,1,rvedisp);
+/*
+      AMSI_DEBUG(std::cout <<"fedisp:"<<"("<<fedisp[0]<<","<<fedisp[1]<<","<<fedisp[2]<<")"
+                                     <<", ("<<fedisp[3]<<","<<fedisp[4]<<","<<fedisp[5]<<")"
+                                     <<", ("<<fedisp[6]<<","<<fedisp[7]<<","<<fedisp[8]<<")"
+                                     <<", ("<<fedisp[9]<<","<<fedisp[10]<<","<<fedisp[11]<<")"
+                                     <<std::endl);
+      AMSI_DEBUG(std::cout <<"rvedisp:"<<"("<<rvedisp[0]<<","<<rvedisp[1]<<","<<rvedisp[2]<<")"
+                                     <<", ("<<rvedisp[3]<<","<<rvedisp[4]<<","<<rvedisp[5]<<")"
+                                     <<", ("<<rvedisp[6]<<","<<rvedisp[7]<<","<<rvedisp[8]<<")"
+                                     <<", ("<<rvedisp[9]<<","<<rvedisp[10]<<","<<rvedisp[11]<<")"
+                                     <<", ("<<rvedisp[12]<<","<<rvedisp[13]<<","<<rvedisp[14]<<")"
+                                     <<", ("<<rvedisp[15]<<","<<rvedisp[16]<<","<<rvedisp[17]<<")"
+                                     <<", ("<<rvedisp[18]<<","<<rvedisp[19]<<","<<rvedisp[20]<<")"
+                                     <<", ("<<rvedisp[21]<<","<<rvedisp[22]<<","<<rvedisp[23]<<")"
+                 <<std::endl);
+*/
+      // New implementation using deformation gradient
       double rvedisp[24] = {};
       getRVECornerDisp(F,rvedisp);
 

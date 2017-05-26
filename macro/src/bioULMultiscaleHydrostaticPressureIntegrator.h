@@ -1,6 +1,7 @@
 #ifndef BIO_ULMULTISCALE_HYDROSTATIC_PRESSURE_INTEGRATOR_H_
 #define BIO_ULMULTISCALE_HYDROSTATIC_PRESSURE_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
+#include <amsiDeformation.h>
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <apfSIM.h>

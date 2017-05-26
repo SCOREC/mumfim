@@ -243,21 +243,14 @@ double MicroFO::PHI(int i, double u, double v, double w)
       double dfdE[num_elements];
       std::vector<double> len(num_elements);
       calcFiberLengths(*fiber_network,len);
-      calc_fiber_str(&len[0],
-                     &fib_str[0],
-                     &dfdE[0]);
+      calc_fiber_str(&len[0],&fib_str[0],&dfdE[0]);
       // Construct "matrix" for following function
-      calc_precond(&matrix[0],
-                   &len[0],
-                   &fib_str[0],
-                   &dfdE[0],
-                   false);
+      calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdE[0],false);
       // Reconstruct tdydx which is needed at the beginning
       // of the solve for the first order continuation guess
       calc_tdydxr();
       post_migration = false;
     }
-    // wrap on the main_solver
     main_solver(deformation_gradient,
                 rve_info[0], rve_info[1], rve_info[2],
                 rve_info[3], rve_info[4],
@@ -389,6 +382,19 @@ void MicroFO::eval_balancestress(SCOREC::Util::mVector & V)
 void MicroFO::eval_derivstress(double * dSdx)
 {
   memcpy(dSdx, rve_info + 9, 6 * num_rve_doubles * sizeof(double));
+}
+void MicroFO::SetDeformationGradient(int guass_pt, double * grad)
+{
+  for (int ii = 0; ii < 3; ii++) // ii = j
+    for (int jj = 0; jj < 3; jj++) // jj = k
+      F[ii][jj] = grad[guass_pt*9 + ii*3 + jj];
+}
+void MicroFO::SetDeformationGradients(double * grads)
+{
+  for(int ii = 0; ii < 8; ii++)  //loop over 8 vertices
+    for(int jj = 0; jj < 3; jj++)
+      for(int kk = 0; kk < 3; kk++)
+        FItp[ii][jj][kk] = grads[ii*9 + jj*3 + kk];
 }
 void MicroFO::collectMigrationData()
 {
