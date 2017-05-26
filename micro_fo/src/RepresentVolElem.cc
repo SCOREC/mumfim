@@ -152,7 +152,7 @@ namespace bio
     total_fiber_length = std::accumulate(lngths.begin(),lngths.end(),0.0);
     fiber_area = M_PI * fiber_radius * fiber_radius;
     rve_dim = sqrt(total_fiber_length * fiber_area / fiber_volume_fraction);
-    rve_dim = 7.0;
+    rve_dim = 7.0; // size of physical RVE. Units should be same as that or fiber radius specified in simmodeler.
     half_rve_dim = 0.5 * rve_dim;
     scale_conversion = 1.0 / (rve_dim * rve_dim);
     fiber_types.resize(1);
@@ -184,7 +184,7 @@ namespace bio
     rve[7][1] = fiber_network->sideCoord(FiberNetwork::TOP);
     rve[7][2] = fiber_network->sideCoord(FiberNetwork::BACK);
   }
-void MicroFO::SetDisplacement(double * input_coords)
+void MicroFO::setDisplacement(double * input_coords)
 {
   // Point coords and displacements to correct portion of input array
   coords = input_coords;
@@ -251,34 +251,13 @@ double MicroFO::PHI(int i, double u, double v, double w)
       calc_tdydxr();
       post_migration = false;
     }
-    // setup subdividing microsteps
-    bool fully_updated = false;
-    int depth = 0;
-    int subd_step = 0;
-    int coupling_term_length = 12;
-    double * partial_disp = new double[coupling_term_length];
-    memcpy(&partial_disp[0],&displacement[0],coupling_term_length*sizeof(double));
-    while(!fully_updated)
-    {
-      // wrap on the main_solver
-      if(!main_solver(coords,partial_disp))
-      {
-        // the state should reset automatically if it fails to converge
-        // only logic at this level, no simulation data management
-        depth*=2;
-        subd_step*=2;
-        for(int ii = 0; ii < coupling_term_length; ++ii)
-          partial_disp[ii] /= 2.0;
-      }
-      else
-      {
-        if(subd_step == depth)
-          fully_updated = 1;
-        else
-          ++subd_step;
-      }
-    }
-    post_processing(&rve_info[0],&rve_info[9],&rve_info[6],fem_res_norm);
+    main_solver(deformation_gradient,
+                rve_info[0], rve_info[1], rve_info[2],
+                rve_info[3], rve_info[4],
+                rve_info[5], // average stress
+                &rve_info[9],                          // derivative of stress
+                rve_info[6], rve_info[7], rve_info[8], // volume balance stress
+                fem_res_norm);
     return result;
   }
 void MicroFO::output(const std::string & filename)

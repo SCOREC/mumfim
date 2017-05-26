@@ -7,14 +7,23 @@
 #include <cstring>
 namespace bio
 {
-  int MicroFO::main_solver(double * coords_loc,double * fedisp)
+  int MicroFO::main_solver(
+    double * deform_grad,
+    double & local_S11, double & local_S12, double & local_S13,
+    double & local_S22, double & local_S23,
+    double & local_S33,
+    double * loc_dSdx,
+    double & loc_vastrx, double & loc_vastry, double & loc_vastrz,
+    double & fem_res_norm)
   {
     int result = 0;
     // Give initial guess for the position of the micronodes,
     // Calculate the position of the RVE boundary and
     double vol = 0.0; // the volume of the RVE
     double dvol[24] = {};
-    create_element_shape_vars(vol,&dvol[0],&fedisp[0]);
+    create_element_shape_vars(vol,
+                              &dvol[0],
+                              &deform_grad[0]);
     // Jacobian matrix of the microscopic problem
     matrix.resize(sparse_structure->numNonzeros());
     matrix_axial.resize(sparse_structure->numNonzeros());

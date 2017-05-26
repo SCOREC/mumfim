@@ -14,7 +14,7 @@ namespace bio
   using namespace std;
   void MicroFO::create_element_shape_vars(double & vol,
                                           double * dvol,
-                                          double * fedisp)
+                                          double * F)
     {
       double ddett[24];
       double dett;
@@ -42,26 +42,11 @@ namespace bio
                                      <<", ("<<rvedisp[18]<<","<<rvedisp[19]<<","<<rvedisp[20]<<")"
                                      <<", ("<<rvedisp[21]<<","<<rvedisp[22]<<","<<rvedisp[23]<<")"
                  <<std::endl);
+*/
+      // New implementation using deformation gradient
+      double rvedisp[24] = {};
+      getRVECornerDisp(F,rvedisp);
 
-      // manually modify rvedisp set vertices 0, 2, 4, and 6 of rve to be (0,0,0).
-      // vertex 0
-      rvedisp[0] = 0.0; rvedisp[1] = 0.0; rvedisp[2] = 0.0;
-      // vertex 2
-      rvedisp[6] = 0.0; rvedisp[7] = 0.0; rvedisp[8] = 0.0;
-      // vertex 4
-      rvedisp[12] = 0.0; rvedisp[13] = 0.0; rvedisp[14] = 0.0;
-      // vertex 6
-      rvedisp[18] = 0.0; rvedisp[19] = 0.0; rvedisp[20] = 0.0;
-      std::cout <<"modified rvedisp:"<<"("<<rvedisp[0]<<","<<rvedisp[1]<<","<<rvedisp[2]<<")"
-                                                <<", ("<<rvedisp[3]<<","<<rvedisp[4]<<","<<rvedisp[5]<<")"
-                                                <<", ("<<rvedisp[6]<<","<<rvedisp[7]<<","<<rvedisp[8]<<")"
-                                                <<", ("<<rvedisp[9]<<","<<rvedisp[10]<<","<<rvedisp[11]<<")"
-                                                <<", ("<<rvedisp[12]<<","<<rvedisp[13]<<","<<rvedisp[14]<<")"
-                                                <<", ("<<rvedisp[15]<<","<<rvedisp[16]<<","<<rvedisp[17]<<")"
-                                                <<", ("<<rvedisp[18]<<","<<rvedisp[19]<<","<<rvedisp[20]<<")"
-                                                <<", ("<<rvedisp[21]<<","<<rvedisp[22]<<","<<rvedisp[23]<<")"
-      << std::endl;
-*/      
       // To test fiber only RVE (boundary conditions)
       if(FIBER_ONLY_SIZE_EFFECT_TEST)
       {
@@ -446,5 +431,55 @@ namespace bio
         }
       }
     }
+  }
+  void MicroFO::getRVECornerDisp(const double F[], double rvedisp[])
+  {
+    // Reference coordinates of RVE. X[node index][component index]:
+    apf::Vector3 X[8];
+    X[0][0] = -0.5; X[0][1] = -0.5; X[0][2] = 0.5;
+    X[1][0] = 0.5;  X[1][1] = -0.5; X[1][2] = 0.5;
+    X[2][0] = -0.5; X[2][1] = -0.5; X[2][2] = -0.5;
+    X[3][0] = 0.5;  X[3][1] = -0.5; X[3][2] = -0.5;
+    X[4][0] = -0.5; X[4][1] = 0.5;  X[4][2] = 0.5;
+    X[5][0] = 0.5;  X[5][1] = 0.5;  X[5][2] = 0.5;
+    X[6][0] = -0.5; X[6][1] = 0.5;  X[6][2] = -0.5;
+    X[7][0] = 0.5;  X[7][1] = 0.5;  X[7][2] = -0.5;
+
+    // incremental displacement, u_inc.
+    double u_inc[3] = {};
+    // total displacement, u.
+    double u[3] = {}; double I = 0;
+    for (int RVE_nd = 0; RVE_nd < 8; ++RVE_nd)
+    {
+      for (int i = 0; i < 3; ++i)
+      {
+	for (int j = 0; j < 3; ++j)
+	{
+	  if (i == j)
+	    I = 1.0;
+	  u[i] += (F[i*3 + j] - I)*X[RVE_nd][j];
+	  I = 0.0;
+	}
+	// rve - X = previous displacement.
+	u_inc[i] = u[i] - (rve[RVE_nd][i] - X[RVE_nd][i]);
+      }
+      rvedisp[RVE_nd * 3] = u_inc[0];
+      rvedisp[RVE_nd * 3 + 1] = u_inc[1];
+      rvedisp[RVE_nd * 3 + 2] = u_inc[2];
+      u[0] = 0.0; u[1] = 0.0; u[2] = 0.0;
+      u_inc[0] = 0.0; u_inc[1] = 0.0; u_inc[2] = 0.0;
+    }
+  }
+  void getdRVEdFE(double* dRVEdFE, const double* FE_disp, const double* RVE_disp)
+  {
+    /* Dimensions of variables
+       output:
+              dRVEdFE: 24 x 12 = 288. 24 = 8 RVE corners x 3 dofs per corner. 12 = 4 FE nodes x 3 dofs per node.
+       intput:
+              FE_disp:  4 FE nodes x 3 dofs per node = 12.
+	      RVE_disp: 8 corner nodex x 3 dofs per node = 24.
+    */
+    /*1. Find displacement at Gauss point. The displacement at this point is identical for both micro and macroscale. */
+    
   }
 }

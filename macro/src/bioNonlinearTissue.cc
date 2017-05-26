@@ -89,7 +89,7 @@ namespace bio
         AttributeTensor1_evalTensorDT(axial_axs,0.0,&axs[0]);
         double axialG = AttributeTensor0_value(axial_shr);
         double axialE = AttributeTensor0_value(axial_ygn);
-        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,stf_vrtn,axl_yngs_mod,E,v,&axs[0],axialG,axialE,1);
+        constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(this,apf_primary_field,stf_vrtn,det_dfm_grd,axl_yngs_mod,E,v,&axs[0],axialG,axialE,1);
       }
     }
     GRIter_delete(ri);

@@ -56,7 +56,8 @@ namespace bio
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
     tssu = new NonlinearTissue(mdl,msh,pd,cm);
-    itr = new TissueIteration(tssu,las);
+    amsi::ModularIteration * mdlr = NULL;
+    itr = mdlr = new TissueIteration(tssu,las);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
     std::vector<pANode> trk_vols;
@@ -67,7 +68,7 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      itr->addExtra(trkd_vols[*trk_vol]);
+      mdlr->addOperation(trkd_vols[*trk_vol]);
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));

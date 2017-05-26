@@ -125,7 +125,7 @@ namespace bio
 //          F[ii][jj] += xyz(kk,ii) * grads0[kk][jj];
         }
       double detF = getDeterminant(F);
-      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point,detF);
+      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, detF);
       apf::DynamicMatrix leftCauchyGreen(3,3); leftCauchyGreen.zero();
       apf::DynamicMatrix FT(3,3); FT.zero();
       apf::transpose(fromMatrix(F),FT);

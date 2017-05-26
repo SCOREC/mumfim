@@ -468,12 +468,11 @@ namespace bio
     return result;
   }
   int P_computeFiberOnlyRVE(MicroFO * rve,
-                            double * disp_coords,
+                            double * deformation_grad,
                             double * results)
   {
     int result = 0;
-    // Setup the displaced coords
-    rve->SetDisplacement(disp_coords);
+    rve->setDeformationGradient(deformation_grad);
     // Set results array (sets pointer to rve info to results,
     // so fills directly instead of copying, this replaces getRVEs)
     rve->setResults(results);
