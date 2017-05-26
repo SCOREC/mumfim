@@ -12,9 +12,7 @@
 namespace bio
 {
   using namespace std;
-  void MicroFO::create_element_shape_vars(double & vol,
-                                          double * dvol,
-                                          double * F)
+  void MicroFO::create_element_shape_vars(double & vol, double * dvol, double * F)
     {
       double ddett[24];
       double dett;
@@ -23,10 +21,10 @@ namespace bio
       double dxrdx[24 * num_rve_doubles];
       // Calculation of dxrdx
       make_dRVEdFE(dxrdx,&initial_coords[0]);
-//      make_dRVEdFE(dxrdx,coords);
-      // Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
-      double rvedisp[24];
-      matrix_multiply(dxrdx,24,num_rve_doubles,fedisp,num_rve_doubles,1,rvedisp);
+//     make_dRVEdFE(dxrdx,coords);
+//     Multiply dxrdx with fedisp to get rvedisp, the displacement of the RVE boundary
+//     double rvedisp[24];
+//     matrix_multiply(dxrdx,24,num_rve_doubles,F,num_rve_doubles,1,rvedisp);
 /*
       AMSI_DEBUG(std::cout <<"fedisp:"<<"("<<fedisp[0]<<","<<fedisp[1]<<","<<fedisp[2]<<")"
                                      <<", ("<<fedisp[3]<<","<<fedisp[4]<<","<<fedisp[5]<<")"
@@ -46,7 +44,6 @@ namespace bio
       // New implementation using deformation gradient
       double rvedisp[24] = {};
       getRVECornerDisp(F,rvedisp);
-
       // To test fiber only RVE (boundary conditions)
       if(FIBER_ONLY_SIZE_EFFECT_TEST)
       {

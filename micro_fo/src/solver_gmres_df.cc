@@ -133,30 +133,18 @@ namespace bio
        break;
       }
     } while (relative_norm > tolerance);
-    if(result != 0)
-    {
-      memcpy(&coordinate_vector[0],&x[0],num_dofs*sizeof(double))
-      update_nodes();
-      return result;
-    }
-    else
-    {
-      double end_time = MPI_Wtime();
-      // Newton iteration ended. The network got a new equilibrium position and the fiber length and fiber force are updated
-      calcFiberLengths(*fiber_network,len); //added in to match Minnesota code.
-      calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
-      calc_force_vector(&len[0],&fib_str[0]);
-      // calc_mean_fiber_stretch_omega();
-      // Calculation of the derivative dSdy that is used in function calc_femjacob_newmethod for the calculation of the derivative dSdx
-      calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],true);
-      // update_nodes();
-      rve_iterations.push_back(step);
-      rve_timing.push_back(end_time - start_time);
-      delete [] solution;
-      delete [] fib_str;
-      delete [] dfdl;
-      return result;
-    }
+    double end_time = MPI_Wtime();
+    // Newton iteration ended. The network got a new equilibrium position and the fiber length and fiber force are updated
+    calcFiberLengths(*fiber_network,len); //added in to match Minnesota code.
+    calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
+    calc_force_vector(&len[0],&fib_str[0]);
+    // calc_mean_fiber_stretch_omega();
+    // Calculation of the derivative dSdy that is used in function calc_femjacob_newmethod for the calculation of the derivative dSdx
+    calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],true);
+    // update_nodes();
+    rve_iterations.push_back(step);
+    rve_timing.push_back(end_time - start_time);
+    return result;
   }
   void MicroFO::force_vector_bcs()
   {
