@@ -17,10 +17,10 @@ namespace bio
     double * target_xyz;
     apf::MeshEntity * msh_ent;
     int ip_integration_pt;
-    pANode fn;
+    pAttributeDouble fn;
   public:
     template <typename I>
-      StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_end_end, apf::Field * stf_vrtn_fld, pANode fn);
+      StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_end_end, apf::Field * stf_vrtn_fld, pAttributeDouble fn);
     void inElement(apf::MeshEntity * msh_ent_in){msh_ent = msh_ent_in; ip_integration_pt=0;}
     void outElement(){};
     void atPoint(apf::Vector3 const &, double, double);

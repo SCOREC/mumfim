@@ -1,7 +1,7 @@
 namespace bio
 {
   template <typename I>
-    StiffnessVariation::StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_ent_end, apf::Field * f, pANode fn)
+    StiffnessVariation::StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_ent_end, apf::Field * f, pAttributeDouble fn)
     : apf::Integrator(apf::getShape(f)->getOrder())
     , stf_vrtn_fld(f)
     , mdl_src_ents()

@@ -15,7 +15,7 @@ namespace bio
        - "source"   : of type pAttInfoRefNode
        - "sink"     : of type pAttInfoRefNode
        - "function" : expression
-     */
+    */
     amsi::describeNode(nd);
     pANode src_AttRefNode, snk_AttRefNode;
     src_AttRefNode = AttNode_childByType(nd,"sources");
@@ -38,9 +38,10 @@ namespace bio
     for (auto mdl_ent = mdl_snk_ents.begin(); mdl_ent != mdl_snk_ents.end(); ++mdl_ent)
       std::cout << mdl->ops->tag(mdl,(gmi_ent*)*mdl_ent) << " ";
     std::cout << std::endl;
-    pANode fn_nd;
-    fn_nd = AttNode_childByType(nd,"function");
-    stfvar = new StiffnessVariation(mdl_src_ents.begin(), mdl_src_ents.end(), mdl_snk_ents.begin(), mdl_snk_ents.end(), stf_vrtn_fld, fn_nd);
+    pAttribute stf_att = AttCase_attrib(cs,"stiffness variation");
+    pAttributeDouble fn = (pAttributeDouble)Attribute_childByType(stf_att,"function");
+    //fn_nd = AttNode_childByType(nd,"function");
+    stfvar = new StiffnessVariation(mdl_src_ents.begin(), mdl_src_ents.end(), mdl_snk_ents.begin(), mdl_snk_ents.end(), stf_vrtn_fld, fn);
     return stfvar;
   }
   void StiffnessVariation::populate_stf_vrtn_fld()
@@ -63,34 +64,34 @@ namespace bio
       gmi_set * adj_mdl_src_fcs = mdl->ops->adjacent(mdl,(gmi_ent*)(*src),2);
       for (int ii = 0; ii < adj_mdl_src_fcs->n; ++ii)
       {
-	gmi_ent * mdl_src_fc = adj_mdl_src_fcs->e[ii]; // extract ii^th adj. face from adj_mdl_src_fcs.
-	double fc_xyz[3] = {0.0};
-	/* 3. Calculate average coordinate of adjacent face, mdl_src_fc */
-	calculate_mdl_fc_coord((apf::ModelEntity*)mdl_src_fc, fc_xyz);
-	/* 4. Iterate through model regions labeled as "snk" */
-	for (auto snk = mdl_snk_ents.begin(); snk != mdl_snk_ents.end(); ++snk)
-	{
-	  /* 5. if adjacent model src face is in closure of model sink region, process the model sink region
+        gmi_ent * mdl_src_fc = adj_mdl_src_fcs->e[ii]; // extract ii^th adj. face from adj_mdl_src_fcs.
+        double fc_xyz[3] = {0.0};
+        /* 3. Calculate average coordinate of adjacent face, mdl_src_fc */
+        calculate_mdl_fc_coord((apf::ModelEntity*)mdl_src_fc, fc_xyz);
+        /* 4. Iterate through model regions labeled as "snk" */
+        for (auto snk = mdl_snk_ents.begin(); snk != mdl_snk_ents.end(); ++snk)
+        {
+          /* 5. if adjacent model src face is in closure of model sink region, process the model sink region
              - mdl        : type gmi_model*.
              - mdl_src    : type apf::ModelEntity **.
              - mdl_snk_fc : type gmi_ent *.
-	  */
+          */
           std::cout<<"face "<<gmi_tag(mdl,mdl_src_fc)<<" of src mdl rgn "<<gmi_tag(mdl,(gmi_ent*)(*src))<< " in closure of snk mdl rgn "
-			    <<gmi_tag(mdl,(gmi_ent*)(*snk))<<"?"<<std::endl;
-	  if (gmi_is_in_closure_of(mdl,mdl_src_fc,(gmi_ent*)(*snk)))
-	  {
-	    std::cout<<" Yes, coord. of face "<<gmi_tag(mdl,mdl_src_fc)<<" is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
-	    /* 6. Iterate through msh regions that are classified in "snk" and process each msh region. */
-	    for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
-	    {
-	      this->set_target_xyz(fc_xyz);
-	      this->inElement(*msh_rgn);
-	      apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
-	      this->process(msh_elmt);
-	    }
-	  }
-	}
-      }   
+                   <<gmi_tag(mdl,(gmi_ent*)(*snk))<<"?"<<std::endl;
+          if (gmi_is_in_closure_of(mdl,mdl_src_fc,(gmi_ent*)(*snk)))
+          {
+            std::cout<<" Yes, coord. of face "<<gmi_tag(mdl,mdl_src_fc)<<" is "<<fc_xyz[0]<<","<<fc_xyz[1]<<","<<fc_xyz[2]<<std::endl;
+            /* 6. Iterate through msh regions that are classified in "snk" and process each msh region. */
+            for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
+            {
+              this->set_target_xyz(fc_xyz);
+              this->inElement(*msh_rgn);
+              apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
+              this->process(msh_elmt);
+            }
+          }
+        }
+      }
     }
   }
   void StiffnessVariation::calculate_mdl_fc_coord(apf::ModelEntity * mdl_fc, double * mdl_fc_xyz)
@@ -114,9 +115,9 @@ namespace bio
       dist += (gp[i] - target_xyz[i]) * (gp[i] - target_xyz[i]);
     dist = std::sqrt(dist);
     // The expression from pANode fn is assumed to have the form 1-dist/x, where x is specified in simmodeler.
-    double x_val = 100.0; //assume variation distance is 30 microns.
-    // src region is processed multiple times, therefore take maximum value of 1-dist/x_val among all process instances. 
-    double  stf_vrtn_coeff = std::max(1.0-dist/x_val,apf::getScalar(stf_vrtn_fld,msh_ent,ip_integration_pt));
+    double val = AttributeDouble_evalDT(fn,dist);
+    // src region is processed multiple times, therefore take maximum value of 1-dist/x_val among all process instances.
+    double  stf_vrtn_coeff = std::max(val,apf::getScalar(stf_vrtn_fld,msh_ent,ip_integration_pt));
     apf::setScalar(stf_vrtn_fld,msh_ent,ip_integration_pt,stf_vrtn_coeff);
     ip_integration_pt++;
   }
