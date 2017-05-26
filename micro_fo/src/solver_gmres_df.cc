@@ -9,7 +9,7 @@ namespace bio
 {
   int MicroFO::Solver()
   {
-    int failed = 0;
+    int result = 0;
     int num_dofs = fiber_network->numDofs();
     int num_elements = fiber_network->numElements();
     int step = 0;
@@ -62,7 +62,10 @@ namespace bio
             buffers->intWorkBuffer(),
             &ierr);
       if(ierr != 0)
+      {
         std::cerr << "ERROR: ilut_ returned error code " << ierr << std::endl;
+        result++;
+      }
       // Solver
       lusol_(&num_dofs,
              &force_vector[0],
@@ -72,7 +75,7 @@ namespace bio
              buffers->rowsBuffer());
       for(int ii = 0; ii < num_dofs; ii++)
         coordinate_vector[ii] += solution[ii];
-      //double df = 1.0;
+      double df = 1.0;
       int ncv = 0;
       do
       {
@@ -126,14 +129,15 @@ namespace bio
       {
        std::cout << "step = " << step << ", relative_norm = " << relative_norm << std::endl;
        std::cerr << "Warning: unusual number of newton iterations in micro_fo! step = " << step << ", relative_norm = " << relative_norm <<std::endl;
-       failed = 1;
+       result = -1;
        break;
       }
     } while (relative_norm > tolerance);
-    if(failed)
+    if(result != 0)
     {
-      memcpy(&coordinate_vector[0],&x[0],num_dofs*sizeof(double));
+      memcpy(&coordinate_vector[0],&x[0],num_dofs*sizeof(double))
       update_nodes();
+      return result;
     }
     else
     {
@@ -148,8 +152,11 @@ namespace bio
       // update_nodes();
       rve_iterations.push_back(step);
       rve_timing.push_back(end_time - start_time);
+      delete [] solution;
+      delete [] fib_str;
+      delete [] dfdl;
+      return result;
     }
-    return failed;
   }
   void MicroFO::force_vector_bcs()
   {

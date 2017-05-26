@@ -14,14 +14,14 @@
 #include <stdexcept>
 namespace bio
 {
-  class MultiscaleTissueIteration : public amsi::ModularIteration
+  class MultiscaleTissueIteration : public amsi::Iteration
   {
   protected:
     MultiscaleTissue * tssu;
     amsi::LAS * las;
   public:
     MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
-      : amsi::ModularIteration()
+      : amsi::Iteration()
       , tssu(a)
       , las(l)
     { }

@@ -9,11 +9,11 @@ namespace bio
 {
   int MicroFO::main_solver(double * coords_loc,double * fedisp)
   {
-    int failed = 0;
+    int result = 0;
     // Give initial guess for the position of the micronodes,
     // Calculate the position of the RVE boundary and
-    //double vol_p = vol;
-    //double dvol_p =
+    double vol = 0.0; // the volume of the RVE
+    double dvol[24] = {};
     create_element_shape_vars(vol,&dvol[0],&fedisp[0]);
     // Jacobian matrix of the microscopic problem
     matrix.resize(sparse_structure->numNonzeros());
@@ -21,21 +21,19 @@ namespace bio
     // Fill vector with x,y,z,(rx,ry,rz) coords of nodes
     update_coordinate_vector();
     // Solution of the microscopic problem
-    failed = Solver();
-/*
-    if(failed)
-    {
-      vol = vol_p;
-    }
-*/
-    return failed;
-  }
-  void MicroFO::post_processing(double * sigma, double * dSdx, double * Q, double & fem_res_norm)
-  {
+    if(TRUSS)
+      result += Solver();
+    else // Beam
+      result += Solver_Beam();
     /* Sum up forces of fiber nodes that lie on the boundary of the RVE. This is the summation part of Eq. (7) in
        T. Stylianopoulos, V. H. Barocas, Comput. Methods Appl. Mech. Engrg. 196 (2007) 2981-2990:
        \sum_{boundary cross-links} x_i F_j.
     */
+    firstTimeThrough = false;
+    return result;
+  }
+  void MicroFO::post_processing(double * sigma, double * dSdx, double * Q, double & fem_res_norm)
+  {
     double stress[6];
     calc_stress(stress);
     // Calculate the components of the Q term of the macroscopic stress balance, loc_vastrx, loc_vastry, loc_vastrz

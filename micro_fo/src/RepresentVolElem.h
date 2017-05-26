@@ -97,8 +97,6 @@ namespace bio
     double half_rve_dim;
     double init_rve_dim;
     double scale_conversion;
-    double vol;
-    double dvol[24];
     std::vector<FiberReaction*> fiber_types;
     // Fiber parameters for beam implementation
     //double fiber_G;
@@ -137,8 +135,13 @@ namespace bio
     apf::Vector3 rve[8];
     apf::Vector3 u[8];
     //The following are the functions that must access the variables
-    int main_solver(double * coords_loc, double * fedisp);
-    void post_processing(double * stress, double * dSdx, double * Q, double & fem_res_norm);
+    int main_solver(double * coords_loc,
+                    double * fedisp,
+                    double * stress,
+                    double * dSdx,
+                    double * Q,
+                    double & fem_res_norm);
+    void post_processing(double * stress,double * dSdx,double * Q,double & fem_res_norm));
     // map node dof values to solution vector
     void update_coordinate_vector();
     // map solution vector values to node dof values

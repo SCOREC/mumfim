@@ -253,14 +253,15 @@ double MicroFO::PHI(int i, double u, double v, double w)
     }
     // setup subdividing microsteps
     bool fully_updated = false;
-    int depth = 1;
+    int depth = 0;
     int subd_step = 0;
     int coupling_term_length = 12;
-    std::vector<double> partial_disp(coupling_term_length);
+    double * partial_disp = new double[coupling_term_length];
     memcpy(&partial_disp[0],&displacement[0],coupling_term_length*sizeof(double));
     while(!fully_updated)
     {
-      if(main_solver(coords,&partial_disp[0])) // || depth == 1) // depth == 1 is a temp debugging thing to gaurntee we at least use this once
+      // wrap on the main_solver
+      if(!main_solver(coords,partial_disp))
       {
         // the state should reset automatically if it fails to converge
         // only logic at this level, no simulation data management
@@ -271,10 +272,10 @@ double MicroFO::PHI(int i, double u, double v, double w)
       }
       else
       {
-        firstTimeThrough = false; // change to a check on tdydxr (nonzero)?
-        ++subd_step;
         if(subd_step == depth)
           fully_updated = 1;
+        else
+          ++subd_step;
       }
     }
     post_processing(&rve_info[0],&rve_info[9],&rve_info[6],fem_res_norm);
