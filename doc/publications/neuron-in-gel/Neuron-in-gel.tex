@@ -361,14 +361,14 @@ $
 \end{array}
 $
 \end{center}
-\caption{\label{fig:neuron_cdf} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the neuron for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel. }
+\caption{\label{fig:neuron_cdf} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the neuron for applied loads at (a) 0 degrees, (b) 45 degrees, and (c) 90 degrees. For each angle, the complementary cdf for bulk strains below, above, and at the pain threshold (16$\%$) are shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
 \end{figure}
 %
-For both angles of applied load, significant portions of the neuron experience local strains that are greater than the applied bulk strain. Some regions, albeit a much smaller portion, experience local strains that are 3-5 times larger than the applied bulk strain. 
+For all angles of applied load considered, the neuron experiences local strains that are significantly larger than the applied load on the surrounding collagen gel (see tails of distribution in Fig.\ \ref{fig:neuron_cdf}). The neuron experiences the largest local strain of more than 6 times the bulk strain for applied loads at 90 degrees and the lowest local strain of approximately 3 times the bulk strain for an applied load at 45 degrees.
 
-The spread of strain distribution for the applied load at 0 degrees is smaller than that of the applied load at 90 degrees. In both cases the spread of the distributions decrease as the bulk strain is larger. Interestingly, the distributions converge to the distribution corresponding to the load at the pain threshold (16$\%$). 
+The shape and spread of the strain distribution in the neuron varies with the bulk strain for an applied load at 90 degrees - the spread of the distribution increases with larger bulk strain. In contrast, the shape and spread of the strain distribution in the neuron remains relatively constant for applied loads at 0 and 45 degrees. Interestingly, for all cases, the distributions converge to the distribution corresponding to the load at the pain threshold (16$\%$), i.e., the distribution at 20$\%$ bulk strain is essentially identical to that corresponding to the pain threshold \textcolor{red}{(need to verify for the applied load at 90 degrees case)}.  
 
-Additional insight can be gained by separating the strain distribution of the neuron into contributions from the cell bodies and axons. The complimentary cdfs for the cell bodies and axons are plotted in Figs.\ \ref{fig:cellbodies_cdf} and \ref{fig:axons_cdf}, respectively. 
+Additional insight can be gained by separating the strain distribution of the neuron into contributions from the cell bodies and axons. The complimentary cdfs for the cell bodies and axons are plotted in Fig.\ \ref{fig:components_cdf}.
 %
 \begin{figure}[ht]
 \begin{center}
@@ -377,27 +377,40 @@ $
 \includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
 \includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
 \includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_cellbodies_compare_stps_farfield.pdf} \\
-(a) & (b) & (c)
+(a) & (b) & (c) \\
+\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_axons_compare_stps.pdf} &
+\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_axons_compare_stps.pdf} &
+\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_axons_compare_stps_farfield.pdf} \\
+(d) & (e) & (f)
 \end{array}
 $
 \end{center}
-\caption{\label{fig:cellbodies_cdf} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the cell bodies for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel. }
+\caption{\label{fig:components_cdf} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the cell bodies for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel. }
 \end{figure}
 %
-For the applied load at 0 degrees, the strain distribution in the cell bodies is nearly identical for all values of bulk strain considered indicating \textcolor{red}{that the cell bodies deform affinely for the bulk strains considered.} In the case of the applied load at 90 degrees, the subtle step feature of the distribution in the neuron becomes more apparent for strain distribution in the cell bodies. Additionally, as observed in the strain distribution for the neuron, the spread in the distribution for the cell bodies decreases when the bulk strain is larger. The step feature in the strain distribution for the cell bodies indicates that there are two regimes of strain. These two regimes can be clearly seen in the plots of maximum principal strain in Figs.\ \ref{fig:MPS_neuron}(b) and (d) where the strain in the cell body that is parallel to the direction of applied load (at 90 degrees) is significantly lower than the other two cell bodies. \textcolor{red}{[The decrease in spread of the distribution with larger bulk strain indicates ...]}
+The strain distribution in the cell bodies for the applied load at 45 degrees is essentially identical for all bulk strains, \textcolor{red}{which indicates the cell bodies are deforming affinely with the surrounding collagen gel.} For the same angle of applied load there is some slight variation in the distribution for the axon, which accounts for the small variations seen in the distribution of the neuron (see Fig.\ \ref{fig:neuron_cdf}(b)). For the applied load at 0 degrees, variations in the distributions of the cell bodies and axons for different bulk strains become more apparent. For the cell bodies, the distribution shifts to the right with larger bulk strains while the shape and spread of the distributions remain relatively constant. For the axons, the distributions shift to the left and the spread of the distributions decrease with larger bulk strains. The variations in the distributions of the cell bodies and axons ultimately cancel out leaving the overall distributions in the neuron relatively constant for different bulk strains (see Fig.\ \ref{fig:neuron_cdf}(a)). 
+
+For the applied load at 90 degrees, the distributions of the cell bodies and axons shift to the right and the spread of the distributions grow with larger bulk strains. The subtle step feature of the distribution in the neuron (see Fig.\ \ref{fig:neuron_cdf}(c)) becomes apparent for the strain distributions in the cell bodies. This step feature indicates that there are two regimes of strain in the cell bodies, which are clearly seen in the plots of maximum principal strain in Figs.\ \ref{fig:neuron_MPS}(e) and (f) - the strain in the cell body that is parallel to the direction of applied load at 90 degrees is significantly lower than the other two cell bodies. 
+
+\textcolor{red}{[The decrease in spread of the distribution with larger bulk strain indicates ...]}
 %
 \begin{figure}[ht]
 \begin{center}
 $
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_axons_compare_stps_farfield.pdf} \\
-(a) & (b) & (c)
+\begin{array}{cc}
+\includegraphics[width=8cm]{figure/MPS_rot0_strain10.pdf} & 
+\includegraphics[width=8cm]{figure/MPS_rot0_strain16.pdf} \\
+(a) & (b) \\ 
+\includegraphics[width=8cm]{figure/MPS_rot45_strain10.pdf} &
+\includegraphics[width=8cm]{figure/MPS_rot45_strain16.pdf} \\
+(c) & (d) \\
+\includegraphics[width=8cm]{figure/MPS_rot90_strain10.pdf} & 
+\includegraphics[width=8cm]{figure/MPS_rot90_strain16.pdf} \\
+(e) & (f)
 \end{array}
 $
 \end{center}
-\caption{\label{fig:axons_cdf} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the axons for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
+\caption{\label{fig:neuron_MPS} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the cell bodies for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel. }
 \end{figure}
 %
 
@@ -407,23 +420,7 @@ In contrast to what is seen in the distribution for cell bodies, the spread in t
 \textcolor{red}{[Can explain the change in spread by looking at fiber alignment in the gel?]} In the case for the applied load at 90 degree,   
 
 For both load angles, the overall shape of the distribution remains the same for the different values of bulk strain. For an applied load of 0 degrees, the distribution is relatively narrow with more than 90$\%$ of the neuron experience larger strain locally than the applied bulk strain on the collagen gel. For an applied load of 90 degrees, the distribution is significantly wider with two steps that indicate two regimes of strain in cell bodies. Additionally, for the applied load of 90 degrees, the strain distribution tightens as the applied bulk strain increases.
-%
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=3cm]{figure/MPS_rot0_strain6.pdf} &
-\includegraphics[height=3cm]{figure/MPS_rot90_strain6.pdf} \\
-(a) & (b) \\
-\includegraphics[height=3cm]{figure/MPS_rot0_strain16.pdf} &
-\includegraphics[height=3cm]{figure/MPS_rot90_strain16.pdf} \\
-(c) & (d)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:MPS_neuron} Complementary cdf of normalized maximum principal strain ($\varepsilon_1$) in the axons for applied loads at (a) 0 degrees and (b) 90 degrees. For each angle, the complementary cdf for 6$\%$, 10$\%$, 16$\%$ (pain threshold), and 20$\%$ bulk strain is shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
-\end{figure}
-%
+
 
 \subsection{Fiber Alignment in Collagen Gel}
 The mechanical behavior observed in the neuron is influenced by the alignment of fibers in the collagen gel.
