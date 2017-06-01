@@ -18,7 +18,7 @@ void display_help_string()
   std::cout << "Usage: singlescale [OPTIONS]\n"
             << "  [-h, --help]                              display this help text\n"
             << "  [-g, --model model_file]                  the model file (.smd)\n"
-            << "  [-c, --case string]                       a string specifying the analysis case to run"
+            << "  [-c, --case string]                       a string specifying the analysis case to run\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n";
 }
 std::string model_filename("");
@@ -68,42 +68,6 @@ bool parse_options(int & argc, char ** & argv)
   opterr = 1;
   return result;
 }
-struct eps_updt
-{
-  bio::TissueIteration * itr;
-  double & eps;
-  double operator()()
-  {
-    int it = itr->iteration();
-    bool inc = it > 20;
-    double e = inc ? (pow(10,(it-20)/5))*eps : eps;
-    std::cout << "epsilon update (" << it << "): " << e << std::endl;
-    return e;
-  }
-  eps_updt(bio::TissueIteration * i, double & e)
-    : itr(i)
-    , eps(e)
-  {}
-};
-struct dv_updt
-{
-  int & dv_its;
-  double & eps;
-  double operator()()
-  {
-    bool inc = dv_its > 5;
-    double r = inc ? eps + (dv_its-5)*2.5e-4 : eps;
-    std::cout << "dv epsilon update (" << dv_its << "): " << r << std::endl;
-    ++dv_its;
-    if(dv_its > 20)
-      r = std::numeric_limits<double>::max();
-    return r;
-  }
-  dv_updt(int & di, double & e)
-    : dv_its(di)
-    , eps(e)
-  {}
-};
 int main(int argc, char ** argv)
 {
   int result = 0;
