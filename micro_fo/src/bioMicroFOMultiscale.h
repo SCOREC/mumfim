@@ -6,11 +6,12 @@ namespace bio
   enum header_fields
   {
     RVE_TYPE = 0,
-    ELEMENT_TYPE = 1,
-    GAUSS_ID = 2,
-    FIBER_REACTION = 3,
-    IS_ORIENTED = 4,
-    NUM_HEADER_FIELDS = 5
+    FIELD_ORDER = 1,
+    ELEMENT_TYPE = 2,
+    GAUSS_ID = 3,
+    FIBER_REACTION = 4,
+    IS_ORIENTED = 5,
+    NUM_HEADER_FIELDS = 6
   };
   struct micro_fo_header
   {
@@ -47,24 +48,23 @@ namespace bio
     // +9 at end to store orientation tensor information.
     double data[4 * 3 * 6 + 9 + 9]; // 6 sigma values for each vertex 3 q values, assuming tets atm
   };
-  class MicroFOMultiscaleDataTypes
+  struct MicroFODatatypes
   {
-  public:
-    MPI_Datatype micro_fo_header_data_type;
-    MPI_Datatype micro_fo_parameter_data_type;
-    MPI_Datatype micro_fo_init_data_type;
-    MPI_Datatype micro_fo_data_type;
-    MPI_Datatype micro_fo_result_type;
-    void MultiscaleDataTypesMPICommit()
+    MPI_Datatype hdr;
+    MPI_Datatype prm;
+    MPI_Datatype ini;
+    MPI_Datatype dat;
+    MPI_Datatype rst;
+    MicroFODatatypes()
     {
-      MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&micro_fo_header_data_type);
-      MPI_Type_contiguous(NUM_PARAM_FIELDS,MPI_DOUBLE,&micro_fo_parameter_data_type);
-      MPI_Type_contiguous(12,MPI_DOUBLE,&micro_fo_init_data_type);
-      MPI_Type_contiguous(9,MPI_DOUBLE,&micro_fo_data_type);
-      MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&micro_fo_result_type);
-      MPI_Type_commit(&micro_fo_init_data_type);
-      MPI_Type_commit(&micro_fo_data_type);
-      MPI_Type_commit(&micro_fo_result_type);
+      MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&hdr);
+      MPI_Type_contiguous(NUM_PARAM_FIELDS,MPI_DOUBLE,&prm);
+      MPI_Type_contiguous(4*3,MPI_DOUBLE,&ini);
+      MPI_Type_contiguous(4*6,MPI_DOUBLE,&dat);
+      MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&rst);
+      MPI_Type_commit(&ini);
+      MPI_Type_commit(&dat);
+      MPI_Type_commit(&rst);
     }
   };
 }

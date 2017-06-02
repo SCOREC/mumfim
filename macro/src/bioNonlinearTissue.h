@@ -1,5 +1,13 @@
 #ifndef BIO_NONLINEAR_TISSUE_H_
 #define BIO_NONLINEAR_TISSUE_H_
+#include "bioLinearTissue.h"
+#include "bioVolumeConstraint.h"
+// micro_fo
+#include <bioMicroFOMultiscale.h>
+#include <bioRVE2.h>
+// amsi
+#include <apfFEA.h>
+#include <Solvers.h>
 #include <NonLinElasticity.h>
 #include <Solvers.h>
 #include <amsiAnalysis.h>

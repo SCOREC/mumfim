@@ -2,6 +2,7 @@
 #define BIO_TRUSS_INTEGRATOR_H_
 #include "bioFiberNetwork2.h"
 #include "bioFiberReactions.h"
+#include "bioUtil.h"
 #include <amsiElementalSystem.h>
 #include <amsiLASAssembly.h>
 #include <apf.h>
@@ -76,9 +77,12 @@ namespace bio
       dim = msh->getDimension();
       apf::MeshEntity * vs[2];
       msh->getDownward(ent,0,&vs[0]);
-      apf::Vector3 crds[2];
-      getCoords(msh,&vs[0],&crds[0],2);
-      strn = (crds[1] - crds[0]) / l;
+      apf::Element * crd_elm = apf::createElement(msh->getCoordinateField(),me);
+      apf::NewArray<apf::Vector3> crds;
+      apf::getVectorNodes(crd_elm,crds);
+      int nd_cnt = apf::countNodes(crd_elm);
+      // linear approx of strain on truss ignoring any mid-nodes
+      strn = (crds[nd_cnt-1] - crds[0]) / l;
     }
     void atPoint(const apf::Vector3 & p, double w, double dV)
     {

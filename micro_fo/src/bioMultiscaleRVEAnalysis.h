@@ -1,7 +1,10 @@
 #ifndef BIO_MULTISCALE_RVE_ANALYSIS_H_
 #define BIO_MULTISCALE_RVE_ANALYSIS_H_
 #include "bioFiberRVEAnalysis.h"
-#include <amsiLogging.h>
+#include "bioMicroFOMultiscale.h"
+#include "lasSparskit.h"
+#include <amsiReporter.h>
+#include <amsiMultiscale.h>
 namespace bio
 {
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data);
@@ -19,17 +22,13 @@ namespace bio
     amsi::DataDistribution * rve_dd;
     size_t M2m_id;
     size_t m2M_id;
-    MPI_Datatype hdr_tp;
-    MPI_Datatype prm_tp;
-    MPI_Datatype ini_tp;
-    MPI_Datatype dat_tp;
-    MPI_Datatype rst_tp;
+    MicroFODatatypes dat_tp;
     // analysis
     std::vector<int> rve_tp_cnt;
     std::vector<FiberNetwork **> fns;
-    std::vector<CSR **> sprs;
+    std::vector<las::CSR **> sprs;
     std::vector<FiberRVEAnalysis*> ans;
-    SparskitBuffer * bfrs;
+    las::SparskitBuffers * bfrs;
     int macro_iter;
     int macro_step;
     // funcs

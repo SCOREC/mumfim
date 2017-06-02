@@ -81,7 +81,8 @@ namespace bio
             nw_ents = me;
             ++nw_ents;
             micro_fo_header hdr;
-            hdr.data[RVE_TYPE]       = getRVEType(reinterpret_cast<apf::ModelEntity*>(gsnt));
+	    hdr.data[RVE_TYPE]       = getRVEType(reinterpret_cast<apf::ModelEntity*>(gsnt));
+            hdr.data[FIELD_ORDER]    = delta_u->getShape()->getOrder();
             hdr.data[ELEMENT_TYPE]   = apf_mesh->getType(me);
             hdr.data[GAUSS_ID]       = ii;
             hdr.data[FIBER_REACTION] = fbr_rctn;

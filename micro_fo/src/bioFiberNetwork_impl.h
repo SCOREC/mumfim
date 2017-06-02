@@ -1,3 +1,4 @@
+#include <cassert>
 namespace bio
 {
   template <typename I>

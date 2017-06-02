@@ -1,9 +1,10 @@
-#include "RepresentVolElem.h"
-#include "RVE_Util.h"
-#include "SparseMatrix.h"
-#include <amsiReporter.h>
+//#include "RepresentVolElem.h"
+//#include "RVE_Util.h"
+//#include "SparseMatrix.h"
+//#include <amsiReporter.h>
 int main(int argc, char ** argv)
 {
+  /*
   using namespace bio;
   int num_rves = atoi(argv[1]);
   amsi::Log l = amsi::activateLog("serialization");
@@ -84,5 +85,6 @@ int main(int argc, char ** argv)
   fnm += "_rve_serialization.log";
   std::fstream strm(fnm);
   amsi::flushToStream(l,strm);
+*/
   return 0;
 }

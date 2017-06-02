@@ -19,7 +19,7 @@ namespace bio
     las::Vec * f;
     las::LasOps * ops;
   };
-  FiberRVEAnalysis * makeAnalysis(FiberNetwork *, las::SparskitBuffers * b = NULL);
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);
   class FiberRVEIteration : public amsi::Iteration
   {
@@ -51,4 +51,5 @@ namespace bio
     void applyRVEForceBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::LasOps * ops, las::Vec * f, las::Mat * k);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
 }
+#include "bioFiberRVEAnalysis_impl.h"
 #endif
