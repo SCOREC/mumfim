@@ -1,9 +1,11 @@
 #ifndef BIO_NONLINEAR_TISSUE_H_
 #define BIO_NONLINEAR_TISSUE_H_
 #include "bioLinearTissue.h"
-#include "MicroFOMultiscaleTypes.h"
-#include "RepresentVolElem.h"       // should be able to take this out... (needed for RVE_Info struct)
 #include "bioVolumeConstraint.h"
+// micro_fo
+#include <bioMicroFOMultiscale.h>
+#include <bioRVE2.h>
+// amsi
 #include <apfFEA.h>
 #include <Solvers.h>
 #include <NonLinElasticity.h>

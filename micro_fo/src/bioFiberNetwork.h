@@ -199,4 +199,5 @@ namespace bio
                           double (&rslt)[3]);
   */
 }
+#include "bioFiberNetwork_impl.h"
 #endif

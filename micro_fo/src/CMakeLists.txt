@@ -19,6 +19,7 @@ set(micro_fo_src_files
   bioRVE2.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO2.cc
+  bioFiberRVEAnalysis.cc
   bioAlignFiberNetwork.cc
   bioSolverPsi.cc
   bioSolverGMRES.cc
