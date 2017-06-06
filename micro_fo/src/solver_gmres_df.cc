@@ -93,7 +93,7 @@ namespace bio
         // or nan; when it keeps oscillating even after a lot of iterations
         // (Damping)
         // checking for NaN (f != f is only true if f=NaN)
-        /* COMMENT OUT DAMPING PORTION OF CODE. */
+        /* COMMENT OUT DAMPING PORTION OF CODE. 
         if( current_norm != current_norm || ( (current_norm/previous_norm) > 100.0) || (ncv == 1) )
         {
           std::cout << "damping!" << std::endl;
@@ -106,6 +106,7 @@ namespace bio
           cont = 1;
           ncv = 0;
         }
+	*/
       } while(cont == 1);
       //relative_norm = current_norm;
       if (current_norm != 0)
