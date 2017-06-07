@@ -7,10 +7,10 @@ namespace bio
     : num_nonzeros(0)
     , finalized(false)
     , rows(num_eqs+1)
-    , cols(num_eqs*10)
+    , cols(num_eqs*sqrt(num_eqs)*10)
   {
     rows.assign(num_eqs+1,1);
-    cols.assign(num_eqs*sqrt(num_eqs),0);
+    cols.assign(num_eqs*sqrt(num_eqs)*10,0);
   }
   bool SparseMatrix::needMtxElem(int col,int row)
   {

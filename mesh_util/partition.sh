@@ -1,18 +1,20 @@
 #!/bin/bash -x
 
-# ./partition $DEVROOT/biotissue/macro/test/dogBone/models/mixed/dogBone_n_bc.smd $DEVROOT/biotissue/macro/test/dogBone/meshes/ 2k db 2
-
-module unload openmpi
-module load openmpi/1.6.5-ib
-module load simmetrix/simModSuite
+if [[ $# < 5 ]] ; then
+  echo "Usage : $0 [.smd] [dir] [mesh_suffix] [prefix] [num_parts] {debug}"
+  exit
+fi
+# ./partition.sh $DEVROOT/biotissue/macro/test/dogBone/models/mixed/dogBone_n_bc.smd $DEVROOT/biotissue/macro/test/dogBone/meshes 2k db 2
 
 MODEL=$1
 MESH_ROOT=$2
 MESH_SIZE=$3
 MESH_NAME=$4
 NUM_PARTS=$5
+DEBUG=$6
+PARLIMIT=64
 
-NUM_PROCS=$((NUM_PARTS / 128))
+NUM_PROCS=$((NUM_PARTS / $PARLIMIT))
 if [ $NUM_PROCS == 0 ]; then
   NUM_PROCS=1
 fi
@@ -24,10 +26,14 @@ else
   MESH_NAME=${MESH_NAME}_${NUM_PROCS}_parts.sms
 fi
 
-mpirun -np $NUM_PROCS \
-    bin/x64_rhel5_gcc41/partitionMesh \
+if [ "$DEBUG" == "Debug" ] ; then
+  TV="-tv"
+fi
+
+mpirun -np $NUM_PROCS $TV \
+    bin/x64_rhel7_gcc48/partitionMesh \
     $MODEL \
-    $MESH_ROOT/$MESH_SIZE/ \
+    $MESH_ROOT/$MESH_SIZE \
     $MESH_NAME \
     $NUM_PARTS
 

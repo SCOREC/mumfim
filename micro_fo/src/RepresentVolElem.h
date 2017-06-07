@@ -30,7 +30,7 @@ namespace bio
     MicroFO ();
     MicroFO(int * hdr,
             double * gpts,
-            int networkID,
+            int rnd_id,
             FiberNetwork * fn,
             SparseMatrix * st,
             SparskitBuffers * buffers,
@@ -43,9 +43,8 @@ namespace bio
     void UpdateNodeArray();
     double calc_stiffness(); // Temporary for size effect test
     // setup the current coordinates and the disp - need to be updated incrementally
-    void SetDisplacement(double * displacement);
-    void SetDeformationGradient(int gauss_pt, double * grad);  // get deformation gradient at gauss point i
-    void SetDeformationGradients(double * grads);
+    void setDisplacement(double * displacement);
+    void setDeformationGradient(double * grad) { deformation_gradient = grad; }  // set deformation gradient at gauss point i
     void eval_derivstress( double *dSdx);
     void getRVEs(double *ss);
     void setResults(double * ss);
@@ -65,8 +64,8 @@ namespace bio
     // Migration - need to pull into AMSI - almost entirely
     void collectMigrationData();
     void clearMigrationData();
-    void constructRVEFromMigrationData(FiberNetwork ** networks,
-                                       SparseMatrix ** matrices,
+    void constructRVEFromMigrationData(FiberNetwork *** networks,
+                                       SparseMatrix *** matrices,
                                        SparskitBuffers * b);
     std::vector<double> doubleMigrationData;
     std::vector<int> intMigrationData;
@@ -78,7 +77,8 @@ namespace bio
     void resetWeight() {rve_iterations.erase(rve_iterations.begin(),rve_iterations.end());}
     void resetTiming() {rve_timing.erase(rve_timing.begin(),rve_timing.end());}
   private:
-    int network_id;
+    int rve_tp;
+    int rnd_id;
     SparskitBuffers * buffers;
     FiberNetwork * fiber_network;
     SparseMatrix * sparse_structure;
@@ -106,6 +106,8 @@ namespace bio
     double * coords;
     std::vector<double> initial_coords;
     double * displacement;
+    // The deformation gradient
+    double * deformation_gradient;
     // Macroscale element information
     //apf::Mesh2 * element_mesh;
     //apf::MeshEntity * macro_entity;
@@ -134,8 +136,7 @@ namespace bio
     apf::Vector3 rve[8];
     apf::Vector3 u[8];
     //The following are the functions that must access the variables
-    int main_solver(double * coords_loc,
-                    double * fedisp,
+    int main_solver(double * deformation_grad,
                     double & local_S11, double & local_S12, double & local_S13,
                     double & local_S22, double & local_S23,
                     double & local_S33,
@@ -150,8 +151,10 @@ namespace bio
     void update_nodes();
     void create_element_shape_vars(double & vol,
                                    double * dvol,
-                                   double * fedisp);
+                                   double * deform_grad);
     void make_dRVEdFE(double * dRVEdFE,double * lcoords);
+    void getdRVEdFE(double * dRVEdFE, const double* FE_disp, const double* RVE_disp);
+    void getRVECornerDisp(const double F[], double rvedisp[]);
     int Solver();
     int Solver_Beam();
     void calc_precond(double * matrix,

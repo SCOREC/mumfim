@@ -5,11 +5,12 @@ namespace bio
 {
   enum header_fields
   {
-    ELEMENT_TYPE = 0,
-    GAUSS_ID = 1,
-    FIBER_REACTION = 2,
-    IS_ORIENTED = 3,
-    NUM_HEADER_FIELDS = 4
+    RVE_TYPE = 0,
+    ELEMENT_TYPE = 1,
+    GAUSS_ID = 2,
+    FIBER_REACTION = 3,
+    IS_ORIENTED = 4,
+    NUM_HEADER_FIELDS = 5
   };
   struct micro_fo_header
   {
@@ -34,11 +35,11 @@ namespace bio
   };
   struct micro_fo_init_data
   {
-    double init_data[4 * 3];
+    double init_data[12]; // linear tets only
   };
   struct micro_fo_data
   {
-    double data[4 * 6]; // 6 for each vertex, assuming tets atm
+    double data[9]; // 9 elements of the deformation gradient tensor.
   };
   struct micro_fo_result
   {
@@ -46,7 +47,8 @@ namespace bio
     // +9 at end to store orientation tensor information.
     double data[4 * 3 * 6 + 9 + 9]; // 6 sigma values for each vertex 3 q values, assuming tets atm
   };
-  class MicroFOMultiscaleDataTypes{
+  class MicroFOMultiscaleDataTypes
+  {
   public:
     MPI_Datatype micro_fo_header_data_type;
     MPI_Datatype micro_fo_parameter_data_type;
@@ -57,8 +59,8 @@ namespace bio
     {
       MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&micro_fo_header_data_type);
       MPI_Type_contiguous(NUM_PARAM_FIELDS,MPI_DOUBLE,&micro_fo_parameter_data_type);
-      MPI_Type_contiguous(4*3,MPI_DOUBLE,&micro_fo_init_data_type);
-      MPI_Type_contiguous(4*6,MPI_DOUBLE,&micro_fo_data_type);
+      MPI_Type_contiguous(12,MPI_DOUBLE,&micro_fo_init_data_type);
+      MPI_Type_contiguous(9,MPI_DOUBLE,&micro_fo_data_type);
       MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&micro_fo_result_type);
       MPI_Type_commit(&micro_fo_init_data_type);
       MPI_Type_commit(&micro_fo_data_type);

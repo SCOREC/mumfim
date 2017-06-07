@@ -1,5 +1,6 @@
 #include "bioMultiscaleTissue.h"
 #include "bioULMultiscaleIntegrator.h"
+#include "bioULMultiscaleHydrostaticPressureIntegrator.h"
 #include <RVE_Util.h> // micro
 #include <amsiControlService.h> // amsi
 namespace bio
@@ -19,13 +20,20 @@ namespace bio
     , snd_ptrns()
     , ini_ptrns()
     , rcv_ptrns()
+    , M2m_id()
+    , m2M_id()
     , mtd()
   {
     // primary field created in NonlinearTissue
     crt_rve = apf::createIPField(apf_mesh,"current_rve",apf::SCALAR,1);
     prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
-    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
-    mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
+//    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
+    fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
+    //mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
+    mltscl = new ULMultiscaleHydrostaticPressureIntegrator(this,apf_primary_field,crt_rve,det_dfm_grd,1);
+    M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
+    m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
+    apf::zeroField(fbr_ornt);
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
@@ -59,7 +67,7 @@ namespace bio
     }
     apf_mesh->end(it);
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
-      (*cnst)->apply(las,apf_mesh,part,apf_primary_numbering);
+      (*cnst)->apply(las);
   }
   void MultiscaleTissue::computeRVEs()
   {
@@ -87,9 +95,12 @@ namespace bio
       info.order = 1;
       info.derivS = &it->data[0];
       // todo (m) : fix hacky hard-coded bs
+      /*
       apf::setMatrix(fbr_ornt,*me,0,apf::Matrix3x3(it->data[81],it->data[82],it->data[83],
                                                    it->data[84],it->data[85],it->data[86],
                                                    it->data[87],it->data[88],it->data[89]));
+      */
+      apf::setScalar(fbr_ornt,*me,0,it->data[81]);
       if(ent_rve == ent_rves-1)
       {
         ent_rve = 0;
@@ -107,13 +118,26 @@ namespace bio
     mtd.MultiscaleDataTypesMPICommit();
     amsi::ControlService * cs = amsi::ControlService::Instance();
     amsi::Task * macro = amsi::getLocal();
-    macro->createDD("micro_fo_data");
-    macro->setLocalDDValue("micro_fo_data",0);
-    macro->assembleDD("micro_fo_data");
+    amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
+    (*dd) = 0;
+    amsi::Assemble(dd,macro->comm());
     snd_ptrns[FIBER_ONLY] = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
     cs->CommPattern_Reconcile(snd_ptrns[FIBER_ONLY]);
     rcv_ptrns[FIBER_ONLY] = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
     cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
+    computeRVETypeInfo();
+    int num_rve_tps = rve_tps.size();
+    cs->scaleBroadcast(M2m_id,&num_rve_tps);
+    int rve_cnts[num_rve_tps];
+    int ii = 0;
+    for(auto tp = rve_tps.begin(); tp != rve_tps.end(); ++tp)
+    {
+      std::vector<MPI_Request> rqsts;
+      cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->first.c_str(),tp->first.size()+1);
+      rve_cnts[ii++] = tp->second;
+    }
+    MPI_Request hdr_rqst;
+    cs->aSendBroadcast(&hdr_rqst,M2m_id,&rve_cnts[0],num_rve_tps);
   }
   int MultiscaleTissue::countRVEsOn(apf::MeshEntity * me)
   {
@@ -185,6 +209,20 @@ namespace bio
       return NONE;
       }
     */
+    apf::Matrix3x3 F;
+    apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
+    apf::Element * e = apf::createElement(apf_primary_field,mlm);
+    apf::Vector3 pcoords;
+    int pt_num = 0; // assuming element with one integration point.
+    apf::getIntPoint(mlm,1,pt_num,pcoords); // assume polynomial order of accuracy = 1.
+    amsi::deformationGradient(e,pcoords,F);
+    double detF = getDeterminant(F);
+    /*
+    if (detF > 0.6)
+      return FIBER_ONLY;
+    else
+      return NONE;
+    */
     // multiscale based purely off of simmodeler specification, no adaptivity, need differentiate between initialization and updating
     pEntity snt = reinterpret_cast<pEntity>(me);
     pGEntity gsnt = EN_whatIn(snt);
@@ -213,8 +251,9 @@ namespace bio
     std::fill(to_add.begin(),to_add.end(),0);
     size_t add_id = cs->AddData(snd_ptrns[FIBER_ONLY],rve_ents,to_add);
     nm_rves += to_add.size();
-    lt->setLocalDDValue("micro_fo_data",nm_rves);
-    lt->assembleDD("micro_fo_data");
+    amsi::DataDistribution * dd = lt->getDD("micro_fo_data");
+    (*dd) = nm_rves;
+    amsi::Assemble(dd,lt->comm());
     cs->CommPattern_Assemble(snd_ptrns[FIBER_ONLY]);
     cs->Communicate(add_id,nw_hdrs,mtd.micro_fo_header_data_type);
     cs->Communicate(add_id,nw_prms,mtd.micro_fo_parameter_data_type);
@@ -236,11 +275,55 @@ namespace bio
     switch(tp)
     {
     case NONE:
-      return constitutive;
+      return constitutives[R_whatIn((pRegion)me)];
     case FIBER_ONLY:
       return mltscl;
     default:
       return NULL;
     }
+  }
+  void MultiscaleTissue::computeRVETypeInfo()
+  {
+    pGEntity rgn = NULL;
+    GRIter ri = GM_regionIter(model);
+    while((rgn = (pGEntity)GRIter_next(ri)))
+    {
+      pAttribute mdl = GEN_attrib(rgn,"material model");
+      pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+      if(sm)
+      {
+        pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
+        pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
+        pAttributeInt cnt = (pAttributeInt)Attribute_childByType(sm,"count");
+        char * dir_str = AttributeString_value(dir);
+        char * tp_str = AttributeString_value(prfx);
+        std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
+        if(rve_tps.find(tp) == rve_tps.end())
+          rve_tps[tp] = AttributeInt_value(cnt);
+        Sim_deleteString(dir_str);
+        Sim_deleteString(tp_str);
+      }
+    }
+  }
+  int MultiscaleTissue::getRVEType(apf::ModelEntity * ent)
+  {
+    int ii = -1;
+    pGEntity rgn = reinterpret_cast<pGEntity>(ent);
+    pAttribute mdl = GEN_attrib(rgn,"material model");
+    pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+    if(sm)
+    {
+      pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
+      pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
+      char * dir_str = AttributeString_value(dir);
+      char * tp_str = AttributeString_value(prfx);
+      std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
+      auto fnd = rve_tps.find(tp);
+      if(fnd != rve_tps.end())
+	ii = std::distance(rve_tps.begin(),fnd);
+      Sim_deleteString(dir_str);
+      Sim_deleteString(tp_str);
+    }
+    return ii;
   }
 }

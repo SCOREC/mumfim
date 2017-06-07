@@ -109,7 +109,7 @@ namespace bio
     std::vector<double> lengths;
     calcFiberLengths(fn, lengths);
     double total_length = 0.0;
-    for (int ii=0; ii<lengths.size(); ii++)
+    for (uint ii=0; ii<lengths.size(); ii++)
       total_length += lengths[ii];
     double volume = std::abs( fn.sideCoord(FiberNetwork::RIGHT) - fn.sideCoord(FiberNetwork::LEFT) ) *
                     std::abs( fn.sideCoord(FiberNetwork::TOP) - fn.sideCoord(FiberNetwork::BOTTOM) ) *

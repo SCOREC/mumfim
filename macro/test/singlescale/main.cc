@@ -1,9 +1,12 @@
+#include "bioAnalysisIO.h"
 #include "bioTissueAnalysis.h"
 #include "bioTissueMultiscaleAnalysis.h" // only for convergence ops, delete after
 #include <amsiAnalysis.h>
+#include <amsiCasters.h>
 #include <amsiUtil.h>
 #include <SimError.h>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <cstring>
 #include <getopt.h>
@@ -15,10 +18,13 @@ void display_help_string()
   std::cout << "Usage: singlescale [OPTIONS]\n"
             << "  [-h, --help]                              display this help text\n"
             << "  [-g, --model model_file]                  the model file (.smd)\n"
+            << "  [-c, --case string]                       a string specifying the analysis case to run\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n";
 }
-std::string model_filename;
-std::string mesh_filename;
+std::string model_filename("");
+std::string mesh_filename("");
+std::string analysis_case("");
+std::string vol_log("volume");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -30,10 +36,11 @@ bool parse_options(int & argc, char ** & argv)
       {
         {"help",        no_argument,        0, 'h'},
         {"model",       required_argument,  0, 'g'},
-        {"mesh",        required_argument,  0, 'm'},
+        {"case",        required_argument,  0, 'c'},
+        {"mesh",        required_argument,  0, 'm'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hg:m:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hg:m:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
@@ -45,6 +52,9 @@ bool parse_options(int & argc, char ** & argv)
       break;
     case 'm':
       mesh_filename = optarg;
+      break;
+    case 'c':
+      analysis_case = optarg;
       break;
     case -1:
       //end of options
@@ -64,47 +74,30 @@ int main(int argc, char ** argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::use_simmetrix = true;
-    amsi::use_petsc = true;
     amsi::initAnalysis(argc,argv);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
     if(rnk > 0)
       amsi::suppressOutput(std::cout);
     int sz = 0;
-    MPI_Comm_size(MPI_COMM_WORLD,&sz);
+    MPI_Comm_size(AMSI_COMM_WORLD,&sz);
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
-    std::vector<pACase> css;
-    amsi::getTypeCases(SModel_attManager(mdl),"analysis",std::back_inserter(css));
-    auto css_nd = css.end();
-    for(auto cs = css.begin(); cs != css_nd; ++cs)
+    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; 
+        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
     {
-      amsi::initCase(mdl,*cs);
-      pACase pd = (pACase)AttNode_childByType((pANode)*cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
-      bio::NonlinearTissue tssu(mdl,msh,pd,AMSI_COMM_SCALE);
-      amsi::PetscLAS las;
-      bio::TissueIteration itr(&tssu,&las);
-      amsi::RelativeResidualConvergence rs_cnvrg(&las,1e-8);
-      bio::VolumeConvergenceAccm_Incrmt dv_cnvrg(&tssu,1e-3); // %dv
-      amsi::MultiConvergence cnvrg(&rs_cnvrg,&dv_cnvrg);
-      int stp = 0;
-      int nm_stps = 10;
-      do
-      {
-        stp++;
-        tssu.step();
-        tssu.setSimulationTime((double)stp/nm_stps);
-      } while (amsi::numericalSolve(&itr,&cnvrg));
-      std::cout << "Analysis case completed successfully, continuing..." << std::endl;
-      amsi::freeCase(*cs);
+      amsi::initCase(mdl,cs);
+      bio::TissueAnalysis an(mdl,msh,cs,AMSI_COMM_WORLD);
+      an.init();
+      an.run();
+      amsi::freeCase(cs);
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);
+    M_release(msh);
+    GM_release(mdl);
     amsi::freeAnalysis();
   }
-  else result++;
-  AMSI_DEBUG(Sim_logOff());
   return result;
 }

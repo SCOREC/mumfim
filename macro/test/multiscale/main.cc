@@ -15,15 +15,15 @@
 void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"
-            << "  [-f, --fibernetwork fiber_network_file]   filename for fiber network (.vect)\n"
             << "  [-h, --help]                              display this help text\n"
-            << "  [-s, --model model_file]                  the model file (.smd)\n"
+            << "  [-g, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
+            << "  [-c, --case string]                       a string specifying the analysis case to run"
             << "  [-b, --balancing]                         specify if load balancing of RVEs is desired";
 }
-std::string model_filename;
-std::string mesh_filename;
-std::string fiber_network_filename;
+std::string model_filename("");
+std::string mesh_filename("");
+std::string analysis_case("");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -33,24 +33,21 @@ bool parse_options(int & argc, char ** & argv)
   {
     static struct option long_options[] =
       {
-        {"fibernetwork", required_argument, 0, 'f'},
         {"help",        no_argument,        0, 'h'},
-        {"model",       required_argument,  0, 's'},
+        {"model",       required_argument,  0, 'g'},
         {"mesh",        required_argument,  0, 'm'},
-        {"balancing",   required_argument,  0, 'b'}
+        {"balancing",   required_argument,  0, 'b'},
+        {"case",        required_argument,  0, 'c'}
       };
     int option_index = 0;
-    int option = getopt_long(argc, argv, "hf:l:m:s:b:", long_options, &option_index);
+    int option = getopt_long(argc, argv, "hl:m:g:b:c:", long_options, &option_index);
     switch (option)
     {
     case 'h':
       display_help_string();
       result = false;
       break;
-    case 'f':
-      fiber_network_filename = optarg;
-      break;
-    case 's':
+    case 'g':
       model_filename = optarg;
       break;
     case 'm':
@@ -58,6 +55,9 @@ bool parse_options(int & argc, char ** & argv)
       break;
     case 'b':
       bio::rve_load_balancing = atoi(optarg);
+      break;
+    case 'c':
+      analysis_case = optarg;
       break;
     case -1:
 // end of options
@@ -75,7 +75,7 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
   int rnk = MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs(fiber_network_filename,1);
+  bio::P_computeRVEs();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
@@ -85,22 +85,22 @@ int run_micro_fm(int & argc, char ** & argv, MPI_Comm comm)
 }
 int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
+  amsi::initAnalysis(argc,argv);
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
-  amsi::getLocal()->createDD("micro_fo_data"); // coupling data sent every newton iteration
+  amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
   try
   {
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(), sthreadNone, mdl, NULL);
-    std::vector<pACase> css;
-    amsi::getTypeCases(SModel_attManager(mdl),"analysis",std::back_inserter(css));
-    auto css_nd = css.end();
-    for(auto cs = css.begin(); cs != css_nd; ++cs)
+    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;
+        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
     {
-      amsi::initCase(mdl,*cs);
-      bio::TissueMultiScaleAnalysis TMSA(mdl,msh,*cs,cm);
-      result += TMSA.run();
-      amsi::freeCase(*cs);
+      amsi::initCase(mdl,cs);
+      bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
+      an.init();
+      an.run();
+      amsi::freeCase(cs);
     }
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
@@ -121,6 +121,7 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   }
 # endif
   AMSI_DEBUG(Sim_logOff());
+  amsi::freeAnalysis();
   return result;
 }
 int main(int argc, char **argv)
@@ -129,15 +130,11 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::use_simmetrix = true;
-    amsi::use_petsc = true;
     amsi::initMultiscale(argc,argv);
-    amsi::initAnalysis(argc,argv);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
     amsi::ControlService * control = amsi::ControlService::Instance();
-    control->setSuppressOutput(true);
     control->setScaleMain("macro",&run_macro);
     control->setScaleMain("micro_fo",&run_micro_fo);
     result = control->Execute(argc,argv);
@@ -154,28 +151,9 @@ int main(int argc, char **argv)
     }
     amsi::deleteLog(execution_time);
 #   endif
-    amsi::freeAnalysis();
     amsi::freeMultiscale();
   }
   else
     result++;
   return result;
-  // speculative work on new amsi interface under here, mostly just here to see if things compile and link
-  feenableexcept(FE_DIVBYZERO | FE_INVALID);
-  if(parse_options(argc,argv))
-  {
-    amsi::Scale * scls[2];
-    scls[0] = new amsi::Scale;
-    scls[1] = new amsi::Scale;
-    double rts[2] = {1.0/128.0, 127.0/128.0};
-    amsi::DefaultRankSet rnks;
-    amsi::getGlobalRanks(&rnks);
-    amsi::assignRatios(&rnks,2,&rts[0],&scls[0]);
-    scls[0]->synchronize();
-    scls[1]->synchronize();
-    if(amsi::assignedTo(scls[0]))
-      run_macro(argc,argv,scls[0]->getComm());
-    else if(amsi::assignedTo(scls[1]))
-      run_micro_fo(argc,argv,scls[1]->getComm());
-  }
 }

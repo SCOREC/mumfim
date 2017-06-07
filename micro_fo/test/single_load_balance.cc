@@ -83,7 +83,11 @@ int main(int argc, char ** argv)
     rve.reserve(1);
     rve[0] = new MicroFO();
     rve[0]->setMigrationData(rve_data[0]);
-    rve[0]->constructRVEFromMigrationData(&network,&sparse_struct,&buffers);
+    FiberNetwork ** ntwrk = & network;
+    SparseMatrix ** sprs = & sparse_struct;
+    rve[0]->constructRVEFromMigrationData(&ntwrk,
+                                          &sprs,
+                                          &buffers);
   }
   amsi::freeMultiscale();
 }

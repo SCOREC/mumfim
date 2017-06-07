@@ -12,41 +12,31 @@ namespace bio
     int result = 0;
     int num_dofs = fiber_network->numDofs();
     int num_elements = fiber_network->numElements();
-    //int num_nodes = fiber_network->numNodes();
     int step = 0;
     int cont = 0;
-    double tol = 1e-6; // tolerance for dropping relatively small off-diagonal terms during ilu factorization
+    double tol = 1e-6; // tolerance for dropping small off-diagonal terms
     double tolerance = 1e-8; // convergence tolerance
-    double current_norm = std::numeric_limits<double>::max();
+    double current_norm  = std::numeric_limits<double>::max();
     double previous_norm = std::numeric_limits<double>::max();
     double relative_norm = std::numeric_limits<double>::max();
+    relative_norm = 0.0; previous_norm = 1.0;
     int ierr = 0;
-    double * solution = new double[num_dofs]();
-    double * fib_str = new double[num_elements]();
-    double * dfdl = new double[num_elements]();
-    // debug vars
+    std::vector<double> solution(num_dofs);
+    std::vector<double> fib_str(num_elements);
+    std::vector<double> dfdl(num_elements);
     std::vector<double> mat;
-    // Calculates the fiber length
     std::vector<double> len(num_elements);
     calcFiberLengths(*fiber_network,len);
     // Calculates the fiber force
-    calc_fiber_str(&len[0],
-                   &fib_str[0],
-                   &dfdl[0]);
+    calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
     // Assembles the Jacobian matrix
-    calc_precond(&matrix[0],
-                 &len[0],
-                 &fib_str[0],
-                 &dfdl[0],
-                 false);
+    calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],false);
     // Calculates the x,y,z conponents of the fiber force
-    calc_force_vector(&len[0],
-                      &fib_str[0]); // resets the force vector to 0.0 before accumulating values...
+    calc_force_vector(&len[0],&fib_str[0]); // resets the force vector to 0.0
     // Calculates boundary conditions of the microscopic problem
     force_vector_bcs();
     // Calculates the norm of the microscopic residuals
-    current_norm = calc_norm(&force_vector[0],
-                             num_dofs);
+    current_norm = calc_norm(&force_vector[0],num_dofs);
     buffers->zero();
     // begin timing solver
     double start_time = MPI_Wtime();
@@ -82,13 +72,7 @@ namespace bio
              buffers->colsBuffer(),
              buffers->rowsBuffer());
       for(int ii = 0; ii < num_dofs; ii++)
-      {
-        /*
-          if(fabs(solution[ii]) > 1.0)
-          std::cerr << "solution at position " << ii << " is " << solution[ii] << std::endl;
-        */
         coordinate_vector[ii] += solution[ii];
-      }
       double df = 1.0;
       int ncv = 0;
       do
@@ -98,12 +82,9 @@ namespace bio
         // fiber length determined from fiber_network->nodes.
         calcFiberLengths(*fiber_network,len);
         // fiber force determined from len calculated in calc_fiber_len function.
-        calc_fiber_str(&len[0],
-                       &fib_str[0],
-                       &dfdl[0]);
+        calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
         //force vector determined from combination of fiber_network->nodes and fib_str determined from calc_fiber_str function.
-        calc_force_vector(&len[0],
-                          &fib_str[0]);
+        calc_force_vector(&len[0],&fib_str[0]);
         // bcs imposed by setting terms in force_vector that are on boundary to 0.
         force_vector_bcs();
         // calc_norm determines L2 norm of force vector.
@@ -112,6 +93,7 @@ namespace bio
         // or nan; when it keeps oscillating even after a lot of iterations
         // (Damping)
         // checking for NaN (f != f is only true if f=NaN)
+        /* COMMENT OUT DAMPING PORTION OF CODE. 
         if( current_norm != current_norm || ( (current_norm/previous_norm) > 100.0) || (ncv == 1) )
         {
           std::cout << "damping!" << std::endl;
@@ -124,72 +106,42 @@ namespace bio
           cont = 1;
           ncv = 0;
         }
+	*/
       } while(cont == 1);
-      relative_norm = fabs(previous_norm - current_norm);
-      /*
-        AMSI_DEBUG
-        (
-        std::cout << "Micro relative norm: " << relative_norm << " < " << tolerance << std::endl;
-        std::cout << "Micro current norm: " << current_norm << std::endl;
-        std::cout << "Micro previous norm: " << previous_norm << std::endl;
-        )
-      */
+      //relative_norm = current_norm;
+      if (current_norm != 0)
+        relative_norm = fabs(previous_norm - current_norm);
+      else
+        relative_norm = current_norm;
       previous_norm = current_norm;
-      calc_precond(&matrix[0],
-                   &len[0],
-                   &fib_str[0],
-                   &dfdl[0],
-                   false);
+      calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],false);
       step++;
-      if((step == 50)||(step == 100)||(step == 150)||(step == 200))
-        ncv = 1;
-      if(step == 60)
+      if(step == 50 || step == 100)
+        ncv = 1; //Damping is required when ncv = 1.
+      if(step == 60 || step == 80 || step == 100)
       {
-        tolerance = 1e-10;
-        AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
+        tolerance = tolerance * 10.0;
+        AMSI_DEBUG(std::cout << "step = " << step << ", relative_norm = " << relative_norm << std::endl);
       }
-      else if(step == 80)
+      else if(step >= 120)
       {
-        tolerance = 1e-8;
-        AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
-      }
-      else if(step == 100)
-      {
-        tolerance = 1e-7;
-        AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
-      }
-      else if(step == 120)
-      {
-        tolerance = 1e-6;
-        AMSI_DEBUG(std::cout<<"step = "<<step<<", relative_norm = "<<relative_norm<<std::endl);
-      }
-      else if(step == 130)
-      {
-        std::cerr << "Warning: unusual number of newton iterations in micro_fo!" << std::endl;
-        break;
+       std::cout << "step = " << step << ", relative_norm = " << relative_norm << std::endl;
+       std::cerr << "Warning: unusual number of newton iterations in micro_fo! step = " << step << ", relative_norm = " << relative_norm <<std::endl;
+       result = -1;
+       break;
       }
     } while (relative_norm > tolerance);
     double end_time = MPI_Wtime();
     // Newton iteration ended. The network got a new equilibrium position and the fiber length and fiber force are updated
     calcFiberLengths(*fiber_network,len); //added in to match Minnesota code.
-    calc_fiber_str(&len[0],
-                   &fib_str[0],
-                   &dfdl[0]);
-    calc_force_vector(&len[0],
-                      &fib_str[0]);
-//    calc_mean_fiber_stretch_omega();
+    calc_fiber_str(&len[0],&fib_str[0],&dfdl[0]);
+    calc_force_vector(&len[0],&fib_str[0]);
+    // calc_mean_fiber_stretch_omega();
     // Calculation of the derivative dSdy that is used in function calc_femjacob_newmethod for the calculation of the derivative dSdx
-    calc_precond(&matrix[0],
-                 &len[0],
-                 &fib_str[0],
-                 &dfdl[0],
-                 true);
+    calc_precond(&matrix[0],&len[0],&fib_str[0],&dfdl[0],true);
     // update_nodes();
     rve_iterations.push_back(step);
     rve_timing.push_back(end_time - start_time);
-    delete [] solution;
-    delete [] fib_str;
-    delete [] dfdl;
     return result;
   }
   void MicroFO::force_vector_bcs()
@@ -216,11 +168,7 @@ namespace bio
       }
     }
   }
-  void MicroFO::calc_precond(double * matrix,
-                             double * lengths,
-                             double * fib_str,
-                             double * dfdl,
-                             bool calc_dSdy)
+  void MicroFO::calc_precond(double * matrix,double * lengths,double * fib_str,double * dfdl,bool calc_dSdy)
   {
     // Assembly of the Jacobian matrix for the microscopic problem
     // Also the derivative dSdy is also calculated and will be used in the function calc_femjacob_newmethod
@@ -298,7 +246,7 @@ namespace bio
             con.push_back(e.node1_id);
         }
         for(std::vector<int>::iterator iter = con.begin(), iterend = con.end();
-            iter != iterend; iter++)
+          iter != iterend; iter++)
         {
           for(int nn = 0; nn < 3; nn++)
           {
@@ -337,7 +285,7 @@ namespace bio
               con.push_back(e.node1_id);
           }
           for(std::vector<int>::iterator iter = con.begin(), iterend = con.end();
-              iter != iterend; iter++)
+            iter != iterend; iter++)
           {
             for(int nn = 0; nn < 3; nn++)
             {
@@ -381,7 +329,7 @@ namespace bio
             con.push_back(e.node1_id);
         }
         for(std::vector<int>::iterator iter = con.begin(), iterend = con.end();
-            iter != iterend; iter++)
+          iter != iterend; iter++)
         {
           for(int nn = 0; nn < 3; nn++)
           {

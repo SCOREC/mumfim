@@ -6,7 +6,8 @@
 #include <apfSIM.h>
 #include <cstring>
 #include <math.h> //natural log
-/** Holmes-Mow Constitutive relationship. Equations are based on http://help.mrl.sci.utah.edu/help/index.jsp (FEBIO documentation) */
+// Holmes-Mow Constitutive relationship.
+// Equations are based on http://help.mrl.sci.utah.edu/help/index.jsp (FEBIO documentation)
 namespace bio
 {
   class HolmesMowIntegrator : public amsi::ElementalSystem
