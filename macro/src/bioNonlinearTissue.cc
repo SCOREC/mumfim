@@ -1,7 +1,9 @@
 #include "bioNonlinearTissue.h"
 #include "bioAnalysis.h"
 #include "bioNeoHookeanIntegrator.h"
-//#include "bioNeoHookeanIntegratorUL.h"
+#include "bioTrnsIsoNeoHookeanIntegrator.h"
+#include "bioHolmesMowIntegrator.h"
+#include "bioVariableRecovery.h"
 #include <ErrorEstimators.h>
 #include <amsiControlService.h>
 #include <amsiLinearStressStrainIntegrator.h>

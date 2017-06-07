@@ -5,8 +5,7 @@ namespace bio
     void MultiscaleTissue::updateRVEDeletion(O o, bool all)
   {
     int iid = 0;
-    for(std::list<apf::MeshEntity*>::iterator me = rve_ents.begin();
-        me != rve_ents.end(); me++)
+    for(auto me = rve_ents.begin(); me != rve_ents.end(); me++)
     {
       apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,*me);
       int num_gauss_pts = apf::countIntPoints(mlm,getOrder(mlm));
@@ -81,8 +80,8 @@ namespace bio
             nw_ents = me;
             ++nw_ents;
             micro_fo_header hdr;
-	    hdr.data[RVE_TYPE]       = getRVEType(reinterpret_cast<apf::ModelEntity*>(gsnt));
-            hdr.data[FIELD_ORDER]    = delta_u->getShape()->getOrder();
+            hdr.data[RVE_TYPE]       = getRVEType(reinterpret_cast<apf::ModelEntity*>(gsnt));
+            hdr.data[FIELD_ORDER]    = apf::getShape(delta_u)->getOrder();
             hdr.data[ELEMENT_TYPE]   = apf_mesh->getType(me);
             hdr.data[GAUSS_ID]       = ii;
             hdr.data[FIBER_REACTION] = fbr_rctn;
@@ -118,7 +117,7 @@ namespace bio
   {
     for(auto me = rve_ents.begin(); me != rve_ents.end(); ++me)
     {
-      int rve_cnt = countRVEsOn(*me);
+      int rve_cnt = fo_cplg.countRVEsOn(*me);
       if(rve_cnt > 0)
       {
         apf::MeshElement * ml = apf::createMeshElement(apf_mesh,*me);
