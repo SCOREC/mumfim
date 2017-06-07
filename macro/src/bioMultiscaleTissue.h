@@ -1,26 +1,23 @@
 #ifndef BIO_MULTISCALE_TISSUE_H_
 #define BIO_MULTISCALE_TISSUE_H_
 #include "bioNonlinearTissue.h"
+#include "bioRVECoupling.h"
 namespace bio
 {
   // refactor so this is only dealing with a single type of RVE
   class MultiscaleTissue : public NonlinearTissue
   {
   public:
-    enum MicroscaleType{NONE = 0,
-                        FIBER_ONLY = 1,
-                        FIBER_MATRIX = 2,
-                        MICROSCALE_TYPE_COUNT = 3};
   private:
     amsi::ElementalSystem * mltscl;
+    RVECoupling fo_cplg;
     apf::Field * crt_rve;
     apf::Field * prv_rve;
     apf::Field * fbr_ornt;
     int nm_rves;
     int nm_rve_rgns;
-    std::list<apf::MeshEntity *> rve_ents;
-    std::vector<micro_fo_result> rslts;
-    std::map<apf::MeshEntity*,std::vector<RVE_Info> > rslt_mp;
+    std::vector<apf::MeshEntity*> rve_ents;
+    // std::map<apf::MeshEntity*,std::vector<RVE_Info> > rslt_mp;
     // multiscale coupling communication stuff
     enum PATTERN
     {
@@ -36,7 +33,7 @@ namespace bio
     size_t M2m_id;
     size_t m2M_id;
     std::map<std::string,int> rve_tps;
-    MicroFOMultiscaleDataTypes mtd;
+    MicroFODatatypes mtd;
   public:
     MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm);
     ~MultiscaleTissue();
@@ -49,7 +46,6 @@ namespace bio
     int updateRVEType(apf::MeshEntity * me);
     void updateRVEExistence();
     // see if we can replace RVE_Info with fiber_only_result or something
-    RVE_Info * getRVEResult(apf::MeshEntity * me, int ip);
     template <typename O>
       void updateRVEDeletion(O o, bool all = false);
     template <typename O1, typename O2, typename O3, typename O4>

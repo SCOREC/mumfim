@@ -3,8 +3,7 @@
 #include "bioNeoHookeanIntegrator.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
-#include "StressStrainIntegrator.h"
-#include "RVE_Util.h"
+//#include "StressStrainIntegrator.h"
 #include "bioVariableRecovery.h"
 #include <ErrorEstimators.h>
 #include <apfFunctions.h>

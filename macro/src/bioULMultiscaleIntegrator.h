@@ -38,8 +38,7 @@ namespace bio
     bool includesBodyForces() { return true; }
     void atPoint(apf::Vector3 const &p, double w, double dV)
     {
-      RVE_Info * rve_info = analysis->getRVEResult(apf::getMeshEntity(me),
-                                                   current_integration_point);
+      micro_fo_result * rslt = analysis->getRVEResult(apf::getMeshEntity(me), current_integration_point);
       // Note: Macro and micro solvers index stress tensor differently
       //
       //   micro    ----->    macro
@@ -96,12 +95,12 @@ namespace bio
             grads(ii,jj) += Jinv[jj][kk] * local_grads[ii][kk];
       int offset = 9;
       double * stress_deriv[6];
-      stress_deriv[0] = &(rve_info->derivS[offset]);
-      stress_deriv[1] = &(rve_info->derivS[offset + 3*nedof]);
-      stress_deriv[2] = &(rve_info->derivS[offset + 5*nedof]);
-      stress_deriv[3] = &(rve_info->derivS[offset +   nedof]);
-      stress_deriv[4] = &(rve_info->derivS[offset + 4*nedof]);
-      stress_deriv[5] = &(rve_info->derivS[offset + 2*nedof]);
+      stress_deriv[0] = &(rslt->data[offset]);
+      stress_deriv[1] = &(rslt->data[offset + 3*nedof]);
+      stress_deriv[2] = &(rslt->data[offset + 5*nedof]);
+      stress_deriv[3] = &(rslt->data[offset +   nedof]);
+      stress_deriv[4] = &(rslt->data[offset + 4*nedof]);
+      stress_deriv[5] = &(rslt->data[offset + 2*nedof]);
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6,nedof); // linear strain disp
       BL.zero();
@@ -141,21 +140,21 @@ namespace bio
       double S[9][9] = {};
       double SV[6];
       double factor = 1;
-      SV[0] = factor*(rve_info->derivS[0]);
-      SV[1] = factor*(rve_info->derivS[3]);
-      SV[2] = factor*(rve_info->derivS[5]);
-      SV[3] = factor*(rve_info->derivS[1]);
-      SV[4] = factor*(rve_info->derivS[4]);
-      SV[5] = factor*(rve_info->derivS[2]);
-      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rve_info->derivS[0];
-      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = rve_info->derivS[1];
-      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = rve_info->derivS[2];
-      S[1][0] = S[1+3][0+3] = S[1+6][0+6] = rve_info->derivS[1];
-      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = rve_info->derivS[3];
-      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = rve_info->derivS[4];
-      S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rve_info->derivS[2];
-      S[2][1] = S[2+3][1+3] = S[2+6][1+6] = rve_info->derivS[4];
-      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = rve_info->derivS[5];
+      SV[0] = factor*(rslt->data[0]);
+      SV[1] = factor*(rslt->data[3]);
+      SV[2] = factor*(rslt->data[5]);
+      SV[3] = factor*(rslt->data[1]);
+      SV[4] = factor*(rslt->data[4]);
+      SV[5] = factor*(rslt->data[2]);
+      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rslt->data[0];
+      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = rslt->data[1];
+      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = rslt->data[2];
+      S[1][0] = S[1+3][0+3] = S[1+6][0+6] = rslt->data[1];
+      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = rslt->data[3];
+      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = rslt->data[4];
+      S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rslt->data[2];
+      S[2][1] = S[2+3][1+3] = S[2+6][1+6] = rslt->data[4];
+      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = rslt->data[5];
       apf::DynamicMatrix BNLTxS(nedof,9);
       BNLTxS.zero();
       // BNLTxS = BNL^T * S
@@ -171,9 +170,9 @@ namespace bio
           BLTxSV(ii,0) += BL(jj,ii) * SV[jj];
       // retrieve virtual strain/stress for force vector calc
       double Q[3];
-      Q[0] = rve_info->derivS[6];
-      Q[1] = rve_info->derivS[7];
-      Q[2] = rve_info->derivS[8];
+      Q[0] = rslt->data[6];
+      Q[1] = rslt->data[7];
+      Q[2] = rslt->data[8];
       apf::DynamicMatrix N(num_field_components,nedof);
       N.zero();
       for(int ii = 0; ii < num_field_components; ii++)
