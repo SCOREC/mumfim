@@ -21,6 +21,9 @@ namespace bio
     int rve_cnt;
     int rve_rgns;
     std::vector<micro_fo_result> rsts;
+    size_t snd_ptrn;
+    size_t rcv_ptrn;
+    MicroFODatatypes mtd;
   public:
   RVECoupling(apf::Mesh * m, int o)
       : msh(m)
@@ -31,6 +34,9 @@ namespace bio
       , rve_cnt(0)
       , rve_rgns(0)
       , rsts()
+      , snd_ptrn()
+      , rcv_ptrn()
+      , mtd()
     {
       rst_fst = apf::createIPField(msh,"micro_fo_rve_offset",apf::SCALAR,1);
       crt_rve = apf::createIPField(msh,"micro_fo_current_rve",apf::SCALAR,1);
@@ -41,6 +47,30 @@ namespace bio
       apf::destroyField(prv_rve);
       apf::destroyField(crt_rve);
       apf::destroyField(rst_fst);
+    }
+    void initCoupling()
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      amsi::Task * macro = amsi::getLocal();
+      amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
+      (*dd) = 0;
+      amsi::Assemble(dd,macro->comm());
+      snd_ptrn = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
+      cs->CommPattern_Reconcile(snd_ptrn);
+      rcv_ptrn = cs->CreateCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
+      cs->CommPattern_Reconcile(rcv_ptrn);
+      
+    }
+    // todo (h) : switch to pointer instead of vector
+    void sendRVEData(std::vector<micro_fo_data> & bfr)
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      cs->Communicate(snd_ptrn,bfr,mtd.dat);
+    }
+    void recvRVEData()
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      cs->Communicate(rcv_ptrn,rsts,mtd.rst);
     }
     micro_fo_result * getRVEResult(apf::MeshEntity * me, int ip)
     {

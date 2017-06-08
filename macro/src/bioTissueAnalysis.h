@@ -9,14 +9,14 @@ namespace bio
     void buildLASConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, O out);
   template <typename I, typename O>
     void buildVolumeConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::Field * u, O out);
-  class TissueIteration : public amsi::Iteration
+  class TissueIteration : public amsi::ModularIteration
   {
   protected:
     NonlinearTissue * tssu;
     amsi::LAS * las;
   public:
     TissueIteration(NonlinearTissue * t, amsi::LAS * l)
-      : amsi::Iteration()
+      : amsi::ModularIteration()
       , tssu(t)
       , las(l)
     {}

@@ -1,6 +1,7 @@
 #ifndef BIO_ULMULTISCALE_INTEGRATOR_H_
 #define BIO_ULMULTISCALE_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
+#include "bioRVECoupling.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <apfSIM.h>
@@ -10,13 +11,13 @@ namespace bio
   class ULMultiscaleIntegrator : public amsi::ElementalSystem
   {
   public:
-  ULMultiscaleIntegrator(MultiscaleTissue * n,
+  ULMultiscaleIntegrator(RVECoupling * r,
                          apf::Field * u,
                          apf::Field * rve_tp,
                          int o)
     : ElementalSystem(u,o)
       , current_integration_point(0)
-      , analysis(n)
+      , coupling(r)
       , micro_type_field(rve_tp)
     {
       matrixShearModulus  = 0.0;
@@ -38,7 +39,7 @@ namespace bio
     bool includesBodyForces() { return true; }
     void atPoint(apf::Vector3 const &p, double w, double dV)
     {
-      micro_fo_result * rslt = analysis->getRVEResult(apf::getMeshEntity(me), current_integration_point);
+      micro_fo_result * rslt = coupling->getRVEResult(apf::getMeshEntity(me), current_integration_point);
       // Note: Macro and micro solvers index stress tensor differently
       //
       //   micro    ----->    macro
@@ -195,13 +196,13 @@ namespace bio
       }
       // store stress and strain values for post processing.
       // Get displacements
-      apf::DynamicVector u(nedofs);
-      getDisplacements(u);
+      //apf::DynamicVector u(nedofs);
+      //getDisplacements(u);
       // Compute strains and stresses (for force vector)
-      apf::DynamicVector strain(6);
-      apf::multiply(BL,u,strain);
-      analysis->storeStrain(me,strain.begin());
-      analysis->storeStress(me,SV);
+      //apf::DynamicVector strain(6);
+      //apf::multiply(BL,u,strain);
+      //analysis->storeStrain(me,strain.begin());
+      //analysis->storeStress(me,SV);
       current_integration_point++;
     }
     void atPointMatrix(apf::Vector3 const &p, double w, double dV)
@@ -381,8 +382,8 @@ namespace bio
       apf::DynamicVector stress(6);
       apf::multiply(D,strain,stress);
       // store stress and strain values for post processing.
-      analysis->storeStrain(me,strain.begin());
-      analysis->storeStress(me,stress.begin());
+      //analysis->storeStrain(me,strain.begin());
+      //analysis->storeStress(me,stress.begin());
       // for force vector calculation
       apf::DynamicVector BLTxSV(nedof);
       apf::multiply(BLT,stress,BLTxSV);
@@ -404,7 +405,8 @@ namespace bio
     }
     int current_integration_point;
   private:
-    MultiscaleTissue * analysis;
+    RVECoupling * coupling;
+    //MultiscaleTissue * analysis;
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
