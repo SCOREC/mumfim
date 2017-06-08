@@ -89,8 +89,8 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
-  pGModel mdl;
-  pParMesh msh;
+  pGModel mdl = NULL;
+  pParMesh msh = NULL;
   try
   {
     mdl = GM_load(model_filename.c_str(),NULL,NULL);

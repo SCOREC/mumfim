@@ -82,26 +82,26 @@ int main(int argc, char ** argv)
     int sz = 0;
     MPI_Comm_size(AMSI_COMM_WORLD,&sz);
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
-  pGModel mdl;
-  pParMesh msh;
-  try
-  {
-    mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    auto cs = amsi::getAnalysisCase(mdl, analysis_case);
-    amsi::initCase(mdl,cs);
-    bio::TissueAnalysis an(mdl,msh,cs,AMSI_COMM_WORLD);
-    an.init();
-    an.run();
-    amsi::freeCase(cs);
-    // FIXME this is memory leak, should call M_release/GM_release if they are noexcept
-  } catch (pSimError err) {
-    std::cout << "Simmetrix error caught: " << std::endl
-              << "  Code  : " << SimError_code(err) << std::endl
-              << "  String: " << SimError_toString(err) << std::endl;
-    SimError_delete(err);
-    MPI_Abort(AMSI_COMM_WORLD, -1);
-  }
+    pGModel mdl = NULL;
+    pParMesh msh = NULL;
+    try
+    {
+      mdl = GM_load(model_filename.c_str(),NULL,NULL);
+      msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+      auto cs = amsi::getAnalysisCase(mdl, analysis_case);
+      amsi::initCase(mdl,cs);
+      bio::TissueAnalysis an(mdl,msh,cs,AMSI_COMM_WORLD);
+      an.init();
+      an.run();
+      amsi::freeCase(cs);
+      // FIXME this is memory leak, should call M_release/GM_release if they are noexcept
+    } catch (pSimError err) {
+      std::cout << "Simmetrix error caught: " << std::endl
+                << "  Code  : " << SimError_code(err) << std::endl
+                << "  String: " << SimError_toString(err) << std::endl;
+      SimError_delete(err);
+      MPI_Abort(AMSI_COMM_WORLD, -1);
+    }
     if(rnk > 0)
       amsi::expressOutput(std::cout);
     M_release(msh);
