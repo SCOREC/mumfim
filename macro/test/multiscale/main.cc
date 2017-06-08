@@ -89,25 +89,25 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
+  pGModel mdl;
+  pParMesh msh;
   try
   {
-    pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;
-        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
-    {
-      amsi::initCase(mdl,cs);
-      bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
-      an.init();
-      an.run();
-      amsi::freeCase(cs);
-    }
+    mdl = GM_load(model_filename.c_str(),NULL,NULL);
+    msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+    auto cs = amsi::getAnalysisCase(mdl, analysis_case);
+    amsi::initCase(mdl,cs);
+    bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
+    an.init();
+    an.run();
+    amsi::freeCase(cs);
+    // FIXME this is memory leak, should call M_release/GM_release if they are noexcept
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl
               << "  String: " << SimError_toString(err) << std::endl;
     SimError_delete(err);
-    return -1;
+    MPI_Abort(AMSI_COMM_WORLD, -1);
   }
 # ifdef LOGRUN
   amsi::Log macro_stress = amsi::activateLog("macro_stresses");
