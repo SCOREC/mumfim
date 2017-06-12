@@ -1,6 +1,10 @@
+GTAGS
+GRTAGS
+GPATH
 dep/scorecutil/build/
 dep/sparskit/dep/build/
 build_debug/
+build_release/
 simmetrix_log
 # Prerequisites
 *.d
