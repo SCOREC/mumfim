@@ -3,7 +3,7 @@
 #include "bioNeoHookeanIntegrator.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
-#include "StressStrainIntegrator.h"
+#include <amsiLinearStressStrainIntegrator.h>
 #include "RVE_Util.h"
 #include "bioVariableRecovery.h"
 #include <ErrorEstimators.h>
