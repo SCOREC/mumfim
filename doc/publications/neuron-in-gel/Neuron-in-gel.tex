@@ -324,17 +324,7 @@ $
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and Discussion}
-To gain insight about the interactions within innervated collagenous tissue, we examine the mechanical behavior of our embedded neuron model when the surrounding collagen gel is loaded in different directions. \textcolor{red}{Also talk about different cell stiffness, axial strain, and fiber alignment.} The load directions relative to the neuron structure are illustrated in the schematic of Fig.\ \ref{fig:analysis_schematic}(a). Loads of up to 20$\%$ bulk strain are considered to capture the behavior below and above the pain threshold of $16\%$ bulk strain \cite{Zhang:2016ga}. For the results in this section, $a=30$ is used for $E_A^{cell}$ in Eq.\ \eqref{eq:cellEA}. The resulting axial Young's modulus in the neuron is plotted in Fig.\ \ref{fig:analysis_schematic}(b). \textcolor{red}{Talk about cumulative distribution function here as well.}
-
-The complementary cumulative distribution function (cdf) for the maximum principal strain is calculated for the neuron structure via
-%
-\begin{equation}
-1 - cdf(x) = 1 - \sum_{i=1}^x f(i) = 1 - Pr[X \le x],
-\label{eq:comp_cdf}
-\end{equation}
-%
-where $f$ is a probability density function and $X$ is a random variable (maximum principal strain in our case). Equation \ref{eq:comp_cdf} measures the probability that the neuron experiences a maximum principal strain of \textit{at least} $x$.
-
+To gain insight about the interactions within innervated collagenous tissue, we examine the mechanical behavior of our embedded neuron model by deforming the surrounding collagen gel under different conditions. The effect of adjusting cell body stiffness is investigated by considering different values of $a$ in Eq.\ \eqref{eq:cellEA} (see Fig.\ \ref{fig:analysis_schematic}(b) for axial Young's modulus for $a=30$), while the effect of load direction is explored by considering different loading angles (see Fig.\ \ref{fig:analysis_schematic}(a)). 
 %
 %image for axial young's modulus from N2P178/3-Neuron_FT folder
 \begin{figure}[ht]
@@ -350,9 +340,65 @@ $
 \caption{\label{fig:analysis_schematic} (a) Schematic showing load directions corresponding to 0 (solid black arrows), 45 (dotted arrows), and 90 (stripped arrows) degrees relative to the neuron structure. (b) Plot of axial Young's modulus for $a=30$ in Eq.\ \eqref{eq:cellEA} and $E_A=70$ kPa.}
 \end{figure}
 %
+The strain distribution in the neuron is analyzed to identify loading conditions that may lead to neuronal damage. A cumulative distribution function (cdf) and its complement (ccdf) are employed for regions in the neuron that experience compressive and tensile strains, respectively. The cdf is defined as
+%
+\begin{equation}
+cdf(x) = \sum_{i=1}^x f(i) = Pr[X \ge x],
+\label{eq:cdf}
+\end{equation}
+%
+where $f$ is a probability density function and $X$ is a random variable (i.e., a measure of strain). Equation \ref{eq:cdf} can be interpreted as measuring the probability that a region experiences a strain of \textit{at most} $x$. Such an interpretation is most suitable for compressive strains, which are negative in value. On the other hand, the complement of Eq.\ \eqref{eq:cdf} is
+%
+\begin{equation}
+1 - cdf(x) = 1 - \sum_{i=1}^x f(i) = 1 - Pr[X \le x],
+\label{eq:ccdf}
+\end{equation}
+%
+and is the probability that a region experiences a strain of \textit{at least} $x$. Such an interpretation is suitable for tensile strains, which are positive in value. In our analysis, loads of up to 16$\%$, which is the pain threshold for ligament stretch \cite{Zhang:2016ga}, are considered. 
+
 %=========================================================================================================
 \subsection{Effect of Changing Cell Body Stiffness}
-Consider effect of changing cell body stiffness for three different bulk strains.
+In our model, the cell body stiffness along the axial direction of adjacent axons depends on how quickly the microtubules in the neuron transition from aligned in the axon to unaligned in the cell body. The transition from aligned to unaligned is characterized by the variable $a$ in Eq.\ \eqref{eq:cellEA}. Therefore, the effect of such a transition from axon to microtubule on the overall mechanical behavior of the neuron can be explored by adjusting the value of $a$ in Eq.\ \eqref{eq:cellEA}. In this section three values of $a$ are considered: $a=$ 28, 30, and 50. A larger value of $a$ represents a more rapid transition from aligned to unaligned results in a softer cell body in the axial direction. The distributions of the maximum principal strain, $\epsilon_{\text{max}}$ for different cell body stiffnesses (different values of $a$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a}.
+%
+% Figures generated in N2P178/6-Neuron_CellStiffness/MaxPrnStrn folder
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{ccc}
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_neuron_compare_a_strn0_055.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_neuron_compare_a_strn0_1.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_neuron_compare_a_strn0_16.pdf} \\
+(a) & (b) & (c)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_ccdf_vary_a} Distributions (ccdf) of maximum principal strain, $\epsilon_{\text{max}}$, in neuron for different cell body stiffnesses: a=28 (blue dotted line), 30 (red solid line), and 50 (dashed yellow line). Three different bulk strains are considered: $\epsilon_{\text{bulk}}=$ (a) 5.5$\%$, (b) 10 $\%$, and (c) 16$\%$. The $\epsilon_{\text{max}}$ values are normalized by the $\epsilon_{\text{bulk}}$. }
+\end{figure}
+%
+
+As seen in Fig.\ \ref{fig:neuron_ccdf_vary_a}, increasing the cell body stiffness (increasing $a$) causes the distribution to shift to the left corresponding to a relatively stiffer neuron. The variations in the overall strain distribution caused by varying the cell body stiffness is fairly small \textcolor{red}{[Does this small variation mean anything physical?]}. The strain distributions of regions corresponding to cell bodies and axons are plotted in Fig.\ \ref{fig:rgns_ccdf_vary_a}. 
+%
+% Figures generated in N2P178/6-Neuron_CellStiffness/MaxPrnStrn folder
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{ccc}
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_cellbodies_compare_a_strn0_055.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_cellbodies_compare_a_strn0_1.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_cellbodies_compare_a_strn0_16.pdf} \\
+(a) & (b) & (c) \\
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_axons_compare_a_strn0_055.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_axons_compare_a_strn0_1.pdf} &
+\includegraphics[height=4.5cm]{figure/rot0_FT_128_1920_ccdf_axons_compare_a_strn0_16.pdf} \\
+(d) & (e) & (f)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:rgns_ccdf_vary_a} Distributions (ccdf) of maximum principal strain, $\epsilon_{\text{max}}$, in cell bodies (top row) and axons (bottom row) for different cell body stiffnesses: a=28 (blue dotted line), 30 (red solid line), and 50 (dashed yellow line). Three different bulk strains are considered: $\epsilon_{\text{bulk}}=$ (a,d) 5.5$\%$, (b,e) 10 $\%$, and (c,f) 16$\%$. The $\epsilon_{\text{max}}$ values are normalized by the $\epsilon_{\text{bulk}}$. }
+\end{figure}
+%
+
+As seen in Fig.\ \ref{fig:rgns_ccdf_vary_a}, the slight variations seen in the overall strain distribution for the neuron (Fig.\ \ref{fig:neuron_ccdf_vary_a}) is entirely due to variations in the strain of the cell body: the strain distributions in the axons are identical for all values of $a$ considered. As seen in the strain distributions for the neuron, the strain distribution for the cell bodies shift to the left corresponding to the stiffening of the cell body, which is consistent with using larger values of $a$. These results suggests that the effects of adjusting the cell body stiffness has only a minimal effect on the overall strain distribution in the neuron. \textcolor{red}{[Amplification increases with increasing bulk strain. This point is further explored in later sections below.]}
 
 %=========================================================================================================
 \subsection{Effect of Changing Load Direction}
