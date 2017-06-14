@@ -214,7 +214,7 @@ $
 \end{figure}
 %
 
-The fiber alignment in innervated collagenous tissue was measured using the QPLI method \cite{Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ is measured in each pixel. Our customized QPLI system is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \textcolor{red}{(Ref. 1)}. The QPLI system was integrated with the mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation (\textcolor{red}{ref: Tower, Neidert and Tranquillo 2002; Quinn and Winkelstein, 2008}).  To compare fiber alignment that is measured experimentally and calculated from simulations, the orientation index $P_2$ is considered. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
+The fiber alignment in innervated collagenous tissue was measured using the QPLI method \cite{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ is measured in each pixel. Our customized QPLI system is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \cite{Zhang:2016ga}. The QPLI system was integrated with the mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \cite{Tower:2002hk,Quinn:2008df}. To compare fiber alignment that is measured experimentally and calculated from simulations, the orientation index $P_2$ is considered. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
 %
 \begin{equation}
 P_2 = \frac{3 <\cos^2\theta> - 1}{2},
@@ -267,14 +267,14 @@ The constants of Eq.\ \eqref{eq:trns_iso} are defined as
 \label{eq:trns_iso_constants}
 \end{align}
 %
-where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In the cell bodies, the axial Young's modulus decreases as one moves away from the cell-body/axon interface towards the interior of the cell body by 
+where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In our analysis, the shear modulus is set to be isotropic such that $G_A=\mu=0.577$ and $\alpha = 0$. In the cell bodies, the axial Young's modulus decreases as one moves away from the cell-body/axon interface towards the interior of the cell body by 
 %
 \begin{equation}
 E_A^{cell} = \left(1 - \frac{D}{a}\right)E_A,
 \label{eq:cellEA}
 \end{equation}
 %
-where $D$ is the distance of an interior point of the cell body to the closest cell-body/axon interface and $a$ is a constant that dictates how quickly $E_A$ decreases when moving from the cell-body/axon interface towards the interior of the cell body. The axial stiffness decreases more quickly for smaller values of $a$. In our simulations, $G_A$
+where $D$ is the distance of an interior point of the cell body to the closest cell-body/axon interface and $a$ is a constant that dictates how quickly $E_A$ decreases when moving from the cell-body/axon interface towards the interior of the cell body. The axial stiffness decreases more quickly for smaller values of $a$. 
 
 %----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 \subsubsection{Parameterization of cell body and axon}
@@ -296,8 +296,7 @@ The cross-sectional areas and elastic moduli for the axon are listed in table \r
 $A_{MTb}$ & 0.344 $\mu$m${}^2$ & calculated according to schematic in Fig.\ \ref{fig:microtubule_bundle}. \\
 $A_A$ & 19.6 $\mu$m${}^2$ & calculated from average axon diameter. \\
 $E_{MTb}$ & $4\times 10^{4}$ kPa & this is an average value - the elastic modulus of the microtubule bundle increases linearly with strain \cite{Peter:2012fc}. \\
-$E_A$ & 70 kPa  & calculated from Eq.\ \eqref{eq:EA_EMTb_relation}. \\
-$G_A$ & 26.9 kPa & calculated from $E_A = 70$ kPa and $\nu = 0.3$. \\ \hline \hline
+$E_A$ & 70 kPa  & calculated from Eq.\ \eqref{eq:EA_EMTb_relation}. \\ \hline \hline
 \end{tabular}
 \end{center}
 \caption{Parameters for axon structure.}
@@ -343,14 +342,14 @@ $
 The strain distribution in the neuron is analyzed to identify loading conditions that may lead to neuronal damage. A cumulative distribution function (cdf) and its complement (ccdf) are employed for regions in the neuron that experience compressive and tensile strains, respectively. The cdf is defined as
 %
 \begin{equation}
-cdf(x) = \sum_{i=1}^x f(i) = Pr[X \ge x],
+\text{cdf}(x) = \sum_{i=1}^x f(i) = \text{Pr}[X \ge x],
 \label{eq:cdf}
 \end{equation}
 %
 where $f$ is a probability density function and $X$ is a random variable (i.e., a measure of strain). Equation \ref{eq:cdf} can be interpreted as measuring the probability that a region experiences a strain of \textit{at most} $x$. Such an interpretation is most suitable for compressive strains, which are negative in value. On the other hand, the complement of Eq.\ \eqref{eq:cdf} is
 %
 \begin{equation}
-1 - cdf(x) = 1 - \sum_{i=1}^x f(i) = 1 - Pr[X \le x],
+1 - \text{cdf}(x) = 1 - \sum_{i=1}^x f(i) = 1 - \text{Pr}[X \le x],
 \label{eq:ccdf}
 \end{equation}
 %
@@ -358,7 +357,7 @@ and is the probability that a region experiences a strain of \textit{at least} $
 
 %=========================================================================================================
 \subsection{Effect of Changing Cell Body Stiffness}
-In our model, the cell body stiffness along the axial direction of adjacent axons depends on how quickly the microtubules in the neuron transition from aligned in the axon to unaligned in the cell body. The transition from aligned to unaligned is characterized by the variable $a$ in Eq.\ \eqref{eq:cellEA}. Therefore, the effect of such a transition from axon to microtubule on the overall mechanical behavior of the neuron can be explored by adjusting the value of $a$ in Eq.\ \eqref{eq:cellEA}. In this section three values of $a$ are considered: $a=$ 28, 30, and 50. A larger value of $a$ represents a more rapid transition from aligned to unaligned results in a softer cell body in the axial direction. The distributions of the maximum principal strain, $\epsilon_{\text{max}}$ for different cell body stiffnesses (different values of $a$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a}.
+In our model, the cell body stiffness along the axial direction of adjacent axons depends on how quickly the microtubules in the neuron transition from aligned in the axon to unaligned in the cell body. The transition from aligned to unaligned is characterized by the variable $a$ in Eq.\ \eqref{eq:cellEA}. Therefore, the effect of such a transition from axon to microtubule on the overall mechanical behavior of the neuron can be explored by adjusting the value of $a$ in Eq.\ \eqref{eq:cellEA}. As seen in Fig.\ \ref{fig:analysis_schematic}(b), the longest cell body has $D \approx 50\mu$m. Therefore, the value of $a$ has to be greater than $D/2 \approx 25\mu$m. In this section three values of $a$ are considered: $a=$ 28$\mu$m, 30$\mu$m, and 50$\mu$m. A larger value of $a$ represents a more rapid transition from aligned to unaligned and results in a softer cell body in the axial direction. The distributions of the maximum principal strain, $\epsilon_{\text{max}}$ for different cell body stiffnesses (different values of $a$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a}.
 %
 % Figures generated in N2P178/6-Neuron_CellStiffness/MaxPrnStrn folder
 \begin{figure}[ht]
@@ -476,7 +475,7 @@ The results above indicate that the local strains experienced by the neuron is s
 
 %=========================================================================================================
 \subsection{Axial Strain Distributions}
-The axial strains in the region of the neuron highlighted in Fig.\ \ref{fig:axial_schematic} are examined - these axes are also specified in Fig.\ \ref{fig:axial_schematic}. The strain distributions for this region of the neuron are plotted in Fig.\ \ref{fig:axial_mps_distr}. 
+In this section we examine the axial strains, which are more directly linked to the actual geometry of the neuron structure, to shed light on the relationship between local strain amplification and the relative configuration of the neuron with respect to loading angle. Our analysis focuses on a portion of the neuron structure that lies along a single axis. This portion of the neuron is highlighted in Fig.\ \ref{fig:axial_schematic} where the axes on which the strain distributions are calculated are also specified (i.e., axis 1 and axis 2). 
 %
 \begin{figure}[ht]
 \begin{center}
@@ -489,96 +488,101 @@ $
 \caption{\label{fig:axial_schematic} Schematic showing the region (rectangular box) and the axes (dashed lines) that are examined.}
 \end{figure}
 %
-The three angles of applied load schematically shown in Fig.\ \ref{fig:analysis_schematic} are considered. Depending on the loading angle, axes 1 and 2 will experience either tensile or compressive axial strains. For tensile strains, the complementary cumulative distribution function (ccdf), Eq.\ \eqref{eq:comp_cdf}, is applied so that one can read ``X percent (ordinate) of the structure contains \textit{at least} Y tensile strain (abscissa)" from the distribution plot. On the other hand, for compressive strains, which are negative in value, the cumulative distribution function (cdf) is applied so that one similarly can read ``X percent (ordinate) of the structure contains \textit{at least} (with respect to magnitude) Y compressive strain (abscissa)" from the distribution plot. In the case where load is applied at 0 degrees, axes 1 and 2 experience tensile and compressive axial strains, respectively. Similarly, when load is applied at 45 degrees, axis 1 experiences tensile axial strains while axis 2 experiences mostly compressive axial strains with a small fraction of the structure experiencing tensile strains. On the other hand, when load is applied at 90 degrees, axes 1 and 2 experience compressive and axial strains, respectively.  
+
+Distributions of the axial strains along axes 1 and 2 are plotted in Fig.\ \ref{fig:axial_distr} for different loading angles. Depending on the loading angle, axes 1 and 2 will experience either tensile or compressive axial strains. In the case of tensile strains, the ccdf in Eq.\ \eqref{eq:ccdf} is used, while the cdf in Eq.\ \eqref{eq:cdf} is applied for compressive strains. For the 0 degree loading case the axial strains along axis 1 are tensile while those along axis 2 are compressive. The opposite is true for the 90 degree loading case - compressive strain in axis 1 and tensile strain in axis 2 - because the load direction is orthogonal. In the case of 45 degree loading, axis 1 experiences tensile strains while axis 2 experiences mostly compressive strains with a small fraction of the structure experiencing tensile strains.
 %
+% images from N2P178/5-Neuron_LocalAxon_Strain/MaxPrnStrn/PrincipalStranDistr.m
 \begin{figure}[ht]
 \begin{center}
 $
 \begin{array}{ccc}
 \includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} &
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_compare_stps.pdf} \\
+(a) & (b) & (c) \\ 
 \includegraphics[height=4.5cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
-(a) & (b) & (c) \\ 
-\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
 \includegraphics[height=4.5cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_ptdata_128_1920_axial_ccdf_axis1_compare_stps.pdf} \\
 (d) & (e) & (f) \\
-\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_ptdata_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
-(g) & (h) & (i) 
 \end{array}
 $
 \end{center}
-\caption{\label{fig:axial_mps_distr} Distributions of axial strain along axis 1 (left column), axial strain along axis 2 (middle column), and maximum principal strain (right column). The ccdf is plotted for tensile strains, while the cdf is plotted for compressive strains. Distributions for three bulk strains are shown in each plot.}
+\caption{\label{fig:axial_distr} Distributions of axial strain along axis 1 (top row) and axis 2 (bottom row) for different loading angles. The ccdf is plotted for tensile strains, while the cdf is plotted for compressive strains. For each loading angle, distributions for bulk strains of 5 - 6 $\%$ (dashed blue line), 10$\%$ (dashed red line), and 16$\%$ (solid black line) are plotted. The values of axial strain ($\epsilon_{\text{axis1}}$ or $\epsilon_{\text{axis2}}$) are normalized by the bulk strain, $\epsilon_{\text{bulk}}$.}
 \end{figure}
 %
 
-As seen in Fig.\ \ref{fig:axial_mps_distr}, the strain distributions (axial and maximum principal strains) vary most significantly for the 90 degree loading case where  strains increase in magnitude with bulk strain in the gel. On the other hand, only small variations are seen in the strain distributions for the 0 and 45 degree loading cases. The local-strain amplification corresponding to the portion of the structure that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_mps_distr}) are plotted as a function of bulk strain in Fig.\ \ref{fig:axial_mps_amp}. The local-strain amplification measures how the neuron deforms when a load is applied to the surrounding gel, which can provide physiological insight into how nerves can be damaged when the surrounding tissue is being deformed.
+As seen in Fig.\ \ref{fig:axial_distr}, variations in the strain distributions are greatest for the 90 degree loading case where  the amplification of local axial strain increases with increasing bulk strain - the distributions shift left and right for compressive and tensile strains, respectively. In contrast, only small variations are seen in the strain distributions for the 0 and 45 degree loading cases. These trends are similar to what was seen in the distributions of maximum principal strain before.
+
+From a physiological stand point, the largest strains (i.e., the tails of the distributions) are most important because those are the regions where neuron damage arises. To understand how the high strain portions of the neuron structure relate to bulk strain applied to the gel, the local-strain amplification corresponding to the portion of the structure that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_distr}) are plotted as a function of bulk strain in Fig.\ \ref{fig:axial_amp}. 
 %
+% images are from N2P178/5-Neuron_LocalAxon_Strain/MaxPrnStrn/PlotStrnAmp.m
 \begin{figure}[ht]
 \begin{center}
 $
 \begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot0_FT50_strn11_128_1920_mps_ccdf_axis1_strn_amp.pdf} \\
+\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} &
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_strn_amp.pdf} \\
 (a) & (b) & (c) \\ 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn11_128_1920_mps_ccdf_axis1_strn_amp.pdf} \\
-(d) & (e) & (f) \\
-\includegraphics[height=4cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT50_strn22_128_1920_axial_ccdf_axis1_strn_amp.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT50_strn11_128_1920_mps_ccdf_axis1_strn_amp.pdf} \\
-(g) & (h) & (i) 
+\includegraphics[height=4.5cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} &
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_128_1920_axial_ccdf_axis1_strn_amp.pdf} \\
+(d) & (e) & (f) 
 \end{array}
 $
 \end{center}
-\caption{\label{fig:axial_mps_amp} Strain amplification corresponding to the portion of the neuron structure in Fig.\ \ref{fig:axial_schematic} that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_mps_distr}) as a function of bulk strain for different directions of loading.}
+\caption{\label{fig:axial_amp} Local strain amplification corresponding to the portion of the neuron structure in Fig.\ \ref{fig:axial_schematic} that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_distr}) as a function of bulk strain for different loading directions.}
 \end{figure}
 %
 
-To explain the trends seen in the local-strain amplification plots of Fig.\ \ref{fig:axial_mps_amp}, consider the following three major contributions when the a collagen gel surrounding the neuron structure in Fig.\ \ref{fig:axial_schematic}. Firstly, when the surrounding gel is deformed, the axial direction of embedded neuron structure becomes increasingly aligned with the direction of loading. Since the neuron structure is significantly stiffer in the axial direction, the relative stiffness of the neuron structure increases. Secondly, when the surrounding gel is deformed, the stiffness of the gel increases (see stress-strain curve in Fig.\ \ref{fig:fiber_param}(a)). The stiffening of the surrounding gel causes the neuron to become relatively softer. Thirdly, when the surrounding gel is deformed, the Poisson ratio of the gel increases (see Poisson ratio curve in Fig.\ \ref{fig:fiber_param2}(a)). The increase in the Poisson ratio results in an increasing lateral compressive strain when the gel is deformed. Note that the first and second contributions give rise to opposite effects, while the third contribution is related to deformations in the lateral directions of the applied load.
-
-In the case of 0 degree loading, the decreasing local-strain amplification along axis 1 (Fig.\ \ref{fig:axial_mps_amp}(a)) indicates that the neuron structure becomes relatively stiffer than the gel as the gel is deformed. Physically, this suggests that the contribution from the alignment of the neuron structure is larger than the contribution from the gel becoming stiffer. The increasing compressive strain along axis 2 (Fig.\ \ref{fig:axial_mps_amp}(b)) is consistent with the fact that the Poisson ratio of the gel increases as the gel is deformed (third contribution). A similar trend to 0 degree loading is seen in axis 1 for the 45 degree loading case (Fig.\ \ref{fig:axial_mps_amp}(d)) where the first contribution from the alignment of the neuron structure is larger than the second contribution from the stiffening of the gel. The difference in magnitude of the amplification is due to the initial alignment of the neuron structure relative to the applied load. The trend is also similar to 0 degree loading in axis 2 for the 45 degree loading case (Fig.\ \ref{fig:axial_mps_amp}(e)), with the exception that axis 2 experiences some tensile strain at smaller bulk strains before the lateral compressive strains that arise from the Poisson ratio effect become large.
-
-In the case of 90 degree loading, the strains experienced along axes 1 and 2 are switched relative to the 0 degree loading case because the load directions are orthogonal. Interestingly, contrary to the 0 degree loading case, the local-strain amplification along axis 2 (the tensile strain scenario) increases as deformation on the gel increases indicating that the neuron becomes relatively softer than the surrounding gel. Physically, this indicates that the second contribution of gel stiffening is much larger than that of the first contribution of the neuron structure aligning with the load direction. On the other hand, the amplification in the strains along axis 1 (the compressive strain scenario) is similar to that of the 0 degree loading case where the amplification of the compressive strain increases with gel deformation. \textcolor{red}{Additionally, softening of neuron structure in axis 2 gives rise to larger local compressive strain?}.
-
-\subsection{Fiber Alignment in Collagen Gel}
-
+To explain the trends seen in the local-strain amplification plots of Fig.\ \ref{fig:axial_amp}, consider the following opposing contributions that arise when a collagen gel that encloses a neuron is deformed. 
 %
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_5.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_8.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_27.pdf} \\
-(a) & (b) & (c) \\ 
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_20.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_20.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_47.pdf} \\
-(d) & (e) & (f)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:gel_P2} Distribution of $P_2$ in collagen gel for applied loads at 0 degrees (left column), 45 degrees (middle column), and 90 degrees (right column). The distributions for 10$\%$ (top row) and 16$\%$ (bottom row) bulk strain are shown. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
-\end{figure}
+\begin{enumerate}
+\item The axial direction of the embedded neuron rotates to align with the direction of loading.
+\item The stiffness of the gel increases (see stress-strain curve in Fig.\ \ref{fig:fiber_param}(a)).
+\end{enumerate}
 %
+Contribution 1 causes the neuron to become stiffer relative to the surrounding gel because the neuron structure is significantly stiffer in the axial direction. In contrast, contribution 2 causes the neuron to become softer relative to the surrounding gel. When contribution 1 is greater than contribution 2, the local-strain amplification decreases as the surrounding gel is increasingly deformed. This behavior is observed along axis 1 for 0 and 45 degree loading (see Fig.\ \ref{fig:axial_amp}(a) and (b)). In the opposite scenario where contribution 2 is greater than contribution 1, the local-strain amplification increases as the surrounding gel is increasingly deformed. This behavior is observed in axis 2 for 90 degree loading (see Fig.\ \ref{fig:axial_amp}(f)). 
 
+The above arguments can be elucidated by considering the configuration of the neuron structure (the portion highlighted in Fig.\ \ref{fig:axial_schematic}) relative to the loading direction. The axial direction (axis 1) of the neuron structure is more closely aligned with the 0 and 45 degree loading angles than the 90 degree loading. Consequently, the neuron structure is able to more readily align with the direction of loading and hence contribution 1 dominates. On the contrary, the neuron structure is nearly orthogonal to the loading direction of the 90 degree loading case and therefore contribution 2 dominates.
+
+The size of the decrease (in the case of axis 1 for 0 and 45 degree loading) or increase (in the case of axis 2 for 90 degree loading) of the local-strain amplification depends on the relative dominance of the each contribution. Therefore, the small variations seen in the distributions for 0 and 45 degree loading of axial strain along axis 1 (Figs.\ \ref{fig:axial_distr}(a) and (b)) or of maximum principal strain in the neuron (Fig.\ \ref{fig:neuron_ccdf_mps}(a) and (b)) indicate that contributions 1 and 2 are nearly equal. On the contrary, the large variations seen in the distributions for 90 degree loading where the distributions shift to larger local-strain amplification (e.g., see Fig.\ \ref{fig:neuron_ccdf_mps}(c)) indicates that contribution 2 is significantly more dominant than contribution 1. 
+
+For all angles of loading, the amplification of the local compressive strain in the lateral direction (axis 2 for 0 and 45 degree loading and axis 1 for 90 degree loading) increases with deformation of the surrounding gel. This behavior is consistent with the the fact that the Poisson ratio of the gel increases (see Poisson ratio curve in Fig.\ \ref{fig:fiber_param2}(a)) with deformation. Note that for 45 degree loading, axis 2 experiences tensile strains at smaller bulk strains before the lateral compressive strains that arise from the Poisson ratio effect become large enough to dominate.
+
+%\subsection{Fiber Alignment in Collagen Gel}
+%%
+%\begin{figure}[ht]
+%\begin{center}
+%$
+%\begin{array}{ccc}
+%\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_5.pdf} & 
+%\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_8.pdf} &
+%\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_27.pdf} \\
+%(a) & (b) & (c) \\ 
+%\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_20.pdf} &
+%\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_20.pdf} &
+%\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_47.pdf} \\
+%(d) & (e) & (f)
+%\end{array}
+%$
+%\end{center}
+%\caption{\label{fig:gel_P2} Distribution of $P_2$ in collagen gel for applied loads at 0 degrees (left column), 45 degrees (middle column), and 90 degrees (right column). The distributions for 10$\%$ (top row) and 16$\%$ (bottom row) bulk strain are shown. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
+%\end{figure}
+%%
 %
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{c}
-\includegraphics[height=6cm]{figure/avgP2.pdf} 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:avg_P2} Average of $P_2$ in the gel for applied loads at 0, 45, and 90 degrees. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
-\end{figure}
-%
+%%
+%\begin{figure}[ht]
+%\begin{center}
+%$
+%\begin{array}{c}
+%\includegraphics[height=6cm]{figure/avgP2.pdf} 
+%\end{array}
+%$
+%\end{center}
+%\caption{\label{fig:avg_P2} Average of $P_2$ in the gel for applied loads at 0, 45, and 90 degrees. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
+%\end{figure}
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 
