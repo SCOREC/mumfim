@@ -398,53 +398,13 @@ $
 \end{figure}
 %
 
-As seen in Fig.\ \ref{fig:rgns_ccdf_vary_a}, the slight variations seen in the overall strain distribution for the neuron (Fig.\ \ref{fig:neuron_ccdf_vary_a}) is entirely due to variations in the strain of the cell body: the strain distributions in the axons are identical for all values of $a$ considered. As seen in the strain distributions for the neuron, the strain distribution for the cell bodies shift to the left corresponding to the stiffening of the cell body, which is consistent with using larger values of $a$. These results suggests that the effects of adjusting the cell body stiffness has only a minimal effect on the overall strain distribution in the neuron. \textcolor{red}{[Amplification increases with increasing bulk strain. This point is further explored in later sections below.]}
+As seen in Fig.\ \ref{fig:rgns_ccdf_vary_a}, the slight variations seen in the overall strain distribution for the neuron (Fig.\ \ref{fig:neuron_ccdf_vary_a}) is entirely due to variations in the strain of the cell body: the strain distributions in the axons are identical for all values of $a$ considered. As seen in the neuron, the strain distribution for the cell bodies shift to the left corresponding to the stiffening of the cell body, which is consistent with using larger values of $a$. These results suggests that the effects of adjusting the cell body stiffness has only a minimal effect on the overall strain distribution in the neuron. \textcolor{red}{[Amplification increases with increasing bulk strain. This point is further explored in later sections below.]}
 
 %=========================================================================================================
 \subsection{Effect of Changing Load Direction}
-The complementary cdf for the neuron structure is shown in Fig.\ \ref{fig:neuron_cdf} for different angles of applied load.
+In this section, the effect of changing the loading angle is explored for cell stiffness corresponding to $a$=30 in Eq.\ \eqref{eq:cellEA}. The three loading angles of 0, 45, and 90 degrees are shown in the schematic of Fig.\ \ref{fig:analysis_schematic}(a). Color maps of the maximum principal strain on the neuron structure for different loading angles are plotted in Fig.\ \ref{fig:neuron_MPS} for two different bulk strains.
 %
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_neuron_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_neuron_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_neuron_compare_stps_farfield.pdf} \\
-(a) & (b) & (c)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_cdf} Complementary cdfs of normalized maximum principal strain ($\varepsilon_1$) in the neuron for applied loads at (a) 0 degrees, (b) 45 degrees, and (c) 90 degrees. For each angle, the complementary cdfs for bulk strains below and at the pain threshold (16$\%$) are shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
-\end{figure}
-%
-For all angles of applied load considered, the neuron experiences local strains that are significantly larger than the applied load on the surrounding collagen gel. The largest local strain in the neuron is at least 3 times that of the bulk strain for all applied loads, with the amplification factor being more than 6 times when the applied load is at 90 degrees (see tails of distributions in Fig.\ \ref{fig:neuron_cdf}).
-
-The shape and spread of the strain distributions in the neuron vary with the bulk strain for an applied load at 90 degrees - the spread of the distributions increase with larger bulk strain. In contrast, the shape and spread of the strain distributions in the neuron remain relatively constant for applied loads at 0 and 45 degrees. Additional insight can be gained by separating the strain distribution of the neuron into contributions from the cell bodies and axons. The complimentary cdfs for the cell bodies and axons are plotted in Fig.\ \ref{fig:components_cdf}.
-%
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_cellbodies_compare_stps_farfield.pdf} \\
-(a) & (b) & (c) \\
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_axons_compare_stps_farfield.pdf} \\
-(d) & (e) & (f)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:components_cdf} Complementary cdfs of normalized maximum principal strain ($\varepsilon_1$) in the cell bodies ((a)-(c)) and axons ((d)-(f)) for applied loads at (a,d) 0 degrees, (b,e) 45 degrees, and (c,f) 90 degrees. For each angle, the complementary cdfs for bulk strains below and at the pain threshold (16$\%$) are shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
-\end{figure}
-%
-
-The strain distribution in the cell bodies for the applied load at 45 degrees is essentially identical for all bulk strains, \textcolor{red}{which indicates the cell bodies are deforming affinely with the surrounding collagen gel.} For the same angle of applied load there are slight variations in the distributions for the axons, which account for the small variations seen in the distributions of the neuron (see Fig.\ \ref{fig:neuron_cdf}(b)). For the applied load at 0 degrees, variations in the distributions of the cell bodies and axons for different bulk strains become more apparent. For the cell bodies, the distribution shifts to the right with larger bulk strains while the shape and spread of the distributions remain relatively constant. For the axons, the distributions shift to the left and the spread of the distributions decrease with larger bulk strains. The variations in the distributions of the cell bodies and axons ultimately cancel out leaving the overall distributions in the neuron relatively constant for different bulk strains (see Fig.\ \ref{fig:neuron_cdf}(a)). 
-
-For the applied load at 90 degrees, the distributions of the cell bodies and axons shift to the right and the spread of the distributions grow with larger bulk strains. The subtle step feature of the distribution in the neuron (see Fig.\ \ref{fig:neuron_cdf}(c)) becomes apparent for the strain distributions in the cell bodies. This step feature indicates that there are two regimes of strain in the cell bodies, which are clearly seen in the plots of maximum principal strain in Figs.\ \ref{fig:neuron_MPS}(e) and (f) - the strain in the cell body that is parallel to the direction of applied load at 90 degrees is significantly lower than the other two cell bodies. \textcolor{red}{[What are the implications of widening strain distribution?]}
-%
+% Images from N2P178/4-Neuron_FT_trcBC folder.
 \begin{figure}[ht]
 \begin{center}
 $
@@ -461,9 +421,58 @@ $
 \end{array}
 $
 \end{center}
-\caption{\label{fig:neuron_MPS} Maximum principal strain for applied loads at 0 degrees (first row), 45 degrees (second row), and 90 degrees (third row). Bulk strains of 10$\%$ and 16$\%$ are considered. Note that the color bar ranges from 5$\%$ to 30$\%$ strain for bulk strain of 10$\%$ and from 10$\%$ to 40$\%$ for 16$\%$ bulk strain.}
+\caption{\label{fig:neuron_MPS} Color maps of maximum principal strain plotted on neuron structure for loading angles of 0 degrees (first row), 45 degrees (second row), and 90 degrees (third row). Bulk strains of 10$\%$ and 16$\%$ are considered. Note that the color bar ranges from 5$\%$ to 30$\%$ strain for bulk strain of 10$\%$ and from 10$\%$ to 40$\%$ for 16$\%$ bulk strain.}
 \end{figure}
 %
+As seen in Fig.\ \ref{fig:neuron_MPS}, the deformation state varies significantly for different loading angles. In all scenarios, large portions of the neuron experience strains that are greater than the bulk strain that applied to the surrounding gel. This suggests that neurons can be damaged even when the surrounding tissue is loaded moderately. To gain a more quantitative understanding of the amplification of local strains in the neuron, distributions of the maximum principal strain for the neuron are plotted in Fig.\ \ref{fig:neuron_ccdf_mps} for the different loading angles.
+%
+%0 and 45 degree distributions from N2P178/4-Neuron_FT_trcBC/MaxPrnStrn/PrincipalStrainDistr.m
+%90 degree distribution from N2P178/3-Neuron_FT/MaxPrnStrn/PrincipalStrainDistr_FarField.m
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{ccc}
+\includegraphics[height=4.5cm]{figure/rot0_FT50_128_1920_ccdf_neuron_compare_stps.pdf} &
+\includegraphics[height=4.5cm]{figure/rot45_FT50_128_1920_ccdf_neuron_compare_stps.pdf} &
+\includegraphics[height=4.5cm]{figure/rot90_FT_dspBC50_a30_128_1920_ccdf_neuron_compare_stps_farfield.pdf} \\
+(a) & (b) & (c)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_ccdf_mps} Distributions of maximum principal strain (ccdf) in neuron for loading angles of (a) 0 degrees, (b) 45 degrees, and (c) 90 degrees. For each loading angle, distributions for bulk strains of 5 - 6 $\%$ (dotted blue line), 10$\%$ (dashed red line), and 16$\%$ (solid black line) are plotted. The values of $\epsilon_{\text{max}}$ are normalized by the bulk strain, $\epsilon_{\text{bulk}}$.  }
+\end{figure}
+%
+
+Consistent with the color maps seen in Fig.\ \ref{fig:neuron_MPS}, the tails of the distributions show that the neuron experiences local strains that are significantly larger than the applied load on the surrounding collagen gel for all loading directions. The amplification in local strain is at least 3 times that of the applied load in the most mild case of 45 degree loading and reaches an amplification of 6 times in the most severe case of the 90 degree loading.
+
+Variation in the shape and spread of the neuron strain distributions at different bulk strains is greatest in the case of 90 degree loading, where the spread of the distributions increase with larger bulk strain. In contrast, the variations in shape and spread of the neuron strain distributions are small for the 0 and 45 degree loading cases. Additional insight can be gained by separating the neuron strain distribution into contributions from the cell bodies and axons. The distributions of maximum principal strain in the cell bodies and axons are plotted in Fig.\ \ref{fig:rgns_ccdf_mps}.
+%
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{ccc}
+\includegraphics[height=4.5cm]{figure/rot0_FT50_128_1920_ccdf_cellbodies_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot45_FT50_128_1920_ccdf_cellbodies_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot90_FT_dspBC50_a30_128_1920_ccdf_cellbodies_compare_stps_farfield.pdf} \\
+(a) & (b) & (c) \\
+\includegraphics[height=4.5cm]{figure/rot0_FT50_128_1920_ccdf_axons_compare_stps.pdf} &
+\includegraphics[height=4.5cm]{figure/rot45_FT50_128_1920_ccdf_axons_compare_stps.pdf} &
+\includegraphics[height=4.5cm]{figure/rot90_FT_dspBC50_a30_128_1920_ccdf_axons_compare_stps_farfield.pdf} \\
+(d) & (e) & (f)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:rgns_ccdf_mps} Distributions of maximum principal strain (ccdf) in the cell bodies (top row) and axons (bottom row) for loading angles of (a,d) 0 degrees, (b,e) 45 degrees, and (c,f) 90 degrees. For each loading angle, distributions for bulk strains of 5 - 6 $\%$ (dotted blue line), 10$\%$ (dashed red line), and 16$\%$ (solid black line) are plotted. The values of $\epsilon_{\text{max}}$ are normalized by the bulk strain, $\epsilon_{\text{bulk}}$.  }
+\end{figure}
+%
+
+The separate distributions for the cell bodies and axons provide additional details about the variations in shape and spread of the neuron distributions in Fig.\ \ref{fig:neuron_ccdf_mps}. For the 0 degree loading case, variations in the distribution at different bulk strains become more apparent. For the cell bodies, the distribution shifts to the right for larger bulk strains indicating that the amplification in the local strain becomes larger with more deformation in the surrounding gel. On the contrary, the middle portion of the axon distribution shifts to the left with increasing bulk strains indicating that the local strain amplification decreases with more deformation in the surrounding gel. The response in the cell bodies and axons cancel out resulting in only slight variations in the overall neuron strain distribution.
+
+For the 45 degree loading case, variations only arise in the axon distribution. Therefore, the variations seen in the overall neuron distribution is solely due to variations in the axon. As in the 0 degree loading case, the axon distribution shifts to the left with larger bulk strains indicating a decrease in the local strain amplification as the surrounding gel is increasingly deformed.
+
+For the 90 degree loading case, large variations are seen in both the cell body and axon distributions. For the cell bodies, the subtle step feature seen in the overall neuron distribution becomes more apparent. This step feature corresponds to two regimes of strain which are clearly seen in the over plot of maximum principal strain on the neuron in Figs.\ \ref{fig:neuron_MPS}(e) and (f). For both the cell body and axon, the distributions shift to the right with increasing bulk strains indicating that the local strain amplification increases with increasing deformation in the surrounding gel. 
+
+The results above indicate that the local strains experienced by the neuron is significantly larger than the applied load on the surrounding gel. The extent of local strain amplification depends on the configuration of the neuron relative to the loading angle. To clarify the cause of local strain amplification in the neuron, the axial strains along a region of the neuron structure are examined.
 
 %=========================================================================================================
 \subsection{Axial Strain Distributions}
@@ -486,17 +495,17 @@ The three angles of applied load schematically shown in Fig.\ \ref{fig:analysis_
 \begin{center}
 $
 \begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot0_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
+\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
 (a) & (b) & (c) \\ 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
 (d) & (e) & (f) \\
-\includegraphics[height=4cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT50_strn22_ptdata_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_ptdata_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
+\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_mps_ccdf_axis1_compare_stps.pdf} \\
 (g) & (h) & (i) 
 \end{array}
 $
