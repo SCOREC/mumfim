@@ -65,8 +65,8 @@ namespace bio
   }
   void MultiscaleTissue::initMicro()
   {
-    /*
     amsi::ControlService * cs = amsi::ControlService::Instance();
+    /*
     amsi::Task * macro = amsi::getLocal();
     amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
     (*dd) = 0;

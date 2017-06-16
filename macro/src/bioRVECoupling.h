@@ -57,9 +57,8 @@ namespace bio
       amsi::Assemble(dd,macro->comm());
       snd_ptrn = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
       cs->CommPattern_Reconcile(snd_ptrn);
-      rcv_ptrn = cs->CreateCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
+      rcv_ptrn = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
       cs->CommPattern_Reconcile(rcv_ptrn);
-      
     }
     // todo (h) : switch to pointer instead of vector
     void sendRVEData(std::vector<micro_fo_data> & bfr)
