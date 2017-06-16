@@ -95,12 +95,10 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   {
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;)
-    {
-      amsi::initCase(mdl,cs);
-      bio::MultiscaleTissueAnalysis(mdl,msh,cs,cm).run();
-      amsi::freeCase(cs);
-    }
+    auto cs = amsi::getAnalysisCase(mdl,analysis_case);
+    amsi::initCase(mdl,cs);
+    bio::MultiscaleTissueAnalysis(mdl,msh,cs,cm).run();
+    amsi::freeCase(cs);
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl

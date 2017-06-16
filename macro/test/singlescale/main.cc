@@ -120,12 +120,10 @@ int main(int argc, char ** argv)
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
     pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
     pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; )
-    {
-      amsi::initCase(mdl,cs);
-      bio::TissueAnalysis(mdl,msh,cs,AMSI_COMM_WORLD).run();
-      amsi::freeCase(cs);
-    }
+    auto cs = amsi::getAnalysisCase(mdl,analysis_case);
+    amsi::initCase(mdl,cs);
+    bio::TissueAnalysis(mdl,msh,cs,AMSI_COMM_WORLD).run();
+    amsi::freeCase(cs);
     if(rnk > 0)
       amsi::expressOutput(std::cout);
     M_release(msh);
