@@ -47,7 +47,7 @@ else
   -DCMAKE_C_COMPILER=$CC \
   -DCMAKE_CXX_COMPILER=$CXX \
   -DLOGRUN=TRUE \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
+  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
   -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
   -DSIM_MPI=openmpi110 \
   -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
