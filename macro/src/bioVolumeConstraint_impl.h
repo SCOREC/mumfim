@@ -3,6 +3,7 @@ namespace bio
   template <typename I>
     VolumeConstraint::VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * n)
     : apf::Integrator(apf::getShape(apf::getField(n))->getOrder())
+    , lg(amsi::activateLog("constraints"))
     , mdl_ents()
     , nm(n)
     , nen(0)

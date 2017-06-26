@@ -16,6 +16,7 @@ namespace bio
   class VolumeConstraint : public apf::Integrator , public amsi::PerIter , public amsi::PerStep
   {
   protected:
+    amsi::Log lg;
     std::vector<apf::ModelEntity*> mdl_ents;
     apf::Numbering * nm;
     apf::Element * e;
@@ -52,7 +53,7 @@ namespace bio
     double beta;   // Penalty parameter for Augmented Lagrangian Method.
     virtual void _inElement(apf::MeshEntity * me);
     virtual void _iter();
-    virtual void _step() {}
+    virtual void _step();
   public:
     template <typename I>
       LagrangeConstraint_Volume(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
@@ -79,7 +80,7 @@ namespace bio
     double lambda;
     double beta;
     virtual void _iter();
-    virtual void _step() {}
+    virtual void _step() {};
     virtual void _inElement(apf::MeshEntity *);
   public:
     template <typename I>
