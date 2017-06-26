@@ -25,7 +25,7 @@ namespace bio
     if(iteration() == 0)
       tssu->updateMicro();
     las->iter();
-    LinearSolver(tssu,las);
+    fem_iter->iterate();
     tssu->iter();
     amsi::ModularIteration::iterate();
   }

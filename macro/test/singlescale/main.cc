@@ -24,7 +24,7 @@ void display_help_string()
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
-std::string vol_log("volume");
+//std::string vol_log("volume");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;

@@ -12,13 +12,13 @@ namespace bio
   class NeoHookeanIntegrator : public amsi::ElementalSystem
   {
   public:
-  NeoHookeanIntegrator(NonlinearTissue * n,
-                       apf::Field * field,
-		       apf::Field * det_dfm_grd,
-                       double youngs_modulus,
-                       double poisson_ratio,
-                       int o)
-    : ElementalSystem(field,o)
+    NeoHookeanIntegrator(NonlinearTissue * n,
+                         apf::Field * field,
+                         apf::Field * det_dfm_grd,
+                         double youngs_modulus,
+                         double poisson_ratio,
+                         int o)
+      : ElementalSystem(field,o)
       , current_integration_point(0)
       , analysis(n)
       , dim(0)
@@ -221,10 +221,10 @@ namespace bio
 //      apf::DynamicVector u(nedofs);
 //      getDisplacements(u);
 /*
-      std::cout<<"Ke:"<<std::endl;
-      std::cout<<Ke<<std::endl;
-      std::cout<<"fe:"<<std::endl;
-      std::cout<<fe<<std::endl;
+  std::cout<<"Ke:"<<std::endl;
+  std::cout<<Ke<<std::endl;
+  std::cout<<"fe:"<<std::endl;
+  std::cout<<fe<<std::endl;
 */
       apf::DynamicVector strain(6);
       apf::multiply(BL,u,strain);
