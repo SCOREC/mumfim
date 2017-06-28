@@ -1,6 +1,7 @@
 #include "bioNonlinearTissue.h"
 #include "bioAnalysis.h"
 #include "bioNeoHookeanIntegrator.h"
+//#include "bioNeoHookeanIntegratorUL.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioHolmesMowIntegrator.h"
 #include <amsiLinearStressStrainIntegrator.h>
@@ -37,6 +38,9 @@ namespace bio
 //    Sim_logOn(filename);
     apf_primary_field = apf::createLagrangeField(apf_mesh,"displacement",apf::VECTOR,1);
     delta_u = apf::createLagrangeField(apf_mesh,"displacement_delta",apf::VECTOR,1);
+    // create a current coordinate field from the CurrentCoordFunc (x = X+u)
+    currentCoordFunc = new CurrentCoordFunc(this);
+    current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), currentCoordFunc);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh,"stress",apf::MATRIX,1);
     rcvrd_strs = apf::createLagrangeField(apf_mesh,"recovered_stress",apf::MATRIX,1);
@@ -45,7 +49,7 @@ namespace bio
     stf_vrtn = apf::createIPField(apf_mesh,"stiffness_variation",apf::SCALAR,1);
     axl_yngs_mod = apf::createIPField(apf_mesh,"axial_youngs_modulus",apf::SCALAR,1);
     amsi::applyUniqueRegionTags(imdl,part,apf_mesh);
-
+    // zero stiffness_variation and axial_youngs_modulus fields
     apf::zeroField(stf_vrtn); apf::zeroField(axl_yngs_mod);
     std::vector<pANode> stf_vrtn_nds;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)pd,"stiffness gradient"),std::back_inserter(stf_vrtn_nds));
@@ -74,7 +78,7 @@ namespace bio
         pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
         double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
-        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,det_dfm_grd,E,v,1);
+        constitutives[rgn] = new NeoHookeanIntegrator(this,apf_primary_field,det_dfm_grd, current_coords, E,v,1);
       }
       else if(cnst_type == transverse_isotropic)
       {
@@ -100,6 +104,8 @@ namespace bio
   }
   NonlinearTissue::~NonlinearTissue()
   {
+    delete currentCoordFunc;
+    apf::destroyField(current_coords);
     apf::destroyField(delta_u);
     apf::destroyField(strs);
     apf::destroyField(rcvrd_strs);
@@ -159,6 +165,7 @@ namespace bio
     apf::MeshEntity * me = NULL;
     // custom iterator would be perfect for switching for multiscale version
     auto it = apf_mesh->begin(analysis_dim);
+    // FIXME shouldn't we skip non-owned elements similar to apf::integrator::process(apf::Mesh*)?
     while((me = apf_mesh->iterate(it)))
     {
       amsi::ElementalSystem * constitutive = constitutives[R_whatIn((pRegion)me)];
@@ -275,6 +282,11 @@ namespace bio
                        strain[5],strain[4],strain[2]);
     apf::setMatrix(strn,m_ent,0,eps);
   }
+  void NonlinearTissue::storeStrain(apf::MeshElement * me, apf::Matrix3x3 eps)
+  {
+    apf::MeshEntity * m_ent = apf::getMeshEntity(me);
+    apf::setMatrix(strn,m_ent,0,eps);
+  }
   void NonlinearTissue::storeStress(apf::MeshElement * me, double* stress)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
@@ -282,5 +294,10 @@ namespace bio
                          stress[3],stress[1],stress[4],
                          stress[5],stress[4],stress[2]);
     apf::setMatrix(strs,m_ent,0,sigma);
+  }
+  void NonlinearTissue::storeStress(apf::MeshElement * me, apf::Matrix3x3 eps)
+  {
+    apf::MeshEntity * m_ent = apf::getMeshEntity(me);
+    apf::setMatrix(strs,m_ent,0,eps);
   }
 }
