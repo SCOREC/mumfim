@@ -14,13 +14,13 @@ namespace bio
   ULMultiscaleHydrostaticPressureIntegrator(MultiscaleTissue * n,
 					    apf::Field * u,
 					    apf::Field * rve_tp,
-					    apf::Field * det_dfm_grd,
+					    apf::Field * dfm_grd,
 					    int o)
     : ElementalSystem(u,o)
       , current_integration_point(0)
       , analysis(n)
       , micro_type_field(rve_tp)
-      , dfm_grd_fld(det_dfm_grd)
+      , dfm_grd_fld(dfm_grd)
     {
       matrixShearModulus  = 0.0;
       matrixPoissonsRatio = 0.45;
@@ -147,7 +147,7 @@ namespace bio
       apf::Matrix3x3 F; 
       amsi::deformationGradient(e,p,F);
       double detF = getDeterminant(F);
-      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, detF);
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, F);
       double coeff = 5.0;
 //      double P = (rve_info->derivS[0] + rve_info->derivS[3] + rve_info->derivS[5])/3.0;
       double P = 0.0;

@@ -12,13 +12,13 @@ namespace bio {
   class NeoHookeanIntegrator : public amsi::ElementalSystem {
     public:
     NeoHookeanIntegrator(NonlinearTissue *n, apf::Field *displacements,
-                         apf::Field *det_dfm_grd, apf::Field *current_coords,
+                         apf::Field *dfm_grd, apf::Field *current_coords,
                          double youngs_modulus, double poisson_ratio, int o)
         : ElementalSystem(displacements, o)
         , current_integration_point(0)
         , analysis(n)
         , dim(0)
-        , dfm_grd_fld(det_dfm_grd)
+        , dfm_grd_fld(dfm_grd)
         , current_coords(current_coords)
         , ShearModulus(0.0)
         , PoissonsRatio(poisson_ratio)
@@ -98,8 +98,8 @@ namespace bio {
       */
       // Calculate Cauchy stress from compressible NeoHookean equation. See
       // Bonet and Wood 2nd Ed. PP.163.
-      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me),
-                     current_integration_point, detF);
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me),
+                     current_integration_point, F);
       apf::DynamicMatrix leftCauchyGreen(3, 3);   // leftCauchyGreen.zero();
       apf::DynamicMatrix rightCauchyGreen(3, 3);  // rightCauchyGreen.zero();
       apf::DynamicMatrix FT(3, 3);

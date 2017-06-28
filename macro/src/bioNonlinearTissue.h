@@ -28,7 +28,7 @@ namespace bio {
     apf::Field* strs;
     apf::Field* rcvrd_strs;
     apf::Field* strn;
-    apf::Field* det_dfm_grd;
+    apf::Field* dfm_grd;
     apf::Field* previous_rve;
     apf::Field* stf_vrtn;
     apf::Field* axl_yngs_mod;

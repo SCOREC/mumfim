@@ -50,7 +50,7 @@ namespace bio {
     rcvrd_strs =
         apf::createLagrangeField(apf_mesh, "recovered_stress", apf::MATRIX, 1);
     strn = apf::createIPField(apf_mesh, "strain", apf::MATRIX, 1);
-    det_dfm_grd = apf::createIPField(apf_mesh, "detF", apf::SCALAR, 1);
+    dfm_grd = apf::createIPField(apf_mesh, "F", apf::MATRIX, 1);
     stf_vrtn =
         apf::createIPField(apf_mesh, "stiffness_variation", apf::SCALAR, 1);
     axl_yngs_mod =
@@ -95,7 +95,7 @@ namespace bio {
         double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
         constitutives[rgn] = new NeoHookeanIntegrator(
-            this, apf_primary_field, det_dfm_grd, current_coords, E, v, 1);
+            this, apf_primary_field, dfm_grd, current_coords, E, v, 1);
       }
       else if (cnst_type == transverse_isotropic) {
         pAttributeTensor0 yng =
@@ -115,7 +115,7 @@ namespace bio {
         double axialG = AttributeTensor0_value(axial_shr);
         double axialE = AttributeTensor0_value(axial_ygn);
         constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(
-            this, apf_primary_field, stf_vrtn, det_dfm_grd, axl_yngs_mod, E, v,
+            this, apf_primary_field, stf_vrtn, dfm_grd, axl_yngs_mod, E, v,
             &axs[0], axialG, axialE, 1);
       }
     }
