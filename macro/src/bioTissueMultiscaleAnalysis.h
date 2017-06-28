@@ -19,12 +19,18 @@ namespace bio
   protected:
     MultiscaleTissue * tssu;
     amsi::LAS * las;
+    Iteration * fem_iter;
   public:
     MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
       : amsi::ModularIteration()
       , tssu(a)
       , las(l)
+      , fem_iter(amsi::buildLinearFEMIteration(a,l))
     { }
+    ~MultiscaleTissueIteration()
+    {
+      delete fem_iter;
+    }
     void iterate();
   };
   class MultiscaleTissueAnalysis : public TissueAnalysis

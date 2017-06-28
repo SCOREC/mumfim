@@ -88,6 +88,11 @@ namespace bio
   }
   void LagrangeConstraint_Volume::_iter()
   {
+    //lambda += beta * ((vol-prev_vol)/prev_vol);
+    //amsi::Log(lg) << "-1, -1," << lambda << ", " << beta << std::endl;
+  }
+  void LagrangeConstraint_Volume::_step()
+  {
     lambda += beta * ((vol-prev_vol)/prev_vol);
   }
   void LagrangeConstraint_Volume::_inElement(apf::MeshEntity * me)
@@ -314,7 +319,7 @@ namespace bio
     calcdVdu(dVdu,xyz_u[0], xyz_u[1], xyz_u[2]);
     int sd = amsi::side(crt_rgn,msh,apf::getMeshEntity(me));
     assert(sd != 0); // if both adjacent regions are in the same model region, we haven't implemented a way to handle that, (should basically ignore)
-    double dVol = vol - load_vol;
+    double dVol = vol - load_vol; // should match volume convergence operator related to this constraint ??
     dVdu *= (lambda * sd) + (dVol * beta / prev_vol);
     /*
     apf::DynamicMatrix BVG = dVdu;
