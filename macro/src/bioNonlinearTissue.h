@@ -68,24 +68,24 @@ namespace bio {
     // displacements
   };
   class CurrentCoordFunc : public apf::Function {
-    public:
-    CurrentCoordFunc(NonlinearTissue* nlt) : nlt(nlt) {}
-    void eval(apf::MeshEntity* e, double* result)
+  private:
+    apf::Field * Xf;
+    apf::Field * Uf;
+  public:
+    CurrentCoordFunc(apf::Field * xf, apf::Field * uf) : Xf(xf), Uf(uf) {}
+    void eval(apf::MeshEntity * e, double * result)
     {
       // make sure that we are only evaluating on vertices
-      assert(nlt->getMesh()->getType(e) == apf::Mesh::VERTEX);
+      assert(apf::getMesh(Xf)->getType(e) == apf::Mesh::VERTEX);
       apf::Vector3 X, U;
       // get the displacements
-      apf::getVector(nlt->getUField(), e, 0, U);
+      apf::getVector(Uf, e, 0, U);
       // get the reference coordinates
-      apf::getVector(nlt->getMesh()->getCoordinateField(), e, 0, X);
-      apf::Vector3* r = (apf::Vector3*)result;
+      apf::getVector(Xf, e, 0, X);
+      apf::Vector3 * r = (apf::Vector3*)result;
       // set the current coordinates to be the reference plus the displacements
       *r = X + U;
     }
-
-    private:
-    NonlinearTissue* nlt;
   };
 }
 #endif

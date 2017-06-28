@@ -41,7 +41,7 @@ namespace bio {
     delta_u = apf::createLagrangeField(apf_mesh, "displacement_delta",
                                        apf::VECTOR, 1);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
-    currentCoordFunc = new CurrentCoordFunc(this);
+    currentCoordFunc = new CurrentCoordFunc(apf_mesh->getCoordinateField(),apf_primary_field);
     current_coords =
         apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR,
                              apf::getLagrange(1), currentCoordFunc);
