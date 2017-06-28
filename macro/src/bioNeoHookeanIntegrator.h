@@ -34,7 +34,7 @@ namespace bio {
       current_integration_point = 0;
       // testing of new apf work
       // create a mesh element that tracks with current coords
-      ccme = apf::createMeshElement(current_coords, apf::getMeshEntity(me));
+      ccme = apf::createMeshElement(msh, apf::getMeshEntity(me));
       // current coordinate field w.r.t. current coordinate mesh elements
       // elements
       cccce = apf::createElement(current_coords, ccme);
