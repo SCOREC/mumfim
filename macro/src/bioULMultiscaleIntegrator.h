@@ -13,11 +13,13 @@ namespace bio
   ULMultiscaleIntegrator(MultiscaleTissue * n,
                          apf::Field * u,
                          apf::Field * rve_tp,
+			 apf::Field * dfm_grd,
                          int o)
     : ElementalSystem(u,o)
       , current_integration_point(0)
       , analysis(n)
       , micro_type_field(rve_tp)
+      , dfm_grd_fld(dfm_grd)
     {
       matrixShearModulus  = 0.0;
       matrixPoissonsRatio = 0.45;
@@ -140,13 +142,23 @@ namespace bio
       // Fill S matrix - in block notation contains stress tensor along diagonal, zero elsewhere
       double S[9][9] = {};
       double SV[6];
-      double factor = 1;
-      SV[0] = factor*(rve_info->derivS[0]);
-      SV[1] = factor*(rve_info->derivS[3]);
-      SV[2] = factor*(rve_info->derivS[5]);
-      SV[3] = factor*(rve_info->derivS[1]);
-      SV[4] = factor*(rve_info->derivS[4]);
-      SV[5] = factor*(rve_info->derivS[2]);
+      // Calculate Deformation Gradient and rightCauchyGreen tensor.
+      apf::Matrix3x3 F;
+      amsi::deformationGradient(e,p,F);
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, F);
+      // Calculate rightCauchyGreen tensor.
+      apf::DynamicMatrix rightCauchyGreen(3, 3);  // rightCauchyGreen.zero();
+      apf::DynamicMatrix FT(3, 3);
+      FT.zero();
+      apf::transpose(fromMatrix(F), FT);
+      apf::multiply(FT, fromMatrix(F), rightCauchyGreen);
+
+      SV[0] = (rve_info->derivS[0]);
+      SV[1] = (rve_info->derivS[3]);
+      SV[2] = (rve_info->derivS[5]);
+      SV[3] = (rve_info->derivS[1]);
+      SV[4] = (rve_info->derivS[4]);
+      SV[5] = (rve_info->derivS[2]);
       S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rve_info->derivS[0];
       S[0][1] = S[0+3][1+3] = S[0+6][1+6] = rve_info->derivS[1];
       S[0][2] = S[0+3][2+3] = S[0+6][2+6] = rve_info->derivS[2];
@@ -195,13 +207,14 @@ namespace bio
           Ke(ii,jj) += w * detJ * (K0(ii,jj) + K1(ii,jj));
       }
       // store stress and strain values for post processing.
-      // Get displacements
-      apf::DynamicVector u(nedofs);
-      getDisplacements(u);
-      // Compute strains and stresses (for force vector)
-      apf::DynamicVector strain(6);
-      apf::multiply(BL,u,strain);
-      analysis->storeStrain(me,strain.begin());
+      // E_G = 1/2(C-I), C=F^T.F, Green-Lagrange Strain.
+      apf::Matrix3x3 greenStrain(
+          0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),
+          0.5 * rightCauchyGreen(0, 2), 0.5 * rightCauchyGreen(1, 0),
+          0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
+          0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
+          0.5 * (rightCauchyGreen(2, 2) - 1));
+      analysis->storeStrain(me, greenStrain);
       analysis->storeStress(me,SV);
       current_integration_point++;
     }
@@ -410,6 +423,7 @@ namespace bio
     apf::FieldShape * fs;
     apf::EntityShape * es;
     apf::Field * micro_type_field;
+    apf::Field * dfm_grd_fld;
     double linearYoungsModulus;
     double linearPoissonsRatio;
     double matrixShearModulus;
