@@ -29,8 +29,8 @@ namespace bio
     prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
 //    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
-    //mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,1);
-    mltscl = new ULMultiscaleHydrostaticPressureIntegrator(this,apf_primary_field,crt_rve,dfm_grd,1);
+    mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,dfm_grd,1);
+    //mltscl = new ULMultiscaleHydrostaticPressureIntegrator(this,apf_primary_field,crt_rve,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
     apf::zeroField(fbr_ornt);
