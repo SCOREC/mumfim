@@ -11,9 +11,13 @@ namespace bio {
   // 135, 071007 (2013)
   class NeoHookeanIntegrator : public amsi::ElementalSystem {
     public:
-    NeoHookeanIntegrator(NonlinearTissue *n, apf::Field *displacements,
-                         apf::Field *dfm_grd, apf::Field *current_coords,
-                         double youngs_modulus, double poisson_ratio, int o)
+    NeoHookeanIntegrator(NonlinearTissue *n,
+			 apf::Field *displacements,
+                         apf::Field *dfm_grd,
+			 apf::Field *current_coords,
+                         double youngs_modulus,
+			 double poisson_ratio,
+			 int o)
         : ElementalSystem(displacements, o)
         , current_integration_point(0)
         , analysis(n)
@@ -74,7 +78,6 @@ namespace bio {
         - See Bathe PP.557, Table 6.6 (Updated Lagrangian)
         =======================================================
       */
-      // FIXME here we are assuming reference coordinates
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6, nedof);  // linear strain disp
       BL.zero();

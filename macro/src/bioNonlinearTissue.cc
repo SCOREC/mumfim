@@ -42,9 +42,7 @@ namespace bio {
                                        apf::VECTOR, 1);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
     currentCoordFunc = new CurrentCoordFunc(apf_mesh->getCoordinateField(),apf_primary_field);
-    current_coords =
-        apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR,
-                             apf::getLagrange(1), currentCoordFunc);
+    current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), currentCoordFunc);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh, "stress", apf::MATRIX, 1);
     rcvrd_strs =
@@ -94,8 +92,7 @@ namespace bio {
             (pAttributeTensor0)Attribute_childByType(cm, "poisson ratio");
         double E = AttributeTensor0_value(yng);
         double v = AttributeTensor0_value(psn);
-        constitutives[rgn] = new NeoHookeanIntegrator(
-            this, apf_primary_field, dfm_grd, current_coords, E, v, 1);
+        constitutives[rgn] = new NeoHookeanIntegrator(this, apf_primary_field, dfm_grd, current_coords, E, v, 1);
       }
       else if (cnst_type == transverse_isotropic) {
         pAttributeTensor0 yng =
@@ -115,7 +112,7 @@ namespace bio {
         double axialG = AttributeTensor0_value(axial_shr);
         double axialE = AttributeTensor0_value(axial_ygn);
         constitutives[rgn] = new TrnsIsoNeoHookeanIntegrator(
-            this, apf_primary_field, stf_vrtn, dfm_grd, axl_yngs_mod, E, v,
+	  this, apf_primary_field, stf_vrtn, dfm_grd, axl_yngs_mod, current_coords, E, v,
             &axs[0], axialG, axialE, 1);
       }
     }
