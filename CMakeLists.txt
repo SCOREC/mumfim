@@ -51,7 +51,10 @@ if(BUILD_TESTS)
     set(test_parameters -np ${no_mpi_proc} ${name} ${ARGN})
     add_test(NAME ${name} COMMAND "mpirun" ${test_parameters} )
   endfunction(add_mpi_test)
+  find_program(MEMORYCHECK_COMMAND valgrind)
+  set( MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 endif(BUILD_TESTS)
+
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
