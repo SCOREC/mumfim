@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # load modules to get packages that biotissue/amsi were compiled with
 source $DEVROOT/config_modules.sh
@@ -9,7 +9,7 @@ cd $DEVROOT/test/biotissue/cdash
 rm -rf build/
 
 #run nightly.cmake script
-ctest --output-on-failure --script $DEVROOT/test/biotissue/src/core/cdash/jenga-nightly.cmake &> cmake_log.txt
+ctest --output-on-failure --script $DEVROOT/biotissue/cdash/jenga-nightly.cmake &> cmake_log.txt
 
 # we will add this in when we start publishing the documentation to the web
 # cp cmake_log.txt /net/web/public/seol/scorec/cdash/nightly_cmake_log.txt

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-SET(CTEST_DO_SUBMIT OFF)
+SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
 
 
@@ -14,7 +14,8 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 
 set(CTEST_DASHBOARD_ROOT "/fasttmp/mersoj/develop/test/biotissue/cdash" )
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
+#set(CTEST_BUILD_CONFIGURATION RelWithDebInfo)
+set(CTEST_BUILD_CONFIGURATION Debug)
 set(CTEST_BUILD_NAME  "linux-gcc-${CTEST_BUILD_CONFIGURATION}")
 set(CTEST_BUILD_FLAGS -j4)
 
@@ -25,6 +26,10 @@ set(CTEST_BINARY_NAME build)
 set(REPO_URL_BASE "git@github.com:tobinw/biotissue")
 set(BRANCHES "master;develop")
 set(MERGE_AUTHOR "Nightly Bot <donotemail@scorec.rpi.edu>")
+find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
+find_program(CTEST_COVERAGE_COMMAND NAMES gcov)
+set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "/fasttmp/mersoj/develop/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp")
+set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 
 set(CTEST_SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
 set(CTEST_BINARY_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_BINARY_NAME}")
@@ -150,9 +155,19 @@ ${BRANCH_NAME} build failed!
   ctest_coverage(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
       RETURN_VALUE COVERAGE_RET)
+  if(COVERAGE_RET)
+    message(WARNING "${BRANCH_NAME} coverage failed (code ${COVERAGE_RET})!")
+  else()
+    message("${BRANCH_NAME} coverage passed")
+  endif()
   ctest_memcheck(
       BUILD "${CTEST_BINARY_DIRECTORY}/${BRANCH_NAME}"
       RETURN_VALUE MEMCHECK_RET)
+  if(MEMCHECK_RET)
+    message(WARNING "${BRANCH_NAME} memory check failed (code ${MEMCHECK_RET})!")
+  else()
+    message("${BRANCH_NAME} memorycheck passed")
+  endif()
 
   if(CONFIG_RET OR
      NUM_BUILD_WARNINGS OR
@@ -299,13 +314,11 @@ SET(CONFIGURE_OPTIONS
   "-DCMAKE_CXX_COMPILER:FILEPATH=mpicxx"
   "-DBUILD_TESTS=ON"
   "-DLOGRUN=TRUE"
-  "-DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi"
+  "-DCMAKE_PREFIX_PATH=/fasttmp/mersoj/develop/install/amsi/lib/cmake/amsi"
   "-DSIM_MPI=openmpi110"
-  "-DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC"
-  "-DSPARSKIT_DIR=$DEVROOT/install/sparskit/"
-  "-DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/"
-  "-DCTEST_MEMORYCHECK_COMMAND=valgrind"
-  "-DCTEST_MEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp"
+  "-DSCOREC_DIR=/fasttmp/mersoj/develop/install/core/lib/cmake/SCOREC"
+  "-DSPARSKIT_DIR=/fasttmp/mersoj/develop/install/sparskit/"
+  "-DSCORECUTIL_DIR=/fasttmp/mersoj/develop/install/scorecutil/"
 )
 
 setup_repo()
@@ -315,5 +328,4 @@ foreach(BRANCH IN LISTS BRANCHES)
       "${CONFIGURE_OPTIONS}"
       CHECK_ERR)
 endforeach()
-
 try_merge(master develop "${CONFIGURE_OPTIONS}")
