@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
+# FIXME Note that this is a preliminary version of this file and
+# in reality we need to build each branch of biotissue against the
+# corresponding branch in amsi the current version just builds based on 
+# what I have built.
 
 SET(CTEST_DO_SUBMIT ON)
 SET(CTEST_TEST_TYPE Nightly)
@@ -181,7 +185,7 @@ ${BRANCH_NAME} build failed!
   endif()
 
   if(CTEST_DO_SUBMIT)
-    ctest_submit(PARTS Update Configure Build Test
+    ctest_submit(PARTS Start Update Configure Build Test Coverage MemCheck
         RETRY_COUNT 4
         RETRY_DELAY 30
         RETURN_VALUE SUBMIT_ERROR)
@@ -319,6 +323,9 @@ SET(CONFIGURE_OPTIONS
   "-DSCOREC_DIR=/fasttmp/mersoj/develop/install/core/lib/cmake/SCOREC"
   "-DSPARSKIT_DIR=/fasttmp/mersoj/develop/install/sparskit/"
   "-DSCORECUTIL_DIR=/fasttmp/mersoj/develop/install/scorecutil/"
+  "CMAKE_CXX_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
+  "CMAKE_C_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
+  "CMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
 )
 
 setup_repo()
