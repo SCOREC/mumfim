@@ -23,7 +23,7 @@ set(micro_fo_src_files
 
 find_package(sparskit REQUIRED)
 find_package(scorecutil REQUIRED)
-find_package(amsi COMPONENTS util analysis multiscale)
+find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
 add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})
 set_property(TARGET micro_fo PROPERTY VERSION ${BIOTISSUE_VERSION})
@@ -36,7 +36,7 @@ target_include_directories(micro_fo PUBLIC
 target_link_libraries(micro_fo PUBLIC
                       ${SPARSKIT_LIBRARY}
                       ${SCORECUTIL_LIBRARIES}
-                      util analysis multiscale)
+                      amsi::util amsi::analysis amsi::multiscale)
 
 install(TARGETS micro_fo
         EXPORT biotissueTargets

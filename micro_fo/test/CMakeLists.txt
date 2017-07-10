@@ -1,4 +1,4 @@
-find_package(amsi COMPONENTS util analysis multiscale)
+find_package(amsi COMPONENTS multiscale REQUIRED)
 
 add_mpi_test(fiber_only main.cc 1)
 target_link_libraries(fiber_only micro_fo)
@@ -13,7 +13,7 @@ add_mpi_test(singleDOF_disp singleDOF_disp.cc 1)
 target_link_libraries(singleDOF_disp micro_fo)
 
 add_mpi_test(single_load_balance single_load_balance.cc 1)
-target_link_libraries(single_load_balance micro_fo multiscale)
+target_link_libraries(single_load_balance micro_fo amsi::multiscale)
 
 add_mpi_test(serialization serialization.cc 1)
 target_link_libraries(serialization micro_fo)

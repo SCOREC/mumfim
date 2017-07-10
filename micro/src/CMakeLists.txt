@@ -30,11 +30,7 @@ target_include_directories(micro_fo PUBLIC
 				    $<INSTALL_INTERFACE:include/biotissue>
                                     ${CORE_INCLUDE_DIRS})
 
-target_link_libraries(micro_fo PUBLIC 
-                               las
-			       num
-			       fea
-                               ${CORE_LIBS})
+target_link_libraries(micro_fo PUBLIC las num fea ${CORE_LIBS})
 
 install(TARGETS micro_fo
 	EXPORT biotissueTargets
@@ -43,4 +39,3 @@ install(TARGETS micro_fo
 	INCLUDES DESTINATION include/biotissue)
 
 install(FILES ${micro_fo_header_files} DESTINATION include/biotissue)
-
