@@ -2,7 +2,7 @@
 # Cmake config for biotissiue
 # usage ./config.sh [build_type] [logrun_flag]
 source $DEVROOT/scripts/util
-ROOT=$DEVROOT/bio
+ROOT=$DEVROOT/biotissue
 LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
   BUILD_TYPE=Debug
@@ -27,7 +27,7 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_C_COMPILER="mpicc" \
     -DCMAKE_CXX_COMPILER="mpicxx" \
-    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
+    -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
     -DBUILD_TESTS=OFF \
     -DLOGRUN=$LOGRUN \
     -DSIM_MPI=bgmpi \
@@ -38,7 +38,6 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     ..
   chmod g+rw $BUILD_DIR
 else
-  module load $DEVROOT/module/openmpi/1.10.0
   CC=`which mpicc`
   CXX=`which mpicxx`
   cmake \
@@ -47,12 +46,13 @@ else
   -DCMAKE_C_COMPILER=$CC \
   -DCMAKE_CXX_COMPILER=$CXX \
   -DLOGRUN=TRUE \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
+  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/biotissue/ \
   -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
   -DSIM_MPI=openmpi110 \
   -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
   -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
-  -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/openmpi-1.10.0/ \
+  -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/ \
+  -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp \
   ..
 fi
 
