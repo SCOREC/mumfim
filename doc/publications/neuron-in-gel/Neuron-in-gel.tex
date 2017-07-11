@@ -18,7 +18,7 @@
 %% The default is oneside, onecolumn, 10pt, final
 
 
-\title{Mechanical Modeling of a Neuron Embedded in Collagenous Tissue}
+\title{Strain Amplification in Neurons Embedded in Collagen Gel}
 
 %%% first author
 \author{Victor W. L. Chan
@@ -76,19 +76,24 @@
 \author{Mark S. Shephard
     \affiliation{ Scientific Computation Research Center,\\
 	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
+	Low Center for Industrial Innovation, \\
+	CII-4011, 110 8th Street,\\
 	Troy, NY 12180
     }
 }
 
 \author{Catalin R. Picu
        \thanks{Address all correspondence for other issues to this author.} 
-        \affiliation{ Scientific Computation Research Center,\\
+        \affiliation{Scientific Computation Research Center,\\
 	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
-	Troy, NY 12180\\
+	Low Center for Industrial Innovation, \\
+	CII-4011, 110 8th Street,\\
+	Troy, NY 12180; \\
+	Department of Mechanical, Aerospace and Nuclear Engineering, \\
+	Rensselaer Polytechnic Institute, \\
+	Jonsson Engineering Center,\\
+	Rm.\ 2049, 110 8th Street, \\
+	Troy, NY 12180 \\
 	email: picuc@rpi.edu
     }
 }
@@ -109,7 +114,7 @@ Needs to be filled in.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-Excessive loading in facet capsule ligament (FCL) induces damage to the collagen network and axons of innervating neurons, which lead to pain \textcolor{red}{[references]}.  Although injurious ligament loading gives rise to pain, the local biomechanical mechanisms by which neurons are injured are still poorly understood. Recently, an integrated experimental and modeling approach was employed to examine the responses of neurons and the surrounding collagen fibers to ligamentous matrix loading. This approach provided initial understanding of how macroscopic deformation is translated to neuronal loading and signaling \cite{Zhang:2016ga}. In this paper, we build on the work of Zhang et al. \cite{Zhang:2016ga} and examine the local strains that arise in the neuron when it is deformed while embedded in a collagenous gel. In order to capture the physics of the fibrillar microstructure of the collagen gel a volume-averaged multi-scale model is employed \cite{Chandran:2007hy,Stylianopoulos:2007dp}. Although the multi-scale model has been previously used to model the passive mechanical contribution of cells in collagen gel, the embedded cell structure was represented with a simple spherical geometry \cite{Lai:2013fp}. In this paper we expand on the previous work by considering a realistic geometry of the neuron, which is reconstructed from experimental images. In order to accommodate the high computational demands required to incorporate the complex neuron geometry and the multi-scale nature of the surrounding collagen gel into our model, we employ the adaptive multi-scale simulation infrastructure (AMSI) \cite{Delalondre:2010kt} which is designed to simultaneously handle massively parallel simulations on multiple scales.
+Excessive loading in facet capsule ligament (FCL) induces damage to the collagen network and axons of innervating neurons, which lead to pain \red{references?}.  Although injurious ligament loading gives rise to pain, the local biomechanical mechanisms by which neurons are injured are still poorly understood. Recently, an integrated experimental and modeling approach was employed to examine the responses of neurons and the surrounding collagen fibers to ligamentous matrix loading. This approach provided initial understanding of how macroscopic deformation is translated to neuronal loading and signaling \cite{Zhang:2016ga}. In this paper, we build on the work of Zhang et al. \cite{Zhang:2016ga} and examine the local strains that arise in the neuron when it is deformed while embedded in a collagenous gel. In order to capture the physics of the fibrillar microstructure of the collagen gel a volume-averaged multi-scale model is employed \cite{Chandran:2007hy,Stylianopoulos:2007dp}. Although the multi-scale model has been previously used to model the passive mechanical contribution of cells in collagen gel, the embedded cell structure was represented with a simple spherical geometry \cite{Lai:2013fp}. In this paper we expand on the previous work by considering a realistic geometry of the neuron, which is reconstructed from experimental images. In order to accommodate the high computational demands required to incorporate the complex neuron geometry and the multi-scale nature of the surrounding collagen gel into our model, we employ the adaptive multi-scale simulation infrastructure (AMSI) \cite{Delalondre:2010kt} which is designed to simultaneously handle massively parallel simulations on multiple scales. \red{Sijia, Beth, Victor B.: Can you help with this introduction? It is too slim in this version.} 
 
 The paper is outlined as follows. In Section \ref{sec:materials_and_methods} the construction of a realistic embedded-neuron-structure geometry and its corresponding finite-element mesh from experimental images is described. Additionally, the volume-average based multi-scale method for the collagen gel and the constitutive relationship for the embedded neuron structure are presented. The implementation details of our simulation using AMSI is provided in Section \ref{sec:amsi}. In Section \ref{sec:results}, the strain distributions for various cell body stiffnesses and loading configurations are presented. A discussion of the results is followed in Section \ref{sec:discussion}. Finally, the work in this paper is summarized in Section \ref{sec:conclusion}. 
 
@@ -209,7 +214,7 @@ The procedure in Eq.\ \eqref{eq:macro_stress_discrete} is referred to as \textit
 \label{eq:macro_stress_divergence}
 \end{equation}
 %
-where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field \cite{Chandran:2007hy,Stylianopoulos:2007dp}. \blue{More explanation of Eq.\ \eqref{eq:macro_stress_divergence}}
+where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field \cite{Chandran:2007hy,Stylianopoulos:2007dp}. \red{Victor B.: Can you provide a more intuitive description for the RHS of Eq.\ \eqref{eq:macro_stress_divergence}?}
 
 The scaling parameter $L$ in Eqs.\ \eqref{eq:downscaling} and \eqref{eq:macro_stress_discrete} are required for both the downscaling and upscaling procedures.  The scaling factor $L$ between the computational and physical domains is determined by comparing the average fiber length in the RVEs to that in reconstituted collagen type I networks \cite{Lindstrom:2013gd} with collagen concentration of 2mg/mL. In the computational domain, fiber networks have a network density (total length of fibers/RVE volume) of 100 ($\pm$ 1) and an average fiber length of 0.26. The average fiber length in reconstituted collagen type I networks is 1.81 $\mu$m \cite{Lindstrom:2013gd}. Based on these average lengths, $L=7 \ \mu$m.
 
@@ -285,13 +290,13 @@ where $<x>$ denotes the average of $x$. The value of $P_2$ ranges from 1 ($\thet
 \label{eq:P2_experiment}
 \end{align}
 %
-where $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The fiber alignment as a function of bulk applied strain calculated from simulation and measured experimentally are plotted in Fig.\ \ref{fig:fiber_param2}(b). \textcolor{red}{[How to explain discrepancy in alignment between simulation and experiments?]}
+where $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The fiber alignment as a function of bulk applied strain calculated from simulation and measured experimentally are plotted in Fig.\ \ref{fig:fiber_param2}(b). \red{How to explain discrepancy in alignment between simulation and experiments?}
 
 %\textcolor{red}{[According to Professor Picu, alignment is more pronounced at low strains and less pronounced at high strains if deformation is non-affine (compared to the case of affine deformation). The behavior in Fig.\ \ref{fig:fiber_param2}(b) is in agreement if it is valid that the Delaunay fiber network that we are using deforms affinely due to the the large coordinate of the Delaunay network used in our model.]}
 
 %=========================================================================================================
 \subsection{Constitutive Relationship for Modeling of Neurons}
-Cross-linked microtubule bundles that are axially aligned are a major structural feature of axons and give rise to macroscopic anisotropic mechanical behavior \cite{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \cite{JavierBonet:2008uxa,Bonet:1998vc}. The elements of the Cauchy stress tensor and spatial elasticity tensor can be expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \cite{Bonet:1998vc}
+Cross-linked microtubule bundles that are axially aligned are a major structural feature of axons and give rise to macroscopic anisotropic mechanical behavior \cite{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \cite{JavierBonet:2008uxa,Bonet:1998vc}. The elements of the Cauchy stress tensor and spatial (Eulerian) elasticity tensor can be expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \cite{Bonet:1998vc}
 %
 \begin{equation}
 \sigma_{ij} = \sigma^{\text{nh}}_{ij} + \sigma^{\text{trns}}_{ij} \ \ \text{ and } \ \ c_{ijkl} = c^{\text{nh}}_{ijkl} + c^{\text{trns}}_{ijkl},
@@ -310,7 +315,7 @@ respectively, where
 \label{eq:trns_iso}
 \end{align}
 %
-In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green strain tensor and $a_i$ is a component of the direction of anisotropy in the deformed state. The constants of Eq.\ \eqref{eq:trns_iso} are defined as
+In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green strain tensor and $a_i$ is a component of the direction of anisotropy in the deformed state. $\lambda$ and $\mu$ are the Lam\'e constants that define the material properties of the isotropic component, while $\beta$, $\gamma$, and $\alpha$ are parameters that define the material properties of the anisotropic component. The parameters of Eq.\ \eqref{eq:trns_iso} can be written in terms of material constants as
 %
 \begin{align}
 &\lambda = \frac{2\mu (\nu+n\nu^2)}{m} \ \ \ \ \ \gamma = \frac{E_A(1-\nu)}{8m} - \frac{\lambda+2\mu}{8} + \frac{\alpha}{2} - \beta \nonumber\\
@@ -321,7 +326,7 @@ In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green stra
 \label{eq:trns_iso_constants}
 \end{align}
 %
-where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In our analysis, the shear modulus is set to be isotropic such that $G_A=\mu$ and $\alpha = 0$. All the constants in Eq.\ \eqref{eq:trns_iso_constants} are set once $\mu$, $G_A$, $\nu$, and $E_A$ are specified. \red{From Picu: more description of equations above.}
+where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In our analysis, the shear modulus is set to be isotropic such that $G_A=\mu$ and $\alpha = 0$. All the constants in Eq.\ \eqref{eq:trns_iso_constants} are set once all material constants ($\mu$, $G_A$, $\nu$, and $E_A$) are specified. 
 
 The value of $E_A$ is based on the study by Peter and Mofrad \cite{Peter:2012fc}, where the mechanical behavior of axonal microtubule bundles under tension were simulated with a discrete bead-spring model. To apply their results for microtubule bundles to our neuron model, we assume that only the microtubule bundles carry force in the axon and that the stress of the microtubule bundles can be redistributed over the cross-sectional area of the axon. Since the microtubules are the stiffest component of the cytoskeleton \cite{Fletcher:2010ku}, the mechanical contribution from the actin filaments (membrane cortex) is ignored. Based on these assumptions, the axial stiffness of the axon can be related to the axial stiffness of the microtubule bundles, $E_{MTb}$, by
 %
@@ -352,7 +357,7 @@ $G_A = \mu = $ 0.577 kPa & axial shear modulus.\\ \hline \hline
 %
 The transverse stiffness of the axons and cell bodies was based on the measurements of Simon et al.\ \cite{Simon:2016ig} and chosen to be 1.5 kPa. The six constants in Eq.\ \eqref{eq:trns_iso_constants} are all determined when the values listed in Table \ref{table:neuron_parameters} are fully specified.
 
-Lastly, the axial stiffness of the cell body was chosen based on the relative alignment of the microtubules. The microtubules transition from an aligned state in the axon to an unaligned state within the cell body \textcolor{red}{[reference describing this phenomenon?]}, where a cell-body/axon interface is defined as the starting point for the unaligned state of the microtubules. Within the cell body, the microtubules become progressively less aligned with the center of the cell body having the lease alignment. Consequently, the axial stiffness within the cell body decreases and is lowest at the center. To capture such behavior, the cell bodies are also modeled as a transversely isotropic hyperelastic material where the axial stiffness is a function of distance from the cell-body/axon interface by
+Lastly, the axial stiffness of the cell body was chosen based on the relative alignment of the microtubules. The microtubules transition from an aligned state in the axon to an unaligned state within the cell body \red{Sijia, Beth, Victor B.: Do you know of any reference to describe/justify this?}, where a cell-body/axon interface is defined as the starting point for the unaligned state of the microtubules. Within the cell body, the microtubules become progressively less aligned with the center of the cell body having the lease alignment. Consequently, the axial stiffness within the cell body decreases and is lowest at the center. To capture such behavior, the cell bodies are also modeled as a transversely isotropic hyperelastic material where the axial stiffness is a function of distance from the cell-body/axon interface by
 %
 \begin{equation}
 E_A^{cell} = \left(1 - \frac{D}{t}\right)E_A.
@@ -377,13 +382,13 @@ $
 \section{Implementation}
 \label{sec:amsi}
 Our model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \cite{Delalondre:2010kt}, which is designed to support massively parallel simulations on multiple scales. AMSI enables our model to accommodate the high computational demands of solving the mechanical equilibrium equations on the complex geometry of the neuron structure and for the multi-scale problem in the collagen gel. 
-\textcolor{red}{[Bill can describe AMSI here.]}
+\textcolor{red}{[Bill: Description of AMSI.]}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:results}
 
-The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Such strain information can be used to examine the threshold for neuron injury, which provides physiological insights about the cause of pain when an innervated ligament is excessively loaded. \red{How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
+The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Such strain information can be used to examine an embedded neuron structure's susceptibility to injury, which provides physiological insights about the cause of pain when an innervated ligament is excessively loaded. \red{Sijia, Beth, Victor B.: How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
 
 For this study, the collagen gel surrounding the neuron structure is subjected to bulk strains of up to 16$\%$, which corresponds to painful ligament loading \cite{Zhang:2016ga}. The strain within the neuron structure is quantified by a complementary cumulative distribution function (ccdf) defined as 
 %
@@ -647,7 +652,7 @@ Although the average strain amplification in the neuron structure is greater whe
 \label{sec:discussion}
 The results in Sections \ref{sec:cellbody_stiffness} and \ref{sec:loading_direction} illustrate that the strain distribution (ccdf) in the neuron structure, and hence strain amplification, is most strongly influenced by the configuration of the neuron with respect to the loading direction. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron structure, where the axial stiffness is one order of magnitude stiffer than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. Due to the complex geometry of the embedded neuron structure studied above, the neuron structure is exposed to both transverse and axial components of loading. The spread of ccdfs reflects the range of tranverse and axial loads that different regions within the neuron structure is exposed to.
 
-Some insight about the magnitude of the strain amplification for transverse and axial loading can be gained by simplifying the embedded neuron structure system into a one-dimensional gel-neuron-gel series. For such a system, the strain in the neuron can be expressed in terms of the strain in the gel by
+Some insight about the magnitude of the strain amplification for transverse and axial loading can be gained by simplifying the embedded neuron structure system into a one-dimensional gel-neuron-gel series configuration. For such a system, the strain in the neuron can be expressed in terms of the strain in the gel by
 %
 \begin{equation}
 \epsilon_{\text{neuron}} = \frac{K_{\text{gel}}}{K_{\text{neuron}}}\epsilon_{\text{gel}},
@@ -662,12 +667,12 @@ At the other extreme when the load on the neuron structure is purely axial, $K_{
 
 The upper bound scenarios described above can be applied to understand the simulation results for the embedded neuron structure. In all cases of non painful and painful ligament loading considered, the average strain amplification is greater than one. This suggests that on average the neuron structure is exposed to more transverse loading than axial loading. As the loading angle varies from 0 to 90 degrees, the volume fraction of neuron that is exposed to transverse loading increases as reflected by the increasing average strain amplification.
 
-As mentioned above, the spread in the strain distributions reflect the complex geometry of the neuron structure. Of the three loading angles considered, the neuron structure is loaded most uniformly when the gel is loaded at 45 degrees as reflected by the relatively narrow spread of its strain distribution. The wider spread in the strain distributions for 0 and 90 degree loading is due to the existence of neurons in the structure that lie nearly parallel to the 0 degree and 90 degree axis. As a result, when the gel is loaded at either 0 or 90 degrees, the neuron structure will be exposed to both nearly pure transverse and axial loadings. 
+As mentioned above, the spread in the strain distributions reflect the complex geometry of the neuron structure. Of the three loading angles considered, the neuron structure is loaded most uniformly at 45 degrees as reflected by the relatively narrow spread of its strain distribution. The wider spread in the strain distributions for 0 and 90 degree loading is due to the existence of neurons in the structure that lie nearly parallel to the 0 degree and 90 degree axis. As a result, when the gel is loaded at either 0 or 90 degrees, the neuron structure will be exposed to both extremes of nearly pure transverse and axial loadings. 
 
-Physiologically most important is the right tail of the distributions, which corresponds to the maximum strain experienced in the neuron structure. Of the cases considered, the largest strain amplification in the neuron structure is observed when the gel is loaded at 90 degrees. As seen in Table \ref{table:ccdf_volfrac_compare}, 9.7$\%$ and 14$\%$ of the neuron structure experiences a three times or more strain amplification for non painful and painful ligament loading, respectively. In comparison,  0.2$\%$  and 0$\%$ of the neuron structure experiences a three times or more strain amplification for 0 and 45 degree loading, respectively. The volume fraction that experiences a two times or more strain amplification for the 0 and 45 degree loading cases is still less that that experienced for the 90 degree loading case.
+Physiologically most important is the right tail of the distributions, which corresponds to the maximum strain experienced in the neuron structure. Of the cases considered, the largest strain amplification in the neuron structure is observed when the gel is loaded at 90 degrees. As seen in Table \ref{table:ccdf_volfrac_compare}, 9.7$\%$ and 14$\%$ of the neuron structure experiences a three times or more strain amplification for non painful and painful ligament loading, respectively. In comparison,  0.2$\%$  and 0$\%$ of the neuron structure experiences a three times or more strain amplification for 0 and 45 degree loading, respectively. The volume fraction that experiences a two times or more strain amplification for the 0 and 45 degree loading cases is still less than the volume fraction experiencing three times or more strain amplification in the 90 degree loading case.
 
-Of the three loading configurations considered, the 90 degree loading case is most susceptible to neuronal damage during ligament loading. Although the average strain amplification is slightly larger for the 45 
-For the 0 degree loading case, less than 1$\%$ of the neuron structure experiences strain amplification beyond two times for non painful ligament loading. When the deformation reaches painful loading at 0 degrees, the volume fraction of the neurons structure experiencing at least two times strain amplification increases to 3.2$\%$. For the 45 degree loading case, 8.4$\%$ and 7$\%$ of the neuron structure experiences a strain amplification of two times. 
+Of the three loading configurations considered, the 90 degree loading case is most susceptible to neuronal damage during ligament loading as reflected by the large average and long tail of its distribution. In the cases of the 0 and 45 degree loading, the strain distribution for 45 degrees has a larger average while that for 0 degrees has a longer tail. Therefore, whether the 0 or 45 degree loading case is more susceptible to neuron injury depends on the damage threshold of the neuron. For example, if the damage threshold for the neuron is three times the applied load on the gel, then the 0 degree loading case will be more susceptible to neuronal damage due to the longer tail in its distribution.
+
 
 %\subsection{Fiber Alignment in Collagen Gel}
 %%
@@ -705,23 +710,26 @@ For the 0 degree loading case, less than 1$\%$ of the neuron structure experienc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 \label{sec:conclusion}
-In this paper we investigated the mechanical response of a neuron that is deformed while embedded in a collagen gel. The following are the main findings of this work
+In this paper we developed a multi-scale model of a neuron structure that is embedded in a collagen gel to examine the local strain response that arises when innervated collagenous tissue is loaded. The model presented in this work provides local strain information that is inaccessible by current experimental techniques, thereby serving as a computational microscope. Such local strain information was used to examine the embedded neuron structure's susceptibility to injury, which provides insights about the cause of pain when an innervated ligament is excessively loaded.
 
-\begin{enumerate}
-\item The deformation state of the neuron varies significantly for different loading configurations on the surrounding collagen gel (Section \ref{sec:loading_direction}). In contrast, the deformation state varies much less significantly when the material properties in the neuron were varied (Section \ref{sec:cellbody_stiffness}).
-\item For all loading conditions considered, the maximum MPS experienced in the neuron is 3 to 6 times larger than the applied (bulk) strain in the surrounding collagen gel.
-\item Local-strain amplification is greatest when the neuron is exposed to deformation in the transverse direction because the transverse stiffness of the neuron is smaller than the gel stiffness. The local-strain amplification becomes larger with more deformation due the collagen gel becoming stiffer. In contrast, the strain experienced in the neuron is less than that in the collagen gel when the neuron is exposed to deformation in the axial direction because the axial stiffness of the neuron is greater than the gel stiffness. 
-\item The local-strain amplification in the neuron is greatest for the 90 degree loading case in which most of the neuron is being loaded in the transverse direction. The local-strain amplification becomes larger with larger applied loading to the collagen gel, which reflects the stiffening of the collagen gel as it becomes more deformed.
-\item The local-strain amplification in the neuron is smaller in the 0 and 45 degree loading cases in which axial loading is more prominent. The spread in the ccdf for the 0 degree loading case is wider indicating a less uniform loading on the neuron structure. Additionally, the tail of the ccdf for 0 degree loading is longer indicating a larger local-strain amplification in the 0 degree case than in the 45 degree case.
-\item The neuron exhibits ``self correcting" behavior in the 0 degree loading case where the tail of the ccdf becomes shorter with increased deformation to the surrounding collagen gel. The ``self correcting" mechanism is due to the alignment of the neuron axis along the direction of loading during deformation. The shortening of the tail in the ccdf indicates that the axial alignment of the neuron structure takes place more rapidly than the stiffening of the collagen gel.
-\end{enumerate}
+The embedded neuron geometry for this model was generated from confocal images to incorporate the complex structure of the neuron. The realistic representation of the embedded neuron structure enables us to extend our findings to actual physiological environments. The distribution of local strains that arise in the neuron structure were examined for different cell body stiffnesses in the neuron structure and loading configurations on the surrounding collagen gel. We showed that the local-strain distribution depends only weakly on the cell body stiffness, while varying significantly for different loading configurations. The strong dependence on loading configuration is a consequence of the anisotropic nature of the neuron, which has an axial stiffness that is one order greater that its transverse stiffness.
 
+The spread in the strain distributions reflects the range of deformation that arises within the neuron structure due to its complex geometry; regions within the neuron structure experience different degrees of transverse and axial loading. We showed that transverse loading of the neuron gave rise to local-strain amplification, while axial loading gave rise to local strains in the neuron that are smaller than the applied load on the surrounding gel. Consequently, a larger average local-strain amplification corresponds to a larger degree of transverse loading in the neuron structure.
 
+In this work, we considered loading along the 0, 45, and 90 degree axis, which are illustrated in Fig.\ \ref{fig:analysis_schematic}. As the loading angle varied from 0 to 90 degrees, the volume fraction of the neuron structure experiencing transverse loading increased, as reflected by the increasing average local-strain amplification. The neuron structure was loaded most uniformly at 45 degrees, as reflected by the relatively narrow spread of the strain distribution. At 0 and 90 degree loading, the neuron structure experiences the extremes of nearly pure transverse and axial loading due to the existence of neurons that are nearly parallel to the 0 and 90 degree axes. Consequently, the spread in the distribution for 0 and 90 degree loading are wider.
 
+The right tail of the distributions, which represent the maximum strain experienced in the neuron structure, was found to be the largest for the 90 degree loading case - 9.7$\%$ and 14$\%$ of the neuron structure experienced at least a three times local strain amplification for non painful and painful ligament loading, respectively. In contrast, 0.2$\%$ and 0$\%$ of the neuron structure experienced the same strain amplification for the 0 and 45 degree loading cases, respectively.
+
+Overall, the 90 degree loading configuration was found to be most susceptible to neuronal injury because of the large average and long tail of its distribution. In the other cases, the strain distribution for 45 degree loading has a larger average while that for 0 degree loading has a longer tail. Therefore, whether the 0 or 45 degree loading configurations are more susceptible to neuronal injury depends on the strain threshold for damage on the neuron - the 0 degree loading configuration is more susceptible if the damage threshold is more than three times the applied strain because of the longer tail in its distribution.
+
+This study has provided initial insights about the local-strain amplifications that arise in the embedded neuron structure during deformation to the surrounding collagenous tissue. These findings support the hypothesis that embedded neurons can be damaged even when the surrounding collagenous tissue is moderately loaded. Additional insights on the cause of neuron damage during ligamentous matrix loading can be uncovered by extending this study to a larger number of embedded neurons. The technology presented in this work can be readily extended to such a system.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{acknowledgment}
-
+\begin{enumerate}
+\item{NIH Grants}
+\item{Computing resources were provided by the Center for Computational Innovations at Rensselaer Polytechnic Institute \red{Will check specific wording on CCI website.}}
+\end{enumerate}
 \end{acknowledgment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
