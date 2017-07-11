@@ -1,0 +1,16 @@
+Cannot locate CTest configuration: in BuildDirectory: /fasttmp/mersoj/develop/test/biotissue/cdash/build/CTestConfig.cmake
+Cannot locate CTest configuration: in SourceDirectory: /fasttmp/mersoj/develop/test/biotissue/cdash/src/CTestConfig.cmake
+Running "git clone git@github.com:tobinw/biotissue.git /fasttmp/mersoj/develop/test/biotissue/cdash/src/Biotissue"
+Cloning into /fasttmp/mersoj/develop/test/biotissue/cdash/src/Biotissue...
+Cloning git@github.com:tobinw/biotissue.git succeeded
+Running "git branch --track develop origin/develop"
+fatal: A branch named 'develop' already exists.
+CMake Error at jenga-nightly.cmake:82 (message):
+  Creating branch develop failed (code 128)!
+Call Stack (most recent call first):
+  jenga-nightly.cmake:89 (git_exec)
+  jenga-nightly.cmake:112 (create_branch)
+  jenga-nightly.cmake:331 (setup_repo)
+  
+
+
