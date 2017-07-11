@@ -710,17 +710,17 @@ Of the three loading configurations considered, the 90 degree loading case is mo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusion}
 \label{sec:conclusion}
-In this paper we developed a multi-scale model of a neuron structure that is embedded in a collagen gel to examine the local strain response that arises when innervated collagenous tissue is loaded. The model presented in this work provides local strain information that is inaccessible by current experimental techniques, thereby serving as a computational microscope. Such local strain information was used to examine the embedded neuron structure's susceptibility to injury, which provides insights about the cause of pain when an innervated ligament is excessively loaded.
+In this paper we developed a multi-scale model of a neuron structure that is embedded in a collagen gel to examine the local strain response that arises when innervated collagenous tissue is deformed. The model presented in this work provides local strain information that is inaccessible by current experimental techniques, thereby serving as a computational microscope. Such local strain information was used to examine the embedded neuron structure's susceptibility to injury, which provides insights about the cause of pain when an innervated ligament is excessively loaded.
 
 The embedded neuron geometry for this model was generated from confocal images to incorporate the complex structure of the neuron. The realistic representation of the embedded neuron structure enables us to extend our findings to actual physiological environments. The distribution of local strains that arise in the neuron structure were examined for different cell body stiffnesses in the neuron structure and loading configurations on the surrounding collagen gel. We showed that the local-strain distribution depends only weakly on the cell body stiffness, while varying significantly for different loading configurations. The strong dependence on loading configuration is a consequence of the anisotropic nature of the neuron, which has an axial stiffness that is one order greater that its transverse stiffness.
 
 The spread in the strain distributions reflects the range of deformation that arises within the neuron structure due to its complex geometry; regions within the neuron structure experience different degrees of transverse and axial loading. We showed that transverse loading of the neuron gave rise to local-strain amplification, while axial loading gave rise to local strains in the neuron that are smaller than the applied load on the surrounding gel. Consequently, a larger average local-strain amplification corresponds to a larger degree of transverse loading in the neuron structure.
 
-In this work, we considered loading along the 0, 45, and 90 degree axis, which are illustrated in Fig.\ \ref{fig:analysis_schematic}. As the loading angle varied from 0 to 90 degrees, the volume fraction of the neuron structure experiencing transverse loading increased, as reflected by the increasing average local-strain amplification. The neuron structure was loaded most uniformly at 45 degrees, as reflected by the relatively narrow spread of the strain distribution. At 0 and 90 degree loading, the neuron structure experiences the extremes of nearly pure transverse and axial loading due to the existence of neurons that are nearly parallel to the 0 and 90 degree axes. Consequently, the spread in the distribution for 0 and 90 degree loading are wider.
+In this work, we considered loading along the 0, 45, and 90 degree axis, which are illustrated in Fig.\ \ref{fig:analysis_schematic}. As the loading angle varied from 0 to 90 degrees, the volume fraction of the neuron structure experiencing transverse loading increased, as reflected by the increasing average local-strain amplification. The neuron structure was loaded most uniformly at 45 degrees, as reflected by the relatively narrow spread of the strain distribution. At 0 and 90 degree loading, the neuron structure experiences the extremes of both nearly pure transverse and axial loading due to the existence of neurons that are nearly parallel to the 0 and 90 degree axes. Consequently, the spread in the distribution for 0 and 90 degree loading are wider.
 
 The right tail of the distributions, which represent the maximum strain experienced in the neuron structure, was found to be the largest for the 90 degree loading case - 9.7$\%$ and 14$\%$ of the neuron structure experienced at least a three times local strain amplification for non painful and painful ligament loading, respectively. In contrast, 0.2$\%$ and 0$\%$ of the neuron structure experienced the same strain amplification for the 0 and 45 degree loading cases, respectively.
 
-Overall, the 90 degree loading configuration was found to be most susceptible to neuronal injury because of the large average and long tail of its distribution. In the other cases, the strain distribution for 45 degree loading has a larger average while that for 0 degree loading has a longer tail. Therefore, whether the 0 or 45 degree loading configurations are more susceptible to neuronal injury depends on the strain threshold for damage on the neuron - the 0 degree loading configuration is more susceptible if the damage threshold is more than three times the applied strain because of the longer tail in its distribution.
+Overall, the 90 degree loading configuration was found to be most susceptible to neuronal injury because of the large average and long tail of its distribution. In the other cases, the strain distribution for 45 degree loading has a larger average while that for 0 degree loading has a longer tail. Therefore, whether the 0 or 45 degree loading configurations are more susceptible to neuronal injury depends on the strain threshold for damage on the neuron. For example, if the damage threshold is more than three times the applied strain, the 0 degree loading configuration is more susceptible to neuronal injury because of the longer tail in its distribution.
 
 This study has provided initial insights about the local-strain amplifications that arise in the embedded neuron structure during deformation to the surrounding collagenous tissue. These findings support the hypothesis that embedded neurons can be damaged even when the surrounding collagenous tissue is moderately loaded. Additional insights on the cause of neuron damage during ligamentous matrix loading can be uncovered by extending this study to a larger number of embedded neurons. The technology presented in this work can be readily extended to such a system.
 
@@ -764,49 +764,84 @@ This study has provided initial insights about the local-strain amplifications t
 \section*{Appendix A: Derivation of $P_2$ from $\alpha$ and $\delta$ of the QPLI method}
 \label{app:P2_derivation}
 
-Consider a distribution of orientation $\theta$ described by 
+Consider a distribution of orientation $\theta$ for pixel $i$ as 
 %
 \begin{equation}
-p(\theta) = q_1 + q_2\cos^2(\theta - \alpha) \ \ \text{for} \ \ \alpha \in (0,\pi),
+p_i(\theta) = q_i + r_i\cos^2(\theta - \alpha_i) \ \ \text{for} \ \ \theta \in (0,\pi),
 \label{eq:distribution}
 \end{equation}
 %
-where $\alpha$ is the alignment measured at each pixel by the QPLI method and $q_1$ and $q_2$ are constants. Applying the normalization 
+where $\alpha_i$ is the alignment measured at pixel $i$ by the QPLI method and $q_i$ and $r_i$ are constants for the $i^{th}$ pixel. Applying the normalization 
 %
 \begin{equation}
-\int_0^{\pi}p(\theta)d\theta = 1,
+\int_0^{\pi}p_i(\theta)d\theta = 1,
 \end{equation}
 %
-a relationship between $q_1$ and $q_2$ is obtained:
+a relationship between $q_i$ and $r_i$ is obtained:
 %
 \begin{equation}
-\pi q_1 + \frac{\pi}{2}q_2 = 1.
+\pi q_i + \frac{\pi}{2}r_i = 1.
 \label{eq:q_relationship}
 \end{equation}
 %
 Using the relationship in Eq.\ \eqref{eq:q_relationship}, Eq.\ \eqref{eq:distribution} can be rewritten as
 %
 \begin{equation}
-p(\theta) = q + \frac{2}{\pi}(1-\pi q)\cos^2(\theta-\alpha)
+p_i(\theta) = q_i + \frac{2}{\pi}(1-\pi q_i)\cos^2(\theta-\alpha_i)
 \label{eq:distribution_q}
 \end{equation}
 %
 
-The orientation tensor can be written in terms of $p(\theta)$ as
+The orientation tensor for each pixel can be written in terms of $p_i(\theta)$ as
 %
 \begin{eqnarray}
-\pmb{A} = 
+\pmb{A}^i = 
 \begin{bmatrix}
-\int_0^{\pi} p(\theta) \cos^2(\theta)d\theta & \int_0^{\pi} p(\theta) \sin(\theta) \cos(\theta)d\theta \\
-\int_0^{\pi} p(\theta) \sin(\theta) \cos(\theta)d\theta & \int_0^{\pi} p(\theta) \sin^2(\theta)d\theta
+\int_0^{\pi} p_i(\theta) \cos^2(\theta)d\theta & \int_0^{\pi} p_i(\theta) \sin(\theta) \cos(\theta)d\theta \\
+\int_0^{\pi} p_i(\theta) \sin(\theta) \cos(\theta)d\theta & \int_0^{\pi} p_i(\theta) \sin^2(\theta)d\theta
 \end{bmatrix} = 
 %
-\frac{1-\pi q}{4} 
+\frac{1-\pi q_i}{4} 
 \begin{bmatrix}
-\cos(2 \alpha) & \sin(2 \alpha) \\
-\sin(2\alpha) & - \cos(2\alpha)
-\end{bmatrix}
+\cos(2 \alpha_i) & \sin(2 \alpha_i) \\
+\sin(2\alpha_i) & - \cos(2\alpha_i)
+\end{bmatrix},
+\label{eq:Ai}
 \end{eqnarray}
 %
-where $A_{11}$ \red{The above is for a single pixel.}
+where the eigenvalues of $\pmb{A}^i$ are
+\begin{equation}
+\lambda_1 = \frac{1+\pi q_i}{4} \ \ \text{and} \ \ \lambda_2 = \frac{3-\pi q_i}{4}. 
+\end{equation}
+%
+The retardation at each pixel, $\delta_i$, can be calculated from the eigenvalues by
+%
+\begin{equation}
+\delta_i = |\lambda_2 - \lambda_1| = \frac{1-\pi q_i}{2}.
+\label{eq:delta_i}
+\end{equation}
+%
+From Eq.\ \eqref{eq:delta_i}, the constant $q_i$ can be written in terms of the retardation as
+%
+\begin{equation}
+q_i = \frac{1}{\pi}(1-2\delta_i),
+\end{equation}
+%
+and the distribution at pixel $i$ from Eq.\ \eqref{eq:distribution_q} can be rewritten as
+%
+\begin{equation}
+p_i(\theta) = \frac{1-2\delta_i}{\pi} + \frac{4 \delta_i}{\pi}\cos^2(\theta-\alpha_i).
+\label{eq:distribution_delta}
+\end{equation}
+%
+
+The distribution of orientation $\theta$ for the entire image is simply the average over the distribution of each pixel
+%
+\begin{equation}
+p(\theta) = \frac{1}{N} \sum_{i=1}^N p_i(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{1-2\delta_i}{\pi} + \frac{4 \delta_i}{\pi}\cos^2(\theta-\alpha_i) \right],
+\end{equation}
+%
+which is the equation presented in Eq.\ \eqref{eq:P2_experiment}.
+
+
 \end{document}
