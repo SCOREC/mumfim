@@ -1,0 +1,654 @@
+\documentclass[12pt,aps,pre]{revtex4}
+%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
+\usepackage{graphicx, epsfig,cancel}
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{amssymb,amsmath} 
+\usepackage{hyperref}
+\usepackage{setspace}
+
+% for writing code snippets in latex
+\usepackage{listings}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{[#1]}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+
+
+\begin{document}
+\setstretch{1.5}
+\title{Compressible Hyperelastic Constitutive Relation}
+\author{V. W. L. Chan}
+\maketitle
+
+\section{Strain Tensors}
+
+The relationship between an elemental vector in the material configuration, $d\pmb{X}$, and the spatial configuration, $d\pmb{x}$ is given by the deformation gradient tensor $\pmb{F}$
+%
+\begin{equation}
+d\pmb{x} = \pmb{F}d\pmb{X},
+\label{eq:dx=FdX}
+\end{equation}
+%
+where $\pmb{F}$ is a two-tensor defined as
+%
+\begin{eqnarray}
+\pmb{F} = \sum_{i,j=1}^3 \frac{\partial x_i}{\partial X_j} \vec{e}_i \otimes \vec{E}_j =
+%
+\begin{bmatrix}
+\frac{\partial x_1}{\partial X_1} & \frac{\partial x_1}{\partial X_2} & \frac{\partial x_1}{\partial X_3} \\
+\frac{\partial x_2}{\partial X_1} & \frac{\partial x_2}{\partial X_2} & \frac{\partial x_2}{\partial X_3} \\
+\frac{\partial x_3}{\partial X_1} & \frac{\partial x_3}{\partial X_2} & \frac{\partial x_3}{\partial X_3} 
+\end{bmatrix}.
+\label{eq:deformation-gradient}
+\end{eqnarray}
+%
+
+To measure general deformation, consider two elemental vectors $d\pmb{X}_1$ and $d\pmb{X}_2$ as they deform to $d\pmb{x}_1$ and $d\pmb{x}_2$. Such a deformation will involve stretching and changes in angle between the two elemental vectors. To find strain, which involves only the stretch of the vectors, consider the dot products of elemental vectors
+%
+\begin{eqnarray}
+d\pmb{x}_1 \cdot d\pmb{x}_2 &=& (\pmb{F} d\pmb{X}_1) \cdot (\pmb{F}d\pmb{X}_2) \nonumber\\
+%
+&=& d\pmb{X}_1 \cdot \pmb{F}^T\pmb{F} d\pmb{X}_2 \nonumber\\
+&=& d\pmb{X}_1 \cdot \pmb{C} d\pmb{X}_2,
+\end{eqnarray}
+%
+where Eq.\ \eqref{eq:dx=FdX} has been applied and $\pmb{C} \equiv \pmb{F}^T \pmb{F}$ is the right Cauchy-Green deformation tensor (note that $\pmb{F}$ is on right side). One can also express the inverse relationship
+%
+\begin{eqnarray}
+d\pmb{X}_1 \cdot d\pmb{X}_2 &=& (\pmb{F}^{-1}d\pmb{x}_1) \cdot (\pmb{F}^{-1} d\pmb{x}_2) \nonumber\\
+&=& d\pmb{x}_1 \cdot (\pmb{F}^{-1})^T\pmb{F}^{-1} d\pmb{x}_2 \nonumber\\
+&=& d\pmb{x}_1 \cdot \pmb{b}^{-1} d\pmb{x}_2,
+\end{eqnarray}
+%
+where $\pmb{b} \equiv \pmb{F}\pmb{F}^T = (\pmb{b}^{-1})^{-1} = ((\pmb{F}^T)^{-1} \pmb{F}^{-1})^{-1}$ is the left Cauchy-Green deformation tensor (note that $\pmb{F}$ is on left side).
+
+The strain can be defined as the change of length from the material to spatial configuration
+%
+\begin{eqnarray}
+\frac{1}{2}\left(d\pmb{x}_1 \cdot d\pmb{x}_2 - d\pmb{X}_1 \cdot d\pmb{X}_2 \right) &=& \frac{1}{2}\left(d\pmb{X}_1 \cdot \pmb{C} d\pmb{X}_2 - d\pmb{X}_1 \cdot d\pmb{X}_2 \right) = d\pmb{X}_1 \cdot \pmb{E} d\pmb{X}_2 \nonumber\\
+%
+&=& \frac{1}{2}\left(d\pmb{x}_1 \cdot d\pmb{x}_2 - d\pmb{x}_1 \cdot \pmb{b}^{-1} d\pmb{x}_2\right) = d\pmb{x}_1 \cdot \pmb{e} d\pmb{x}_2, \nonumber\\
+%
+\text{where}&&\nonumber\\
+%
+\pmb{E} &\equiv& \frac{1}{2} \left(\pmb{C} - \pmb{I} \right) \ \ \text{and} \ \ \pmb{e} \equiv \frac{1}{2}\left(\pmb{I} - \pmb{b}^{-1}\right)
+\end{eqnarray}
+%
+are Lagrangian (or Green) and Eulerian (or Almansi) strain tensors, respectively.
+
+\section{Elasticity Tensors}
+
+In the case when work done by the stresses during deformation only depend on the initial and final configurations, the behavior of the material is called path-independent. Elastic materials that are path-independent are termed hyperelastic. As a consequence of the path-independent behavior, an elastic potential $\Psi$ per unit undeformed volume can be defined as
+%
+\begin{equation}
+\Psi(\pmb{F}(\pmb{X}),\pmb{X}) = \int_{t_0}^t \pmb{P}(\pmb{F}(\pmb{X}),\pmb{X}):\dot{\pmb{F}}dt \ \text{ and } \ \dot{\Psi} = \pmb{P} : \dot{\pmb{F}} = \sum_{i,j=1}^3\frac{\partial \Psi}{\partial F_{ij}}\dot{F}_{ij},
+\label{eq:hyperelastic}
+\end{equation}
+%  
+where $\pmb{P}$ is the first Piola-Kirchhoff stress tensor (work conjugate to the rate of deformation gradient $\dot{\pmb{F}}$). Equation \eqref{eq:hyperelastic} is often used as a definition for hyperelastic materials \cite{JavierBonet:2008uxa}. Considering the restrictions imposed by objectivity, $\Psi$ can be expressed in terms of the right Cauchy-Green deformation tensor \pmb{C}
+%
+\begin{eqnarray}
+\Psi(\pmb{C}(\pmb{X}),\pmb{X}) = \int_{t_0}^t \pmb{S}(\pmb{C}(\pmb{X}),\pmb{X}) : \dot{\pmb{C}} dt \ \text{ and } \ \dot{\Psi} =  \frac{1}{2}\pmb{S}:\dot{\pmb{F}} = \sum_{i,j=1}^3\frac{\partial \Psi}{\partial C_{ij}}\dot{C}_{ij} = \frac{1}{2} \sum_{i,j=1}^3\frac{\partial \Psi}{\partial E_{ij}}\dot{C}_{ij}, 
+\end{eqnarray}
+%
+where $\pmb{S}$ is the second Piola-Kirchhoff stress tensor (work conjugate to the rate of right Cauchy-Green deformation \pmb{C}) and $\pmb{E} = 1/2(\pmb{C}-\pmb{I})$ is the Lagrangian strain tensor.
+
+The relationship between $\pmb{S}$ and $\pmb{C}$ or $\pmb{E}$ is nonlinear. A linear relationship can be obtained by taking the directional derivative of $\pmb{S}$
+%
+\begin{eqnarray}
+DS_{IJ}[\pmb{u}] &=& \frac{d}{d\epsilon}\bigg|_{\epsilon=0}S_{IJ}(E_{KL}[\phi+\epsilon \pmb{u}]) \nonumber\\
+%
+&=& \sum_{K,L=1}^3 \frac{\partial S_{IJ}}{\partial E_{KL}}\frac{d}{d\epsilon}\bigg|_{\epsilon=0}E_{KL}[\phi+\epsilon \pmb{u}] \nonumber\\
+%
+&=&  \sum_{K,L=1}^3 \frac{\partial S_{IJ}}{\partial E_{KL}} DE_{KL}[\pmb{u}],
+\label{eq:DS[u]}
+\end{eqnarray}
+%
+where the chain rule has been applied in the second line and $DE_{K,L}[\pmb{u}]$ is the directional derivative of $E_{KL}$. More concisely, Eq.\ \eqref{eq:DS[u]} is
+%
+\begin{equation}
+D\pmb{S}[\pmb{u}] = \pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}],
+\label{eq:DS[u]_compact}
+\end{equation}
+%
+where $\pmb{\mathbb{C}}$ is the fourth-order Lagrangian (or material) elasticity tensor
+%
+\begin{equation}
+\pmb{\mathbb{C}} \equiv \sum_{I,J,K,L=1}^3 \frac{\partial S_{IJ}}{\partial E_{KL}} \vec{E}_I \otimes \vec{E}_J \otimes \vec{E}_K \otimes \vec{E}_L = 2\frac{\partial \pmb{S}}{\partial \pmb{C}} = 4\frac{\partial^2 \Psi}{\partial \pmb{C} \partial \pmb{C}}.
+\end{equation}
+%
+The spatial equivalent of $\pmb{\mathbb{C}}$ can be obtained by applying the push forward operation on the rate form of Eq.\ \eqref{eq:DS[u]_compact} to obtain \cite{JavierBonet:2008uxa}
+%
+\begin{equation}
+\pmb{\sigma}^o = \pmb{c}:\pmb{d},
+\end{equation}
+%
+where $\pmb{\sigma}^o$ is the Truesdell stress rate, $\pmb{d}$ is the rate of deformation tensor, $\pmb{c}$ is the Eulerian (or spatial) elasticity tensor
+%
+\begin{equation}
+\pmb{c} \equiv \sum_{i,j,k,l,I,J,K,L=1}^3 J^{-1} F_{iI} F_{jJ} F_{kK} F_{lL} C_{IJKL} \vec{e}_i \otimes \vec{e}_j \otimes \vec{e}_k \otimes \vec{e}_l.
+\end{equation}
+%
+\section{Isotropic Hyperelasticity}
+
+The hyperelastic constitutive equations discussed in the previous section are unrestricted. Here, the constitutive equations are restricted to be isotropic, i.e., the constitutive behavior to be identical in any material direction. Consequently, the elastic potential must be a function of only invariants of $\pmb{C}: \Psi(I_C,II_C,III_C,\pmb{X})$. The invariant of $\pmb{C}$ are
+%
+\begin{eqnarray}
+I_C &=& \text{tr}\pmb{C} = \pmb{C}:\pmb{I} \nonumber\\
+II_C &=& \text{tr}\pmb{C}\pmb{C} = \pmb{C}:\pmb{C} \nonumber\\
+III_C &=& \text{det}\pmb{C} = J^2 .
+\label{eq:invariants}
+\end{eqnarray}
+%
+As a result of the isotropic restriction, the second Piola-Kirchhoff stress tensor becomes
+%
+\begin{eqnarray}
+\pmb{S} = 2\frac{\partial \Psi}{\partial \pmb{C}} &=& 2 \frac{\partial \Psi}{\partial I_C}\frac{\partial I_C}{\partial \pmb{C}} + 2\frac{\partial \Psi}{\partial II_C}\frac{\partial II_C}{\partial \pmb{C}} + 2\frac{\partial \Psi}{\partial III_C}\frac{\partial III_C}{\partial \pmb{C}} \nonumber\\
+%%
+&=&2\Psi_I \pmb{I} + 4\Psi_{II} \pmb{C} + 2J^2\Psi_{III}\pmb{C}^{-1},
+\end{eqnarray}
+%
+where $\Psi_I = \partial \Psi/\partial I_C, \Psi_{II} = \partial \Psi/\partial II_C$, and $\Psi_{III} = \partial \Psi/\partial III_C$. Applying the relationship $\pmb{\sigma} = J^{-1}\pmb{F}\pmb{S}\pmb{F}^T$, the Cauchy stress can be expressed as
+%
+\begin{equation}
+\pmb{\sigma} = 2J^{-1}\Psi_I \pmb{b} + 4J^{-1}\Psi_{II} \pmb{b}^2 + 2J\Psi_{III} \pmb{I}.
+\label{eq:sigma_isotropic}
+\end{equation}
+
+
+\section{Compressible Neo-Hookean}
+
+A compressible Neo-Hookean material is a simple case of an isotropic hyperelastic material. The elastic potential of a compressible Neo-Hookean material is
+%
+\begin{equation}
+\Psi = \frac{\mu}{2} (I_C-3) - \mu \ln J + \frac{\lambda}{2}(\ln J)^2,
+\label{eq:potential_neohookean}
+\end{equation}
+%
+where $J^2 = III_C$ and the constants $\lambda$ and $\mu$ are the Lam\'e parameters:
+%
+\begin{align}
+&\mu = \text{Shear Modulus} \nonumber\\
+&\lambda = \frac{2 \mu \nu}{1- 2 \nu} \nonumber\\
+&\nu = \text{Poisson Ratio}.
+\label{eq:lame_parameters}
+\end{align}
+%
+Note that in the absence of deformation (i.e., \pmb{C}=\pmb{I}), $\Psi=0$. Applying Eq.\ \eqref{eq:sigma_isotropic} to Eq.\ \eqref{eq:potential_neohookean}, the Cauchy stress is
+%
+\begin{eqnarray}
+\pmb{\sigma} &=&  2J^{-1}\frac{\partial \Psi}{\partial I_C} \pmb{b} + 4J^{-1} \frac{\partial \Psi}{\partial II_C} \pmb{b}^2 + 2J\frac{\partial \Psi}{\partial III_C} \pmb{I} \nonumber\\
+%
+&=& 2J^{-1} \left(\frac{\mu}{2}\right)\pmb{b} + 4J^{-1} (0) \pmb{b}^2 + 2J\left(-\frac{\mu}{2}J^{-2}+\frac{\lambda}{2} J^{-2} \ln J \right)\pmb{I}  \nonumber\\
+%
+&=& \frac{\mu}{J}(\pmb{b} - \pmb{I}) + \frac{\lambda}{J}(\ln J) \pmb{I}.
+\label{eq:NeoHookean_stress}
+\end{eqnarray}
+%
+Comparing to the Neo-Hookean constitutive equation used in Lai et al.\ \cite{Lai:2013fp}, $\mu$ is the shear modulus and $\lambda \equiv (2\mu \nu)/(1-2\nu)$ where $\nu$ is Poisson's ratio.
+
+The corresponding Eulerian elasticity tensor for the Neo-Hookean material can obtained by a push forward operation of the Lagrangian elasticity tensor to obtain \cite{JavierBonet:2008uxa}
+%
+\begin{equation}
+\pmb{c}_{ijkl} = \lambda'\delta_{ij}\delta_{kl} + \mu' (\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}),
+\end{equation}
+%
+where $\lambda'$ and $\mu'$ are effective Lame moduli
+%
+\begin{equation}
+\lambda' \equiv \frac{\mu}{J} \ \text{ and } \ \mu' \equiv \frac{\mu-\lambda \ln J}{J}.
+\end{equation}
+%
+
+\section{Transversely Isotropic Neo-Hookean Material}
+
+The elastic potential for a transversely isotropic Neo-Hookean material is \cite{Bonet:1998vc}
+%
+\begin{align}
+&\Psi = \Psi_{\text{nh}} + \Psi_{\text{trns}} \nonumber\\ \ \
+&\Psi_{\text{nh}} = \frac{\mu}{2}\left(I_C - 3\right) - \mu \ln(J) + \frac{\lambda}{2}\left(J - 1\right)^2 \nonumber\\ \ \
+&\Psi_{\text{trns}} = \left[ \alpha + \beta \ln(J) + \gamma (IV_C - 1)\right] (IV_C - 1) - \frac{\alpha}{2}\left(V_C - 1\right), 
+\label{eq:psi_trns_iso}
+\end{align}
+%
+where $IV_C$ and $V_C$ are two new scalars defined in terms of the right Cauchy-Green deformation tensor $\pmb{C}$ and the axial direction vector $\pmb{A}$ as
+%
+\begin{align}
+&IV_C \equiv \pmb{A} \cdot \pmb{C} \pmb{A} = \pmb{A}\cdot(\pmb{F}^T\pmb{F})\pmb{A} = (\pmb{F}\pmb{A})\cdot(\pmb{F}\pmb{A}) = \pmb{a} \cdot \pmb{a} \nonumber\\
+&V_C \equiv \pmb{A} \cdot \pmb{C}^2 \pmb{A} .
+\label{eq:invariants_trns_iso}
+\end{align}
+%
+
+The Cauchy-stress tensor $\pmb{\sigma}$ can be derived from the elastic potential as
+%
+\begin{align}
+&J\pmb{\sigma} = \pmb{F} \left(\pmb{S}_{\text{nh}} + \pmb{S}_{\text{trns}}\right)\pmb{F}^T = J\pmb{\sigma}_{\text{nh}} +J\pmb{\sigma}_{\text{trns}} \nonumber\\ \ \
+%
+&\pmb{\sigma}_{\text{nh}} = \frac{\mu}{J}\left(\pmb{b} - \pmb{I}\right) + \lambda \left(J - 1\right) \pmb{I} \nonumber\\ \ \
+%
+&\pmb{\sigma}_{\text{trns}} = \frac{2\beta}{J}\left(\pmb{a}\cdot\pmb{a} -1\right)\pmb{I} + \frac{2}{J}\left[\alpha + 2\beta \ln J + 2\gamma(\pmb{a}\cdot\pmb{a}-1) \right] \pmb{a} \otimes \pmb{a} - \frac{\alpha}{J}(\pmb{b}\pmb{a}\otimes\pmb{a} + \pmb{a} \otimes \pmb{b} \pmb{a}),
+\label{eq:cauchy_stress_trns_iso}
+\end{align}
+%
+where the definitions for $I_C=\pmb{C}:\pmb{I}$ in Eq.\ \eqref{eq:invariants} and $IV_C=\pmb{a}\cdot\pmb{a}$ in Eq.\ \eqref{eq:invariants_trns_iso} have been used. The corresponding spatial elasticity tensor is
+\begin{align}
+&\pmb{c} = \pmb{c}_{\text{nh}} + \pmb{c}_{\text{trns}} \nonumber\\
+%
+&\pmb{c}_{\text{nh}} = \lambda(2J-1)\pmb{I} \otimes \pmb{I}+\frac{2}{J}\left[\mu - \lambda J(2J-1)\right]\pmb{i} \nonumber\\ \ \
+%
+&\pmb{c}_{\text{trns}} = \frac{8\gamma}{J}\pmb{a} \otimes \pmb{a} \otimes \pmb{a} \otimes \pmb{a} + \frac{4\beta}{J}\left(\pmb{a}\otimes\pmb{a}\otimes\pmb{I}+\pmb{I}\otimes\pmb{a}\otimes\pmb{a} \right) - \frac{\alpha}{J} \textbf{a} - \frac{4\beta}{J}(\pmb{a}\cdot\pmb{a}-1)\pmb{i} \nonumber\\ \ \
+%
+&\pmb{i} \equiv \delta_{ik}\delta_{jl} \nonumber\\
+%
+&\textbf{a} \equiv a_i a_l b_{jk} + b_{ik} a_j a_l,
+\label{eq:c_trns_iso}
+\end{align}
+%
+where the definition for $IV_C=\pmb{a}\cdot\pmb{a}$ in Eq.\ \eqref{eq:invariants_trns_iso} has been used. The constants of Eqs.\ \eqref{eq:cauchy_stress_trns_iso} and \eqref{eq:c_trns_iso} are \cite{Bonet:1998vc}
+%
+\begin{align}
+&\lambda = \frac{2\mu (\nu+n\nu^2)}{m} \nonumber\\ 
+%
+&\mu = \text{Shear Modulus} \nonumber\\
+%
+&\alpha = \mu - G_A \nonumber\\
+%
+&\beta = \frac{\mu \nu^2(1-n)}{2m} \nonumber\\ 
+%
+&\gamma = \frac{E_A(1-\nu)}{8m} - \frac{\lambda+2\mu}{8} + \frac{\alpha}{2} - \beta \nonumber\\
+%
+&m = 1 - \nu - 2 n\nu^2 \nonumber\\
+%
+&n = \frac{E_A}{2\mu(1+\nu)},
+\label{eq:trns_iso_constants}
+\end{align}
+%
+where the input parameters to the integrator are shear modulus ($\mu$), axial shear modulus ($G_A$), the Poisson ratio ($\nu$), and the axial Young's modulus ($E_A$).  
+
+The stress and elasticity tensors in Eqs.\ \eqref{eq:cauchy_stress_trns_iso} and \eqref{eq:c_trns_iso} can be rewritten in the more convenient indicial form
+%
+\begin{align}
+&\sigma^{\text{nh}}_{ij} = \frac{\mu}{J}(b_{ij} - \delta_{ij}) + \lambda(J-1)\delta_{ij} \nonumber\\
+%
+&\sigma^{\text{trns}}_{ij} = \frac{2\beta}{J}(a_r a_r - 1)\delta_{ij} + \frac{2}{J}[\alpha+2\beta\ln J+2\gamma(a_r a_r -1)]a_i a_j - \frac{\alpha}{J}(b_{is}a_s a_j+a_i b_{jr}a_r) \nonumber\\
+%
+&c^{\text{nh}}_{ijkl} = \lambda(2J-1)\delta_{ij}\delta_{kl} + \frac{2}{J}[\mu - \lambda J(2J-1)]\delta_{ik}\delta_{jl} \nonumber\\
+%
+&c^{\text{trns}}_{ijkl} = \frac{8\gamma}{J}a_i a_j a_k a_l + \frac{4\beta}{J}(a_i a_j \delta_{kl} + \delta_{ij}a_k a_l) - \frac{\alpha}{J}(a_i a_l b_{jk} + b_{ik}a_j a_l) - \frac{4\beta}{J}(a_r a_r - 1)\delta_{ik}\delta_{jl}.
+\label{eq:inidicial_form}
+\end{align}
+%
+In the multiscale code, the stress tensor are written as a vector using Voigt format
+%
+\begin{equation}
+\hat{\pmb{\sigma}} \equiv  [\sigma_{11}, \sigma_{22}, \sigma_{33}, \sigma_{12}, \sigma_{23}, \sigma_{13}]^T
+\end{equation}
+%
+Therefore, the elasticity tensor is represented as a symmetric 6 $\times$ 6 matrix via Voigt format as
+%
+\begin{eqnarray}
+\hat{\pmb{c}} \equiv 
+\begin{bmatrix}
+c_{1111} & c_{1122} & c_{1133} & c_{1112} & c_{1123} & c_{1113} \\
+              & c_{2222} & c_{2233} & c_{2212} & c_{2223} & c_{2213} \\
+              &                & c_{3333} & c_{3312} & c_{3323} & c_{3313} \\
+              &                &                & c_{1212} & c_{1223} & c_{1213} \\
+              &                &                &                & c_{2323} & c_{2313} \\
+              &                &                &                &                & c_{1313}       
+\end{bmatrix}
+\end{eqnarray}
+% 
+%%%%%%%
+\section{Linearized Equilibrium Equations}
+
+The internal virtual work can be expressed in a Lagrangian form via
+%
+\begin{equation}
+\delta W_{int}(\phi,\delta \pmb{v}) = \int_V \pmb{S} : \delta \dot{\pmb{E}}dV,
+\end{equation}
+%
+demonstrating that the \textit{second Piola-Kirchhoff stress tensor} $\pmb{S}$ is the work conjugate to the \textit{material strain rate tensor} $\dot{\pmb{E}}$. The corresponding directional derivative is
+%
+\begin{eqnarray}
+D\delta W_{int}(\phi,\delta \pmb{v})[\pmb{u}] &=& \int_V D(\pmb{S}:\delta \dot{\pmb{E}})[\pmb{u}]dV \nonumber\\
+%
+&=& \int_V D\pmb{S}[\pmb{u}]:\delta \dot{\pmb{E}}dV +  \int_V \pmb{S}: D\delta \dot{\pmb{E}}[\pmb{u}]dV \nonumber\\
+%
+&=& \int_V \delta \dot{\pmb{E}}:\pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}] +  \int_V \pmb{S}: D\delta \dot{\pmb{E}}[\pmb{u}]dV \nonumber\\
+%
+&=& \int_V \delta \dot{\pmb{E}}:\pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}] +  \int_V \pmb{S}: [(\nabla_0 \pmb{u})^T \nabla_0\delta \pmb{v}]dV,
+\label{eq:DW[u]_Lagrangian1}
+\end{eqnarray}
+%
+where the product rule has been used in the second line, the relationship for $D\pmb{S}[\pmb{u}]$ in Eq.\ \eqref{eq:DS[u]_compact} for the third line, and the relationship
+%
+\begin{equation}
+D\delta \dot{\pmb{E}}[\pmb{u}] = \frac{1}{2}[(\nabla_0 \delta \pmb{v})^T\nabla_0 \pmb{u} + (\nabla_0 \pmb{u})^T\nabla_0\delta \pmb{v}]
+%
+= (\nabla_0 \pmb{u})^T \nabla_0\delta \pmb{v}
+\end{equation}
+%
+is used in the last line. Furthermore, noting that $D\pmb{E}[\delta \pmb{v}] = \delta \dot{\pmb{E}}$, Eq.\ \eqref{eq:DW[u]_Lagrangian1} can be rewritten as
+%
+\begin{equation}
+D\delta W_{int}(\phi,\delta \pmb{v})[\pmb{u}] = \int_V D\pmb{E}[\delta\pmb{v}] :\pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}] +  \int_V \pmb{S}: [(\nabla_0 \pmb{u})^T \nabla_0\delta \pmb{v}]dV.
+\label{eq:DW[u]_Lagrangian}
+\end{equation}
+%
+
+The linearized equilibrium equation of Eq.\ \eqref{eq:DW[u]_Lagrangian} can be simplified to expressing in the Eulerian (or spatial) form. This is achieved by push-forward and pull-back operations on the individual terms to obtain (see Section 8.4 of Ref.\ \onlinecite{JavierBonet:2008uxa})
+%
+\begin{eqnarray}
+D\pmb{E}[\delta\pmb{v}] :\pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}]dV &=& \delta \pmb{d}:\pmb{c}:\varepsilon dv \nonumber\\
+%
+\pmb{S}: [(\nabla_0 \pmb{u})^T \nabla_0\delta \pmb{v}]dV &=& \pmb{\sigma}:[(\nabla \pmb{u})^T\nabla \delta \pmb{v}],
+\label{eq:pushback_pullforward_results}
+\end{eqnarray}
+%
+where $\varepsilon = 1/2[\nabla \pmb{u} + (\nabla \pmb{u})^T]$ is the \textit{small-strain tensor}. Applying the relationships in Eq.\ \eqref{eq:pushback_pullforward_results}, the Eulerian form of the linearized equilibrium equation is
+%
+\begin{equation}
+D\delta W_{int}(\phi,\delta \pmb{v})[\pmb{u}] = \int_v \delta \pmb{d}:\pmb{c}:\varepsilon dv + \int_v \pmb{\sigma}:[(\nabla \pmb{u})^T\nabla \delta \pmb{v}]dv.
+\label{eq:DW[u]_Eulerian}
+\end{equation}
+%
+Note that 
+%
+\begin{equation}
+\delta \pmb{d} = \frac{1}{2}(\nabla \delta \pmb{v} + (\nabla \delta \pmb{v})^T),
+\end{equation}
+%
+which is the same functional form between $\varepsilon$ and $\pmb{u}$. This together with the fact that $\pmb{c}$ and $\pmb{\sigma}$ are symmetric implies that $\pmb{u}$ and $\delta \pmb{v}$ can be interchanged without altering results (how can I show this??)
+%
+\begin{equation}
+D\delta W_{int}(\phi,\delta \pmb{v})[\pmb{u}] = D\delta W_{int}(\phi,\pmb{u})[\delta \pmb{v}] .
+\end{equation}
+%
+Such a symmetry gives rise to a symmetric tangent-stiffness matrix upon discretization.
+
+\section{Discretization of Linearized Equilibrium Equations}
+
+\subsection{Isoparametric Elements}
+
+To discretize the linearized virtual work equation in Eq.\ \eqref{eq:DW[u]_Eulerian}, isoparametric elements are used to interpolate the current position in terms of current nodal position $\pmb{x}_a$
+%
+\begin{equation}
+\pmb{x} = \sum_{a=1}^n N_a \pmb{x}_a(t),
+\label{eq:interpolate_position}
+\end{equation}
+% 
+where $N_a(\xi_1,\xi_2,\xi_3)$ are the shape functions and $n$ denotes the number of nodes per element. Differentiating Eq.\ \eqref{eq:interpolate_position} with respect to time gives real and virtual velocity interpolations
+%
+\begin{equation}
+\pmb{v} = \sum_{a=1}^n N_a \pmb{v}_a \ \ \text{ and } \ \ \delta \pmb{v} = \sum_{a=1}^n N_a \delta \pmb{v}_a,
+\label{eq:interpolate_velocity}
+\end{equation}
+%
+respectively.  Similarly, restricting the motion brought about by an arbitrary increment $\pmb{u}$ according Eq.\ \eqref{eq:interpolate_position} implies that the displacement is interpolated as follows
+%
+\begin{equation}
+\pmb{u} = \sum_{a=1}^n N_a \pmb{u}_a.
+\label{eq:interpolate_displacement}
+\end{equation}
+%
+
+Using Eq.\ \eqref{eq:interpolate_velocity} the real and virtual velocity gradient can also be written in terms of the shape functions as
+%
+\begin{eqnarray}
+\pmb{l} = \nabla \pmb{v} &=& \sum_{i,j=1}^3 \frac{\partial v_i}{\partial x_j} \vec{e}_i \otimes \vec{e}_j = \begin{bmatrix}
+\frac{\partial v_1}{\partial x_1} & \frac{\partial v_1}{\partial x_2} & \frac{\partial v_1}{\partial x_3} \\
+\frac{\partial v_2}{\partial x_1} & \frac{\partial v_2}{\partial x_2} & \frac{\partial v_2}{\partial x_3} \\
+\frac{\partial v_3}{\partial x_1} & \frac{\partial v_3}{\partial x_2} & \frac{\partial v_3}{\partial x_3} 
+\end{bmatrix} \nonumber\\
+%
+&=&\sum_{a=1}^n \begin{bmatrix}
+\frac{\partial N_a }{\partial x_1}v_{1a} & \frac{\partial N_a}{\partial x_2}v_{1a} & \frac{\partial N_a}{\partial x_3}v_{1a} \\
+\frac{\partial N_a }{\partial x_1}v_{2a} & \frac{\partial N_a}{\partial x_2}v_{2a} & \frac{\partial N_a}{\partial x_3}v_{2a} \\
+\frac{\partial N_a }{\partial x_1}v_{3a} & \frac{\partial N_a}{\partial x_2}v_{3a} & \frac{\partial N_a}{\partial x_3}v_{3a} 
+\end{bmatrix} \nonumber\\
+%
+&=& \sum_{a=1}^n \pmb{v}_a \otimes \nabla N_a,
+\label{eq:interpolate_velgrad}
+\end{eqnarray}
+%
+similarly
+%
+\begin{equation}
+\delta \pmb{l} = \sum_{a=1}^n \delta \pmb{v}_a \otimes N_a.
+\label{eq:interpolate_virtual_velgrad}
+\end{equation}
+%
+Furthermore, applying Eq.\ \eqref{eq:interpolate_virtual_velgrad} the virtual displacement rate tensor is
+%
+\begin{eqnarray}
+\delta \pmb{d} = \frac{1}{2}\left(\delta \pmb{l} + \delta \pmb{l}^T\right) = \frac{1}{2}\sum_{a=1}^n \left(\delta \pmb{v}_a \otimes \nabla N_a + \nabla N_a \otimes \delta \pmb{v}_a\right).
+\label{eq:interpolate_displacement_rate}
+\end{eqnarray}
+%
+The deformation gradient tensor, which is used to calculate the Cauchy stress tensor in Eq.\ \eqref{eq:NeoHookean_stress}, can also be written in terms of the shape functions as
+%
+\begin{eqnarray}
+\pmb{F} &=& \sum_{i,I=1}^3 F_{iI}\vec{e}_i \otimes \vec{E}_I =
+%
+\begin{bmatrix}
+F_{11} & F_{12} & F_{13} \\
+F_{21} & F_{22} & F_{23} \\
+F_{31} & F_{32} & F_{33}
+\end{bmatrix}, \ \text{ where } \ \nonumber\\
+%
+F_{iI} &=& \frac{\partial x_i}{\partial X_I} = \sum_{a=1}^nx_{a,i}\frac{\partial N_a }{\partial X_{a,I}}.
+\end{eqnarray}
+% 
+
+Next consider the the linearized virtual work for element $(e)$ linking nodes $a$ and $b$. Specifically, the constitutive and initial stress components of Eq.\ \eqref{eq:DW[u]_Eulerian} are examined separately.
+
+\subsection{Constitutive Component}
+
+The first term on the right-hand-side of Eq.\ \eqref{eq:DW[u]_Eulerian} is the constitutive component. Its contribution for element $(e)$ linking nodes $a$ and $b$ is
+%
+\begin{equation}
+D\delta W_c^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] = \int_{v^{(e)}} \frac{1}{2} \left(\delta \pmb{v}_a \otimes \nabla N_a + \nabla N_a \otimes \delta \pmb{v}_a\right):\pmb{c}:\frac{1}{2} \left(\delta \pmb{u}_b \otimes \nabla N_b + \nabla N_b \otimes \delta \pmb{v}_b\right)dv.
+\label{eq:DW_c[u]_discretize}
+\end{equation}
+%
+Equation \eqref{eq:DW_c[u]_discretize} can be written in matrix-vector (also known as Voigt) notation by reinterpreting small-strain tensor $\varepsilon$ as
+%
+\begin{equation}
+\hat{\varepsilon} \equiv [\varepsilon_{11}, \varepsilon_{22}, \varepsilon_{33}, 2\varepsilon_{12}, 2\varepsilon_{23}, 2\varepsilon_{13}]^T = \sum_{a=1}^n \pmb{B}_a \pmb{u}_a
+\label{eq:strain_Voigt}
+\end{equation}
+%
+and the virtual displacement rate tensor as
+%
+\begin{equation}
+\delta\hat{\pmb{d}} \equiv [\delta d_{11}, \delta d_{22}, \delta d_{33}, 2\delta d_{12}, 2\delta d_{23}, 2\delta d_{13}]^T = \sum_{a=1}^n \pmb{B}_a \delta \pmb{v}_a,
+\label{eq:virtual_displacement_Voigt}
+\end{equation}
+%
+where $\pmb{B}_a$ is defined in terms of derivatives of the shape functions as
+%
+\begin{equation}
+\pmb{B}_a \equiv
+\begin{bmatrix}
+\frac{\partial N_a}{\partial x_1} & 0 & 0  \\
+0 & \frac{\partial N_a}{\partial x_2} & 0 \\
+0 & 0 & \frac{\partial N_a}{\partial x_3} \\
+\frac{\partial N_a}{\partial x_2} & \frac{\partial N_a}{\partial x_1} & 0  \\ 
+0 & \frac{\partial N_a}{\partial x_3} & \frac{\partial N_a}{\partial x_2}  \\
+\frac{\partial N_a}{\partial x_3} & 0 & \frac{\partial N_a}{\partial x_1} 
+\end{bmatrix}.
+\end{equation}
+%
+Note that the definition of $\pmb{B}_a$ is different from Ref.\ \onlinecite{JavierBonet:2008uxa} because the ordering of the small-strain and virtual displacement rate tensor components in Eqs.\ \eqref{eq:strain_Voigt} and \eqref{eq:virtual_displacement_Voigt} is different from what is presented in Ref.\ \onlinecite{JavierBonet:2008uxa}. Applying Voigt notation, Eq.\ \eqref{eq:DW_c[u]_discretize} is simplified to
+%
+\begin{eqnarray}
+D\delta W_c^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] &=& \int_{v^{(e)}}(\pmb{B}_a \delta \pmb{v}_a)^T \pmb{D} (\pmb{B}_b \pmb{u}_b) dv \nonumber\\
+%
+&=& \delta \pmb{v}_a \cdot \left(\int_{v^{(e)}} \pmb{B}_a^T \pmb{D} \pmb{B}_b  dv \right)\pmb{u}_b \nonumber\\
+%
+&=& \delta \pmb{v}_a \cdot \pmb{K}^{(e)}_{c,ab} \pmb{u}_a,
+\end{eqnarray}
+%
+where
+%
+\begin{equation}
+\pmb{D} = \begin{bmatrix}
+\lambda' + 2\mu' & \lambda' & \lambda' & 0 & 0 & 0 \\
+\lambda' & \lambda'+2\mu' & \lambda' & 0 & 0 & 0 \\
+\lambda' & \lambda' & \lambda'+2\mu' & 0 & 0 & 0 \\
+0 & 0 & 0 & \mu' & 0 & 0  \\
+0 & 0 & 0 & 0 & \mu' & 0 \\
+0 & 0 & 0 & 0 & 0 & \mu'  
+\end{bmatrix}, \ \text{ where } \ \lambda' = \frac{\lambda}{\text{det}\pmb{J}} \ \text{ and } \ \mu' = \frac{\mu - \lambda \ln(\text{det}\pmb{J})}{\text{det}\pmb{J}},
+\end{equation}
+%
+for a Neo-Hookean material described by Eq.\ \eqref{eq:potential_neohookean} and $\pmb{K}^{(e)}_{c,ab}$ is the constitutive component of the tangent stiffness matrix relating nodes $a$ and $b$ in element $(e)$.
+
+\subsection{Initial Stress (or Geometric) Component}
+
+The second term on the right-hand-side of Eq.\ \eqref{eq:DW[u]_Eulerian} is the initial stress component. Its contribution for element $(e)$ linking nodes $a$ and $b$ is
+%
+\begin{eqnarray}
+D\delta W_{\sigma}^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] &=& \int_{v^{(e)}} \pmb{\sigma}:[(\nabla \pmb{u}_b)^T\nabla \delta \pmb{v}_a]dv \nonumber\\
+%
+&=&  \int_{v^{(e)}} \pmb{\sigma}:[(\pmb{u}_b \otimes \nabla N_b)^T (\delta \pmb{v}_a \otimes \nabla N_a)]dv \nonumber\\
+%
+&=&  \int_{v^{(e)}} \pmb{\sigma}:[(\delta \pmb{v}_a \cdot  \pmb{u}_b) \nabla N_b \otimes \nabla N_a]dv \nonumber\\
+%
+&=&  (\delta \pmb{v}_a \cdot \pmb{u}_b) \int_{v^{(e)}} \nabla N_a \cdot \pmb{\sigma}\nabla N_b dv,
+\label{eq:DW_sigma[u]_discretize}
+\end{eqnarray}
+%
+where the relationship $\pmb{\sigma} : (\pmb{u} \otimes \pmb{v}) = \pmb{u} \cdot \pmb{\sigma} \pmb{v}$ has been used in the last line. Note that $\nabla \pmb{u}$ and $\nabla \delta \pmb{v}$ are tensors (see definition in Eq.\ \eqref{eq:interpolate_velgrad}).
+
+Observing that $\int_{v^{(e)}} \nabla N_a \cdot \pmb{\sigma}\nabla N_b dv$ is a scalar and that $\delta \pmb{v}_a \cdot \pmb{u}_b = \delta \pmb{v}_a \cdot \pmb{I}\pmb{u}_b$, Eq.\ \eqref{eq:DW_sigma[u]_discretize} can be written in matrix form as
+%
+\begin{eqnarray}
+D\delta W_{\sigma}^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] &=& \delta \pmb{v}_a \cdot \left(\int_{v^{(e)}} \nabla N_a \cdot \pmb{\sigma}\nabla N_b dv \pmb{I} \right) \pmb{u}_b \nonumber\\
+%
+&=&\delta \pmb{v}_a \cdot \pmb{K}_{\sigma,ab}^{(e)} \pmb{u}_b,
+\end{eqnarray}
+%
+where $\pmb{K}_{\sigma,ab}^{(e)}$ is the initial-stress component of the tangent stiffness matrix relating nodes $a$ and $b$ in element $(e)$.
+
+\section{Derivation of Residual Form for NonLinear FEM}
+
+To apply the Newton-Raphson iteration procedure to Nonlinear FEM, one needs to calculate the elasticity tensor. As shown above, the elasticity tensor is a 4-tensor that is determined by taking directional derivatives of a potential energy with respect to second-order tensors. Often times, it is non-trivial to handle the high-dimensionality of the elasticity tensor. To bypass the need to handle the elasticity tensor, one can use auto differentiation, which is implemented based on the residual form of the discretized virtual work. Since the residual form of the discretized virtual work involves only up to a 2-tensor, the Cauchy stress-tensor. Therefore, in this section the residual form of the discretized virtual work is derived in detail.
+
+\subsection{Principle of Virtual Work} 
+
+Based on chapter 5 of Ref.\ \onlinecite{JavierBonet:2008uxa}, the spatial virtual work equation is
+%
+\begin{equation}
+\delta W(\phi,\delta \pmb{v}) = \int_v \pmb{\sigma}:\delta \pmb{d} dv - \int_v \pmb{f} \cdot \delta\pmb{v}dv - \int_{\partial v} \pmb{t} \cdot \delta \pmb{v} da = 0,
+\label{eq:spatial_virtual_work}
+\end{equation}
+%
+where $\pmb{\sigma}$ is the Cauchy stress-tensor (2-tensor), $\pmb{f}$ is the body force per unit volume, and $\pmb{t}$ is the traction force per unit area (both 1-tensors). Note that Eq.\ \eqref{eq:spatial_virtual_work} is a functional of a trial solution $\phi$ (a trial configuration) and virtual velocity $\delta \pmb{v}$. In order to use FEM, Eq.\ \eqref{eq:spatial_virtual_work} must be discretized. Such a discretization can be obtained by interpolating the current position with isoparametric elements (see Eq.\ \eqref{eq:interpolate_position}).
+
+\subsection{Discretization}
+
+Analogous to chapter 9 of Ref.\ \onlinecite{JavierBonet:2008uxa}, the discretization of Eq.\ \eqref{eq:spatial_virtual_work} is obtained by considering the contribution to $\delta W(\phi,\delta \pmb{v})$ caused by a single virtual nodal velocity of element $(e)$ $\delta \pmb{v}^{(e)}_a$  
+%
+\begin{equation}
+\delta W^{(e)}_a(\phi,N_a\delta\pmb{v}^{(e)}_a) = \int_{v^{(e)}} \pmb{\sigma}:(\delta \pmb{v}^{(e)}_a \otimes \nabla N_a) dv - \int_{v^{(e)}} \pmb{f} \cdot N_a \delta\pmb{v}^{(e)}_a dv - \int_{\partial v^{(e)}} \pmb{t} \cdot N_a \delta\pmb{v}^{(e)}_a da = 0,
+\label{eq:discretized_virtual_work}
+\end{equation}
+%
+where the interpolations of Eqs.\ \eqref{eq:interpolate_velocity} and \eqref{eq:interpolate_displacement_rate} have been used for $\delta \pmb{v}$ and $\delta \pmb{d}$, respectively, in Eq.\ \eqref{eq:spatial_virtual_work}. Note that the symmetry of $\pmb{\sigma}$ has been used to simplify the interpolation of Eq.\ \eqref{eq:interpolate_displacement_rate}. 
+
+Observing that $\delta \pmb{v}$ is independent of the integration and using the tensor relationship $\pmb{\sigma}:(\delta \pmb{v}_a \otimes \nabla N_a) = \delta \pmb{v}_a \cdot \pmb{\sigma} \nabla N_a$ (see Eq.\ (2.52b) of Ref.\ \onlinecite{JavierBonet:2008uxa}), Eq.\ \eqref{eq:discretized_virtual_work} can be simplified to
+%
+\begin{eqnarray}
+\delta W^{(e)}_a(\phi,N_a\delta\pmb{v}^{(e)}_a) &=& \delta \pmb{v}^{(e)}_a \cdot \left( \int_{v^{(e)}} \pmb{\sigma} \nabla N_a dv - \int_{v^{(e)}} \pmb{f} \cdot N_a dv - \int_{\partial v^{(e)}} \pmb{t} \cdot N_a da \right) \nonumber\\
+%
+&=& \delta \pmb{v}^{(e)}_a \cdot \left( \pmb{T}^{(e)}_a - \pmb{F}^{(e)}_a \right) = 0,
+\label{eq:discretized_virtual_work_TF}
+\end{eqnarray}
+%
+where
+%
+\begin{equation}
+\pmb{T}^{(e)}_a \equiv \int_{v^{(e)}} \pmb{\sigma}\nabla N_a dv \ \text{ and } \pmb{F}^{(e)}_a \equiv \int_{v^{(e)}} \pmb{f} \cdot N_a  dv + \int_{\partial v^{(e)}} \pmb{t} \cdot N_a  da.
+\label{eq:TF_definition}
+\end{equation}
+%
+
+The contribution to $\delta W(\phi,\delta \pmb{v})$ from all nodes belonging to an element $(e)$ is then
+%
+\begin{eqnarray}
+\delta W^{(e)}(\phi,\sum_{a=1}^n N_a \delta\pmb{v}^{(e)}_a) &=& \sum_{a=1}^n\delta \pmb{v}^{(e)}_a \cdot \left( \pmb{T}^{(e)}_a - \pmb{F}^{(e)}_a \right) \nonumber\\
+%
+&=& \delta \pmb{v}^{(e)} \cdot \left( \pmb{T}^{(e)} - \pmb{F}^{(e)} \right) = 0,
+\label{eq:discretized_virtual_work_TF_suma}
+\end{eqnarray}
+%
+where $n$ is the number of nodes in element $(e)$. Since Eq.\ \eqref{eq:discretized_virtual_work_TF_suma} must hold for arbitrary values of $\delta \pmb{v}^{(e)}$ in each element of the FEM mesh, the elemental residual force emerges as
+%
+\begin{equation}
+\pmb{R}^{(e)} = \pmb{T}^{(e)} - \pmb{F}^{(e)}.
+\label{eq:R^e}
+\end{equation}
+%
+Note that the integrators in the biotissue code operate on the element level where $\pmb{T}^{(e)}$ and $\pmb{F}^{(e)}$ are calculated. Therefore, their calculation will be considered in more detail in the next sections.
+
+\subsection{Implementation Details of the Internal Elemental Forces, $\pmb{T}^{(e)}$}
+
+From Eqs.\ \eqref{eq:TF_definition} and \eqref{eq:discretized_virtual_work_TF_suma}, the internal elemental forces are
+%
+\begin{eqnarray}
+\pmb{T}^{(e)} &=& \sum_{a=1}^n \pmb{T}^{(e)}_a = \sum_{a=1}^n\int_{v^{(e)}} \pmb{\sigma}\nabla N_a dv \nonumber\\
+%
+&=& \pmb{\sigma} \sum_{a=1}^n  \sum_{i=1}^{n_{g}} W_{i}  \nabla N_a(r_i,s_i,t_i) \text{det}\left(\pmb{J}^{(e)}(r_i,s_i,t_i)\right),
+\end{eqnarray}
+%
+where the volume integral has been replaced by a direct (non-tensor-product) Gauss quadrature formula (see \url{http://www.cs.rpi.edu/~flaherje/pdf/fea6.pdf}). The variables $n_{g}$ is the number of Gauss quadrature points, $W_i$ is the weight at the $i^{th}$ quadrature point, $(r_i, s_i,t_i)$ are the coordinates of the parent domain at the $i^{th}$ quadrature point, and $\pmb{J}^{(e)}$ is the Jacobian of element $(e)$.
+
+To be more specific, the integrator in the biotissue code acts on the each Gauss quadrature point within an element through the \green{atPoint(apf::Vector3 const \&p, double w, double dv)} interface of \green{apf::integrator} class. Therefore, the biotissue integrator is responsible for calculating the term
+%
+\begin{eqnarray}
+\pmb{\mathbb{I}}_i &\equiv& \pmb{\sigma} \sum_{a=1}^n  \nabla N_a(r_i,s_i,t_i) \text{det}\left(\pmb{J}^{(e)}(r_i,s_i,t_i)\right) \nonumber\\
+&=&\text{det}\left(\pmb{J}^{(e)}(r_i,s_i,t_i)\right) \sum_{a=1}^n 
+\begin{bmatrix}
+\sigma_{11} \frac{\partial N_a}{\partial x} + \sigma_{12} \frac{\partial N_a}{\partial y} + \sigma_{13} \frac{\partial N_a}{\partial z} \\
+%
+\sigma_{21} \frac{\partial N_a}{\partial x} + \sigma_{22} \frac{\partial N_a}{\partial y} + \sigma_{23} \frac{\partial N_a}{\partial z} \\
+%
+\sigma_{31} \frac{\partial N_a}{\partial x} + \sigma_{32} \frac{\partial N_a}{\partial y} + \sigma_{33} \frac{\partial N_a}{\partial z} \\
+\end{bmatrix} 
+\end{eqnarray}
+%
+and internal elemental forces becomes
+%
+\begin{equation}
+\pmb{T}^{(e)} = \sum_{i=1}^{n_g} \pmb{\mathbb{I}}_i ,
+\end{equation}
+%
+which is the term \green{fe} variable in the biotissue code. \red{Note! The external elemental forces are implemented directly onto the degrees of freedom at the assembly stage}.
+
+\bibliographystyle{apsrev}
+\bibliography{References}
+\end{document}
