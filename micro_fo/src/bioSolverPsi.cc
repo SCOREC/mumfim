@@ -181,8 +181,8 @@ namespace bio
   << stress[4] << " " << stress[5] << std::endl;
     * /
   }
-  * /
-  / *
+  */
+  /*
   void MicroFO::calc_tdydxr()
   {
     buffers->zero();

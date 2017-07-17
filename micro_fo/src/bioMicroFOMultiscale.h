@@ -36,11 +36,11 @@ namespace bio
   };
   struct micro_fo_init_data
   {
-    double init_data[12]; // linear tets only
+    double init_data[4 * 3];
   };
   struct micro_fo_data
   {
-    double data[9]; // 9 elements of the deformation gradient tensor.
+    double data[4 * 6]; // 6 for each vertex, assuming tets atm
   };
   struct micro_fo_result
   {

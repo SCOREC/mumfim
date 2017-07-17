@@ -261,6 +261,6 @@ namespace bio
       loc_vastrz = (fk - (stress[2]*dundx +
                           stress[4]*dundy +
                           stress[5]*dundz) / vol) / vol;
-    }
+     }
   */
 }

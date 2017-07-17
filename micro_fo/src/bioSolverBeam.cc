@@ -473,7 +473,11 @@ void MicroFO::calc_force_vector_beam(double * x)
   int num_dofs = fiber_network->numDofs();
   amux_(&num_dofs,
         x,
+<<<<<<< HEAD:micro_fo/src/bioSolverBeam.cc
         &force_vector[0] / *force_vector.data()* /,
+=======
+        &force_vector[0] //force_vector.data(),
+>>>>>>> 584b07b234754b7455adc47f885b19e4b0eaadff:micro_fo/src/bioSolverBeam.cc
         &matrix[0],
         sparse_structure->getCols(),
         sparse_structure->getRows());
@@ -619,7 +623,10 @@ void MicroFO::matrix_periodic_bcs_helper(const std::vector<PBCRelation> & bcs, i
     matrix[bcs[ii].Ke2[2*ddof]] = 1.0;
   }
 }
+<<<<<<< HEAD:micro_fo/src/bioSolverBeam.cc
 // Calculates dSdy from beam values
+=======
+>>>>>>> 584b07b234754b7455adc47f885b19e4b0eaadff:micro_fo/src/bioSolverBeam.cc
 */
 /*
 void MicroFO::calc_dsdy_beam()
