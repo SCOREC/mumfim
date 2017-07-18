@@ -117,14 +117,12 @@ namespace bio
   {
     for(auto me = rve_ents.begin(); me != rve_ents.end(); ++me)
     {
-      int rve_cnt = fo_cplg.countRVEsOn(*me);
+      int rve_cnt = fo_cplg.countRVEsOn(*me); // implicitly grows result map TODO make explicit somehow
       if(rve_cnt > 0)
       {
         apf::MeshElement * ml = apf::createMeshElement(apf_mesh,*me);
         apf::Element * e = apf::createElement(apf_primary_field,ml);
         apf::Matrix3x3 F;
-        //int ip = apf::countIntPoints(ml,getOrder(ml));
-        rslt_mp[*me].resize(rve_cnt);
         for(int ii = 0; ii < rve_cnt; ii++)
         {
           apf::Vector3 p;

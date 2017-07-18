@@ -12,14 +12,16 @@ namespace bio
   {
   public:
   ULMultiscaleIntegrator(RVECoupling * r,
+                         apf::Field * strn,
+                         apf::Field * strs,
                          apf::Field * u,
-                         apf::Field * rve_tp,
-			 apf::Field * dfm_grd,
+                         apf::Field * dfm_grd,
                          int o)
     : ElementalSystem(u,o)
       , current_integration_point(0)
       , coupling(r)
-      , micro_type_field(rve_tp)
+      , strain_field(strn)
+      , stress_field(strs)
       , dfm_grd_fld(dfm_grd)
     {
       matrixShearModulus  = 0.0;
@@ -158,15 +160,15 @@ namespace bio
       SV[3] = rslt->data[1];
       SV[4] = rslt->data[4];
       SV[5] = rslt->data[2];
-      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rslt->data[0];
-      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = rslt->data[1];
-      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = rslt->data[2];
-      S[1][0] = S[1+3][0+3] = S[1+6][0+6] = rslt->data[1];
-      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = rslt->data[3];
-      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = rslt->data[4];
-      S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rslt->data[2];
-      S[2][1] = S[2+3][1+3] = S[2+6][1+6] = rslt->data[4];
-      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = rslt->data[5];
+      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = SV[0];
+      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = SV[3];
+      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = SV[5];
+      S[1][0] = S[1+3][0+3] = S[1+6][0+6] = SV[3];
+      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = SV[1];
+      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = SV[4];
+      S[2][0] = S[2+3][0+3] = S[2+6][0+6] = SV[5];
+      S[2][1] = S[2+3][1+3] = S[2+6][1+6] = SV[4];
+      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = SV[2];
       apf::DynamicMatrix BNLTxS(nedof,9);
       BNLTxS.zero();
       // BNLTxS = BNL^T * S
@@ -212,8 +214,12 @@ namespace bio
           0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
           0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
           0.5 * (rightCauchyGreen(2, 2) - 1));
-      analysis->storeStrain(me, greenStrain);
-      analysis->storeStress(me,SV);
+      apf::Matrix3x3 stress(S[0][0],S[0][1],S[0][2],
+                            S[1][0],S[1][1],S[1][2],
+                            S[2][0],S[2][1],S[2][2]);
+      apf::MeshEntity * m = apf::getMeshEntity(me);
+      apf::setMatrix(strain_field,m,current_integration_point,greenStrain);
+      apf::setMatrix(stress_field,m,current_integration_point,stress);
       current_integration_point++;
     }
     void atPointMatrix(apf::Vector3 const &p, double w, double dV)
@@ -417,11 +423,11 @@ namespace bio
     int current_integration_point;
   private:
     RVECoupling * coupling;
-    //MultiscaleTissue * analysis;
+    apf::Field * strain_field;
+    apf::Field * stress_field;
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
-    apf::Field * micro_type_field;
     apf::Field * dfm_grd_fld;
     double linearYoungsModulus;
     double linearPoissonsRatio;

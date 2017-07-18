@@ -22,11 +22,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "RVE_Util.h"
 #include "bioHolmesMowIntegrator.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioVariableRecovery.h"
-namespace bio {
+namespace bio
+{
   NonlinearTissue::NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
                                    MPI_Comm cm)
       : FEA(cm)

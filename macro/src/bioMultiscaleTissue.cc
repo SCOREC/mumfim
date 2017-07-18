@@ -19,7 +19,7 @@ namespace bio
     , rcv_ptrns()
   {
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
-    mltscl = new ULMultiscaleIntegrator(&fo_cplg,apf_primary_field,crt_rve,1);
+    mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,apf_primary_field,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
     apf::zeroField(fbr_ornt);

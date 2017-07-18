@@ -1,6 +1,7 @@
 #ifndef BIO_NONLINEAR_TISSUE_H_
 #define BIO_NONLINEAR_TISSUE_H_
 #include "bioLinearTissue.h"
+#include "bioStiffnessVariation.h"
 #include "bioVolumeConstraint.h"
 // micro_fo
 #include <bioMicroFOMultiscale.h>
@@ -19,12 +20,8 @@
 #include <list>
 #include <string>
 #include <vector>
-#include "MicroFOMultiscaleTypes.h"
-#include "RepresentVolElem.h"  // should be able to take this out... (needed for RVE_Info struct)
-#include "bioLinearTissue.h"
-#include "bioStiffnessVariation.h"
-#include "bioVolumeConstraint.h"
-namespace bio {
+namespace bio
+{
   class CurrentCoordFunc;
   class NonlinearTissue : public amsi::apfSimFEA {
     protected:
