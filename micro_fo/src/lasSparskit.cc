@@ -6,6 +6,14 @@
 #include <iostream>
 namespace las
 {
+  class SparskitLU : public LasSolve
+  {
+  private:
+    SparskitBuffers * bfrs;
+  public:
+    SparskitLU(SparskitBuffers * b) : bfrs(b) {}
+    virtual void solve(Mat * k, Vec * u, Vec * f);
+  };
   class SparskitOps : public LasOps
   {
   public:
@@ -15,13 +23,11 @@ namespace las
     virtual void assemble(Mat * m, int cntr, int * rws, int cntc, int * cls, double * vls);
     virtual void set(Vec * v, int cnt, int * rws, double * vls);
     virtual void set(Mat * m, int cntr, int * rws, int cnts, int * cls, double * vls);
-    virtual void solve(Mat * k, Vec * u, Vec * f);
     virtual double norm(Vec * v);
     virtual double dot(Vec * v0, Vec * v1);
     virtual void axpy(double a, Vec * x, Vec * y);
     virtual void get(Vec * v, double *& vls);
     virtual void restore(Vec * v, double *& vls) {};
-    SparskitBuffers * bfrs;
   };
   class skVec
   {
@@ -96,15 +102,52 @@ namespace las
     skVec * vec = getSparskitVector(v);
     delete vec;
   }
-  LasOps * initSparskitOps(SparskitBuffers * b)
+  LasOps * initSparskitOps()
   {
     static SparskitOps * ops = NULL;
     if(ops == NULL)
-    {
       ops = new SparskitOps;
-      ops->bfrs = b;
-    }
     return ops;
+  }
+  LasSolve * createSparskitLUSolve(SparskitBuffers * b)
+  {
+    return new SparskitLU(b);
+  }
+  void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
+  {
+    bfrs->zero();
+    double tol = 1e-6;
+    skMat * mat = getSparskitMatrix(k);
+    skVec * uv = getSparskitVector(u);
+    skVec * fv = getSparskitVector(f);
+    CSR * csr = mat->getCSR();
+    int bfr_lng = bfrs->matrixLength();
+    int ierr = 0;
+    int ndofs = csr->getNumEqs();
+    ilut_(&bfr_lng,
+          &(*mat)(0,0),
+          csr->getCols(),
+          csr->getRows(),
+          &ndofs,
+          &tol,
+          bfrs->matrixBuffer(),
+          bfrs->colsBuffer(),
+          bfrs->rowsBuffer(),
+          &bfr_lng,
+          bfrs->doubleWorkBuffer(),
+          bfrs->intWorkBuffer(),
+          &ierr);
+    if(ierr != 0)
+    {
+      std::cerr << "ERROR: ilut_ returned error code " << ierr << std::endl;
+      return;
+    }
+    lusol_(&ndofs,
+           &(*fv)[0],
+           &(*uv)[0],
+           bfrs->matrixBuffer(),
+           bfrs->colsBuffer(),
+           bfrs->rowsBuffer());
   }
   void SparskitOps::zero(Mat * m)
   {
@@ -141,42 +184,6 @@ namespace las
     for(int ii = 0; ii < cntr; ++ii)
       for(int jj = 0; jj < cntc; ++jj)
         (*mat)(rws[ii],cols[jj]) = vls[ii * cntc + jj];
-  }
-  void SparskitOps::solve(Mat * k, Vec * u, Vec * f)
-  {
-    bfrs->zero();
-    double tol = 1e-6;
-    skMat * mat = getSparskitMatrix(k);
-    skVec * uv = getSparskitVector(u);
-    skVec * fv = getSparskitVector(f);
-    CSR * csr = mat->getCSR();
-    int bfr_lng = bfrs->matrixLength();
-    int ierr = 0;
-    int ndofs = csr->getNumEqs();
-    ilut_(&bfr_lng,
-          &(*mat)(0,0),
-          csr->getCols(),
-          csr->getRows(),
-          &ndofs,
-          &tol,
-          bfrs->matrixBuffer(),
-          bfrs->colsBuffer(),
-          bfrs->rowsBuffer(),
-          &bfr_lng,
-          bfrs->doubleWorkBuffer(),
-          bfrs->intWorkBuffer(),
-          &ierr);
-    if(ierr != 0)
-    {
-      std::cerr << "ERROR: ilut_ returned error code " << ierr << std::endl;
-      return;
-    }
-    lusol_(&ndofs,
-           &(*fv)[0],
-           &(*uv)[0],
-           bfrs->matrixBuffer(),
-           bfrs->colsBuffer(),
-           bfrs->rowsBuffer());
   }
   double SparskitOps::norm(Vec * v)
   {

@@ -33,7 +33,8 @@ namespace bio
     an->k = las::createSparskitMatrix(las::createCSR(udofs,nudofs));
     if(b == NULL)
       b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
-    an->ops = las::initSparskitOps(b);
+    an->ops = las::initSparskitOps();
+    an->slv = las::createSparskitLUSolve(b);
     an->es = createMicroElementalSystem(fn,an->ops,an->k,an->f);
     return an;
   }
@@ -60,7 +61,7 @@ namespace bio
                     an->ops,
                     an->f,
                     an->k);
-    an->ops->solve(an->k,an->u,an->f);
+    an->slv->solve(an->k,an->u,an->f);
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
     amsi::FreeApplyOp fr_wrt(an->fn->getUNumbering(),&wrt);

@@ -9,6 +9,7 @@ namespace las
   void deleteSparskitMatrix(Mat * m);
   Vec * createSparskitVector(int n);
   void deleteSparskitVector(Vec * v);
-  LasOps * initSparskitOps(SparskitBuffers * b);
+  LasOps * initSparskitOps();
+  LasSolve * createSparskitLUSolve(SparskitBuffers * b);
 }
 #endif

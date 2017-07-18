@@ -18,6 +18,7 @@ namespace bio
     las::Vec * u;
     las::Vec * f;
     las::LasOps * ops;
+    las::LasSolve * slv;
   };
   FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);

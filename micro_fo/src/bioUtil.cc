@@ -1,6 +1,6 @@
 #include "bioUtil.h"
 #include <maAffine.h>
-//#include <maAffine.h>
+#include <maMap.h>
 #include <gmi.h>
 #include <gmi_null.h>
 #include <apfMDS.h>
