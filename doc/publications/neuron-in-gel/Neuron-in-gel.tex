@@ -381,8 +381,15 @@ $
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
 \label{sec:amsi}
-Our model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \cite{Delalondre:2010kt}, which is designed to support massively parallel simulations on multiple scales. AMSI enables our model to accommodate the high computational demands of solving the mechanical equilibrium equations on the complex geometry of the neuron structure and for the multi-scale problem in the collagen gel. 
-\textcolor{red}{[Bill: Description of AMSI.]}
+
+Our model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \cite{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI enables our model to accommodate the high computational demands of solving the mechanical equilibrium equations on the complex geometry of the neuron structure and for the multi-scale problem in the collagen gel. 
+%=========================================================================================================
+
+AMSI provides features to combine existing single-scale analysis codes into novel multi-scale analyses. 
+
+The macroscopic simulation code and the microscopic simulation codes are decoupled save for their interactions through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication required for the transmission of required data between the scales. Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in  both the parallel execution space and the problem domain. This data is used by the AMSI multi-scale communications systems to communicate the coupling data required at each phase of simulation, and accomodate dynamic run-time operations such as load balancing while maintaining the coupling communication model. A discussion of the underlying design consideration of AMSI can be found in \cite{Delalondre:2010kt}.
+
+Due the the strong seperation of the macroscopic continuum and microscopic fiber network simulations, the domain relationship between the scales is known a-priori and no runtime considerations are required with respect to the computational data locality and the spatial data locality, beyond a direct one-to-one relationship between microscopic simulation domains and macroscopic numerical integration points. The macroscopic simulation informs the AMSI system of the distribution of coupling locations. This distribution and the parallel characteristics of the microscopic simulations are used to produce a parallel communication plan in which each coupled micro-scale simulation recieves the required coupling information from the related macroscopic coupling point.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
