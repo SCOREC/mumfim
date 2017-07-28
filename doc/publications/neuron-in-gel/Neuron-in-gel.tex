@@ -138,23 +138,16 @@ In spite of these recent advances, there is still considerably more work to be d
 
 Although the approach described herein is general, it is focused on the specific experimental system of dorsal root ganglion (DRG) neurons embedded in a collagen gel. This model system, which has been used extensively by the Winkelstein group [\red{reference}] and others [\red{reference}], allows detailed study of the cellular mechanisms of neuronal injury in a more controllable environment than can be achieved in vivo. As such, it has the potential to provide insight into the mechanism of neuronal injury under mechanical load, with biochemical markers of neuronal injury being quantified in response to different macroscopic strains and/or strain rates \citep{Zhang:2016ga}. This system has the further advantage that it can be imaged readily via confocal microscopy, providing a 3-D image of the neurite [\red{reference}].
 
-Thus, our objective in this work was to develop a general modeling strategy in which (1) confocal microscopy or another three-dimensional imaging modality is used to generate a realistic representation of a complex cell geometry, (2) that geometric model, along with the surrounding extracellular matrix, is converted to a finite-element mesh, (3) a multiscale model is implemented on that mesh using a network microstructural model at each Gauss point \citep{Chandran:2007hy,Stylianopoulos:2007dp}, and (4) the solution of the mechanics problem is used to determine the distribution of stresses \red{Is it more appropriate to measure stress than strain? If so, We should still compare the cases of nonpainful and painful ligament loading} over the cell. To test the method, we applied it to an image taken of the neuron-in-gel system [\red{reference}].
-
-
-
-\section{Generation of Realistic Representation of Complex Cell Geometry}
-Describe the technology of image to model where three-dimensional voxel data is converted in to a discrete model that can be meshed. In our model, boundary conditions and regions are classified on the model.
-
-For this paper, this technology is applied to DRG neurons.
+Thus, our objective in this work was to develop a general modeling strategy in which (1) confocal microscopy or another three-dimensional imaging modality is used to generate a realistic representation of a complex cell geometry, (2) that geometric model, along with the surrounding extracellular matrix, is converted to a finite-element mesh, (3) a multiscale model is implemented on that mesh using a network microstructural model at each Gauss point \citep{Chandran:2007hy,Stylianopoulos:2007dp}, and (4) the solution of the mechanics problem is used to determine the distribution of stresses \red{Is it more appropriate to measure stress than strain? If so, We should still compare the cases of nonpainful and painful ligament loading} over the cell. To test the method, we applied it to images taken of the neuron-in-gel system used by Zhang et al.\ \citep{Zhang:2016ga} \red{other references?} to  mimic innervation of collagenous tissue. To summarize that system, dissociated dorsal root ganglion neurons were embedded in three-dimensional collagen I gels. \red{Sijia: anything else to say about the neuron culture?} Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Materials and Methods}
-\label{sec:materials_and_methods}
-To mechanically model the neuron structure, a geometric model and its corresponding finite-element mesh is generated from confocal images of three connected neurons from a neuronal culture that was developed to mimic innervation of collagenous tissue (see Ref.\ \citenum{Zhang:2016ga} for preparation of neuronal culture). Thereby, the complex geometry of the neuron is incorporated into the simulation and enables findings from the simulation to be extended to realistic physiological environments. The collagen gel that surrounds the neuron structure is modeled using a volume-average based multi-scale technique which has been employed for the same purpose in previous studies \citep{Chandran:2007hy,Stylianopoulos:2007dp,Barocas:2007gk,Lai:2012ji,Lake:2012jm}. The embedded neuron structure is modeled using a transversely isotropic constitutive relationship to capture the anisotropic mechanical behavior of the axon \citep{Peter:2012fc}. The parameters for both models were determined from experimental measurements. An overview of the multi-scale method for the collagen gel and constitutive relationship for the neuron structure are discussed below.
+\section{Realistic Representation of Complex Cell Geometry}
 
-%=========================================================================================================
-\subsection{Generation of Model and Finite-Element Mesh from Experimental Images}
-The complex geometry of a neuron is incorporated into the simulation by generating a geometric model of the neuron structure from experimentally measured confocal images. The confocal images were taken from a neuronal culture that was developed to mimic innervation of collagenous tissue. Briefly, dissociated dorsal root ganglion neurons were embedded in three-dimensional collagen I gels. Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure. Z-stack Images (2-micron thick) were taken by a Zeiss LSM 510 confocal microscope (Carl Zeiss Inc., Thornwood, NY) using a 40X objective and with a resolution of 0.22 micron/pixel. The segmented stack of confocal images is shown schematically in Fig.\ \ref{fig:image_to_model}(a). 
+A realistic representation of complex cell geometry was generated from three-dimensional (3D) voxelated data that originated from a stack of image slices. Noise in the voxelated data that results from the limited level of contrast in the imaging technique are removed using a combination of erosion/dilation, manual reassignment, small object removal, and smoothing operations which were applied using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix}. Once processed, the voxelated data is converted into a discrete geometry via an initial triangulation that is based on voxel level operations where \red{Need to read references to understand how discrete geometry is created.} Quantization artifacts on the surface of the geometry due to the voxel nature of the data are removed using a smoothing algorithm that consists of three steps. The processed voxelated data was converted to a discrete geometry using a procedure that is based on the marching cube algorithm \citep{Lorensen:1987vr}, which was also applied through the \textit{ImageToModel} tool.
+
+In this work, the input 3D voxelated data originated from a stack of confocal images of the neuron-in-gel system. Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure. Z-stack Images (2-micron thick) were taken by a Zeiss LSM 510 confocal microscope (Carl Zeiss Inc., Thornwood, NY) using a 40X objective and with a resolution of 0.22 micron/pixel. \blue{Three different confocal image slices are shown below.} 
+
+The confocal images were stacked together and converted to a 3D voxelated data set using \textit{ImageJ} \citep{Schneider:2012dw}, where each voxel has dimensions of 0.22$\mu$m $\times$ 0.22$\mu$m $\times$ 2$\mu$m. Subsequently, the discrete geometry generated from the voxelated neuron-in-gel data was enclosed in a box that represents the domain of the collagen gel, where the neuron-gel interface is perfectly bonded. A mesh of $\approx$ 80,000 tetrahedral elements was generated on the non-manifold neuron-in-gel geometry using the SimModeler tool of Simmetrix Inc. \citep{simmetrix,Shephard:2000vc}. The neuron-in-gel voxelated data, discrete geometry, and corresponding mesh are shown in Figs.\ \ref{fig:image_to_model}(a) - (c), respectively. 
 %
 % (a) Schematic of image stack - images from N2P30/Neuron/sample2 folder. 
 % (b) Neuron-in-gel model. Image generated by simModeler.
@@ -170,30 +163,23 @@ $
 \end{array}
 $
 \end{center}
-\caption{\label{fig:image_to_model} (a) Stack of confocal images of a neuron structure from neuronal culture. (b) Model of neuron structure embedded in collagen gel that is generated using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix} from Simmetrix Inc. The neuron structure consists of three neurons and the three cell bodies within the neuron structure are labeled with their axial length - axons are unlabeled. The region enclosing the neuron structure is the collagen gel. (c) Cut in neuron-in-gel model showing the mesh generated using the SimModeler tool \citep{simmetrix,Shephard:2000vc} from Simmetrix Inc. A mesh of $\sim$80k tetrahedral elements is used for simulations in this work.}
+\caption{\label{fig:image_to_model} \red{Show voxelated and discrete geometry of neuron (no gel)} (a) Stack of confocal images of a neuron structure from neuronal culture. (b) Model of neuron structure embedded in collagen gel that is generated using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix} from Simmetrix Inc. The neuron structure consists of three neurons and the three cell bodies within the neuron structure are labeled with their axial length - axons are unlabeled. The region enclosing the neuron structure is the collagen gel. (c) Cut in neuron-in-gel model showing the mesh generated using the SimModeler tool \citep{simmetrix,Shephard:2000vc} from Simmetrix Inc. A mesh of $\sim$80k tetrahedral elements is used for simulations in this work.}
 \end{figure}
 %
 
-The confocal images were stacked together and converted to a 3D voxelated data set using \textit{ImageJ} \citep{Schneider:2012dw}, where each voxel has dimensions of 0.22$\mu$m $\times$ 0.22$\mu$m $\times$ 2$\mu$m. Voxel data corresponding to different regions of the neuron structure (i.e., axon and cell bodies) were labeled with unique values. Noise arising from the limited level of contrast in the imaging technique and quantization artifacts due to the voxel nature of the data were removed using a combination of erosion/dilation, manual reassignment, small object removal, and smoothing operations which were applied using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix}. The processed voxelated data was converted to a discrete geometry using a procedure that is based on the marching cube algorithm \citep{Lorensen:1987vr}, which was also applied through the \textit{ImageToModel} tool. Subsequently, the discrete geometric model of the neuron structure was enclosed in a box that represents the domain of the collagen gel, where the neuron-gel interface is perfectly bonded. The mesh of the non-manifold geometry of the embedded neuron structure was generated using the SimModeler tool of Simmetrix Inc. \citep{simmetrix,Shephard:2000vc}. The neuron-in-gel model and its corresponding mesh are shown in Figs.\ \ref{fig:image_to_model}(b) and (c), respectively. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Multi-Scale Method for Modeling Collagen Gel}
+\label{sec:multiscale_method}
+Collagen gels have been modeled in the past using a multi-scale formulation based on volume averaging of fiber-network representative volume elements (RVEs) \citep{Chandran:2007hy,Stylianopoulos:2007dp,Barocas:2007gk,Lai:2012ji,Lake:2012jm}, which was also employed here to model the collagen gel surrounding the neurons. The multi-scale formulation consists of two scales: the microscopic scale that represents the fiber level and the macroscopic scale that represents the tissue level. Quantities corresponding to the microscopic and macroscopic scales are denoted with $(m)$ and $(M)$ superscripts, respectively. The Einstein summation convention is applied only to subscripts $i$, $j$, and $k$.
 
-%=========================================================================================================
-\subsection{Experimental Measurements}
-The parameters for the multi-scale model of the collagen gel were chosen such that the experimental stress-strain curve is reproduced. These parameters are specified below when the formulation of the model is presented. With these parameters, the model also exhibits lateral contraction (Poisson ratio) and fiber-level alignment that are consistent with experimental measurements. An experimental stress-strain curve was measured from a rat tail collagen I gel, while fiber alignment data was measured from an innervated collagen gel (see Ref.\ \citenum{Zhang:2016ga} for preparation of the collagen and innervated collagen samples). 
-
-To obtain the stress-strain responses experimentally, collagen I gels were subjected to uniaxial tensile loading at 0.5mm/s to 8mm (25$\%$ strain) using an Instron 5865 (Instron, Norwood, MA), as described in Ref.\ \citenum{Zhang:2016ga}. The Instron Bluehill software collected the force and displacement data at 1kHz during loading. The stress and strain data were subsequently determined from the force and displacement data by dividing by the initial cross-sectional area and length, respectively, of the sample. The fiber alignment in innervated collagenous tissue was measured using the Quantitative Polarized Light Imaging (QPLI) method \citep{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ is measured in each pixel. Our customized QPLI system \citep{Zhang:2016ga} is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \citep{Zhang:2016ga}. The QPLI system was integrated with the mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \citep{Tower:2002hk,Quinn:2008df}.
-
-%=========================================================================================================
-\subsection{Multi-Scale Method for Modeling Collagen Gel}
-Collagen gel has been modeled in the past using a multi-scale formulation based on volume averaging of fiber-network representative volume elements (RVEs) \citep{Chandran:2007hy,Stylianopoulos:2007dp,Barocas:2007gk,Lai:2012ji,Lake:2012jm}, which is also employed here to model the collagen gel that surrounds the neuron structure in our system. The multi-scale formulation consists of two scales: the microscopic scale that represents the fiber level and the macroscopic scale that represents the tissue level. Quantities corresponding to the microscopic and macroscopic scales are denoted with $(m)$ and $(M)$ superscripts, respectively.
-
-The microscopic scale is represented by a collagen network, which defines the RVE. Each RVE is generated from a Delaunay triangulation of randomly placed seed points - the edges of the triangulation represent the fibers of the network. Each fiber only carries an axial load with the axial force given by: 
+The microscopic scale is represented by a fiber network, which defines the RVE. Each RVE is generated from the Delaunay triangulation of randomly placed seed points - the edges of the triangulation represent the fibers of the network. Each fiber only carries an axial load with the axial force given by: 
 %
 \begin{equation}
-T_i^{(m)} =
+T^{(m)} =
 \begin{cases}
 \frac{E_f A_f}{B} \left[ \exp(0.5 B(\lambda_f^2 - 1)) - 1\right] & \text{if } \lambda_C \le \lambda_f \le \lambda_S \\
-H_C  \lambda_f + h_C & \text{if } \lambda_f \ge \lambda_C \\
-H_S \lambda_f + h_S & \text{if } \lambda_f \le \lambda_S
+H_C  \lambda_f + h_C & \text{if } \lambda_f < \lambda_C \\
+H_S \lambda_f + h_S & \text{if } \lambda_f > \lambda_S
 \end{cases}
 \label{eq:fiber_force}
 \end{equation}
@@ -207,8 +193,8 @@ where
 &\lambda_f \equiv \frac{l}{l_0} \text{ where } l \text{ and } l_0 \text{ are the current and initial lengths, respectively, of the fiber. } \\
 &\lambda_S: \text{ fiber stretch value at which the fiber relation transitions from nonlinear to linear.} \\
 &\lambda_C: \text{ fiber compression value at which the fiber relationship transitions from nonlinear to linear.} \\
-&H_i \equiv E_f A_f\lambda_i \exp(0.5B(\lambda_i^2 - 1)) \text{ for } i=S \text{ or } C.\nonumber\\
-&h_i \equiv \frac{E_f A_f}{B}\left(\exp(0.5 B (\lambda_i^2-1)-1\right) -H_i \lambda_i \text{ for } i=S \text{ or } C. 
+&H_n \equiv E_f A_f\lambda_n \exp(0.5B(\lambda_n^2 - 1)) \text{ for } n=S \text{ or } C.\nonumber\\
+&h_n \equiv \frac{E_f A_f}{B}\left[\exp(0.5 B (\lambda_n^2-1))-1\right] -H_n \lambda_n \text{ for } n=S \text{ or } C. 
 \end{align*}
 %
 The fiber force shown in Eq.\ \eqref{eq:fiber_force} transitions from a nonlinear to linear relationship when the fiber is stretched beyond $\lambda_S$ or compressed below $\lambda_C$. The transition to a linear fiber force relationship for large fiber stretch in tension is consistent with experimental measurements of single fibers \citep{Eppell:2006hh,Svensson:2010fr}. In principle, fibers do not carry load in compression. Since the fibers in this model only have axial forces, the stiffness in compression was chosen to be significantly smaller than that in tension to mimic buckling.
@@ -216,116 +202,40 @@ The fiber force shown in Eq.\ \eqref{eq:fiber_force} transitions from a nonlinea
 In order to solve for network equilibrium in the RVE, displacement boundary conditions are imposed. The displacements at the corners of the RVE are dictated by the deformation state of the macroscopic scale via
 %
 \begin{equation}
-{}^c u^{(m)}_i = (F^{(M)}_{ij} - \delta_{ij}) \frac{{}^c x^{(m)}_j}{L^{(m)}},
+u^{(c,m)}_i = (F^{(M)}_{ij} - \delta_{ij}) \frac{x^{(c,m)}_j}{L^{(m)}},
 \label{eq:downscaling}
 \end{equation}
 %
-where $F^{(M)}_{ij}$ is the deformation gradient tensor of the macroscopic scale, ${}^c u^{(m)}$ are the displacements at the corners of the RVE,  and ${}^c x^{(m)}/L$ are the coordinates at the corners of the RVE. In Eq.\ \eqref{eq:downscaling}, ${}^c x^{(m)}_j$ are coordinates of a dimensionless computational domain that is a cube spanning the domain defined by (-0.5,0.5) in each of the three directions. The scale conversion, $1/L^{(m)}$, relates the unit lengths between the computational and physical domains. It is important to note that Eq.\ \eqref{eq:downscaling} is valid because the center of the RVE is defined at the origin of the computational domain. The boundary displacements on each fiber lying on the boundary of the RVE are determined via linear interpolation. This procedure of determining boundary displacements for the microscopic RVE from the macroscopic deformation state is referred to as \textit{downscaling}. 
+where $F^{(M)}_{ij}$ is the deformation gradient tensor of the macroscopic scale, $u^{(c,m)}$ are the displacements at the corners of the RVE,  and $x^{(c,m)}/L^{(m)}$ are the coordinates at the corners of the RVE. In Eq.\ \eqref{eq:downscaling}, $x^{(c,m)}_j$ are coordinates of a dimensionless computational domain that is a cube spanning the domain defined by (-0.5,0.5) in each of the three directions. The scale conversion, $1/L^{(m)}$, relates the unit lengths between the computational and physical domains. It is important to note that Eq.\ \eqref{eq:downscaling} is valid because the center of the RVE is defined at the origin of the computational domain. The boundary displacements on each node lying on the boundary of the RVE are determined via linear interpolation. 
 
-Upon solving for network equilibrium in each RVE, the Cauchy stress tensor of the microscopic scale is computed from the forces of fibers that lie on the boundary of the RVE (bcl) \citep{Chandran:2007hy,Stylianopoulos:2007dp}
+Upon solving for network equilibrium in each RVE, the volume-averaged Cauchy stress tensor of the microscopic scale is computed from the forces acting on nodes that lie on the boundary of the RVE (bcl) \citep{Chandran:2007hy,Stylianopoulos:2007dp}
 %
 \begin{equation}
 s_{ij}^{(m)} = \frac{1}{V^{(m)}} \sum_{\text{bcl}} x_i^{(m)} T_j^{(m)} ,
 \label{eq:micro_stress_discrete}
 \end{equation}
 %
-where $V^{(m)}$ is the current volume of the RVE and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor. The microscopic stress tensor is transformed to the macroscopic stress tensor by rescaling by $L^{(m)}$. This procedure is needed due to the difference in length scales between the physical macroscopic domain and the non dimensional microscopic computational domain. The macroscopic Cauchy stress tensor is determined from scaling $s_{ij}^{(m)}$ by 
+where $V^{(m)}$ is the current volume of the RVE, $T_j^{(m)}$ is the $j^{th}$ component of the fiber force, and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor. The microscopic stress tensor is transformed to the macroscopic stress tensor by rescaling by $L^{(m)}$. This procedure is needed due to the difference in length scales between the physical macroscopic domain and the non dimensional microscopic computational domain. The macroscopic Cauchy stress tensor is determined from scaling $s_{ij}^{(m)}$ by 
 %
 \begin{equation}
 \sigma_{ij}^{(M)} = s_{ij}^{(m)}\left(\frac{1}{L^{(m)}}\right)^2.
 \label{eq:macro_stress_discrete}
 \end{equation}
 %
-The procedure in Eq.\ \eqref{eq:macro_stress_discrete} is referred to as \textit{upscaling}. The Cauchy stress tensor obtained from the microscopic scale is used to solve the macroscopic force balance \citep{Chandran:2007hy,Stylianopoulos:2007dp}
+The Cauchy stress tensor obtained from the microscopic scale is used to solve the macroscopic force balance \citep{Chandran:2007hy,Stylianopoulos:2007dp}
 %
 \begin{equation}
 \sigma_{ij,i}^{(M)} = \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)},
 \label{eq:macro_stress_divergence}
 \end{equation}
 %
-where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field \citep{Chandran:2007hy,Stylianopoulos:2007dp}. \red{Victor B.: Can you provide a more intuitive description for the RHS of Eq.\ \eqref{eq:macro_stress_divergence}?}
+where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field \citep{Chandran:2007hy,Stylianopoulos:2007dp}. Equation \eqref{eq:macro_stress_divergence} arises from integration of the microscopic-scale (RVE) Cauchy stress balance, $\sigma_{ij,i}^{(m)} = 0$. If the RVE did not deform, then the averaged equation would just be $\sigma^{(M)}_{ij,i}=0$. When the RVE deforms, however, and that deformation is position-dependent, then the average of the divergence of the stress ($\sigma_{ij,i}^{(m)}$) is no longer equal to the divergence of the average stress ($\sigma_{ij,i}^{(M)}$), and a correction term must be introduced, analogous to the corresponding term in the Reynolds transport theorem \red{Whitaker's book: The Method of Volume Averaging}. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} is that correction and accounts for the correlation between RVE stress and boundary displacement.
 
-The scaling parameter $L$ in Eqs.\ \eqref{eq:downscaling} and \eqref{eq:macro_stress_discrete} are required for both the downscaling and upscaling procedures.  The scaling factor $L$ between the computational and physical domains is determined by comparing the average fiber length in the RVEs to that in reconstituted collagen type I networks \citep{Lindstrom:2013gd} with collagen concentration of 2mg/mL. In the computational domain, fiber networks have a network density (total length of fibers/RVE volume) of 100 ($\pm$ 1) and an average fiber length of 0.26. The average fiber length in reconstituted collagen type I networks is 1.81 $\mu$m \citep{Lindstrom:2013gd}. Based on these average lengths, $L=7 \ \mu$m.
+The scaling parameter between the computational and physical domains, $L$, in Eqs.\ \eqref{eq:downscaling} and \eqref{eq:macro_stress_discrete} is required for both the downscaling and upscaling procedures. It is determined by comparing the average fiber length in the RVEs to that in reconstituted collagen type I networks \citep{Lindstrom:2013gd} with collagen concentration of 2mg/mL, the concentration used in \citep{Zhang:2016ga}. In the computational domain, fiber networks have a network density (total length of fibers/RVE volume) of 100 ($\pm$ 1) and an average fiber length of 0.26. The average fiber length in reconstituted collagen type I networks is 1.81 $\mu$m \citep{Lindstrom:2013gd}. Based on these average lengths, $L=7 \ \mu$m.
 
-A good fit to the experimental stress-strain curve is obtained using the parameters of Eq.\ \eqref{eq:fiber_force} that are listed in Table \ref{table:fiber_parameters} for $L=7 \mu$m. The value of $A_f$ was chosen according to Ref.\ \citenum{Dutov:2016gu} where the fiber radius of rat tail collagen I was measured to be 162 nm.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{table}[ht]
-\begin{center}
-\begin{tabular}{ l c  }
-\hline \hline
-$E_f:$ & 200 kPa \\
-$B:$ & 20 \\
-$\lambda_S:$ &1.13 \\
-$\lambda_C:$ & 0.0 \\ \hline \hline
-\end{tabular}
-\end{center}
-\caption{Parameters for fiber force relationship in Eq.\ \eqref{eq:fiber_force}.}
-\label{table:fiber_parameters}
-\end{table}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The stiffness in tension and compression in the linear fiber-force regimes are 29.7 kPa and 1.65 kPa, respectively, for the values listed in Table \ref{table:fiber_parameters}. The stiffness in tension is 18 times larger than that in compression. As mentioned earlier, the significantly smaller stiffness in compression relative to tension was chosen to mimic buckling of the fiber. The stress-strain curves calculated from simulation using the parameters in Table \ref{table:fiber_parameters} and measured experimentally are shown in Fig.\ \ref{fig:stress_strain}.
-%
-% (a) stress-strain curve from N2P178/1-NewParams_Cube/stress-strain folder.
-% (b) fiber force curve from N2P177/LRT_Compression folder.
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{c}
-\includegraphics[height=5cm]{figure/stress_strain.pdf} 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:stress_strain} Plots of stress-strain curve calculated from simulation (blue ``x'') and measured experimentally (black line). The parameters of the fiber-force relationship are listed in Table \ref{table:fiber_parameters}. }
-\end{figure}
-%
-
-The Poisson ratio can be determined from the volume change of the domain via
-%
-\begin{equation}
-\nu = \frac{1}{2}\left(1- \frac{\Delta V}{V_0}\frac{l_0}{\Delta l}\right).
-\label{eq:poisson-ratio}
-\end{equation}
-%
-Equation \ref{eq:poisson-ratio} is a conventional measure of contraction that is derived from the usual definition of volumetric strain. Although Eq.\ \eqref{eq:poisson-ratio} is derived for small strain deformation, we conventionally extend the definition to the present case. The Poisson ratio as a function of applied far-field (bulk) strain for the fiber-force parameters listed in Table.\ \ref{table:fiber_parameters} is plotted in Fig.\ \ref{fig:fiber_param2}(a). The Poisson ratio increases as a function of applied strain, and becomes larger than 0.5 at an applied strain of approximately $17\%$. The increasing Poisson ratio at larger applied strains is due to the presence of free volume in the network which allows significant geometric reorganization and fiber alignment \citep{Vader:2009js}. At lower strains, the increasing Poisson ratio is due to the nonlinear fiber-force relationship where the stiffness in tension is increasing (see stress-strain curve in Fig.\ \ref{fig:stress_strain}).
-%
-% (a) Poisson ratio curve from N2P178/1-NewParams_Cube/poisson-ratio folder.
-% (b) Alignment curve from N2P178/1-NewParams_Cube/alignment folder.
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=5cm]{figure/PoissonRatio.pdf} &
-\includegraphics[height=5cm]{figure/alignment.pdf} \\ 
-(a) & (b)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:fiber_param2} Plots of (a) Poisson ratio calculated from simulation and (b) fiber alignment metric $P_2$ calculated from simulation (blue ``x") and measured experimentally (black line). Simulation results are calculated using fiber parameters listed in Table \ref{table:fiber_parameters}.}
-\end{figure}
-%
-
-Fiber alignment is measured using the orientation index $P_2$. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
-%
-\begin{equation}
-P_2 = \frac{3 <\cos^2\theta> - 1}{2},
-\label{eq:P2_simulation}
-\end{equation}
-%
-where $<x>$ denotes the average of $x$. The value of $P_2$ ranges from 1 ($\theta=0$ or $\pi$) in which the fibers are completely aligned to -1/2 ($\theta=\pi/2$) in which the fibers are orthogonal to the alignment direction. When $P_2=0$, the fiber network is randomly oriented. The orientation index $P_2$ can be calculated from $\alpha$ and $\delta$ of the QPLI method via (see Appendix A for derivation)
-%
-\begin{align}
-&P_2 = \frac{1}{2}\left(3 \int_0^{\pi} p(\theta) \cos^2\theta d\theta - 1\right) \nonumber\\
-&p(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{1-2\delta_i}{\pi} + \frac{4 \delta_i}{\pi}\cos^2(\theta - \alpha_i)\right],
-\label{eq:P2_experiment}
-\end{align}
-%
-where $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The fiber alignment as a function of bulk applied strain calculated from simulation and measured experimentally are plotted in Fig.\ \ref{fig:fiber_param2}(b). \red{How to explain discrepancy in alignment between simulation and experiments?}
-
-%\textcolor{red}{[According to Professor Picu, alignment is more pronounced at low strains and less pronounced at high strains if deformation is non-affine (compared to the case of affine deformation). The behavior in Fig.\ \ref{fig:fiber_param2}(b) is in agreement if it is valid that the Delaunay fiber network that we are using deforms affinely due to the the large coordinate of the Delaunay network used in our model.]}
-
-%=========================================================================================================
-\subsection{Constitutive Relationship for Modeling of Neurons}
-Cross-linked microtubule bundles that are axially aligned are a major structural feature of axons and give rise to macroscopic anisotropic mechanical behavior \citep{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \citep{JavierBonet:2008uxa,Bonet:1998vc}. The elements of the Cauchy stress tensor and spatial (Eulerian) elasticity tensor can be expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \citep{Bonet:1998vc}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Constitutive Relationship for Modeling of Neurons}
+Cross-linked axially-aligned microtubule bundles are a major structural feature of axons and give rise to macroscopic anisotropic mechanical behavior \citep{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \citep{JavierBonet:2008uxa,Bonet:1998vc}. The elements of the Cauchy stress tensor and spatial (Eulerian) elasticity tensor are expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \citep{Bonet:1998vc}
 %
 \begin{equation}
 \sigma_{ij} = \sigma^{\text{nh}}_{ij} + \sigma^{\text{trns}}_{ij} \ \ \text{ and } \ \ c_{ijkl} = c^{\text{nh}}_{ijkl} + c^{\text{trns}}_{ijkl},
@@ -344,7 +254,7 @@ respectively, where
 \label{eq:trns_iso}
 \end{align}
 %
-In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green strain tensor and $a_i$ is a component of the direction of anisotropy in the deformed state. $\lambda$ and $\mu$ are the Lam\'e constants that define the material properties of the isotropic component, while $\beta$, $\gamma$, and $\alpha$ are parameters that define the material properties of the anisotropic component. The parameters of Eq.\ \eqref{eq:trns_iso} can be written in terms of material constants as
+In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green strain tensor and $a_i$ is a component of the mapping of the direction of anisotropy in the undeformed state to the current state via the deformation gradient. In tensor notation, $\pmb{a} \equiv \pmb{F}\pmb{A}$, where $\pmb{A}$ is the direction of aniostropy in the undeformed state and $\pmb{F}$ is the deformation gradient tensor. $\lambda$ and $\mu$ are the Lam\'e constants that define the material properties of the isotropic component, while $\beta$, $\gamma$, and $\alpha$ are parameters that define the material properties of the anisotropic component. The parameters of Eq.\ \eqref{eq:trns_iso} can be written in terms of material constants as
 %
 \begin{align}
 &\lambda = \frac{2\mu (\nu+n\nu^2)}{m} \ \ \ \ \ \gamma = \frac{E_A(1-\nu)}{8m} - \frac{\lambda+2\mu}{8} + \frac{\alpha}{2} - \beta \nonumber\\
@@ -357,7 +267,93 @@ In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green stra
 %
 where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In our analysis, the shear modulus is set to be isotropic such that $G_A=\mu$ and $\alpha = 0$. All the constants in Eq.\ \eqref{eq:trns_iso_constants} are set once all material constants ($\mu$, $G_A$, $\nu$, and $E_A$) are specified. 
 
-The value of $E_A$ is based on the study by Peter and Mofrad \citep{Peter:2012fc}, where the mechanical behavior of axonal microtubule bundles under tension were simulated with a discrete bead-spring model. To apply their results for microtubule bundles to our neuron model, we assume that only the microtubule bundles carry force in the axon and that the stress of the microtubule bundles can be redistributed over the cross-sectional area of the axon. Since the microtubules are the stiffest component of the cytoskeleton \citep{Fletcher:2010ku}, the mechanical contribution from the actin filaments (membrane cortex) is ignored. Based on these assumptions, the axial stiffness of the axon can be related to the axial stiffness of the microtubule bundles, $E_{MTb}$, by
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Parameter Specifications}
+
+\subsection{Multiscale Model for Collagen Gel}
+
+The parameters for the multiscale model are listed in Table \ref{table:multiscale_parameters}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ l c c }
+\hline \hline
+Parameter & Specification & Source \\
+\hline 
+$E_f$ & 200 kPa & Fit to experimental data. \\
+$A_f$ & 82.5 $\mu$m$^2$ & Based on \cite{Dutov:2016gu} \\
+$B$ & 20 & Fit to experimental data. \\
+$\lambda_S$ &1.13 & Fit to experimental data. \\
+$\lambda_C$ & 1.0 & Chosen to mimic buckling. \\ 
+$H_S$ & 297.25 $\mu$N & From above parameters.\\
+$H_C$ & 16.5$\mu$N & From above parameters. \\
+$h_S$ & -322.74 $\mu$N & From above parameters. \\
+$h_C$ & -15.67$\mu$N & From above parameters. \\
+$L^{(m)}$ & 7 $\mu$m & Based on \cite{Lindstrom:2013gd}. See Section \ref{sec:multiscale_method}.\\ 
+\hline \hline
+\end{tabular}
+\end{center}
+\caption{Parameters for multiscale model of collagen gel.}
+\label{table:multiscale_parameters}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The value of $A_f$ was chosen according to Ref.\ \citenum{Dutov:2016gu} where the fiber radius of rat tail collagen I was measured to be 162 nm.  All other parameters for the fiber-force relationship in Eq.\ \eqref{eq:fiber_force} were chosen to obtain a good fit to an experimental stress-strain curve. To obtain the stress-strain responses experimentally, collagen I gels were subjected to uniaxial tensile loading at 0.5mm/s to 8mm (25$\%$ strain) using an Instron 5865 (Instron, Norwood, MA), as described in  \cite{Zhang:2016ga}. The Instron Bluehill software collected the force and displacement data at 1kHz during loading. The stress and strain data were subsequently determined from the force and displacement data by dividing by the initial cross-sectional area and length, respectively, of the sample. 
+
+
+The stiffness in tension and compression in the linear fiber-force regimes are 29.7 kPa and 1.65 kPa, respectively, for the values listed in Table \ref{table:multiscale_parameters}. As mentioned above, the significantly smaller stiffness in compression relative to tension was chosen to mimic buckling of the fiber. The stress-strain curves calculated from simulation using the parameters in Table \ref{table:multiscale_parameters} and measured experimentally are shown in Fig.\ \ref{fig:multiscale_properties}(b).
+%
+% (a) fiber force curve from N2P177/LRT_Compression folder.
+% (b) stress-strain curve from N2P178/1-NewParams_Cube/stress-strain folder.
+% (c) Poisson ratio curve from N2P178/1-NewParams_Cube/poisson-ratio folder.
+% (d) Alignment curve from N2P178/1-NewParams_Cube/alignment folder.
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=5cm]{figure/FiberForceRelation.pdf} &
+\includegraphics[height=5cm]{figure/stress_strain.pdf} \\
+(a) & (b) \\
+\includegraphics[height=5cm]{figure/PoissonRatio.pdf} &
+\includegraphics[height=5cm]{figure/alignment.pdf} \\ 
+(c) & (d) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:multiscale_properties} \blue{Switch dotted line with solid line. Add fiber-force plot.} Plots of stress-strain curve calculated from simulation (blue ``x'') and measured experimentally (black line). The parameters of the fiber-force relationship are listed in Table \ref{table:multiscale_parameters}. Plots of (a) Poisson ratio calculated from simulation and (b) fiber alignment metric $P_2$ calculated from simulation (blue ``x") and measured experimentally (black line). Simulation results are calculated using fiber parameters listed in Table \ref{table:fiber_parameters}.}
+\end{figure}
+%
+
+For the parameters in Table \ref{table:multiscale_parameters}, the Poisson ratio and fiber alignment were also examined. The Poisson ratio was determined from the volume change of the domain via
+%
+\begin{equation}
+\nu = \frac{1}{2}\left(1- \frac{\Delta V}{V_0}\frac{l_0}{\Delta l}\right).
+\label{eq:poisson-ratio}
+\end{equation}
+%
+Equation \ref{eq:poisson-ratio} is a conventional measure of contraction that is derived from the usual definition of volumetric strain. Although Eq.\ \eqref{eq:poisson-ratio} is derived for small strain deformation, we conventionally extend the definition to the present case. The Poisson ratio as a function of the bulk strain is plotted in Fig.\ \ref{fig:multiscale_properties}(c). The Poisson ratio increases as a function of applied strain, and becomes larger than 0.5 at an applied strain of approximately $17\%$. The increasing Poisson ratio at larger applied strains is due to the presence of free volume in the network which allows significant geometric reorganization and fiber alignment \citep{Vader:2009js}. \red{At lower strains, the increasing Poisson ratio is due to the nonlinear fiber-force relationship where the stiffness in tension is increasing (see stress-strain curve in Fig.\ \ref{fig:multiscale_properties}(b)).}
+
+Fiber alignment is measured using the orientation index $P_2$. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
+%
+\begin{equation}
+P_2 = \frac{3 <\cos^2\theta> - 1}{2},
+\label{eq:P2_simulation}
+\end{equation}
+%
+where $<x>$ denotes the average of $x$ over all fibers. The value of $P_2$ ranges from 1 ($\theta=0$ or $\pi$) in which the fibers are completely aligned to -1/2 ($\theta=\pi/2$) in which the fibers are orthogonal to the alignment direction. When $P_2=0$, the fiber network is randomly oriented. The orientation index $P_2$ can be calculated from $\alpha$ and $\delta$ of the QPLI method via (see Appendix A for derivation)
+%
+\begin{align}
+&P_2 = \frac{1}{2}\left(3 \int_0^{\pi} p(\theta) \cos^2\theta d\theta - 1\right) \nonumber\\
+&p(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{1-2\delta_i}{\pi} + \frac{4 \delta_i}{\pi}\cos^2(\theta - \alpha_i)\right],
+\label{eq:P2_experiment}
+\end{align}
+%
+where $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The fiber alignment as a function of bulk applied strain calculated from simulation and measured experimentally are plotted in Fig.\ \ref{fig:fiber_param2}(b). \red{How to explain discrepancy in alignment between simulation and experiments?}
+
+%\textcolor{red}{[According to Professor Picu, alignment is more pronounced at low strains and less pronounced at high strains if deformation is non-affine (compared to the case of affine deformation). The behavior in Fig.\ \ref{fig:fiber_param2}(b) is in agreement if it is valid that the Delaunay fiber network that we are using deforms affinely due to the the large coordinate of the Delaunay network used in our model.]}
+
+\subsection{Constitutive Relationship for Neuron}
+
+The value of $E_A$ is based on the study by Peter and Mofrad \citep{Peter:2012fc}, where the mechanical behavior of axonal microtubule bundles under tension was simulated with a discrete bead-spring model. To apply their results for microtubule bundles to our neuron model, we assume that only the microtubule bundles carry force in the axon and that the stress of the microtubule bundles can be redistributed over the cross-sectional area of the axon. Since the microtubules are the stiffest component of the cytoskeleton \citep{Fletcher:2010ku}, the mechanical contribution from the actin filaments (membrane cortex) is ignored. Based on these assumptions, the axial stiffness of the axon can be related to the axial stiffness of the microtubule bundles, $E_{MTb}$, by
 %
 \begin{equation}
 E_A = \frac{E_{MTb} A_{MTb}}{A_A},
@@ -407,6 +403,25 @@ $
 \caption{\label{fig:axial_stiffness} Plot of axial Young's modulus for $t=30$ in Eq.\ \eqref{eq:cellEA} and $E_A=70$ kPa.}
 \end{figure}
 %
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Materials and Methods}
+\label{sec:materials_and_methods}
+To mechanically model the neuron structure, a geometric model and its corresponding finite-element mesh is generated from confocal images of three connected neurons from a neuronal culture that was developed to mimic innervation of collagenous tissue (see Ref.\ \citenum{Zhang:2016ga} for preparation of neuronal culture). Thereby, the complex geometry of the neuron is incorporated into the simulation and enables findings from the simulation to be extended to realistic physiological environments. The collagen gel that surrounds the neuron structure is modeled using a volume-average based multi-scale technique which has been employed for the same purpose in previous studies \citep{Chandran:2007hy,Stylianopoulos:2007dp,Barocas:2007gk,Lai:2012ji,Lake:2012jm}. The embedded neuron structure is modeled using a transversely isotropic constitutive relationship to capture the anisotropic mechanical behavior of the axon \citep{Peter:2012fc}. The parameters for both models were determined from experimental measurements. An overview of the multi-scale method for the collagen gel and constitutive relationship for the neuron structure are discussed below.
+
+%=========================================================================================================
+\subsection{Generation of Model and Finite-Element Mesh from Experimental Images}
+The complex geometry of a neuron is incorporated into the simulation by generating a geometric model of the neuron structure from experimentally measured confocal images. The confocal images were taken from a neuronal culture that was developed to mimic innervation of collagenous tissue. Briefly, dissociated dorsal root ganglion neurons were embedded in three-dimensional collagen I gels. Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure. Z-stack Images (2-micron thick) were taken by a Zeiss LSM 510 confocal microscope (Carl Zeiss Inc., Thornwood, NY) using a 40X objective and with a resolution of 0.22 micron/pixel. The segmented stack of confocal images is shown schematically in Fig.\ \ref{fig:image_to_model}(a). 
+
+
+The confocal images were stacked together and converted to a 3D voxelated data set using \textit{ImageJ} \citep{Schneider:2012dw}, where each voxel has dimensions of 0.22$\mu$m $\times$ 0.22$\mu$m $\times$ 2$\mu$m. Voxel data corresponding to different regions of the neuron structure (i.e., axon and cell bodies) were labeled with unique values. Noise arising from the limited level of contrast in the imaging technique and quantization artifacts due to the voxel nature of the data were removed using a combination of erosion/dilation, manual reassignment, small object removal, and smoothing operations which were applied using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix}. The processed voxelated data was converted to a discrete geometry using a procedure that is based on the marching cube algorithm \citep{Lorensen:1987vr}, which was also applied through the \textit{ImageToModel} tool. Subsequently, the discrete geometric model of the neuron structure was enclosed in a box that represents the domain of the collagen gel, where the neuron-gel interface is perfectly bonded. The mesh of the non-manifold geometry of the embedded neuron structure was generated using the SimModeler tool of Simmetrix Inc. \citep{simmetrix,Shephard:2000vc}. The neuron-in-gel model and its corresponding mesh are shown in Figs.\ \ref{fig:image_to_model}(b) and (c), respectively. 
+
+%=========================================================================================================
+\subsection{Experimental Measurements}
+The parameters for the multi-scale model of the collagen gel were chosen such that the experimental stress-strain curve is reproduced. These parameters are specified below when the formulation of the model is presented. With these parameters, the model also exhibits lateral contraction (Poisson ratio) and fiber-level alignment that are consistent with experimental measurements. An experimental stress-strain curve was measured from a rat tail collagen I gel, while fiber alignment data was measured from an innervated collagen gel (see Ref.\ \citenum{Zhang:2016ga} for preparation of the collagen and innervated collagen samples). 
+
+To obtain the stress-strain responses experimentally, collagen I gels were subjected to uniaxial tensile loading at 0.5mm/s to 8mm (25$\%$ strain) using an Instron 5865 (Instron, Norwood, MA), as described in Ref.\ \citenum{Zhang:2016ga}. The Instron Bluehill software collected the force and displacement data at 1kHz during loading. The stress and strain data were subsequently determined from the force and displacement data by dividing by the initial cross-sectional area and length, respectively, of the sample. The fiber alignment in innervated collagenous tissue was measured using the Quantitative Polarized Light Imaging (QPLI) method \citep{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ is measured in each pixel. Our customized QPLI system \citep{Zhang:2016ga} is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \citep{Zhang:2016ga}. The QPLI system was integrated with the mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \citep{Tower:2002hk,Quinn:2008df}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
 \label{sec:amsi}
