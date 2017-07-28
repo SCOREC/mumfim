@@ -18,6 +18,8 @@ namespace bio
     , ini_ptrns()
     , rcv_ptrns()
   {
+    crt_rve = apf::createIPField(apf_mesh,"curr_rve",apf::SCALAR,1);
+    prv_rve = apf::createIPField(apf_mesh,"prev_rve",apf::SCALAR,1);
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
     mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,apf_primary_field,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
@@ -68,16 +70,7 @@ namespace bio
   void MultiscaleTissue::initMicro()
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
-    /*
-    amsi::Task * macro = amsi::getLocal();
-    amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
-    (*dd) = 0;
-    amsi::Assemble(dd,macro->comm());
-    snd_ptrns[FIBER_ONLY] = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
-    cs->CommPattern_Reconcile(snd_ptrns[FIBER_ONLY]);
-    rcv_ptrns[FIBER_ONLY] = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
-    cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
-    */
+    fo_cplg.initCoupling();
     computeRVETypeInfo();
     int num_rve_tps = rve_tps.size();
     cs->scaleBroadcast(M2m_id,&num_rve_tps);

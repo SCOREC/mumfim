@@ -1,5 +1,5 @@
 #!/bin/bash
-# Cmake config for biotissiue
+# Cmake config for bio
 # usage ./config.sh [build_type] [logrun_flag]
 source $DEVROOT/scripts/util
 ROOT=$DEVROOT/bio
