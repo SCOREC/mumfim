@@ -229,7 +229,7 @@ The Cauchy stress tensor obtained from the microscopic scale is used to solve th
 \label{eq:macro_stress_divergence}
 \end{equation}
 %
-where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field \citep{Chandran:2007hy,Stylianopoulos:2007dp}. Equation \eqref{eq:macro_stress_divergence} arises from integration of the microscopic-scale (RVE) Cauchy stress balance, $\sigma_{ij,i}^{(m)} = 0$. If the RVE did not deform, then the averaged equation would just be $\sigma^{(M)}_{ij,i}=0$. When the RVE deforms, however, and that deformation is position-dependent, then the average of the divergence of the stress ($\sigma_{ij,i}^{(m)}$) is no longer equal to the divergence of the average stress ($\sigma_{ij,i}^{(M)}$), and a correction term must be introduced, analogous to the corresponding term in the Reynolds transport theorem \red{Whitaker's book: The Method of Volume Averaging}. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} is that correction and accounts for the correlation between RVE stress and boundary displacement.
+where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} acts as a body force that accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress fieldï¿½\citep{Chandran:2007hy,Stylianopoulos:2007dp}. Equation \eqref{eq:macro_stress_divergence} arises from integration of the microscopic-scale (RVE) Cauchy stress balance, $\sigma_{ij,i}^{(m)} = 0$. If the RVE did not deform, then the averaged equation would just be $\sigma^{(M)}_{ij,i}=0$. When the RVE deforms, however, and that deformation is position-dependent, then the average of the divergence of the stress ($\sigma_{ij,i}^{(m)}$) is no longer equal to the divergence of the average stress ($\sigma_{ij,i}^{(M)}$), and a correction term must be introduced, analogous to the corresponding term in the Reynolds transport theorem \red{Whitaker's book: The Method of Volume Averaging}. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} is that correction and accounts for the correlation between RVE stress and boundary displacement.
 
 The scaling parameter between the computational and physical domains, $L$, in Eqs.\ \eqref{eq:downscaling} and \eqref{eq:macro_stress_discrete} is required for both the downscaling and upscaling procedures. It is determined by comparing the average fiber length in the RVEs to that in reconstituted collagen type I networks \citep{Lindstrom:2013gd} with collagen concentration of 2mg/mL, the concentration used in \citep{Zhang:2016ga}. In the computational domain, fiber networks have a network density (total length of fibers/RVE volume) of 100 ($\pm$ 1) and an average fiber length of 0.26. The average fiber length in reconstituted collagen type I networks is 1.81 $\mu$m \citep{Lindstrom:2013gd}. Based on these average lengths, $L=7 \ \mu$m.
 
@@ -424,24 +424,36 @@ To obtain the stress-strain responses experimentally, collagen I gels were subje
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
-\label{sec:amsi}
+\label{sec:implementation}
 
-%\input{figure/multi-scale-nonlinear-iteration.pdf_tex}\label{fig:nonlinear-iteration}
 %\input{figure/multi-scale-coupling-data.pdf_tex}\label{fig:coupling-data}
+%\subsection{Multi-scale}
+Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by to combining existing single-scale analysis codes into novel multi-scale analyses.
 
-Our model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI enables our model to accommodate the high computational demands of solving the mechanical equilibrium equations on the complex geometry of the neuron structure and for the multi-scale problem in the collagen gel. 
-%=========================================================================================================
+The macroscopic simulation code and the microscopic simulation codes are decoupled save for their interactions through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication required for the transmission of required data between the scales. Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in both the parallel execution space and the problem domain. This data is used by the AMSI multi-scale systems to communicate the coupling data required at each phase of simulation, and accommodate dynamic run-time operations such as load balancing while maintaining the coupling communication model. A discussion of the underlying design considerations of AMSI can be found in \citep{Delalondre:2010kt}.
 
-AMSI provides features to combine existing single-scale analysis codes into novel multi-scale analyses. 
+%
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{c}
+\includegraphics[height=4cm]{figure/biotissue-scales.png} 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:scales} Schematic showing the hierarchy of scales in the multi-scale simulation}
+\end{figure}
+%
 
-The macroscopic simulation code and the microscopic simulation codes are decoupled save for their interactions through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication required for the transmission of required data between the scales. Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in  both the parallel execution space and the problem domain. This data is used by the AMSI multi-scale communications systems to communicate the coupling data required at each phase of simulation, and accomodate dynamic run-time operations such as load balancing while maintaining the coupling communication model. A discussion of the underlying design consideration of AMSI can be found in \citep{Delalondre:2010kt}.
+The macroscopic continuum and microscopic fiber network simulations are strongly separated and the domain relationship between the scales is known a-priori. Thus no runtime considerations are required with respect to domain data locality. Parallel data locality of the required coupling data must still be accounted for during simulation execution.
 
-Due the the strong seperation of the macroscopic continuum and microscopic fiber network simulations, the domain relationship between the scales is known a-priori and no runtime considerations are required with respect to the computational data locality and the spatial data locality, beyond a direct one-to-one relationship between microscopic simulation domains and macroscopic numerical integration points. The macroscopic simulation informs the AMSI system of the distribution of coupling locations. This distribution and the parallel characteristics of the microscopic simulations are used to produce a parallel communication plan in which each coupled micro-scale simulation recieves the required coupling information from the related macroscopic coupling point.
+The macro-scale discretized domain -- an unstructured mesh -- is partitioned across the parallel execution space of the scale. The distribution of the mesh entities and the order of the continuity of the displacement field inform the location and quantity of numerical integration points at which a micro-scale simulation is to take place for specified regions. Figure \ref{fig:scales} depicts the relationship between the two scales with respect to the macro-scale unstructured mesh, an individual numerical integration point, and the RVE simulation corresponding to that macro-scale location.
 
-In the macro-scale simulation the unstructured mesh is partitioned across the parallel execution space of the scale, the distribution of the mesh and the order of the continuity of the displacement field inform the choice of numerical integration points, at which a micro-scale simulation is to take place (for specified regions). 
+The macroscopic simulation informs AMSI of the parallel locality of the coupling locations and data. This data locality mapping and the corresponding parallel locality of individual RVEs in the micro-scale are used to produce a coupling map. The coupling map includes of a parallel communication plan which satisfies the coupling requirement of consistently transmitting coupling data between coupled regions of the global problem domain.
 
-Using the AMSI library, the unrelated micro-scale and macro-scale simulation codes are combined into a single simulation. Figure \ref{fig:nonlinear-iteration} illustrates the parallel execution of a sinlge nonlinear iteration of the multi-scale simulation with respect to the individual scales. While each scale is idle during a section of each multi-scale nonlinear iteration, 
 
+\red{Mark,Victor: Discussion of the 'size' of the neuron problem in particular, number of mesh entities and number of micro-scales with average micro-scale dof count and such?}
+%Figure \ref{fig:nonlinear-iteration} illustrates the parallel execution of a single nonlinear iteration of the multi-scale simulation with respect to the individual scales. While each scale is idle during a section of each multi-scale nonlinear iteration, this idle time must be weighted by the number of ranks idling.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:results}
