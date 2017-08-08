@@ -467,21 +467,26 @@ fileid = fopen(filename,'w'); % writes over any existing file of this name
 
 fprintf(fileid,'%i %i %i\n', total_nodes, tot_deg_freedom, total_fibers);
 
-% Output data for each fiber
-for n = 1 : total_fibers
-
-    fprintf(fileid,'%i %i %i %f %f %f %f %f %f\n', ...  % file line
-        n, ...                                          % fiber num
-        fibers(n,2), ...                                % node 1 num
-        fibers(n,3), ...                                % node 2 num
-        nodes( fibers(n,2), 2 ), ...              % node 1 x coord
-        nodes( fibers(n,2), 3 ), ...              % node 1 y coord
-        nodes( fibers(n,2), 4 ), ...              % node 1 z coord
-        nodes( fibers(n,3), 2 ), ...              % node 2 x coord
-        nodes( fibers(n,3), 3 ), ...              % node 2 y coord
-        nodes( fibers(n,3), 4 ));                 % node 2 z coord
-
+for n = 1 : total_nodes
+   fprintf(fileid,'%f %f %f\n', nodes(n,1), nodes(n,2), nodes(n,3));
 end
+for n = 1 : total_fibers
+   fprintf(fileid,'%i %i\n', fibers(n,2), fibers(n,3));
+end
+
+% Output data for each fiber
+% for n = 1 : total_fibers
+%     fprintf(fileid,'%i %i %i %f %f %f %f %f %f\n', ...  % file line
+%         n, ...                                          % fiber num
+%         fibers(n,2), ...                                % node 1 num
+%         fibers(n,3), ...                                % node 2 num
+%         nodes( fibers(n,2), 2 ), ...              % node 1 x coord
+%         nodes( fibers(n,2), 3 ), ...              % node 1 y coord
+%         nodes( fibers(n,2), 4 ), ...              % node 1 z coord
+%         nodes( fibers(n,3), 2 ), ...              % node 2 x coord
+%         nodes( fibers(n,3), 3 ), ...              % node 2 y coord
+%         nodes( fibers(n,3), 4 ));                 % node 2 z coord
+% end
 
 % Output cube boundary
 fprintf(fileid,'%f\n',clip_boundary);
