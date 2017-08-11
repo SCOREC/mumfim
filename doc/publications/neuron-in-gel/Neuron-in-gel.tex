@@ -2,7 +2,7 @@
 %\documentclass[10pt]{asme2ej}
 \documentclass[]{interact}
 
-\usepackage{graphicx,epsfig,color,textcomp,amssymb,amsmath,mathrsfs,cancel,bbm,ulem}
+\usepackage{graphicx,epsfig,color,textcomp,amssymb,amsmath,mathrsfs,cancel,bbm,ulem,physics}
 
 \usepackage{natbib}% Citation support using natbib.sty
 \bibpunct[, ]{(}{)}{;}{a}{}{,}% Citation support using natbib.sty
@@ -206,7 +206,7 @@ u^{(c,m)}_i = (F^{(M)}_{ij} - \delta_{ij}) \frac{x^{(c,m)}_j}{L^{(m)}},
 \label{eq:downscaling}
 \end{equation}
 %
-where $F^{(M)}_{ij}$ is the deformation gradient tensor of the macroscopic scale, $u^{(c,m)}$ are the displacements at the corners of the RVE,  and $x^{(c,m)}/L^{(m)}$ are the coordinates at the corners of the RVE. In Eq.\ \eqref{eq:downscaling}, $x^{(c,m)}_j$ are coordinates of a dimensionless computational domain that is a cube spanning the domain defined by (-0.5,0.5) in each of the three directions. The scale conversion, $1/L^{(m)}$, relates the unit lengths between the computational and physical domains. It is important to note that Eq.\ \eqref{eq:downscaling} is valid because the center of the RVE is defined at the origin of the computational domain. The boundary displacements on each node lying on the boundary of the RVE are determined via linear interpolation. 
+where $F^{(M)}_{ij}$ is the deformation gradient tensor of the macroscopic scale, $u^{(c,m)}$ are the displacements at the corners of the RVE,  and $x^{(c,m)}/L^{(m)}$ are the coordinates at the corners of the RVE. In Eq.\ \eqref{eq:downscaling}, $x^{(c,m)}_j$ are coordinates of a dimensionless computational domain that is a cube spanning the domain defined by (-0.5,0.5) in each of the coordinate axes. The scale conversion, $1/L^{(m)}$, relates the unit lengths between the computational and physical domains. It is important to note that Eq.\ \eqref{eq:downscaling} is valid because the center of the RVE is defined at the origin of the computational domain. The boundary displacements on each node lying on the boundary of the RVE are determined via linear interpolation. 
 
 Upon solving for network equilibrium in each RVE, the volume-averaged Cauchy stress tensor of the microscopic scale is computed from the forces acting on nodes that lie on the boundary of the RVE (bcl) \citep{Chandran:2007hy,Stylianopoulos:2007dp}
 %
@@ -427,8 +427,8 @@ To obtain the stress-strain responses experimentally, collagen I gels were subje
 \label{sec:implementation}
 
 %\input{figure/multi-scale-coupling-data.pdf_tex}\label{fig:coupling-data}
-%\subsection{Multi-scale}
-Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by to combining existing single-scale analysis codes into novel multi-scale analyses.
+\subsection{Multi-scale}
+Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by to combining existing single-scale analysis codes into multi-scale analyses.
 
 The macroscopic simulation code and the microscopic simulation codes are decoupled save for their interactions through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication required for the transmission of required data between the scales. Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in both the parallel execution space and the problem domain. This data is used by the AMSI multi-scale systems to communicate the coupling data required at each phase of simulation, and accommodate dynamic run-time operations such as load balancing while maintaining the coupling communication model. A discussion of the underlying design considerations of AMSI can be found in \citep{Delalondre:2010kt}.
 
@@ -445,15 +445,19 @@ $
 \end{figure}
 %
 
-The macroscopic continuum and microscopic fiber network simulations are strongly separated and the domain relationship between the scales is known a-priori. Thus no runtime considerations are required with respect to domain data locality. Parallel data locality of the required coupling data must still be accounted for during simulation execution.
+The macroscopic continuum and microscopic fiber network simulation physical scales are assumed to be strongly separated allowing the application of well-defined domain relationships between the scales. Thus no runtime considerations are required with respect to domain data locality. Parallel data locality of the required coupling data must still be accounted for during simulation execution.
 
-The macro-scale discretized domain -- an unstructured mesh -- is partitioned across the parallel execution space of the scale. The distribution of the mesh entities and the order of the continuity of the displacement field inform the location and quantity of numerical integration points at which a micro-scale simulation is to take place for specified regions. Figure \ref{fig:scales} depicts the relationship between the two scales with respect to the macro-scale unstructured mesh, an individual numerical integration point, and the RVE simulation corresponding to that macro-scale location.
+The macro-scale domain is discretized using an unstructured mesh that is partitioned across the parallel execution space of the scale. Figure \ref{fig:scales} depicts the relationship between the two scales with respect to the macro-scale unstructured mesh, an individual numerical integration point on that mesh, and the RVE-level microscale simulation corresponding to that macro-scale location.
 
-The macroscopic simulation informs AMSI of the parallel locality of the coupling locations and data. This data locality mapping and the corresponding parallel locality of individual RVEs in the micro-scale are used to produce a coupling map. The coupling map includes of a parallel communication plan which satisfies the coupling requirement of consistently transmitting coupling data between coupled regions of the global problem domain.
+AMSI models the relationship between the domains of the macro-scale and micro-scale problem. This model combined with a model of the parallel distribution the data structures modeling the domains of each scale and the physical quantities relevant to a particular multi-scale coupling allow the construction of a parallel communication plan used to link coupling data between scales over the course of a simulation. Up- and down-scaling transformations of the coupling data currently take place in user code after (or before) employing the communication plane.
+
+At each macro-scale numerical integration point, the deformation gradient $F$ is calculated and provided to the AMSI coupling system, which uses a communication plan to provide the value to the micro-scale RVE simulation related to the integration point. This value is used by the micro-scale as shown in equation \ref{eq:downscaling} to establish the boundary conditions for the current state of the micro-scale RVE problem. Once a solution has been reached for the micro-scale simulation, the macro-scale stress term $\sigma^{(M)}$ from equation \ref{eq:macro_stress_discrete} and the macro-scale stress divergence term $\div \sigma^{(M)}$ from equation \ref{eq:macro_stress_divergence} are supplied to AMSI. These terms are communicated to the macro-scale and associated with the coupled integration point for use in assembling the macro-scale linear algebraic system for the current Newton iteration.
 
 
-\red{Mark,Victor: Discussion of the 'size' of the neuron problem in particular, number of mesh entities and number of micro-scales with average micro-scale dof count and such?}
-%Figure \ref{fig:nonlinear-iteration} illustrates the parallel execution of a single nonlinear iteration of the multi-scale simulation with respect to the individual scales. While each scale is idle during a section of each multi-scale nonlinear iteration, this idle time must be weighted by the number of ranks idling.
+\subsection{Problem Specification}\label{sec:specification}
+\red{size of the problem, description of setup and params}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:results}
