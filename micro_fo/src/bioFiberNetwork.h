@@ -14,7 +14,7 @@ namespace bio
    */
   class FiberNetwork
   {
-  private:
+  protected:
     apf::Mesh * fn;
     apf::Field * u;
     apf::Field * du;
@@ -32,8 +32,7 @@ namespace bio
      * @param f A pointer to a fiber network mesh (contains only vertices and edges)
      *          typically loaded using the NetworkLoader classes
      */
-    template <typename I>
-      FiberNetwork(apf::Mesh * f, FiberMember t, I rcnt_bgn, I rctn_end);
+    FiberNetwork(apf::Mesh * f);
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)
@@ -47,7 +46,8 @@ namespace bio
     apf::Field * getdWField()         { return dw;   }
     apf::Numbering * getUNumbering()  { return udof; }
     apf::Numbering * getdWNumbering() { return wdof; }
-    FiberReaction ** getFiberReactions() { return &rctns[0]; }
+    // BOOOOOOO
+    std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
   };
   /**
    * TODO (m) Bill : move to FiberNetworkIO files

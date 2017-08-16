@@ -60,6 +60,26 @@ namespace bio
       rcv_ptrn = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
       cs->CommPattern_Reconcile(rcv_ptrn);
     }
+    void deleteRVEs(std::vector<int> & to_dlt)
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      cs->RemoveData(snd_ptrn,to_dlt);
+    }
+    void addRVEs(std::vector<apf::MeshEntity*> & ents,
+                 std::vector<micro_fo_header> & hdrs,
+                 std::vector<micro_fo_params> & prms,
+                 std::vector<micro_fo_init_data> & dats)
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      std::vector<int> to_add(ents.size(),0);
+      size_t add_id = cs->AddData(snd_ptrn,ents,to_add);
+      cs->CommPattern_Assemble(snd_ptrn);
+      cs->Communicate(add_id,hdrs,mtd.hdr);
+      cs->Communicate(add_id,prms,mtd.hdr);
+      cs->Communicate(add_id,dats,mtd.hdr);
+      // get new recv patterns
+      cs->CommPattern_Reconcile(rcv_ptrn);
+    }
     // todo (h) : switch to pointer instead of vector
     void sendRVEData(std::vector<micro_fo_data> & bfr)
     {

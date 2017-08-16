@@ -87,7 +87,7 @@ int run_micro_fm(int & argc, char ** & argv, MPI_Comm comm)
 }
 int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
-  amsi::initAnalysis(argc,argv);
+  amsi::initAnalysis(argc,argv,cm);
   AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");

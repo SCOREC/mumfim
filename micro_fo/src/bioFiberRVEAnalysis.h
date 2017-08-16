@@ -11,6 +11,7 @@ namespace bio
   struct FiberRVEAnalysis
   {
     FiberNetwork * fn;
+    std::vector<FiberReaction*> rctns;
     RVE * rve;
     std::vector<apf::MeshEntity*> bnd_nds;
     apf::Integrator * es;

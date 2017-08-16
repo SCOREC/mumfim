@@ -177,27 +177,13 @@ namespace bio
                       std::back_inserter(nw_prms),
                       std::back_inserter(nw_data));
     std::copy(nw_ents.begin(),nw_ents.end(),std::back_inserter(rve_ents));
-    // update comm patterns
-    amsi::ControlService * cs = amsi::ControlService::Instance();
+    fo_cplg.deleteRVEs(to_dlt);
+    fo_cplg.addRVEs(rve_ents,nw_hdrs,nw_prms,nw_data);
+    nm_rves += nw_ents.size();
     amsi::Task * lt = amsi::getLocal();
-    cs->RemoveData(snd_ptrns[FIBER_ONLY],to_dlt);
-    std::vector<int> to_add(nw_ents.size());
-    std::fill(to_add.begin(),to_add.end(),0);
-    size_t add_id = cs->AddData(snd_ptrns[FIBER_ONLY],rve_ents,to_add);
-    nm_rves += to_add.size();
     amsi::DataDistribution * dd = lt->getDD("micro_fo_data");
     (*dd) = nm_rves;
     amsi::Assemble(dd,lt->comm());
-    cs->CommPattern_Assemble(snd_ptrns[FIBER_ONLY]);
-    cs->Communicate(add_id,nw_hdrs,mtd.hdr);
-    cs->Communicate(add_id,nw_prms,mtd.prm);
-    cs->Communicate(add_id,nw_data,mtd.ini);
-    /*
-    // check for microscale load balancing (this reorders fiberOnly_elements depending on the microscale load balancing)
-    cs->shareMigration(send_patterns[FIBER_ONLY],fiber_only_elements);
-    */
-    // update micro->macro communication
-    cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
   }
   amsi::ElementalSystem * MultiscaleTissue::getIntegrator(apf::MeshEntity * me, int ip)
   {

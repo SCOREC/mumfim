@@ -25,7 +25,10 @@ namespace bio
     , bfrs(NULL)
     , macro_iter(0)
     , macro_step(0)
-  { }
+  {
+    M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
+    m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
+  }
   void MultiscaleRVEAnalysis::init()
   {
     initLogging();
@@ -47,6 +50,8 @@ namespace bio
     cs->CommPattern_Reconcile(recv_ptrn);
     send_ptrn = cs->CommPattern_UseInverted(recv_ptrn,"macro_fo_data",
                                             "micro_fo","macro");
+    cs->CommPattern_Assemble(send_ptrn);
+    cs->CommPattern_Reconcile(send_ptrn);
   }
   void MultiscaleRVEAnalysis::initAnalysis()
   {
@@ -68,26 +73,24 @@ namespace bio
     MPI_Status stss[num_rve_tps];
     MPI_Waitall(num_rve_tps,&rqsts[0],&stss[0]);
     MPI_Request hdr_rqst;
-    std::vector<int> rve_tp_cnts(num_rve_tps);
-    cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnts[0],num_rve_tps);
+    rve_tp_cnt(num_rve_tps);
+    cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnt[0],num_rve_tps);
     MPI_Status hdr_sts;
     MPI_Waitall(1,&hdr_rqst,&hdr_sts);
     // Read in all the fiber networks
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
-      fns.push_back(new FiberNetwork* [rve_tp_cnts[ii]]);
-      sprs.push_back(new las::CSR* [rve_tp_cnts[ii]]);
+      fns.push_back(new FiberNetwork* [rve_tp_cnt[ii]]);
+      sprs.push_back(new las::CSR* [rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
-    NetworkLoader ldr;
     for(int ii = 0; ii < num_rve_tps; ii++)
     {
-      for(int jj = 0; jj < rve_tp_cnts[ii]; ++jj)
+      for(int jj = 0; jj < rve_tp_cnt[ii]; ++jj)
       {
         std::stringstream fl;
         fl << rve_tp_dirs[ii] << jj+1 << ".txt";
-        std::ifstream strm(fl.str());
-        FiberNetwork * fn = fns[ii][jj] = ldr.fromStream(strm);
+        FiberNetwork * fn = fns[ii][jj] = loadFromFileAndParams(fl.str());
         int dofs = fn->getDofCount();
         sprs[ii][jj] = las::createCSR(fn->getUNumbering(),dofs);
         dof_max = dofs > dof_max ? dofs : dof_max;
@@ -142,6 +145,7 @@ namespace bio
       while(!step_complete)
       {
         // migration
+        updateCoupling();
         std::vector<micro_fo_data> data;
         cs->Communicate(recv_ptrn,data,dat_tp.dat);
         std::vector<micro_fo_result> results(data.size());

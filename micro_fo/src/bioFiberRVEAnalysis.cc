@@ -12,7 +12,7 @@ namespace bio
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
     if(tp == FiberMember::truss)
-      es = new TrussIntegrator(fn->getUNumbering(),fn->getFiberReactions(),ops,k,f,1);
+      es = new TrussIntegrator(fn->getUNumbering(),&fn->getFiberReactions()[0],ops,k,f,1);
     return es;
   }
   FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn, las::SparskitBuffers * b)

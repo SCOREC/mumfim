@@ -7,6 +7,8 @@
 #include <apfMesh2.h>
 namespace bio
 {
+  FiberNetwork * loadFromFile(const std::string & fnm);
+  FiberNetwork * loadFromFileAndParams(const std::string & fnm);
   /**
    * A utility class typically used as an anonymous instance simply to process the
    *  loading of the fiber network mesh from different sources.
@@ -19,25 +21,30 @@ namespace bio
   class NetworkLoader
   {
   protected:
+    apf::Mesh2 * msh;
     apf::MeshTag * rct_tg;
     apf::MeshTag * prd_tg;
-    apf::Field * mmts;
     std::vector<apf::MeshEntity*> vrts;
-    std::vector<FiberReaction*> rctns;
-    void processReactionLine(std::istream &);
-    void processVertLine(std::istream &, apf::Mesh2 *);
-    void processEdgeLine(std::istream &, apf::Mesh2 *);
-    void processPeriodicity(std::istream &, apf::Mesh2 *);
-    apf::MeshEntity * processVertex(apf::Mesh2 *, int, const apf::Vector3 &);
+    std::vector<apf::MeshEntity*> edgs;
+    void processVertLine(std::istream &);
+    void processEdgeLine(std::istream &);
+    void processPeriodicity(std::istream &);
+    apf::MeshEntity * processVertex(int, const apf::Vector3 &);
+    template <typename O>
+      void processReactionLine(std::istream &, O);
+    void processEdgeReactionLine(std::istream &,int);
   public:
     NetworkLoader()
-      : rct_tg()
-      , prd_tg()
-      , mmts()
+      : msh(NULL)
+      , rct_tg(NULL)
+      , prd_tg(NULL)
       , vrts()
-      , rctns()
+      , edgs()
     {}
     FiberNetwork * fromStream(std::istream &);
+    template <typename O>
+      void paramsFromStream(std::istream &, O);
   };
 }
+#include "bioFiberNetworkIO2_impl.h"
 #endif
