@@ -24,7 +24,7 @@
 %% The default is oneside, onecolumn, 10pt, final
 
 
-\title{Image-based Multiscale Mechanical Analysis of Strain Amplification from a Collagen Gel to an Embedded Neuron}
+\title{Image-based Multiscale Mechanical Analysis of Strain Amplification as a Damage Mechanism of Neurons in a Collagen Gel}
 
 \author{
 \name{Victor W. L. Chan\textsuperscript{a},  William R. Tobin\textsuperscript{a}, Sijia Zhang\textsuperscript{b}, Beth A. Winkelstein\textsuperscript{b}, Victor H. Barocas\textsuperscript{c}, Mark S. Shephard\textsuperscript{a}, Catalin R. Picu\textsuperscript{a,d}\thanks{CONTACT Catalin R. Picu. Email: picuc@rpi.edu}}
@@ -145,7 +145,7 @@ Thus, our objective in this work was to develop a general modeling strategy in w
 
 A realistic representation of complex cell geometry was generated from three-dimensional (3D) voxelated data that originated from a stack of image slices. Noise in the voxelated data that results from the limited level of contrast in the imaging technique are removed using a combination of erosion/dilation, manual reassignment, small object removal, and smoothing operations which were applied using the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix}. Once processed, the voxelated data is converted into a discrete geometry via an initial triangulation that is based on voxel level operations where \blue{Need to read references to understand how discrete geometry is created.} Quantization artifacts on the surface of the geometry due to the voxel nature of the data are removed using a smoothing algorithm that consists of three steps. \blue{The processed voxelated data was converted to a discrete geometry using a procedure that is based on the marching cube algorithm \citep{Lorensen:1987vr}, which was also applied through the \textit{ImageToModel} tool. (Victor B. suggested to not say ``based on marching cube algorithm").}
 
-In this work, the input 3D voxelated data originated from a stack of confocal images of the neuron-in-gel system. Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure. Z-stack Images (2-micron thick) were taken by a Zeiss LSM 510 confocal microscope (Carl Zeiss Inc., Thornwood, NY) using a 40X objective and with a resolution of 0.22 micron/pixel. Three images from the Z-stack are shown in Fig.\ \ref{fig:Z-stack-images}
+In this work, the input 3D voxelated data originated from a stack of confocal images of the neuron-in-gel system. Immunocytochemistry was performed with an antibody against the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA) to label the neuronal structure. Z-stack Images (2-micron thick) were taken by a Zeiss LSM 510 confocal microscope (Carl Zeiss Inc., Thornwood, NY) using a 40X objective and with a resolution of 0.22 micron/pixel. Images from the Z-stack are shown in Fig.\ \ref{fig:Z-stack-images}
 %
 % Z-stack images from Neuron-in-gel-Analysis folder
 \begin{figure}[ht]
@@ -524,9 +524,9 @@ As seen in Fig.\ \ref{fig:neuron_ccdf_vary_a}, a small decrease in the axial str
 \section{Results}
 \label{sec:results}
 
-The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Therefore, the neuron model serves as a computational microscope that can be used to probe the  neuron's response to its mechanical environment under loading. For this study, the collagen gel surrounding the neuron was subjected to grip strains of up to 16$\%$, which corresponds to painful ligament loading \citep{Zhang:2016ga}. The axial and transverse strain distributions in the neuron are examined for the three different loading conditions shown in Fig.\ \ref{fig:loading_direction}. The axial cell-body stiffness set by Eq.\ \eqref{eq:cellEA} with $t=30$. 
+The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Therefore, the neuron model serves as a computational microscope that can be used to probe the  neuron's response to its mechanical environment under loading. For this study, the collagen gel surrounding the neuron was subjected to grip strains of up to 16$\%$, which corresponds to painful ligament loading \citep{Zhang:2016ga}. The axial and transverse strain distributions in the neuron are examined for the three different loading conditions shown in Fig.\ \ref{fig:loading_direction}. The axial cell-body stiffness is set by Eq.\ \eqref{eq:cellEA} with $t=30$. 
 
-Color maps of the maximum principal strain (MPS) in the neuron structure for a grip strain of 16$\%$ (painful ligament loading) for 0, 45, and 90 degree loading are plotted in Fig.\ \ref{fig:neuron_MPS}.
+Color maps of the maximum principal strain in the neuron structure for a grip strain of 16$\%$ (painful ligament loading) and for 0, 45, and 90 degree loading are plotted in Fig.\ \ref{fig:neuron_MPS}.
 %
 % Images from Green-Lagrange-Strain/MaxPrnStrn folder.
 \begin{figure}[ht]
@@ -545,7 +545,7 @@ $
 \caption{\label{fig:neuron_MPS} Color maps of MPS in neuron for grip strain of 16$\%$ for loading angle of (a) 0, (b) 45, and (c) 90 degrees. The axial stiffness in the cell body is according to Eq.\ \eqref{eq:cellEA} with $t=30$. The color bar ranges from 10$\%$ to 40$\%$ MPS.}
 \end{figure}
 %
-For all angles of loading, large portions of the neuron experience strains that are greater than the 16$\%$ grip strain on the surrounding gel. This indicates that the applied grip strains on the collagen gel are amplified in the neuron structure, which could lead to neuronal damage even when the surrounding tissue is moderately loaded. 
+For all angles of loading, large portions of the neuron experience strains that are greater than the 16$\%$ grip strain on the surrounding gel. This indicates that the applied strains on the collagen gel are amplified in the neuron, which could lead to neuronal damage even when the surrounding tissue is moderately loaded. 
 
 To gain a more quantitative understanding of the strain distribution in the neuron, the ccdfs of the axial and transverse strains for 10$\%$ (non painful ligament loading) and 16$\%$ (painful ligament loading) grip strains and loading angles of 0, 45, and 90 degrees are plotted in Fig,\ \ref{fig:strain_ccdfs}.
 %
@@ -569,14 +569,16 @@ $
 \caption{\label{fig:strain_ccdfs} Complementary cumulative distribution functions for axial (left column) and transverse (right column)  strains in neuron for 0 (top row), 45 (middle row), and 90 (bottom row) degree loading. Distributions for 10$\%$ (blue dashed line) and 16$\%$ (black solid line) grip strains are plotted for all loading directions. The dotted red lines indicate the fraction of neuron volume that experience a strain of at least 10$\%$ and 16$\%$ when intersecting with the dashed blue and solid black lines, respectively. }
 \end{figure}
 %
-\blue{axial and transverse strains are considered because ...} In Fig.\ \ref{fig:strain_ccdfs} the shape of the strain distributions vary significantly for different applied grip strains and loading directions. In all cases, the black line right of blue for positive strains and opposite for negative strains. Interestingly, beside the 0 degree loading case, the fraction of neuron volume that experiences 10$\%$ and 16$\%$ strain are identical. 
+The axial and transverse strains are considered separately because the neuron is physically anisotropic (e.g., microtubule bundles are axially aligned). 
 
+As observed in Fig.\ \ref{fig:strain_ccdfs}, the shape of the strain distributions vary significantly for different applied strains and loading directions. In all cases, the strain magnitude within the neuron is larger for an applied strain of 16$\%$, as expected. Interestingly, beside the axial strain case for 0 degree loading, the same fraction of neuron volume experiences at least the applied strain on the surrounding collagen gel for each loading direction. In the case of axial strain for 0 degree loading, a larger fraction of the neuron volume undergoes an amplification of the applied strain for 16$\%$ grip strain than that for 10$\%$. The fraction of neuron volume that experiences at least the applied strain are listed in Table \ref{table:ccdf_volfrac_compare} for all cases plotted in Fig.\ \ref{fig:strain_ccdfs}.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht]
 \begin{center}
 \begin{tabular}{ c c c c c }
 \hline\hline
-& \multicolumn{2}{c}{axial strains} & \multicolumn{2}{c}{transverse strains} \\ \hline 
+& \multicolumn{2}{c}{axial strain} & \multicolumn{2}{c}{transverse strains} \\ \hline 
 Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
 \hline 
 0 deg. & 19$\%$ & 28$\%$ & 9$\%$ & 9$\%$\\ 
@@ -584,229 +586,44 @@ Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$
 90 deg. & 13$\%$ & 13$\%$ & 67$\%$ & 67$\%$\\ \hline \hline
 \end{tabular}
 \end{center}
-\caption{Fraction of neuron volume corresponding to different loading directions under non painful ($\epsilon_{\text{bulk}}=0.10$) and painful ($\epsilon_{\text{bulk}}=0.16$) ligament loading.}
+\caption{Fraction of neuron volume that experiences at least the applied strain on surrounding collagen gel for different loading directions.}
 \label{table:ccdf_volfrac_compare}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-local-strain amplification in the neuron, ccdfs of the MPS in the neuron structure are plotted in Fig.\ \ref{fig:neuron_ccdf_0deg_mps} for 10$\%$ and 16$\%$ bulk strains in the collagen gel.
-%
-% Figure generated in N2P178/4-Neuron_FT_trcBC/MaxPrnStrn folder
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{c}
-\includegraphics[height=6cm]{figure/neuron_0deg_MPS_ccdf_compare.pdf} 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_ccdf_0deg_mps} Probability that MPS in the neuron structure is greater than $\epsilon_{\text{max}}$. The probability that the MPS normalized by the applied bulk strain is greater than $\epsilon_{\text{max}}/\epsilon_{\text{bulk}}$ is plotted in the inset. The distributions for bulk strains of 10$\%$ (dashed blue line) and 16$\%$ (solid black line) in the collagen gel are plotted. The averages (50$\%$ probability) are indicated by the dashed red lines. }
-\end{figure}
-%
-For both non painful and painful ligament loading, the average MPS in the neuron structure is greater than the applied bulk strain on the collagen gel. The strain distributions shift to the right with larger bulk strain, but the normalized strain distributions (shown in the inset) are nearly the same. Volume fractions of the neuron structure corresponding to different strain amplifications are listed in Table \ref{table:ccdf_volfrac_0deg}. 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{table}[ht]
-\begin{center}
-\begin{tabular}{ c c c }
-\hline\hline
-strain amplification & vol. frac. for $\epsilon_{\text{bulk}}=0.1$ & vol. frac. for $\epsilon_{\text{bulk}}=0.16$ \\
-\hline 
-1 & 70$\%$ & 63$\%$ \\ 
-1.5 & 18$\%$ & 21$\%$ \\
-2 & 0.9$\%$ &  3.2$\%$ \\ 
-3 & 0.2$\%$ & 0.2$\%$ \\ \hline \hline
-\end{tabular}
-\end{center}
-\caption{Volume fractions of the neuron structure corresponding to different strain amplifications under non painful ($\epsilon_{\text{bulk}}=0.10$) and painful ($\epsilon_{\text{bulk}}=0.16$) ligament loading.}
-\label{table:ccdf_volfrac_0deg}
-\end{table}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-As seen in Table \ref{table:ccdf_volfrac_0deg}, less than 1$\%$ and 3.2$\%$ of the neuron structure experiences a local-strain amplification of more than two times for 10$\%$ and 16$\%$ applied bulk strain, respectively. The volume fraction of the neuron structure that experiences a three times local-strain application drops to 0.2$\%$ for both 10$\%$ and 16$\%$ applied bulk strain.
-
-
-
-%=========================================================================================================
-\subsection{Effect of Changing the Loading Direction}
-\label{sec:loading_direction}
-
-
-The three different loading cases considered in this section are shown schematically in Fig.\ \ref{fig:analysis_schematic}(a). The effect of changing the loading angle is explored for $E_A^{\text{cell}}$ corresponding to $t$=30 in Eq.\ \eqref{eq:cellEA}. Color maps of the MPS on the neuron structure for loading angles of 45 and 90 degrees are plotted in Fig.\ \ref{fig:neuron_MPS} for bulk strains of 10$\%$ and 16$\%$ in the collagen gel.
-%
-% Images from N2P178/4-Neuron_FT_trcBC folder.
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=3.5cm]{figure/MPS_rot45_strain10.pdf} &
-\includegraphics[height=3.5cm]{figure/MPS_rot45_strain16.pdf} \\
-(a) & (b) \\
-\includegraphics[height=3.5cm]{figure/MPS_rot90_strain10.pdf} & 
-\includegraphics[height=3.5cm]{figure/MPS_rot90_strain16.pdf} \\
-(c) & (d)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_MPS} Color maps of maximum principal strain plotted on neuron structure for loading angles of 45 degrees (top row) and 90 degrees (bottom row) at bulk strains of 10$\%$ and 16$\%$. Color bar ranges from 10$\%$ to 40$\%$.}
-\end{figure}
 %
 
-As seen in Fig.\ \ref{fig:neuron_MPS} and comparing to the 0 degree loading case in Fig.\ \ref{fig:neuron_0deg_MPS}, the strain distribution in the neuron structure varies significantly for different loading angles. In all scenarios, large portions of the neuron experience strains that are greater than the applied bulk strain in the collagen gel. The variation in strain distribution above can be quantitatively captured in ccdfs of the MPS in the neuron structure, which are plotted in Fig.\ \ref{fig:neuron_ccdf_mps} for loading angles of 45 and 90 degrees at bulk strains of 10$\%$ and 16$\%$.
-%
-%45 degree distributions from N2P178/4-Neuron_FT_trcBC/MaxPrnStrn/PrincipalStrainDistr.m
-%90 degree distribution from N2P178/3-Neuron_FT/MaxPrnStrn/PrincipalStrainDistr_FarField.m
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=6cm]{figure/neuron_45deg_MPS_ccdf_compare.pdf} &
-\includegraphics[height=6cm]{figure/neuron_90deg_MPS_ccdf_compare.pdf} \\
-(a) & (b) 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_ccdf_mps} Probability that MPS in the neuron structure is greater than $\epsilon_{\text{max}}$. The probability that the MPS normalized by the applied bulk strain is greater than $\epsilon_{\text{max}}/\epsilon_{\text{bulk}}$ is plotted in the insets. The distributions for bulk strains of 10$\%$ (dashed blue line) and 16$\%$ (solid black line) in the collagen gel are plotted for loading angles of (a) 45 and (b) 90 degrees. The averages (50$\%$ probability) are indicated by the dashed red lines. MPS corresponding to 10$\%$ and 16$\%$ are marked by blue ``x'' and black cross, respectively, on the abscissa. } 
-\end{figure}
-%
-Consistent with what is observed in the strain distribution when comparing the color maps of Figs.\ \ref{fig:neuron_0deg_MPS} and \ref{fig:neuron_MPS}, the ccdfs vary significantly for different loading directions. 
+As seen in Table \ref{table:ccdf_volfrac_compare}, the applied strain on the collagen gel is amplified in the neuron predominantly along the axial direction for 0 and 45 degree loading and in the transverse direction for 90 degree loading. For 45 degree loading, less than 1$\%$ of the neuron volume experiences a transverse strain that is greater than or equal to the applied strain.
 
-For both non painful and painful ligament loading at 45 and 90 degrees, the average MPS in the neuron structure is greater than the applied bulk strain on the surrounding gel. The strain distributions shift to the right with larger applied bulk strain, but the normalized distributions (shown in insets) are nearly the same. Compared to the 0 degree loading case (see Fig.\ \ref{fig:neuron_ccdf_0deg_mps}), the average MPS for 45 and 90 degree loading is greater. Volume fractions of the neuron structure corresponding to different strain amplifications are listed in Table \ref{table:ccdf_volfrac_compare} for the 45 and 90 degree loading cases.
+Physiologically more important are the tails of the strain distributions which represent the largest strains experienced by the neuron. The strain values corresponding to the largest 10$\%$ (by neuron volume) of deformation in the neuron are listed in Table \ref{table:ccdf_tail_strains}. 
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht]
 \begin{center}
 \begin{tabular}{ c c c c c }
 \hline\hline
-& \multicolumn{2}{c}{vol. frac. for 45 degree loading} & \multicolumn{2}{c}{vol. frac. for 90 degree loading} \\ \hline 
-strain amplification & $\epsilon_{\text{bulk}}=0.1$ & $\epsilon_{\text{bulk}}=0.16$ & $\epsilon_{\text{bulk}}=0.1$ & $\epsilon_{\text{bulk}}=0.16$ \\
+& \multicolumn{2}{c}{Largest 10$\%$ of axial strain} & \multicolumn{2}{c}{Largest 10$\%$ of transverse strain} \\ \hline 
+Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
 \hline 
-1 & 97$\%$ & 98$\%$ & 94$\%$ & 93$\%$\\ 
-1.5 & 61$\%$ & 57$\%$ & 79$\%$ & 78$\%$\\
-2 & 8.4$\%$ &  7.0$\%$ & 45$\%$ &  58$\%$\\ 
-3 & 0$\%$ & 0$\%$ & 9.7$\%$ & 14$\%$\\ \hline \hline
+0 deg. & 0.11 & 0.19 & 0.04 & 0.06\\ 
+45 deg. & 0.16 & 0.27 & 0.06 & 0.10\\
+90 deg. & 0.05 & 0.09 & 0.22 & 0.37\\ \hline \hline
 \end{tabular}
 \end{center}
-\caption{Volume fractions of the neuron structure corresponding to different strain amplifications under non painful ($\epsilon_{\text{bulk}}=0.10$) and painful ($\epsilon_{\text{bulk}}=0.16$) ligament loading at 45 and 90 degrees.}
-\label{table:ccdf_volfrac_compare}
+\caption{Strain values corresponding to the largest 10$\%$ of deformation in the neuron.}
+\label{table:ccdf_tail_strains}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-From Table \ref{table:ccdf_volfrac_compare}, the volume fraction of the neuron structure that experiences a local-strain amplification of more than two times when loaded at 45 and 90 degrees is significantly larger than in the 0 degree loading case.
-
-Although the average strain amplification in the neuron structure is greater when loaded at 45 degrees than when loaded at 0 degrees, the tail of the strain distribution for the 45 degree case is shorter with a maximum strain amplification that is less than three times. In the 90 degree loading case, the average strain amplification is nearly double for non painful loading and more than double for painful loading. The tail of the distribution is significantly longer for the 90 degree loading case with 9.7$\%$ and 15$\%$ of the neuron structure experiencing strain amplifications of three times for non painful and painful ligament loading, respectively.
-
-%Variation in the shape and spread of the neuron strain distributions at different bulk strains is greatest in the case of 90 degree loading, where the spread of the distributions increase with larger bulk strain. In contrast, the variations in shape and spread of the neuron strain distributions are small for the 0 and 45 degree loading cases. Additional insight can be gained by separating the neuron strain distribution into contributions from the cell bodies and axons. The distributions of maximum principal strain in the cell bodies and axons are plotted in Fig.\ \ref{fig:rgns_ccdf_mps}.
-%%
-%\begin{figure}[ht]
-%\begin{center}
-%$
-%\begin{array}{ccc}
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_128_1920_ccdf_cellbodies_compare_stps.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_128_1920_ccdf_cellbodies_compare_stps.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot90_FT_dspBC50_a30_128_1920_ccdf_cellbodies_compare_stps_farfield.pdf} \\
-%(a) & (b) & (c) \\
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_128_1920_ccdf_axons_compare_stps.pdf} &
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_128_1920_ccdf_axons_compare_stps.pdf} &
-%\includegraphics[height=4.5cm]{figure/rot90_FT_dspBC50_a30_128_1920_ccdf_axons_compare_stps_farfield.pdf} \\
-%(d) & (e) & (f)
-%\end{array}
-%$
-%\end{center}
-%\caption{\label{fig:rgns_ccdf_mps} Distributions of maximum principal strain (ccdf) in the cell bodies (top row) and axons (bottom row) for loading angles of (a,d) 0 degrees, (b,e) 45 degrees, and (c,f) 90 degrees. For each loading angle, distributions for bulk strains of 5 - 6 $\%$ (dotted blue line), 10$\%$ (dashed red line), and 16$\%$ (solid black line) are plotted. The values of $\epsilon_{\text{max}}$ are normalized by the bulk strain, $\epsilon_{\text{bulk}}$.  }
-%\end{figure}
-%%
 %
-%The separate distributions for the cell bodies and axons provide additional details about the variations in shape and spread of the neuron distributions in Fig.\ \ref{fig:neuron_ccdf_mps}. For the 0 degree loading case, variations in the distribution at different bulk strains become more apparent. For the cell bodies, the distribution shifts to the right for larger bulk strains indicating that the amplification in the local strain becomes larger with more deformation in the surrounding gel. On the contrary, the middle portion of the axon distribution shifts to the left with increasing bulk strains indicating that the local strain amplification decreases with more deformation in the surrounding gel. The response in the cell bodies and axons cancel out resulting in only slight variations in the overall neuron strain distribution. 
-%
-%For the 45 degree loading case, variations only arise in the axon distribution. Therefore, the variations seen in the overall neuron distribution is solely due to variations in the axon. Similar to the 0 degree loading case, the axon distribution for the 45 degree loading shifts to the left with larger bulk strains indicating a decrease in the local strain amplification as the surrounding gel is increasingly deformed.
-%
-%For the 90 degree loading case, large variations are seen in both the cell body and axon distributions. For the cell bodies, the subtle step feature seen in the overall neuron distribution becomes more apparent. This step feature corresponds to two regimes of strain which are clearly seen in the over plot of maximum principal strain on the neuron in Figs.\ \ref{fig:neuron_MPS}(e) and (f). For both the cell body and axon, the distributions shift to the right with increasing bulk strains indicating that the local strain amplification increases with increasing deformation in the surrounding gel. 
-%
-%The results above indicate that the local strains experienced by the neuron is significantly larger than the applied load on the surrounding gel. The extent of local strain amplification depends on the configuration of the neuron relative to the loading angle. To clarify the cause of local strain amplification in the neuron, the axial strains along a region of the neuron structure are examined.
-%
-%%=========================================================================================================
-%\subsection{Axial Strain Distributions}
-%In this section we examine the axial strains, which are more directly linked to the actual geometry of the neuron structure, to shed light on the relationship between local strain amplification and the relative configuration of the neuron with respect to loading angle. Our analysis focuses on a portion of the neuron structure that lies along a single axis. This portion of the neuron is highlighted in Fig.\ \ref{fig:axial_schematic} where the axes on which the strain distributions are calculated are also specified (i.e., axis 1 and axis 2). 
-%%
-%\begin{figure}[ht]
-%\begin{center}
-%$
-%\begin{array}{c}
-%\includegraphics[height=4cm]{figure/axial_coords_schematic.pdf} 
-%\end{array}
-%$
-%\end{center}
-%\caption{\label{fig:axial_schematic} Schematic showing the region (rectangular box) and the axes (dashed lines) that are examined.}
-%\end{figure}
-%%
-%
-%Distributions of the axial strains along axes 1 and 2 are plotted in Fig.\ \ref{fig:axial_distr} for different loading angles. Depending on the loading angle, axes 1 and 2 will experience either tensile or compressive axial strains. In the case of tensile strains, the ccdf in Eq.\ \eqref{eq:ccdf} is used, while the cdf in Eq.\ \eqref{eq:cdf} is applied for compressive strains. For the 0 degree loading case the axial strains along axis 1 are tensile while those along axis 2 are compressive. The opposite is true for the 90 degree loading case - compressive strain in axis 1 and tensile strain in axis 2 - because the load direction is orthogonal. In the case of 45 degree loading, axis 1 experiences tensile strains while axis 2 experiences mostly compressive strains with a small fraction of the structure experiencing tensile strains.
-%%
-%% images from N2P178/5-Neuron_LocalAxon_Strain/MaxPrnStrn/PrincipalStranDistr.m
-%\begin{figure}[ht]
-%\begin{center}
-%$
-%\begin{array}{ccc}
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_compare_stps.pdf} &
-%\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_compare_stps.pdf} \\
-%(a) & (b) & (c) \\ 
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_compare_stps.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_ptdata_128_1920_axial_ccdf_axis1_compare_stps.pdf} \\
-%(d) & (e) & (f) \\
-%\end{array}
-%$
-%\end{center}
-%\caption{\label{fig:axial_distr} Distributions of axial strain along axis 1 (top row) and axis 2 (bottom row) for different loading angles. The ccdf is plotted for tensile strains, while the cdf is plotted for compressive strains. For each loading angle, distributions for bulk strains of 5 - 6 $\%$ (dashed blue line), 10$\%$ (dashed red line), and 16$\%$ (solid black line) are plotted. The values of axial strain ($\epsilon_{\text{axis1}}$ or $\epsilon_{\text{axis2}}$) are normalized by the bulk strain, $\epsilon_{\text{bulk}}$.}
-%\end{figure}
-%%
-%
-%As seen in Fig.\ \ref{fig:axial_distr}, variations in the strain distributions are greatest for the 90 degree loading case where the amplification of local axial strain increases with increasing bulk strain - the distributions shift left and right for compressive and tensile strains, respectively. In contrast, only small variations are seen in the strain distributions for the 0 and 45 degree loading cases. 
-%
-%From a physiological stand point, the largest strains (i.e., the tails of the distributions) are most important because those are the regions where neuron damage arises. To understand how the high strain portions of the neuron structure relate to bulk strain applied to the gel, the local-strain amplification corresponding to the portion of the structure that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_distr}) are plotted as a function of bulk strain in Fig.\ \ref{fig:axial_amp}. 
-%%
-%% images are from N2P178/5-Neuron_LocalAxon_Strain/MaxPrnStrn/PlotStrnAmp.m
-%\begin{figure}[ht]
-%\begin{center}
-%$
-%\begin{array}{ccc}
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_strn11_128_1920_axial_ccdf_axis1_strn_amp.pdf} &
-%\includegraphics[height=4.5cm]{figure/rot90_FT50_strn11_128_1920_axial_cdf_axis1_strn_amp.pdf} \\
-%(a) & (b) & (c) \\ 
-%\includegraphics[height=4.5cm]{figure/rot0_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} &
-%\includegraphics[height=4.5cm]{figure/rot45_FT50_strn22_128_1920_axial_cdf_axis1_strn_amp.pdf} & 
-%\includegraphics[height=4.5cm]{figure/rot90_FT50_strn22_128_1920_axial_ccdf_axis1_strn_amp.pdf} \\
-%(d) & (e) & (f) 
-%\end{array}
-%$
-%\end{center}
-%\caption{\label{fig:axial_amp} Local strain amplification corresponding to the portion of the neuron structure in Fig.\ \ref{fig:axial_schematic} that experiences the largest 5$\%$ strain (0.05 on ordinate of distributions in Fig.\ \ref{fig:axial_distr}) as a function of bulk strain for different loading directions.}
-%\end{figure}
-%%
-%
-%As seen in Fig.\ \ref{fig:axial_amp}, the local-strain amplification of the lateral compressive strains increase for all loading angles - axis 2 for 0 and 45 degree loading and axis 1 for 90 degree loading. This is consistent with the fact that the Poisson ratio of the collagen gel increases with larger deformations (see Poisson ratio curve in Fig.\ \ref{fig:fiber_param2}(a)). Note that for 45 degree loading, axis 2 experiences tensile strains at smaller bulk strains before the lateral compressive strains that arise from the Poisson ratio effect become large enough to dominate. Interestingly, the local-strain amplification of the tensile strain decreases for the 0 and 45 degree loading cases and increases for the 90 degree loading cases - axis 1 for 0 and 45 degree loading and axis 2 for 90 degree loading. This result suggests that a configuration where the axial direction of the neuron is near parallel to the loading direction (e.g., axis 1 for 0 and 45 degree loading cases) is more favorable than a configuration where the axial direction of the neuron is near orthogonal to the loading direction (e.g., axis 2 for the 90 degree loading case). The underlying mechanisms for such behavior is explored in the next section.
+As seen in Table \ref{table:ccdf_tail_strains}, the applied strain is amplified along the axial direction for 0 and 45 degree loading and the transverse direction for 90 degree loading. Of these cases, the largest and smallest amplifications arise for 90 and 0 degree loading, respectively. When the collagen gel is loaded at 90 degrees, the largest axon in the neuron lies perpendicular to the loading direction giving rise to a relatively large deformation in the neuron. On the other hand, when the collagen gel is loaded at 0 degrees, the largest axon in the neuron lies nearly parallel to the loading direction preventing excessive deformation in the neuron.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion}
 \label{sec:discussion}
+\red{Computational discussion}
+
+The results in Section \ref{sec:results} illustrate that the strain distribution (ccdf) in the neuron structure, and hence strain amplification, is most strongly influenced by the configuration of the neuron with respect to the loading direction. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron structure, where the axial stiffness is more than one order of magnitude greater than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. Due to the complex geometry of the embedded neuron structure studied above, the neuron structure is exposed to both transverse and axial components of loading. The spread of the ccdfs reflect the range of tranverse and axial loads that different regions within the neuron structure is exposed to.
 
 \red{Sijia, Beth, Victor B.: How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
-
-The results in Sections \ref{sec:cellbody_stiffness} and \ref{sec:loading_direction} illustrate that the strain distribution (ccdf) in the neuron structure, and hence strain amplification, is most strongly influenced by the configuration of the neuron with respect to the loading direction. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron structure, where the axial stiffness is one order of magnitude stiffer than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. Due to the complex geometry of the embedded neuron structure studied above, the neuron structure is exposed to both transverse and axial components of loading. The spread of ccdfs reflects the range of tranverse and axial loads that different regions within the neuron structure is exposed to.
-
-Some insight about the magnitude of the strain amplification for transverse and axial loading can be gained by simplifying the embedded neuron structure system into a one-dimensional gel-neuron-gel series configuration. For such a system, the strain in the neuron can be expressed in terms of the strain in the gel by
-%
-\begin{equation}
-\epsilon_{\text{neuron}} = \frac{K_{\text{gel}}}{K_{\text{neuron}}}\epsilon_{\text{gel}},
-\label{eq:series_analysis}
-\end{equation}
-%
-where $K_{\text{gel}}$ and $K_{\text{neuron}}$ are the stiffnesses in the gel and neuron, respectively. The ratio of gel stiffness to neuron stiffness represents the strain amplification in the neuron structure. The simplified series configuration represents an upper bound for the strain amplification experienced in the neuron structure. Using Eq.\ \ref{eq:series_analysis}, the upper bounds of the two extremes of pure transverse and axial loading can be examined. 
-
-At one extreme when the load on the neuron structure is purely transverse, $K_{\text{neuron}} = 1.5$ kPa and is less than $K_{\text{gel}}$. Since $K_{\text{neuron}} < K_{\text{gel}}$, strain amplification in the neuron structure arises. The strain amplification becomes larger with deformation because the $K_{\text{gel}}$ increases due to stiffening during deformation. From Eq.\ \eqref{eq:series_analysis}, the strain amplification for non painful and painful loading is 17.8 and 31.6 times, respectively.
-
-At the other extreme when the load on the neuron structure is purely axial, $K_{\text{neuron}} = 70$ kPa and is greater than $K_{\text{gel}}$. Since $K_{\text{neuron}} > K_{\text{gel}}$, the strain experienced by the neuron structure is less than that in the gel. The strain discrepancy between the neuron structure and gel decreases with deformation due to the stiffening of the collagen gel. From Eq.\ \eqref{eq:series_analysis}, the strain amplification for non painful and painful loading is 0.38 and 0.68 times, respectively.
-
-The upper bound scenarios described above can be applied to understand the simulation results for the embedded neuron structure. In all cases of non painful and painful ligament loading considered, the average strain amplification is greater than one. This suggests that on average the neuron structure is exposed to more transverse loading than axial loading. As the loading angle varies from 0 to 90 degrees, the volume fraction of neuron that is exposed to transverse loading increases as reflected by the increasing average strain amplification.
 
 As mentioned above, the spread in the strain distributions reflect the complex geometry of the neuron structure. Of the three loading angles considered, the neuron structure is loaded most uniformly at 45 degrees as reflected by the relatively narrow spread of its strain distribution. The wider spread in the strain distributions for 0 and 90 degree loading is due to the existence of neurons in the structure that lie nearly parallel to the 0 degree and 90 degree axis. As a result, when the gel is loaded at either 0 or 90 degrees, the neuron structure will be exposed to both extremes of nearly pure transverse and axial loadings. 
 
