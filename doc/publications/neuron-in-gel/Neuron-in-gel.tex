@@ -134,7 +134,7 @@ Numerous studies have now been made using what could be broadly termed a ``cell 
 
 In spite of these recent advances, there is still considerably more work to be done in pursuing a realistic representation of the cell's (or tumor's) mechanical environment under a given tissue load. Perhaps the most salient missing feature of current models is the fact that the microscopic entity is rarely spherical in shape.  A malignant tumor can have an extremely complex geometry [Cristini?], for example, and fibroblasts spread and polarize within a collagen matrix [\red{reference}]. There is a compelling need for methods that can account for the detailed microscale geometry when downscaling mechanical information.
 
-[Do we want a paragraph here about computational demands for such models? I am not sure.] In order to accommodate the high computational demands required to incorporate the complex neuron geometry and the multi-scale nature of the surrounding collagen gel into our model, we employ the adaptive multi-scale simulation infrastructure (AMSI) \citep{Delalondre:2010kt} which is designed to simultaneously handle massively parallel simulations on multiple scales. 
+\red{Do we want a paragraph here about computational demands for such models? I am not sure.} In order to accommodate the high computational demands required to incorporate the complex neuron geometry and the multi-scale nature of the surrounding collagen gel into our model, we employ the adaptive multi-scale simulation infrastructure (AMSI) \citep{Delalondre:2010kt} which is designed to simultaneously handle massively parallel simulations on multiple scales. 
 
 Although the approach described herein is general, it is focused on the specific experimental system of dorsal root ganglion (DRG) neurons embedded in a collagen gel. This model system, which has been used extensively by the Winkelstein group [\red{reference}] and others [\red{reference}], allows detailed study of the cellular mechanisms of neuronal injury in a more controllable environment than can be achieved in vivo. As such, it has the potential to provide insight into the mechanism of neuronal injury under mechanical load, with biochemical markers of neuronal injury being quantified in response to different macroscopic strains and/or strain rates \citep{Zhang:2016ga}. This system has the further advantage that it can be imaged readily via confocal microscopy, providing a 3-D image of the neurite [\red{reference}].
 
@@ -345,7 +345,9 @@ For the parameters in Table \ref{table:multiscale_parameters}, the Poisson ratio
 \label{eq:poisson-ratio}
 \end{equation}
 %
-Equation \ref{eq:poisson-ratio} is a conventional measure of contraction that is derived from the usual definition of volumetric strain. Although Eq.\ \eqref{eq:poisson-ratio} is derived for small strain deformation, we conventionally extend the definition to the present case. The Poisson ratio as a function of the bulk strain is plotted in Fig.\ \ref{fig:multiscale_properties}(c). The Poisson ratio increases as a function of applied strain, and becomes larger than 0.5 at an applied strain of approximately $17\%$. The increasing Poisson ratio at larger applied strains is due to the presence of free volume in the network which allows significant geometric reorganization and fiber alignment \citep{Vader:2009js}. At lower strains, the increasing Poisson ratio is due to nonlinearity of the network kinematics. \blue{Describe how Poisson Ratio was measured.}
+Equation \ref{eq:poisson-ratio} is a conventional measure of contraction that is derived from the usual definition of volumetric strain. Although Eq.\ \eqref{eq:poisson-ratio} is derived for small strain deformation, we conventionally extend the definition to the present case. The Poisson ratio as a function of the bulk strain is plotted in Fig.\ \ref{fig:multiscale_properties}(c). The Poisson ratio increases as a function of applied strain, and becomes larger than 0.5 at an applied strain of approximately $17\%$. The increasing Poisson ratio at larger applied strains is due to the presence of free volume in the network which allows significant geometric reorganization and fiber alignment \citep{Vader:2009js}. At lower strains, the increasing Poisson ratio is due to nonlinearity of the network kinematics. 
+
+\blue{Compared to the experimentally measured Poisson ratio ... Describe how Poisson Ratio was measured.}
 
 Fiber alignment is measured using the orientation index $P_2$. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
 %
@@ -432,7 +434,7 @@ To mechanically model the neuron structure, a geometric model and its correspond
 
 %\input{figure/multi-scale-coupling-data.pdf_tex}\label{fig:coupling-data}
 \subsection{Multi-scale}
-Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by to combining existing single-scale analysis codes into multi-scale analyses.
+Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by combining existing single-scale analysis codes into multi-scale analyses.
 
 The macroscopic simulation code and the microscopic simulation codes are decoupled save for their interactions through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication required for the transmission of required data between the scales. Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in both the parallel execution space and the problem domain. This data is used by the AMSI multi-scale systems to communicate the coupling data required at each phase of simulation, and accommodate dynamic run-time operations such as load balancing while maintaining the coupling communication model. A discussion of the underlying design considerations of AMSI can be found in \citep{Delalondre:2010kt}.
 
@@ -453,65 +455,141 @@ The macroscopic continuum and microscopic fiber network simulation physical scal
 
 The macro-scale domain is discretized using an unstructured mesh that is partitioned across the parallel execution space of the scale. Figure \ref{fig:scales} depicts the relationship between the two scales with respect to the macro-scale unstructured mesh, an individual numerical integration point on that mesh, and the RVE-level microscale simulation corresponding to that macro-scale location.
 
-AMSI models the relationship between the domains of the macro-scale and micro-scale problem. This model combined with a model of the parallel distribution the data structures modeling the domains of each scale and the physical quantities relevant to a particular multi-scale coupling allow the construction of a parallel communication plan used to link coupling data between scales over the course of a simulation. Up- and down-scaling transformations of the coupling data currently take place in user code after (or before) employing the communication plane.
+AMSI models the relationship between the domains of the macro-scale and micro-scale problem. \blue{This model combined with a model of the parallel distribution the data structures modeling the domains of each scale and the physical quantities relevant to a particular multi-scale coupling allow the construction of a parallel communication plan used to link coupling data between scales over the course of a simulation. (confusing. sentence too long.} Up- and down-scaling transformations of the coupling data currently take place in user code after (or before) employing the \blue{communication plane (the concept of a ``communication plane" is unclear)}.
 
-At each macro-scale numerical integration point, the deformation gradient $F$ is calculated and provided to the AMSI coupling system, which uses a communication plan to provide the value to the micro-scale RVE simulation related to the integration point. This value is used by the micro-scale as shown in equation \ref{eq:downscaling} to establish the boundary conditions for the current state of the micro-scale RVE problem. Once a solution has been reached for the micro-scale simulation, the macro-scale stress term $\sigma^{(M)}$ from equation \ref{eq:macro_stress_discrete} and the macro-scale stress divergence term $\div \sigma^{(M)}$ from equation \ref{eq:macro_stress_divergence} are supplied to AMSI. These terms are communicated to the macro-scale and associated with the coupled integration point for use in assembling the macro-scale linear algebraic system for the current Newton iteration.
+At each macro-scale numerical integration point, the deformation gradient $\pmb{F}$ is calculated and provided to the AMSI coupling system, which uses a communication plan to provide the value to the micro-scale RVE simulation related to the integration point. This value is used by the micro-scale as shown in Eq.\ \eqref{eq:downscaling} to establish the boundary conditions for the current state of the micro-scale RVE problem. Once a solution has been reached for the micro-scale simulation, the macro-scale stress term $\sigma^{(M)}$ from Eq.\ \eqref{eq:macro_stress_discrete} and the macro-scale stress divergence term $\div \sigma^{(M)}$ from Eq.\ \eqref{eq:macro_stress_divergence} are supplied to AMSI. These terms are communicated to the macro-scale and associated with the coupled integration point for use in assembling the macro-scale linear algebraic system for the current Newton iteration.
 
 
 \subsection{Problem Specification}\label{sec:specification}
-\red{size of the problem, description of setup and params}
-
+\blue{Reiterate number of elements for mesh. Specify that linear tetrahedron are used and therefore there are 12 DOFs per element.}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results}
-\label{sec:results}
+\section{Methods}
+\label{sec:methods}
 
-The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Such strain information can be used to examine an embedded neuron structure's susceptibility to injury, which provides physiological insights about the cause of pain when an innervated ligament is excessively loaded. \red{Sijia, Beth, Victor B.: How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
-
-For this study, the collagen gel surrounding the neuron structure is subjected to bulk strains of up to 16$\%$, which corresponds to painful ligament loading \citep{Zhang:2016ga}. The strain within the neuron structure is quantified by a complementary cumulative distribution function (ccdf) defined as 
+%=========================================================================================================
+\subsection{Strain Quantification}
+\label{subsec:strain_quant}
+The strain within the neuron is quantified by a complementary cumulative distribution function (ccdf) defined as 
 %
 \begin{equation}
-\text{ccdf}(X) = \int_{X}^{\infty} p_{\epsilon^*}(X)d\epsilon^* = \text{Pr}[ \epsilon^*\le X],
+\text{ccdf}(X) = \int_{X}^{\infty} p_{\epsilon^*}(X)d\epsilon^* = \text{Pr}[ \epsilon^*\ge X],
 \label{eq:ccdf}
 \end{equation}
 %
-where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$ and $\epsilon^*$ is either the maximum principal strain (MPS) normalized by the applied bulk strain on the surrounding gel ($\epsilon_{\text{max}}/\epsilon_{\text{bulk}}$) or the MPS itself ($\epsilon_{\text{max}}$). When $\epsilon^* = \epsilon_{\text{max}}/\epsilon_{\text{bulk}}$, the applied bulk strain on the surrounding gel is amplified in the neuron structure when $\epsilon^* > 1$. When the local-strain amplification is large, moderate loads that are applied to the surrounding gel can give rise to injury in the neuron. Equation \ref{eq:ccdf} is the probability that the neuron structure (equivalent to the volume fraction of the neuron) experiences a local-strain amplification ($\epsilon^* = \epsilon_{\text{max}}/\epsilon_{\text{bulk}}$) or local-strain ($\epsilon^* = \epsilon_{\text{max}}$) of \textit{at least} $X$. 
+where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$ and $\epsilon^*$ is either the axial, $\epsilon_{\text{axial}}$, or transverse, $\epsilon_{\text{transverse}}$, strain with respect to the local axon axis. Equation \ref{eq:ccdf} is the probability that the neuron structure (equivalent to the volume fraction of the neuron) experiences an axial or transverse strain of \textit{at least} $X$. 
 
 %=========================================================================================================
-\subsection{Strain Distribution}
-In this section, the MPS of the embedded neuron structure is examined. For this analysis, the surrounding gel is loaded parallel to the 0 degree axis indicated in Fig.\ \ref{fig:analysis_schematic} and the axial stiffness in the cell body, $E_A^{\text{cell}}$, is set by Eq.\ \eqref{eq:cellEA} with $t=30$. 
+\subsection{Loading Direction}
+\label{subsec:load_direction}
+
+Three loading directions corresponding to 0, 45, and 90 degrees are considered. The three loading directions are schematically illustrated in Fig.\ \ref{fig:loading_direction}.
 %
 \begin{figure}[ht]
 \begin{center}
 $
 \begin{array}{c}
-\includegraphics[height=4cm]{figure/AngleLoadingSchematic.pdf} 
+\includegraphics[height=5cm]{figure/AngleLoadingSchematic.pdf} 
 \end{array}
 $
 \end{center}
-\caption{\label{fig:analysis_schematic} Schematic showing axes of load directions corresponding to 0, 45, and 90 degrees.}
+\caption{\label{fig:loading_direction} Schematic showing axes of load directions corresponding to 0, 45, and 90 degrees.}
 \end{figure}
 %
+When the loading direction on the collagen gel is varied, the structural features in the neuron are exposed to different modes of deformation. Therefore, by examining different loading directions, we are able to develop insights about how the strain distribution in the neuron depends on its mechanical environment.
 
-Color maps of the MPS on the neuron structure for bulk strains of 10$\%$ (non painful ligament loading) and 16$\%$ (painful ligament loading) in the collagen gel are plotted in Fig.\ \ref{fig:neuron_0deg_MPS}.
+%=========================================================================================================
+\subsection{Choice of Axial Stiffness in the Cell Body}
+\label{sec:cellbody_stiffness}
+The transition in the axial stiffness of the cell bodies presented in Eq.\ \eqref{eq:cellEA} is artificial. To understand how this transition affects the final strain distribution in the neuron, the transition rate is varied by adjusting $t$ in Eq.\ \eqref{eq:cellEA}. As seen from Eq.\ \eqref{eq:cellEA}, the value of $t$ needs to be greater than $D$ (=25.5 $\mu$m) in order for $E_A^{\text{cell}}$ to be positive. Consequently, three values of $t$ are considered: $t=$ 28 $\mu$m, 30 $\mu$m, and 50 $\mu$m, which correspond to axial stiffnesses of approximately 6.25 kPa, 10.5 kPa, and 34.3 kPa, respectively, at the center of the largest cell body in the neuron structure. The ccdfs for different axial stiffnesses of the cell body (different values of $t$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a} for the 0 degree loading case for a grip strain of 16$\%$ on the collagen gel. 
 %
-% Images from N2P178/4-Neuron_FT_trcBC folder.
+% Figures generated in N2P178/6-Neuron_CellStiffness/MaxPrnStrn folder
 \begin{figure}[ht]
 \begin{center}
 $
 \begin{array}{cc}
-\includegraphics[height=3.25cm]{figure/MPS_rot0_strain10.pdf} & 
-\includegraphics[height=3.25cm]{figure/MPS_rot0_strain16.pdf} \\
-(a) & (b) 
+\includegraphics[height=5cm]{figure/neuron_compare_t_ccdf_axial.pdf} &
+\includegraphics[height=5cm]{figure/neuron_compare_t_ccdf_trns.pdf} \\
+(a) & (b)
 \end{array}
 $
 \end{center}
-\caption{\label{fig:neuron_0deg_MPS} Color maps of MPS plotted on neuron structure for loading angle of 0 degrees for bulk strains of (a)10$\%$ and (b) 16$\%$ in the collagen gel. The axial stiffness in the cell body is according to Eq.\ \eqref{eq:cellEA} with $t=30$. The color bar ranges from 10$\%$ to 40$\%$ MPS.}
+\caption{\label{fig:neuron_ccdf_vary_a} Complimentary cumulative distribution functions for (a) axial and (b) transverse strains in the neuron due to 0 degree load of 16$\%$ grip strain. The distributions are for axial cell-body stiffnesses corresponding to t=28 (blue dashed line), 30 (red dotted line), and 50 (yellow solid line). }
 \end{figure}
 %
-For both non painful and painful ligament loading, large portions of the neuron experience strains that are greater than the applied bulk strain on the surrounding gel. This indicates that the applied strains on the collagen gel are amplified in the neuron structure, which can lead to neuronal damage even when the surrounding tissue is moderately loaded. 
 
-To gain a more quantitative understanding of the local-strain amplification in the neuron, ccdfs of the MPS in the neuron structure are plotted in Fig.\ \ref{fig:neuron_ccdf_0deg_mps} for 10$\%$ and 16$\%$ bulk strains in the collagen gel.
+As seen in Fig.\ \ref{fig:neuron_ccdf_vary_a}, a small decrease in the axial strain is detected when $E_A^{\text{cell}}$ increases from 6.25 kPa to 34.3 kPa for $\epsilon_{\text{axial}} > 0.15$. For transverse strain the distributions are nearly identical for all cell body stiffnesses considered. These results suggest that the strain distribution within the neuron is insensitive to the axial stiffness of the cell body. The negative values of strain seen in the distributions are due to lateral contraction that arises from the Poisson effect.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\label{sec:results}
+
+The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Therefore, the neuron model serves as a computational microscope that can be used to probe the  neuron's response to its mechanical environment under loading. For this study, the collagen gel surrounding the neuron was subjected to grip strains of up to 16$\%$, which corresponds to painful ligament loading \citep{Zhang:2016ga}. The axial and transverse strain distributions in the neuron are examined for the three different loading conditions shown in Fig.\ \ref{fig:loading_direction}. The axial cell-body stiffness set by Eq.\ \eqref{eq:cellEA} with $t=30$. 
+
+Color maps of the maximum principal strain (MPS) in the neuron structure for a grip strain of 16$\%$ (painful ligament loading) for 0, 45, and 90 degree loading are plotted in Fig.\ \ref{fig:neuron_MPS}.
+%
+% Images from Green-Lagrange-Strain/MaxPrnStrn folder.
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{c}
+\includegraphics[height=4cm]{figure/rot0_FT50_stp13.pdf} \\
+(a) \\
+\includegraphics[height=4cm]{figure/rot45_FT50_stp46.pdf} \\
+(b) \\
+\includegraphics[height=4cm]{figure/rot90_FT50_stp36.pdf} \\
+(c)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_MPS} Color maps of MPS in neuron for grip strain of 16$\%$ for loading angle of (a) 0, (b) 45, and (c) 90 degrees. The axial stiffness in the cell body is according to Eq.\ \eqref{eq:cellEA} with $t=30$. The color bar ranges from 10$\%$ to 40$\%$ MPS.}
+\end{figure}
+%
+For all angles of loading, large portions of the neuron experience strains that are greater than the 16$\%$ grip strain on the surrounding gel. This indicates that the applied grip strains on the collagen gel are amplified in the neuron structure, which could lead to neuronal damage even when the surrounding tissue is moderately loaded. 
+
+To gain a more quantitative understanding of the strain distribution in the neuron, the ccdfs of the axial and transverse strains for 10$\%$ (non painful ligament loading) and 16$\%$ (painful ligament loading) grip strains and loading angles of 0, 45, and 90 degrees are plotted in Fig,\ \ref{fig:strain_ccdfs}.
+%
+% Figure generated in Green-Lagrange-Strain/AxialStrn or TrnsStrn folders
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=5cm]{figure/angle0_combined_axial.pdf} &
+\includegraphics[height=5cm]{figure/angle0_combined_trns.pdf} \\
+(a) & (b) \\
+\includegraphics[height=5cm]{figure/angle45_combined_axial.pdf} &
+\includegraphics[height=5cm]{figure/angle45_combined_trns.pdf} \\
+(c) & (d) \\
+\includegraphics[height=5cm]{figure/angle90_combined_axial.pdf} &
+\includegraphics[height=5cm]{figure/angle90_combined_trns.pdf} \\
+(e) & (f) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:strain_ccdfs} Complementary cumulative distribution functions for axial (left column) and transverse (right column)  strains in neuron for 0 (top row), 45 (middle row), and 90 (bottom row) degree loading. Distributions for 10$\%$ (blue dashed line) and 16$\%$ (black solid line) grip strains are plotted for all loading directions. The dotted red lines indicate the fraction of neuron volume that experience a strain of at least 10$\%$ and 16$\%$ when intersecting with the dashed blue and solid black lines, respectively. }
+\end{figure}
+%
+\blue{axial and transverse strains are considered because ...} In Fig.\ \ref{fig:strain_ccdfs} the shape of the strain distributions vary significantly for different applied grip strains and loading directions. In all cases, the black line right of blue for positive strains and opposite for negative strains. Interestingly, beside the 0 degree loading case, the fraction of neuron volume that experiences 10$\%$ and 16$\%$ strain are identical. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ c c c c c }
+\hline\hline
+& \multicolumn{2}{c}{axial strains} & \multicolumn{2}{c}{transverse strains} \\ \hline 
+Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
+\hline 
+0 deg. & 19$\%$ & 28$\%$ & 9$\%$ & 9$\%$\\ 
+45 deg. & 22$\%$ & 22$\%$ & 0.5$\%$ & 0.3$\%$\\
+90 deg. & 13$\%$ & 13$\%$ & 67$\%$ & 67$\%$\\ \hline \hline
+\end{tabular}
+\end{center}
+\caption{Fraction of neuron volume corresponding to different loading directions under non painful ($\epsilon_{\text{bulk}}=0.10$) and painful ($\epsilon_{\text{bulk}}=0.16$) ligament loading.}
+\label{table:ccdf_volfrac_compare}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+local-strain amplification in the neuron, ccdfs of the MPS in the neuron structure are plotted in Fig.\ \ref{fig:neuron_ccdf_0deg_mps} for 10$\%$ and 16$\%$ bulk strains in the collagen gel.
 %
 % Figure generated in N2P178/4-Neuron_FT_trcBC/MaxPrnStrn folder
 \begin{figure}[ht]
@@ -545,30 +623,12 @@ strain amplification & vol. frac. for $\epsilon_{\text{bulk}}=0.1$ & vol. frac. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 As seen in Table \ref{table:ccdf_volfrac_0deg}, less than 1$\%$ and 3.2$\%$ of the neuron structure experiences a local-strain amplification of more than two times for 10$\%$ and 16$\%$ applied bulk strain, respectively. The volume fraction of the neuron structure that experiences a three times local-strain application drops to 0.2$\%$ for both 10$\%$ and 16$\%$ applied bulk strain.
 
-%=========================================================================================================
-\subsection{Effect of Changing the Axial Stiffness in the Cell Body}
-\label{sec:cellbody_stiffness}
-The transition in the axial stiffness of the cell bodies presented in Eq.\ \eqref{eq:cellEA} is artificial. To understand how this transition affects the final strain distribution in the neuron structure, the transition rate is varied by adjusting $t$ in Eq.\ \eqref{eq:cellEA}. As seen from Eq.\ \eqref{eq:cellEA}, the value of $t$ needs to be greater than $D$ (=25.5 $\mu$m) in order for $E_A^{\text{cell}}$ to be positive. Consequently, three values of $t$ are considered: $t=$ 28 $\mu$m, 30 $\mu$m, and 50 $\mu$m, which correspond to axial stiffnesses of approximately 6.25 kPa, 10.5 kPa, and 34.3 kPa, respectively, at the center of the largest cell body in the neuron structure. The ccdfs for different axial stiffnesses of the cell body (different values of $t$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a} for the 0 degree loading case at an applied bulk strain of 16$\%$ in the collagen gel. 
-%
-% Figures generated in N2P178/6-Neuron_CellStiffness/MaxPrnStrn folder
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{c}
-\includegraphics[height=6cm]{figure/neuron_compare_t_ccdf.pdf} 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_ccdf_vary_a} Probability that MPS in the neuron structure is greater than $\epsilon_{\text{max}}$ for axial stiffnesses of cell body corresponding to t=28 (blue dotted line), 30 (red solid line), and 50 (dashed yellow line). The averages are indicated with black dashed-dotted lines. }
-\end{figure}
-%
 
-As seen in Fig.\ \ref{fig:neuron_ccdf_vary_a}, the volume fraction of the neuron structure that experiences a MPS of less than he applied bulk strain (16$\%$) remains constant for all values of $E_A^{\text{cell}}$ considered. On the other hand, the volume fraction of the neuron structure that experiences a MPS of greater than the applied bulk strain decreases only slightly as $E_A^{\text{cell}}$ increases. On average, the MPS for all values of $E_A^{\text{cell}}$ considered is greater than the applied bulk strain, with approximately $1\%$ of the neuron structure experiencing local-strain amplification of more than twice the applied bulk strain. The small effect that changing $E_A^{\text{cell}}$ has on the overall strain distribution of the neuron suggests that the local-strain amplification experienced in the embedded neuron structure is not due to variations in its material properties. Therefore, the effect of neuron-structure configuration  relative to loading direction on the strain distribution is explored in the next section.
 
 %=========================================================================================================
 \subsection{Effect of Changing the Loading Direction}
 \label{sec:loading_direction}
-In this section, we examine how the strain distribution of the neuron structure changes when the loading direction on the collagen gel is varied. The structural features in the neuron are exposed to different modes of deformation when the loading direction is adjusted. Through this analysis, we develop insights about how the geometric configuration of the neuron structure can give rise to local-strain amplification.
+
 
 The three different loading cases considered in this section are shown schematically in Fig.\ \ref{fig:analysis_schematic}(a). The effect of changing the loading angle is explored for $E_A^{\text{cell}}$ corresponding to $t$=30 in Eq.\ \eqref{eq:cellEA}. Color maps of the MPS on the neuron structure for loading angles of 45 and 90 degrees are plotted in Fig.\ \ref{fig:neuron_MPS} for bulk strains of 10$\%$ and 16$\%$ in the collagen gel.
 %
@@ -728,6 +788,9 @@ Although the average strain amplification in the neuron structure is greater whe
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion}
 \label{sec:discussion}
+
+\red{Sijia, Beth, Victor B.: How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
+
 The results in Sections \ref{sec:cellbody_stiffness} and \ref{sec:loading_direction} illustrate that the strain distribution (ccdf) in the neuron structure, and hence strain amplification, is most strongly influenced by the configuration of the neuron with respect to the loading direction. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron structure, where the axial stiffness is one order of magnitude stiffer than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. Due to the complex geometry of the embedded neuron structure studied above, the neuron structure is exposed to both transverse and axial components of loading. The spread of ccdfs reflects the range of tranverse and axial loads that different regions within the neuron structure is exposed to.
 
 Some insight about the magnitude of the strain amplification for transverse and axial loading can be gained by simplifying the embedded neuron structure system into a one-dimensional gel-neuron-gel series configuration. For such a system, the strain in the neuron can be expressed in terms of the strain in the gel by
