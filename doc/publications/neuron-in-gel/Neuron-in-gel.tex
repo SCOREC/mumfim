@@ -471,10 +471,10 @@ At each macro-scale numerical integration point, the deformation gradient $\pmb{
 \subsection{Problem Specification}\label{sec:specification}
 The solution to the macroscopic boundary value problem in Eq.\ \eqref{eq:macro_stress_divergence} is obtained using the Finite Element method (FEM) \citep{JavierBonet:2008uxa}. The domain of the embedded neuron is discretized by a mesh consisting of  82,105 linear tetrahedral elements - 14,250 in the neuron and 67,855 in the collagen gel -  giving rise to more than 985k degrees of freedom (DOF) for the macroscopic scale.
 
-The computation demands are substantially greater for the microscopic scale where each fiber network RVE consists of, on average, 284 fiber cross links with three DOF, giving rise to 852 DOF per RVE. Since there is a single RVE for each numerical integration point of the macroscopic mesh of the collagen gel, the total DOF for the microscopic scale is more than 57 million (852 DOF/RVE $\times$ 67,855 RVEs). 
+The computation demands are substantially greater for the microscopic scale where each fiber network RVE consists of, on average, 284 fiber cross links. Three DOF exist for each fiber cross link, giving rise to 852 DOF per RVE. Since there is a single RVE for each numerical integration point of the macroscopic mesh of the collagen gel, the total DOF for the microscopic scale is more than 57 million (852 DOF/RVE $\times$ 67,855 RVEs). 
 
-Clearly, the bulk of the computational demand lies at the microscopic scale. 
-Combined, a total of XXX DOF must be solved per loading step in our calculations. To solver our problem we use 128 macroscale processors and 1920 microscale processors. 
+The large computational demands of the neuron-in-gel multi-scale model requires both the macroscopic and microscopic scale calculations to be performed in parallel. We employ the AMSI libraries to manage the parallel execution space for each scale. For our simulations a total of 2048 processors was used on the BlueGene Q \red{Bill: Can you provide some detail regarding the processors that we are using on the BlueGeneQ? Is there a reference?} - 128 processors for the macroscopic scale and 1920 processors for the microscopic scale.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Methods}
 \label{sec:methods}
@@ -489,7 +489,20 @@ The strain within the neuron is quantified by a complementary cumulative distrib
 \label{eq:ccdf}
 \end{equation}
 %
-where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$ and $\epsilon^*$ is either the axial, $\epsilon_{\text{axial}}$, or transverse, $\epsilon_{\text{transverse}}$, strain with respect to the local axon axis. Equation \ref{eq:ccdf} is the probability that the neuron structure (equivalent to the volume fraction of the neuron) experiences an axial or transverse strain of \textit{at least} $X$. 
+where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$ and $\epsilon^*$ is either the axial, $\epsilon_{\text{axial}}$, or transverse, $\epsilon_{\text{transverse}}$, strain with respect to the local axon axis; the four regions corresponding to different local axes in the neuron are shown schematically in Fig.\ \ref{fig:neuron_rgns}.
+%
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{c}
+\includegraphics[height=4.2cm]{figure/NeuronRgnSchematic.pdf} 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_rgns} Schematic showing regions of neuron corresponding to different local axes.}
+\end{figure}
+%
+Equation \ref{eq:ccdf} is the probability that the neuron structure (equivalent to the volume fraction of the neuron) experiences an axial or transverse strain of \textit{at least} $X$. 
 
 %=========================================================================================================
 \subsection{Loading Direction}
@@ -501,7 +514,7 @@ Three loading directions corresponding to 0, 45, and 90 degrees are considered. 
 \begin{center}
 $
 \begin{array}{c}
-\includegraphics[height=5cm]{figure/AngleLoadingSchematic.pdf} 
+\includegraphics[height=6cm]{figure/AngleLoadingSchematic.pdf} 
 \end{array}
 $
 \end{center}
@@ -559,7 +572,7 @@ $
 %
 For all angles of loading, large portions of the neuron experience strains that are greater than the 16$\%$ grip strain on the surrounding gel. This indicates that the applied strains on the collagen gel are amplified in the neuron, which could lead to neuronal damage even when the surrounding tissue is moderately loaded. 
 
-To gain a more quantitative understanding of the strain distribution in the neuron, the ccdfs of the axial and transverse strains for 10$\%$ (non painful ligament loading) and 16$\%$ (painful ligament loading) grip strains and loading angles of 0, 45, and 90 degrees are plotted in Fig,\ \ref{fig:strain_ccdfs}.
+To gain a more quantitative understanding of the strain distribution in the neuron, the ccdfs of the axial and transverse strains for 10$\%$ (non painful ligament loading) and 16$\%$ (painful ligament loading) grip strains and loading angles of 0, 45, and 90 degrees are plotted in Fig.\ \ref{fig:strain_ccdfs}.
 %
 % Figure generated in Green-Lagrange-Strain/AxialStrn or TrnsStrn folders
 \begin{figure}[ht]
@@ -581,9 +594,46 @@ $
 \caption{\label{fig:strain_ccdfs} Complementary cumulative distribution functions for axial (left column) and transverse (right column)  strains in neuron for 0 (top row), 45 (middle row), and 90 (bottom row) degree loading. Distributions for 10$\%$ (blue dashed line) and 16$\%$ (black solid line) grip strains are plotted for all loading directions. The dotted red lines indicate the fraction of neuron volume that experience a strain of at least 10$\%$ and 16$\%$ when intersecting with the dashed blue and solid black lines, respectively. }
 \end{figure}
 %
-The axial and transverse strains are considered separately because the neuron is physically anisotropic (e.g., microtubule bundles are axially aligned). 
+The axial and transverse strains are considered separately because the neuron is physically anisotropic (e.g., microtubule bundles are axially aligned).
 
-As observed in Fig.\ \ref{fig:strain_ccdfs}, the shape of the strain distributions vary significantly for different applied strains and loading directions. In all cases, the strain magnitude within the neuron is larger for an applied strain of 16$\%$, as expected. Interestingly, beside the axial strain case for 0 degree loading, the same fraction of neuron volume experiences at least the applied strain on the surrounding collagen gel for each loading direction. In the case of axial strain for 0 degree loading, a larger fraction of the neuron volume undergoes an amplification of the applied strain for 16$\%$ grip strain than that for 10$\%$. The fraction of neuron volume that experiences at least the applied strain are listed in Table \ref{table:ccdf_volfrac_compare} for all cases plotted in Fig.\ \ref{fig:strain_ccdfs}.
+As observed in Fig.\ \ref{fig:strain_ccdfs}, the shape of the strain distributions vary significantly for different applied strains and loading directions. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron, where the axial stiffness is more than one order of magnitude greater than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. 
+
+
+%Due to its complex geometry, the embedded neuron is exposed to both transverse and axial components of loading. The spread of the ccdfs reflects the range of tranverse and axial loads that different regions within the neuron experience, both in tension (positive values) and in compression (negative values). Since the ccdfs are measured for strains that are either parallel or perpendicular to the local axial direction of the neuron, 
+%
+%The range of strains experienced by the neuron in tension and compression are listed in Table \ref{table:ccdf_spread_compare}.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{table}[ht]
+%\begin{center}
+%\begin{tabular}{ c c c c c }
+%\hline\hline
+%& \multicolumn{2}{c}{axial strain} & \multicolumn{2}{c}{transverse strains} \\ \hline 
+%Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
+%\hline 
+%\multicolumn{5}{c}{Range in tension} \\ \hline
+%0 deg. & 0.20 & 0.33 & 0.24 & 0.39\\ 
+%45 deg. & 0.11 & 0.18 & 0.31 & 0.60\\
+%90 deg. & 0.16 & 0.26 & 0.34 & 0.56\\ \hline 
+%%
+%\multicolumn{5}{c}{Range in compression} \\ \hline 
+%0 deg. & 0.05 & 0.10 & 0.08 & 0.12\\ 
+%45 deg. & 0.03 & 0.06 & 0.04 & 0.06\\
+%90 deg. &  0.06 & 0.13 & 0.06 & 0.11\\ \hline \hline
+%\end{tabular}
+%\end{center}
+%\caption{Range of strain values experienced by neuron in tension and compression. The range is defined by $\max(\epsilon_x) - \min(\epsilon_x)$ where $x = $ tension or compression. }
+%\label{table:ccdf_spread_compare}
+%\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%In tension, the largest and smallest range for axial strains is experienced in the 45 and 90 degree loading cases, respectively. On the other hand, the largest and smallest range for transverse strains is experienced in the 90 degree and 45 degree loading cases, respectively. \blue{what does range size physically mean?}
+%
+%The neuron does not experience compression in the axial direction when loaded at 45 degrees. 
+
+In all cases, the strain magnitude within the neuron is larger for an applied strain of 16$\%$, as expected; the black solid curve lies to the right (left) of the blue dashed curve for positive (negative) values of strain. Interestingly, beside the axial strain case for 0 degree loading, the same fraction of neuron volume experiences at least the applied strain on the surrounding collagen gel for each loading direction; the red dashed line intersects the same probability value. In the case of axial strain for 0 degree loading, the fraction of the neuron volume that undergoes amplification of the applied strain increases with grip strain. 
+
+The fraction of neuron volume that experiences at least the applied strain are listed in Table \ref{table:ccdf_volfrac_compare} for all cases plotted in Fig.\ \ref{fig:strain_ccdfs}.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht]
@@ -594,7 +644,7 @@ As observed in Fig.\ \ref{fig:strain_ccdfs}, the shape of the strain distributio
 Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
 \hline 
 0 deg. & 19$\%$ & 28$\%$ & 9$\%$ & 9$\%$\\ 
-45 deg. & 22$\%$ & 22$\%$ & 0.5$\%$ & 0.3$\%$\\
+45 deg. & 0$\%$ & 0$\%$ & 23$\%$ & 23$\%$\\
 90 deg. & 13$\%$ & 13$\%$ & 67$\%$ & 67$\%$\\ \hline \hline
 \end{tabular}
 \end{center}
@@ -603,8 +653,9 @@ Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+As seen in Table \ref{table:ccdf_volfrac_compare}, the applied strain on the collagen gel is amplified in the neuron predominantly along the axial direction for 0 degree loading and in the transverse direction for 45 and 90 degree loading. For 45 degree loading, less than 0.1$\%$ of the neuron volume experiences an axial strain that is greater than or equal to the applied strain.
 
-As seen in Table \ref{table:ccdf_volfrac_compare}, the applied strain on the collagen gel is amplified in the neuron predominantly along the axial direction for 0 and 45 degree loading and in the transverse direction for 90 degree loading. For 45 degree loading, less than 1$\%$ of the neuron volume experiences a transverse strain that is greater than or equal to the applied strain.
+The values listed in Table \ref{table:ccdf_volfrac_compare} are consistent with how the embedded neuron is oriented with respect to the different directions of loading. When loading at 0 degrees a majority of the neuron (regions 1, 2, and 4 in Fig.\ \ref{fig:neuron_rgns}) are loaded predominantly in the axial direction giving rise to the largest fraction of neuron volume that amplifies the applied strain in the axial direction. On the other hand, when loading at 90 degrees a majority of the neuron (regions 1, 3, and 4 in Fig.\ \ref{fig:neuron_rgns}) are loaded predominantly in the transverse direction giving rise to the largest fraction of neuron volume that amplifies the applied strain in the transverse direction. The amplification of applied strain in the transverse direction is significantly greater because the neuron is much softer in the transverse direction.  The neuron also experiences a significant strain amplification in the transverse direction when loaded at 45 degrees because axial direction of region 1 lies perpendicular to the 45 degree loading direction.
 
 Physiologically more important are the tails of the strain distributions which represent the largest strains experienced by the neuron. The strain values corresponding to the largest 10$\%$ (by neuron volume) of deformation in the neuron are listed in Table \ref{table:ccdf_tail_strains}. 
 %
@@ -616,24 +667,24 @@ Physiologically more important are the tails of the strain distributions which r
 & \multicolumn{2}{c}{Largest 10$\%$ of axial strain} & \multicolumn{2}{c}{Largest 10$\%$ of transverse strain} \\ \hline 
 Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
 \hline 
-0 deg. & 0.11 & 0.19 & 0.04 & 0.06\\ 
-45 deg. & 0.16 & 0.27 & 0.06 & 0.10\\
-90 deg. & 0.05 & 0.09 & 0.22 & 0.37\\ \hline \hline
+0 deg. & $0.11^*$ & $0.19^*$ & 0.04 & 0.06\\ 
+45 deg. & $0.06$ & $0.10$ & $0.17^*$ & $0.28^*$\\
+90 deg. & 0.05 & 0.09 & $0.22^*$ & $0.37^*$\\ \hline \hline
 \end{tabular}
 \end{center}
-\caption{Strain values corresponding to the largest 10$\%$ of deformation in the neuron.}
+\caption{Strain values corresponding to the largest 10$\%$ of deformation in the neuron. Asterisks indicate strain values that are greater than applied strain, i.e., applied strain is amplified within neuron.}
 \label{table:ccdf_tail_strains}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-As seen in Table \ref{table:ccdf_tail_strains}, the applied strain is amplified along the axial direction for 0 and 45 degree loading and the transverse direction for 90 degree loading. Of these cases, the largest and smallest amplifications arise for 90 and 0 degree loading, respectively. When the collagen gel is loaded at 90 degrees, the largest axon in the neuron lies perpendicular to the loading direction giving rise to a relatively large deformation in the neuron. On the other hand, when the collagen gel is loaded at 0 degrees, the largest axon in the neuron lies nearly parallel to the loading direction preventing excessive deformation in the neuron.
+Consistent with above, the applied strain is amplified along the axial direction for 0 degree loading and the transverse direction for 45 and 90 degree loading. Of these cases, the largest and smallest amplifications arise for 90 and 0 degree loading, respectively.
+
+When loaded at 90 degrees, 10$\%$ of the neuron volume experiences a strain amplification of at least 2$\times$ in the transverse direction. When loaded at 45 degrees, the same fraction of the neuron volume experiences an amplification of at least 1.7$\times$. When loaded at 0 degrees, 10$\%$ of the neuron volume experiences a strain amplification of at least 1.1$\times$ in the axial direction. The smaller amplification in the axial direction is due to the large stiffness of the neuron in the axial direction. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Discussion}
 \label{sec:discussion}
 \red{Computational discussion}
-
-The results in Section \ref{sec:results} illustrate that the strain distribution (ccdf) in the neuron structure, and hence strain amplification, is most strongly influenced by the configuration of the neuron with respect to the loading direction. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron structure, where the axial stiffness is more than one order of magnitude greater than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. Due to the complex geometry of the embedded neuron structure studied above, the neuron structure is exposed to both transverse and axial components of loading. The spread of the ccdfs reflect the range of tranverse and axial loads that different regions within the neuron structure is exposed to.
 
 \red{Sijia, Beth, Victor B.: How representative is this one neuron configuration that we study? Can we extrapolate these results to other studies?} 
 
