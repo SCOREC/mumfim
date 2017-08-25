@@ -28,12 +28,10 @@ namespace bio
    * @param glb The global coordinate to convert.
    * @return The barycentric coordinates of the global coordinate.
    */
-  /*
   void mapGlobalToLocal(apf::Mesh * msh,
                         apf::MeshEntity * e,
                         apf::Vector3 const& global,
                         apf::Vector3 & local);
-  */
   /**
    * Convert many global coordinates to local coordinates for a single mesh entity.
    * This function avoid multiply-calculating the inversion matrix (for linear elements)
@@ -44,14 +42,12 @@ namespace bio
    * @param macro_ent The mesh entity the local coordinates are in respect to.
    * @param gbl_crds The global coordinates to convert.
    */
-  /*
   template <typename I, typename O>
     void mapGlobalsToLocals(apf::Mesh * msh,
                             apf::MeshEntity * e,
                             I gbl_crds_bgn,
                             I gbl_crds_end,
                             O lcl_crds);
-  */
   /**
    * Calculate the primary measure (lenght, area, volume) for every entity
    * of the specified dimension in the mesh.
@@ -59,7 +55,8 @@ namespace bio
    * @param dim The dimensionality of the entities to measure.
    * @param msrs The resulting measures of all entities.
    */
-  void calcDimMeasures(apf::Mesh * msh, int dim, std::vector<double> & msrs);
+  template <typename O>
+    void calcDimMeasures(apf::Mesh * msh, int dim, O msrs);
   void getCoords(apf::Mesh * msh,
                  apf::MeshEntity ** vrts,
                  apf::Vector3 * crds,

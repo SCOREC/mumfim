@@ -75,8 +75,8 @@ namespace bio
       size_t add_id = cs->AddData(snd_ptrn,ents,to_add);
       cs->CommPattern_Assemble(snd_ptrn);
       cs->Communicate(add_id,hdrs,mtd.hdr);
-      cs->Communicate(add_id,prms,mtd.hdr);
-      cs->Communicate(add_id,dats,mtd.hdr);
+      cs->Communicate(add_id,prms,mtd.prm);
+      cs->Communicate(add_id,dats,mtd.dat);
       // get new recv patterns
       cs->CommPattern_Reconcile(rcv_ptrn);
     }

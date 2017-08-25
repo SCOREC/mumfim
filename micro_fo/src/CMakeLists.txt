@@ -7,6 +7,7 @@ set(micro_fo_public_headers
   bioRVEUtil.h
   bioMicroFOMultiscale.h
   bioMultiscaleRVEAnalysis.h
+  bioMultiscaleRVE.h
   bioTrussIntegrator.h
   bioUtil.h
   bioUtil_impl.h
@@ -27,6 +28,7 @@ set(micro_fo_src_files
   bioMacroElement.cc
   bioMacroTerms.cc
   bioMultiscaleRVEAnalysis.cc
+  bioMultiscaleRVE.cc
   bioRVEUtil.cc
   bioUtil.cc
   lasCSR.cc

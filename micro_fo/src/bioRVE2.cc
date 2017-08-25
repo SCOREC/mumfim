@@ -6,11 +6,14 @@ namespace bio
   template <typename O>
   void originCenterCube(O cbe_crnrs, double crd)
   {
-    // ordering of these loops is important to order the nodes correctly from 0-7
-    for(int y = -1; y <= 1; y += 2)
-      for(int z = 1; z >= -1; z -= 2)
-       for(int x = -1; x <= 1; x += 2)
-         *cbe_crnrs++ = apf::Vector3(crd*x,crd*y,crd*z);
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd * -1.0,crd * -1.0);
+    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd * -1.0,crd * -1.0);
+    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd * -1.0,crd *  1.0);
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd * -1.0,crd *  1.0);
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd * -1.0);
+    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd *  1.0,crd * -1.0);
+    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd *  1.0,crd *  1.0);
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd *  1.0);
   }
   template <typename O>
   void originCenterSquare(O cbe_crnrs, double crd)
@@ -31,16 +34,25 @@ namespace bio
   {
     assert(d == 2 || d == 3);
     std::vector<apf::Vector3> cbe_crnrs;
+    apf::Mesh::Type tp = apf::Mesh::TYPES;
     if(dim == 3)
+    {
       originCenterCube(std::back_inserter(cbe_crnrs),crd);
+      tp = apf::Mesh::HEX;
+    }
     else if(dim == 2)
+    {
       originCenterSquare(std::back_inserter(cbe_crnrs),crd);
-    cbe = makeSingleEntityMesh(apf::Mesh::HEX,&cbe_crnrs[0]);
+      tp = apf::Mesh::QUAD;
+    }
+    cbe = makeSingleEntityMesh(tp,&cbe_crnrs[0]);
     apf::MeshIterator * it = cbe->begin(3);
     cbe_e = cbe->iterate(it);
     cbe->end(it);
     cbe_u = apf::createLagrangeField(cbe,"u",apf::VECTOR,1);
+    apf::zeroField(cbe_u);
     cbe_dof = apf::createNumbering(cbe_u);
+    apf::NaiveOrder(cbe_dof);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
   }
   void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn)

@@ -109,7 +109,7 @@ namespace bio
   double calcFiberDensity(RVE * rve, FiberNetwork * fn)
   {
     std::vector<double> lngths;
-    calcDimMeasures(fn->getNetworkMesh(),1,lngths); // calc lengths
+    calcDimMeasures(fn->getNetworkMesh(),1,std::back_inserter(lngths)); // calc lengths
     double ttl = std::accumulate(lngths.begin(),lngths.end(),0.0);
     double vol = amsi::measureDisplacedMeshEntity(rve->getMeshEnt(),rve->getField());
     return ttl / vol;

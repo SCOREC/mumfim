@@ -2,6 +2,16 @@
 #include "bioFiberNetworkIO2.h"
 namespace bio
 {
+  FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
+                                        las::SparskitBuffers * bfrs,
+                                        micro_fo_header & hdr,
+                                        micro_fo_params & prm,
+                                        micro_fo_init_data & ini)
+  {
+    FiberRVEAnalysis * rve = makeFiberRVEAnalysis(fn,bfrs);
+    rve->multi = new MultiscaleRVE(rve->rve,fn,hdr,prm,ini);
+    return rve;
+  }
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
 
@@ -20,6 +30,7 @@ namespace bio
     , M2m_id()
     , m2M_id()
     , dat_tp()
+    , rve_tp_cnt(0)
     , fns()
     , sprs()
     , bfrs(NULL)
@@ -55,7 +66,7 @@ namespace bio
   }
   void MultiscaleRVEAnalysis::initAnalysis()
   {
-    int num_rve_tps = 1;
+    int num_rve_tps = 0;
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(M2m_id,&num_rve_tps);
     char ** rve_tp_dirs = new char * [num_rve_tps];
@@ -73,7 +84,7 @@ namespace bio
     MPI_Status stss[num_rve_tps];
     MPI_Waitall(num_rve_tps,&rqsts[0],&stss[0]);
     MPI_Request hdr_rqst;
-    rve_tp_cnt(num_rve_tps);
+    rve_tp_cnt.resize(num_rve_tps);
     cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnt[0],num_rve_tps);
     MPI_Status hdr_sts;
     MPI_Waitall(1,&hdr_rqst,&hdr_sts);
@@ -97,43 +108,42 @@ namespace bio
       }
     }
     bfrs = new las::SparskitBuffers(dof_max);
-   }
-   void MultiscaleRVEAnalysis::updateCoupling()
-   {
-     std::vector<micro_fo_header> hdrs;
-     std::vector<micro_fo_params> prms;
-     std::vector<micro_fo_init_data> inis;
-     std::vector<int> to_delete;
-     amsi::ControlService * cs = amsi::ControlService::Instance();
-     cs->RemoveData(recv_ptrn,to_delete);
-     for(auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
-       destroyAnalysis(ans[*idx]);
-     std::vector<int> to_add;
-     std::vector<int> empty;
-     size_t recv_init_ptrn = cs->AddData(recv_ptrn,empty,to_add);
-     int ii = 0;
-     ans.resize(ans.size()+to_add.size());
-     cs->Communicate(recv_init_ptrn, hdrs, dat_tp.hdr);
-     cs->Communicate(recv_init_ptrn, prms, dat_tp.prm);
-     cs->Communicate(recv_init_ptrn, inis, dat_tp.ini);
-     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
-     {
-       if(*rve == NULL)
-       {
-         double pt[3];
-         micro_fo_header & hdr = hdrs[ii];
-         micro_fo_params & prm = prms[ii];
-         micro_fo_init_data & dat = inis[ii];
-         apf::Vector3 gp;
-         apf::getGaussPoint(hdr.data[ELEMENT_TYPE],hdr.data[FIELD_ORDER],hdr.data[GAUSS_ID],gp);
-         gp.toArray(pt);
-         apf::FieldShape * shp = apf::getLagrange(hdr.data[FIELD_ORDER]);
-         int nenodes = shp->countNodesOn(hdr.data[ELEMENT_TYPE]);
-         int tp = hdr.data[RVE_TYPE];
-         int rnd = rand() % rve_tp_cnt[tp];
-         *rve = makeFiberRVEAnalysis(fns[tp][rnd],bfrs);
+  }
+  void MultiscaleRVEAnalysis::updateCoupling()
+  {
+    std::vector<micro_fo_header> hdrs;
+    std::vector<micro_fo_params> prms;
+    std::vector<micro_fo_init_data> inis;
+    std::vector<int> to_delete;
+    amsi::ControlService * cs = amsi::ControlService::Instance();
+    cs->RemoveData(recv_ptrn,to_delete);
+    for(auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
+      destroyAnalysis(ans[*idx]);
+    std::vector<int> to_add;
+    std::vector<int> empty;
+    size_t recv_init_ptrn = cs->AddData(recv_ptrn,empty,to_add);
+    int ii = 0;
+    ans.resize(ans.size()+to_add.size());
+    cs->Communicate(recv_init_ptrn, hdrs, dat_tp.hdr);
+    cs->Communicate(recv_init_ptrn, prms, dat_tp.prm);
+    cs->Communicate(recv_init_ptrn, inis, dat_tp.ini);
+    for(auto rve = ans.begin(); rve != ans.end(); ++rve)
+    {
+      if(*rve == NULL)
+      {
+        micro_fo_header & hdr = hdrs[ii];
+        micro_fo_params & prm = prms[ii];
+        micro_fo_init_data & dat = inis[ii];
+        int tp = hdr.data[RVE_TYPE];
+        int rnd = rand() % rve_tp_cnt[tp];
+        FiberNetwork * fn = fns[tp][rnd];
+        *rve = initFromMultiscale(fn,bfrs,hdr,prm,dat);
+        ii++;
       }
     }
+    cs->CommPattern_UpdateInverted(recv_ptrn,send_ptrn);
+    cs->CommPattern_Assemble(send_ptrn);
+    cs->CommPattern_Reconcile(send_ptrn);
   }
   void MultiscaleRVEAnalysis::run()
   {

@@ -46,7 +46,7 @@ namespace bio
     apf::Field * getdWField()         { return dw;   }
     apf::Numbering * getUNumbering()  { return udof; }
     apf::Numbering * getdWNumbering() { return wdof; }
-    // BOOOOOOO
+    // TODO: FAIL
     std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
   };
   /**

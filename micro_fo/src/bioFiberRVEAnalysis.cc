@@ -15,7 +15,8 @@ namespace bio
       es = new TrussIntegrator(fn->getUNumbering(),&fn->getFiberReactions()[0],ops,k,f,1);
     return es;
   }
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn, las::SparskitBuffers * b)
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn,
+                                          las::SparskitBuffers * b)
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = fn;
@@ -24,13 +25,17 @@ namespace bio
     apf::Numbering * udofs = an->fn->getUNumbering();
     int nudofs = apf::NaiveOrder(udofs);
     apf::Numbering * wdofs = an->fn->getdWNumbering();
-    int nwdofs = apf::NaiveOrder(wdofs);
-    apf::SetNumberingOffset(wdofs,nudofs);
+    int nwdofs = 0;
+    if(wdofs)
+    {
+      nwdofs = apf::NaiveOrder(wdofs);
+      apf::SetNumberingOffset(wdofs,nudofs);
+    }
     int ndofs = nudofs + nwdofs;
     an->f = las::createSparskitVector(ndofs);
     an->u = las::createSparskitVector(ndofs);
     // todo : won't work when we have a field for moments.
-    an->k = las::createSparskitMatrix(las::createCSR(udofs,nudofs));
+    an->k = las::createSparskitMatrix(las::createCSR(udofs,nudofs)); // need to handle boths dofs eventually, or just make a larger field?
     if(b == NULL)
       b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
     an->ops = las::initSparskitOps();

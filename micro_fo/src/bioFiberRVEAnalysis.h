@@ -3,6 +3,7 @@
 #include "bioFiberNetwork.h"
 #include "bioRVE2.h"
 #include "bioTrussIntegrator.h"
+#include "bioMultiscaleRVE.h"
 #include "lasSparskit.h"
 #include <amsiAnalysis.h>
 #include <string>
@@ -11,7 +12,7 @@ namespace bio
   struct FiberRVEAnalysis
   {
     FiberNetwork * fn;
-    std::vector<FiberReaction*> rctns;
+    MultiscaleRVE * multi;
     RVE * rve;
     std::vector<apf::MeshEntity*> bnd_nds;
     apf::Integrator * es;

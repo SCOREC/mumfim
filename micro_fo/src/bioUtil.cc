@@ -17,6 +17,7 @@ namespace bio
     apf::Mesh2 * msh = makeNullMdlEmptyMesh();
     apf::buildOneElement(msh,NULL,t,vs);
     msh->acceptChanges();
+    apf::reorderMdsMesh(msh);
     return msh;
   }
   apf::Matrix3x3 eye()

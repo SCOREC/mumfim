@@ -8,7 +8,7 @@ namespace bio
   // the transformation matrix, taking k_e to global coordinates.
   // This formulation is valid for small strain, but large
   // displacement and rotation.
-  /*
+  / *
   int MicroFO::Solver_Beam()
   {
     int result = 0;

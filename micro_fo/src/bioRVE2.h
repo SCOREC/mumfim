@@ -40,6 +40,7 @@ namespace bio
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
      */
     int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
+    int getDim() const {return dim;}
     /**
      * Retrieve the coordinate related to a side of the RVE. This operates on the
      *  reference configuration of the RVE, so all faces of the cube are axis-aligned
