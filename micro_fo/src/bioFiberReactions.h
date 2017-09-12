@@ -86,7 +86,7 @@ namespace bio
   };
   struct BeamReaction : public FiberReaction
   {
-    double * forceReaction(double,double) {return NULL;}
+    std::pair<double,double> forceReaction(double,double) const {return std::make_pair(0.0,0.0);}
   };
 }
 #endif
