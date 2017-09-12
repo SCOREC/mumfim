@@ -19,6 +19,8 @@ namespace bio
     assert(f);
     du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
     u  = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
+    apf::zeroField(du);
+    apf::zeroField(u);
     udof = apf::createNumbering(du);
     //wdof = apf::createNumbering(dw);
     ucnt = apf::NaiveOrder(udof);
