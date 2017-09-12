@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <numeric>
 namespace bio
 {
   void alignFiberNetwork( RVE * rve, FiberNetwork * fn, const double algn_vec[3] )
@@ -52,6 +53,7 @@ namespace bio
   //  - Input variabl disp = [positive x, negative x, positive y, negative y, positive z, negative z]
   void affineDeformation( RVE * rve, FiberNetwork * fn, const double disp[6] )
   {
+    (void)fn;
     double rvedisp[24] = {};
     // positive x face of RVE
     rvedisp[1 * 3] = disp[0]; rvedisp[3 * 3] = disp[0]; rvedisp[5 * 3] = disp[0]; rvedisp[7 * 3] = disp[0];
@@ -69,6 +71,9 @@ namespace bio
     double xlen = std::abs( rve->sideCoord(RVE::side::rgt) - rve->sideCoord(RVE::side::lft) );
     double ylen = std::abs( rve->sideCoord(RVE::side::top) - rve->sideCoord(RVE::side::bot) );
     double zlen = std::abs( rve->sideCoord(RVE::side::frt) - rve->sideCoord(RVE::side::bck) );
+    (void)xlen;
+    (void)ylen;
+    (void)zlen;
     /*
     int num_nodes = fn.numNodes();
     for (int ii = 0; ii < num_nodes; ii++)
