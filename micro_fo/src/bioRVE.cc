@@ -2,7 +2,6 @@
 #include "bioRVEUtil.h"
 #include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
-#include "LagrangeMapping.h" // scorecutil to be phased out
 #include <amsiAnalysis.h>
 #include <apf.h>
 #include <apfMDS.h>
