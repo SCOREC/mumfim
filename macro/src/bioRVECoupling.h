@@ -19,33 +19,27 @@ namespace bio
     apf::Field * prv_rve;
     int fld_ord;
     int rve_cnt;
-    int rve_rgns;
     std::vector<micro_fo_result> rsts;
     size_t snd_ptrn;
     size_t rcv_ptrn;
     MicroFODatatypes mtd;
   public:
-  RVECoupling(apf::Mesh * m, int o)
+  RVECoupling(apf::Mesh * m, apf::Field * crt, apf::Field * old, int o)
       : msh(m)
       , rst_fst(NULL)
-      , crt_rve(NULL)
-      , prv_rve(NULL)
+      , crt_rve(crt)
+      , prv_rve(old)
       , fld_ord(o)
       , rve_cnt(0)
-      , rve_rgns(0)
       , rsts()
       , snd_ptrn()
       , rcv_ptrn()
       , mtd()
     {
       rst_fst = apf::createIPField(msh,"micro_fo_rve_offset",apf::SCALAR,1);
-      crt_rve = apf::createIPField(msh,"micro_fo_current_rve",apf::SCALAR,1);
-      prv_rve = apf::createIPField(msh,"micro_fo_previous_rve",apf::SCALAR,1);
     }
     ~RVECoupling()
     {
-      apf::destroyField(prv_rve);
-      apf::destroyField(crt_rve);
       apf::destroyField(rst_fst);
     }
     void initCoupling()
@@ -60,27 +54,35 @@ namespace bio
       rcv_ptrn = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
       cs->CommPattern_Reconcile(rcv_ptrn);
     }
-    void deleteRVEs(std::vector<int> & to_dlt)
+    template <typename I>
+      void deleteRVEs(I dlt_bgn, I dlt_end)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
+      std::vector<int> to_dlt;
+      std::copy(dlt_bgn,dlt_end,std::back_inserter(to_dlt));
       cs->RemoveData(snd_ptrn,to_dlt);
     }
-    void addRVEs(std::vector<apf::MeshEntity*> & ents,
-                 std::vector<micro_fo_header> & hdrs,
-                 std::vector<micro_fo_params> & prms,
-                 std::vector<micro_fo_init_data> & dats)
+    template <typename I1, typename I2, typename I3>
+      void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      std::vector<int> to_add(ents.size(),0);
-      size_t add_id = cs->AddData(snd_ptrn,ents,to_add);
-      cs->CommPattern_Assemble(snd_ptrn);
-      cs->Communicate(add_id,hdrs,mtd.hdr);
-      cs->Communicate(add_id,prms,mtd.prm);
-      cs->Communicate(add_id,dats,mtd.dat);
-      // get new recv patterns
-      cs->CommPattern_Reconcile(rcv_ptrn);
+      cs->Communicate(ptrn,hdr,mtd.hdr);
+      cs->Communicate(ptrn,prm,mtd.prm);
+      cs->Communicate(ptrn,dat,mtd.ini);
     }
-    // todo (h) : switch to pointer instead of vector
+    size_t addRVEs(int sz)
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      size_t cnt = sz;
+      size_t add_id = cs->addData(snd_ptrn,cnt);
+      rve_cnt += sz;
+      return add_id;
+    }
+    void updateRecv()
+    {
+      amsi::ControlService::Instance()->CommPattern_Reconcile(rcv_ptrn);
+    }
+    // todo (h) : template or pointer
     void sendRVEData(std::vector<micro_fo_data> & bfr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
@@ -99,13 +101,33 @@ namespace bio
     int countRVEsOn(apf::MeshEntity * me)
     {
       int cnt = 0;
-      if(apf::getScalar(crt_rve,me,0) == FIBER_ONLY)
+      apf::MeshElement * mlm = apf::createMeshElement(msh,me);
+      int ng = apf::countIntPoints(mlm,fld_ord);
+      for(int ip = 0; ip < ng; ++ip)
+        if(apf::getScalar(crt_rve,me,ip) == FIBER_ONLY)
+          ++cnt;
+      apf::destroyMeshElement(mlm);
+      return cnt;
+    }
+    template <typename O>
+      void updateRVEDeletion(O out, bool all = false)
+    {
+      int iid = 0;
+      apf::MeshEntity * rgn = NULL;
+      for(apf::MeshIterator * it = msh->begin(3); (rgn = msh->iterate(it)); )
       {
-        apf::MeshElement * mlm = apf::createMeshElement(msh,me);
-        cnt = apf::countIntPoints(mlm,fld_ord);
+        apf::MeshElement * mlm = apf::createMeshElement(msh,rgn);
+        int ng = apf::countIntPoints(mlm,getOrder(mlm));
+        for(int ip = 0; ip < ng; ++ip)
+        {
+          int crt = apf::getScalar(crt_rve,rgn,ip);
+          int prv = apf::getScalar(prv_rve,rgn,ip);
+          if((crt == NONE && prv != NONE) || all)
+            out++ = iid; // hacky id method, why?
+          iid++;
+        }
         apf::destroyMeshElement(mlm);
       }
-      return cnt;
     }
   };
 }
