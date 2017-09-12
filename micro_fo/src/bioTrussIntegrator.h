@@ -84,7 +84,7 @@ namespace bio
       // linear approx of strain on truss ignoring any mid-nodes
       strn = (crds[nd_cnt-1] - crds[0]) / l;
     }
-    void atPoint(const apf::Vector3 & p, double w, double dV)
+    void atPoint(const apf::Vector3 &, double, double)
     {
       auto f_dfdl = fr->forceReaction(l,lo);
       double f = f_dfdl.first;
