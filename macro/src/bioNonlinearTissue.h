@@ -23,24 +23,24 @@
 namespace bio
 {
   class CurrentCoordFunc;
-  class NonlinearTissue : public amsi::apfSimFEA {
+  class NonlinearTissue : public amsi::apfSimFEA
+  {
     protected:
     std::map<pGEntity, amsi::ElementalSystem*> constitutives;
     std::vector<StiffnessVariation*> stf_vrtn_cnst;
     std::vector<VolumeConstraint*> vol_cnst;
-    apf::Field* delta_u;
-    apf::Field* current_coords;  // coordinates in current config
-    apf::Field* strs;
-    apf::Field* rcvrd_strs;
-    apf::Field* strn;
-    apf::Field* dfm_grd;
-    apf::Field* previous_rve;
-    apf::Field* stf_vrtn;
-    apf::Field* axl_yngs_mod;
+    apf::Field * delta_u;
+    apf::Field * current_coords;  // coordinates in current config
+    apf::Field * strs;
+    apf::Field * rcvrd_strs;
+    apf::Field * strn;
+    apf::Field * dfm_grd;
+    apf::Field * previous_rve;
+    apf::Field * stf_vrtn;
+    apf::Field * axl_yngs_mod;
     double dv_prev;
     int load_step;
     int iteration;
-
     public:
     NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
                     MPI_Comm cm = AMSI_COMM_SCALE);
