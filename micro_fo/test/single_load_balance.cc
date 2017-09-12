@@ -18,6 +18,8 @@ void planMigration(std::vector<int> & to_serialize,
 */
 int main(int argc, char ** argv)
 {
+  (void)argc;
+  (void)argv;
   /*
   using namespace bio;
   amsi::initMultiscale(argc,argv);
