@@ -1,5 +1,5 @@
 #ifndef LAS_SPARSKIT_H_
-#define LAS_SPARKSIT_H_
+#define LAS_SPARSKIT_H_
 #include "lasCSR.h"
 #include "lasSparskitExterns.h"
 #include <amsiLAS2.h>
