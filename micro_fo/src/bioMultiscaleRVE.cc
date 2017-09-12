@@ -32,10 +32,12 @@ namespace bio
     , fbr_vl_frc(prm.data[VOLUME_FRACTION])
     , rve_dim(1.0)
   {
+    (void)fbr_area;
+    (void)fbr_vl_frc;
     assert(dim == fn->getNetworkMesh()->getDimension());
     apf::getGaussPoint(hdr.data[ELEMENT_TYPE],
                        hdr.data[FIELD_ORDER],
-                       hdr.data[GAUSS_ID],
+                       gss_id,
                        lcl_gss);
     //rve_dim = calcRVEDimenstionality(fn,fbr_area,fbr_vl_frc);
     rve_dim = 1.0;
