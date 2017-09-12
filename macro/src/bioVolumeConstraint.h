@@ -29,7 +29,7 @@ namespace bio
     double init_vol;
     virtual void _iter() = 0;
     virtual void _step() = 0;
-    virtual void _inElement(apf::MeshEntity * me) = 0;
+    virtual void _inElement(apf::MeshElement * me) = 0;
   public:
     template <typename I>
       VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm);
@@ -37,7 +37,7 @@ namespace bio
     virtual void apply(amsi::LAS * las) = 0;
     void iter();
     void step();
-    void inElement(apf::MeshEntity * me);
+    void inElement(apf::MeshElement * me);
     void outElement();
     double getVolume() { return vol; }
     double getInitVolume() { return init_vol; }
@@ -51,7 +51,7 @@ namespace bio
     apf::DynamicMatrix d2Vdu2;
     double lambda; // Lagrange multiplier for volume Preservation.
     double beta;   // Penalty parameter for Augmented Lagrangian Method.
-    virtual void _inElement(apf::MeshEntity * me);
+    virtual void _inElement(apf::MeshElement * me);
     virtual void _iter();
     virtual void _step();
   public:
@@ -81,7 +81,7 @@ namespace bio
     double beta;
     virtual void _iter();
     virtual void _step() {};
-    virtual void _inElement(apf::MeshEntity *);
+    virtual void _inElement(apf::MeshElement *);
   public:
     template <typename I>
       LagrangeConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double l, double b);
@@ -95,7 +95,7 @@ namespace bio
     double beta;
     virtual void _iter() {}
     virtual void _step() {}
-    virtual void _inElement(apf::MeshEntity *);
+    virtual void _inElement(apf::MeshElement *);
   public:
     template <typename I>
       PenaltyConstraint_VolumeSurface(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * nm, double b);
