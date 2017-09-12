@@ -14,11 +14,13 @@ namespace bio
   }
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
-
+    (void)ans;
+    (void)data;
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
-
+    (void)ans;
+    (void)data;
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()
