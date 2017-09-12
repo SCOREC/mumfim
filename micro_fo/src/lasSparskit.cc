@@ -27,7 +27,7 @@ namespace las
     virtual double dot(Vec * v0, Vec * v1);
     virtual void axpy(double a, Vec * x, Vec * y);
     virtual void get(Vec * v, double *& vls);
-    virtual void restore(Vec * v, double *& vls) {};
+    virtual void restore(Vec * , double *& ) {};
   };
   class skVec
   {

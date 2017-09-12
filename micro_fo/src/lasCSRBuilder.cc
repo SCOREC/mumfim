@@ -74,7 +74,7 @@ namespace las
       return true;
     }
     void outEntity() {}
-    void atNode(int nde)
+    void atNode(int)
     {
       apf::NewArray<int> dofs;
       int nedofs = apf::getElementNumbers(nm,ment,dofs);
