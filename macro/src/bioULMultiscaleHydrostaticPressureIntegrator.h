@@ -41,7 +41,7 @@ namespace bio
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double dV)
+    void atPoint(apf::Vector3 const &p, double w, double)
     {
       micro_fo_result * rslt = coupling->getRVEResult(apf::getMeshEntity(me),current_integration_point);
       // Note: Macro and micro solvers index stress tensor differently
@@ -224,7 +224,7 @@ namespace bio
       apf::setMatrix(stress_field,m,current_integration_point,strs);
       current_integration_point++;
     }
-    void atPointMatrix(apf::Vector3 const &p, double w, double dV)
+    void atPointMatrix(apf::Vector3 const &p, double w, double)
     {
       apf::Matrix3x3 Jac;
       apf::getJacobian(me,p,Jac);
@@ -311,7 +311,7 @@ namespace bio
               }
             }
     }
-    void atPointLinearElastic(apf::Vector3 const &p, double w, double dV)
+    void atPointLinearElastic(apf::Vector3 const &p, double w, double)
     {
       apf::Matrix3x3 Jac;
       apf::getJacobian(me,p,Jac);
@@ -417,8 +417,6 @@ namespace bio
     apf::FieldShape * fs;
     apf::EntityShape * es;
     apf::Field * dfm_grd_fld;
-    double linearYoungsModulus;
-    double linearPoissonsRatio;
     double matrixShearModulus;
     double matrixPoissonsRatio;
     double matrixBulkModulus;
