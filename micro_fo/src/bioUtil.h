@@ -107,7 +107,7 @@ namespace bio
       return true;
     }
     void outEntity() {}
-    void atNode(int nde)
+    void atNode(int)
     {
       double cmps[fldcmp];
       apf::getComponents(fld,me,0,&cmps[0]);
