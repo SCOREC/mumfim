@@ -15,19 +15,13 @@ namespace bio
   public:
   HolmesMowIntegrator(NonlinearTissue * n,
                       apf::Field * field,
-                      apf::Field * strain_ip_field,
-                      apf::Field * stress_ip_field,
                       double shear_modulus,
                       double poisson_ratio,
-                      apf::Field * type_field,
                       int o)
     : ElementalSystem(field,o)
       , current_integration_point(0)
       , analysis(n)
       , dim(0)
-      , strain_field(strain_ip_field)
-      , stress_field(stress_ip_field)
-      , micro_type_field(type_field)
     {
       ShearModulus  = shear_modulus;
       PoissonsRatio = poisson_ratio;
@@ -45,7 +39,7 @@ namespace bio
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double dV)
+    void atPoint(apf::Vector3 const &p, double w, double)
     {
       int & nen = nenodes; // = 4 (tets)
       int & nedof = nedofs; // = 12 (tets)
@@ -307,9 +301,6 @@ namespace bio
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
-    apf::Field * strain_field;
-    apf::Field * stress_field;
-    apf::Field * micro_type_field;
     double ShearModulus;
     double PoissonsRatio;
     int ToVoigt(int i,int j)
