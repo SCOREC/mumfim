@@ -54,7 +54,7 @@ namespace bio {
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double dV)
+    void atPoint(apf::Vector3 const &p, double w, double)
     {
       int &nen = nenodes;   // = 4 (tets)
       int &nedof = nedofs;  // = 12 (tets)
