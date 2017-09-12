@@ -21,7 +21,7 @@ namespace bio
   public:
     template <typename I>
       StiffnessVariation(I mdl_src_ent_bgn, I mdl_src_ent_end, I mdl_snk_ent_bgn, I mdl_snk_end_end, apf::Field * stf_vrtn_fld, pAttributeDouble fn);
-    void inElement(apf::MeshEntity * msh_ent_in){msh_ent = msh_ent_in; ip_integration_pt=0;}
+    void inElement(apf::MeshElement * msh_lmnt){msh_ent = apf::getMeshEntity(msh_lmnt); ip_integration_pt=0;}
     void outElement(){};
     void atPoint(apf::Vector3 const &, double, double);
     void set_target_xyz(double * xyz){target_xyz = xyz;}
