@@ -59,7 +59,7 @@ namespace las
       , cls(NULL)
       {
         assert(nm);
-        rws = new int[ndofs]();
+        rws = new int[ndofs+1]();
         cls = new int[ndofs*ndofs]();
       }
     ~CSRBuilder()
