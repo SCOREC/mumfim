@@ -1,5 +1,8 @@
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioFiberNetworkIO2.h"
+#include <apfMDS.h>
+#include <gmi.h>
+#include <cassert>
 namespace bio
 {
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
@@ -14,8 +17,32 @@ namespace bio
   }
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
-    (void)ans;
-    (void)data;
+    double * F = data->data;
+    RVE * rve = ans->rve;
+    int d = rve->getDim();
+    assert(d == 3 || d == 2);
+    int nnds = rve->numNodes();
+    assert((d == 3 && nnds == 8) || (d == 2 && nnds == 4));
+    apf::DynamicVector xyz_rve_0;
+    getRVEReferenceCoords(rve,xyz_rve_0);
+    apf::DynamicVector u;
+    getRVEDisplacement(rve,u);
+    int ndofs = nnds * d;
+    apf::DynamicVector du(ndofs);
+    for(int nd = 0; nd < nnds; ++nd)
+    {
+      apf::Vector3 nd_u;
+      for(int ei = 0; ei < d; ++ei)
+      {
+        for(int ej = 0; ej < d; ++ej)
+        {
+          double I = ei == ej ? 1.0 : 0.0;
+          nd_u[ei] += (F[ei*d + ej] - I) * xyz_rve_0(nd*d+ej);
+        }
+        du(nd*d+ei) = nd_u[ei] - u(nd*d+ei);
+      }
+    }
+    displaceRVE(ans->rve,du);
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
@@ -90,10 +117,10 @@ namespace bio
     cs->aRecvBroadcast(&hdr_rqst,M2m_id,&rve_tp_cnt[0],num_rve_tps);
     MPI_Status hdr_sts;
     MPI_Waitall(1,&hdr_rqst,&hdr_sts);
-    // Read in all the fiber networks
+    // Read in all the fiber network meshes and reactions
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
-      fns.push_back(new FiberNetwork* [rve_tp_cnt[ii]]);
+      fns.push_back(new FiberNetworkReactions* [rve_tp_cnt[ii]]);
       sprs.push_back(new las::CSR* [rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
@@ -103,9 +130,19 @@ namespace bio
       {
         std::stringstream fl;
         fl << rve_tp_dirs[ii] << jj+1 << ".txt";
-        FiberNetwork * fn = fns[ii][jj] = loadFromFileAndParams(fl.str());
-        int dofs = fn->getDofCount();
-        sprs[ii][jj] = las::createCSR(fn->getUNumbering(),dofs);
+        FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
+        fn_rctns->msh = loadFromFile(fl.str());
+        apf::Mesh2 * fn = fn_rctns->msh;
+        fl << ".params";
+        loadParamsFromFile(fn,fl.str(),std::back_inserter(fn_rctns->rctns));
+        fns[ii][jj] = fn_rctns;
+        apf::Field * u = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
+        apf::zeroField(u);
+        apf::Numbering * n = apf::createNumbering(u);
+        int dofs = apf::NaiveOrder(n);
+        sprs[ii][jj] = las::createCSR(n,dofs);
+        apf::destroyNumbering(n);
+        apf::destroyField(u);
         dof_max = dofs > dof_max ? dofs : dof_max;
       }
     }
@@ -129,6 +166,7 @@ namespace bio
     cs->Communicate(recv_init_ptrn, hdrs, dat_tp.hdr);
     cs->Communicate(recv_init_ptrn, prms, dat_tp.prm);
     cs->Communicate(recv_init_ptrn, inis, dat_tp.ini);
+    gmi_model * nl_mdl = gmi_load(".null");
     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       if(*rve == NULL)
@@ -138,7 +176,11 @@ namespace bio
         micro_fo_init_data & dat = inis[ii];
         int tp = hdr.data[RVE_TYPE];
         int rnd = rand() % rve_tp_cnt[tp];
-        FiberNetwork * fn = fns[tp][rnd];
+        apf::Mesh * msh_cpy = apf::createMdsMesh(nl_mdl,fns[tp][rnd]->msh);
+        msh_cpy->createIntTag("fiber_reaction",1);
+        
+        // copy fiber_reaction tag from origin mesh and set the reactions vector inside the fn
+        FiberNetwork * fn = new FiberNetwork(msh_cpy);
         *rve = initFromMultiscale(fn,bfrs,hdr,prm,dat);
         ii++;
       }

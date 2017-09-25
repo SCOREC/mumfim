@@ -1,6 +1,8 @@
 #include "bioRVE2.h"
 #include "bioFiberNetwork.h"
 #include "lasSparskit.h"
+#include <apfFunctions.h>
+#include <apfMeshUtil.h>
 namespace bio
 {
   template <typename O>
@@ -45,7 +47,7 @@ namespace bio
       originCenterSquare(std::back_inserter(cbe_crnrs),crd);
       tp = apf::Mesh::QUAD;
     }
-    cbe = makeSingleEntityMesh(tp,&cbe_crnrs[0]);
+    cbe = amsi::makeSingleEntityMesh(tp,&cbe_crnrs[0]);
     apf::MeshIterator * it = cbe->begin(3);
     cbe_e = cbe->iterate(it);
     cbe->end(it);
@@ -84,5 +86,34 @@ namespace bio
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {
     ApplySolution(rve->getNumbering(),&du[0],0,true).apply(rve->getField());
+  }
+  void getRVEDisplacement(RVE * rve, apf::DynamicVector & u)
+  {
+    int ndofs = rve->getDim() * rve->numNodes();
+    int sz = u.getSize();
+    if(sz != ndofs)
+      u.setSize(ndofs);
+    amsi::WriteOp wrt;
+    amsi::ToArray(rve->getNumbering(),rve->getField(),&u(0),0,&wrt).run();
+  }
+  void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0)
+  {
+    int ndofs = rve->getDim() * rve->numNodes();
+    int sz = xyz_0.getSize();
+    if(sz != ndofs)
+      xyz_0.setSize(ndofs);
+    amsi::WriteOp wrt;
+    amsi::ToArray(rve->getNumbering(),rve->getMesh()->getCoordinateField(),&xyz_0(0),0,&wrt).run();
+  }
+  void getRVECoords(RVE * rve, apf::DynamicVector & xyz)
+  {
+    int ndofs = rve->getDim() * rve->numNodes();
+    int sz = xyz.getSize();
+    if(sz != ndofs)
+      xyz.setSize(ndofs);
+    amsi::WriteOp wrt;
+    amsi::AccumOp acm;
+    amsi::ToArray(rve->getNumbering(),rve->getMesh()->getCoordinateField(),&xyz(0),0,&wrt).run();
+    amsi::ToArray(rve->getNumbering(),rve->getField(),&xyz(0),0,&acm).run();
   }
 }

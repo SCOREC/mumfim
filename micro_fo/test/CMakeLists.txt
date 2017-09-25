@@ -1,5 +1,8 @@
 find_package(amsi COMPONENTS multiscale REQUIRED)
 
+add_mpi_test(csr csr.cc 1)
+target_link_libraries(csr micro_fo)
+
 add_mpi_test(rve testRVE.cc 1)
 target_link_libraries(rve micro_fo)
 

@@ -60,7 +60,7 @@ namespace las
     CSR * csr;
   public:
     skMat(CSR * c)
-      : vls(new double [c->getNumNonzero()])
+      : vls(new double [c->getNumNonzero()]())
       , csr(c)
     { }
     ~skMat()

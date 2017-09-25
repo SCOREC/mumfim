@@ -81,6 +81,7 @@ namespace bio
         idx = 2;
       return fabs(sideCoord(sd) - crd[idx]) < eps;
     }
+    apf::Mesh * getMesh() { return cbe; }
     apf::MeshEntity * getMeshEnt() { return cbe_e; }
     apf::Element * getElement() { return cbe_u_e; }
     apf::Numbering * getNumbering() { return cbe_dof; }
@@ -156,6 +157,9 @@ namespace bio
    *           ordering for a cube
    */
   void displaceRVE(RVE * rve, const apf::DynamicVector & du);
+  void getRVEDisplacement(RVE * rve, apf::DynamicVector & u);
+  void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0);
+  void getRVECoords(RVE * rve, apf::DynamicVector & xyz);
   //
   void alignFiberNetwork(RVE * rve, FiberNetwork * fn, const double align_vec[3]);
   void affineDeformation(RVE * rve, FiberNetwork * fn, const double disp[6]);

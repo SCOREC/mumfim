@@ -41,19 +41,18 @@ else
   CC=`which mpicc`
   CXX=`which mpicxx`
   cmake \
-  -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-  -DBUILD_TESTS=ON \
-  -DCMAKE_C_COMPILER=$CC \
-  -DCMAKE_CXX_COMPILER=$CXX \
-  -DLOGRUN=TRUE \
-  -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
-  -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
-  -DSIM_MPI=openmpi110 \
-  -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
-  -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
-  -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/ \
-  -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp \
-  ..
+      -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+      -DBUILD_TESTS=ON \
+      -DCMAKE_C_COMPILER=$CC \
+      -DCMAKE_CXX_COMPILER=$CXX \
+      -DLOGRUN=TRUE \
+      -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
+      -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
+      -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
+      -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
+      -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp \
+      ..
 fi
 
 

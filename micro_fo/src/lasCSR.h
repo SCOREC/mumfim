@@ -29,7 +29,6 @@ namespace las
     /**
      * Construct a CSR sparse matrix structure to manage a sparse matrix based
      *  on the dof numbering of an apf field.
-     * Todo (l) Bill : creates a dependency on apf, move this to a seperate header
      */
     CSR * createCSR(apf::Numbering * num, int ndofs);
     /**

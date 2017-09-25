@@ -40,7 +40,7 @@ namespace bio
   };
   struct micro_fo_data
   {
-    double data[4 * 6]; // 6 for each vertex, assuming tets atm
+    double data[9]; // deformation gradient
   };
   struct micro_fo_result
   {

@@ -1,5 +1,6 @@
 #include "bioMultiscaleRVE.h"
 #include "bioUtil.h"
+#include <apfMeshUtil.h>
 #include <cmath> // M_PI
 #include <numeric>
 #include <cassert>
@@ -21,7 +22,7 @@ namespace bio
                                micro_fo_params & prm,
                                micro_fo_init_data & dat)
     : gss_id(hdr.data[GAUSS_ID])
-    , dim(rve->getDim()) // assumption
+    , dim(rve->getDim())
     , lcl_gss()
     , macro(NULL)
     , macro_ent(NULL)
@@ -30,7 +31,7 @@ namespace bio
     , nnd(0)
     , fbr_area(prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS] * M_PI)
     , fbr_vl_frc(prm.data[VOLUME_FRACTION])
-    , rve_dim(1.0)
+    , rve_dim(1.0) //assumption
   {
     (void)fbr_area;
     (void)fbr_vl_frc;
@@ -45,7 +46,7 @@ namespace bio
     int nv = apf::Mesh::adjacentCount[hdr.data[ELEMENT_TYPE]][0];
     for(int ii = 0; ii < nv; ++ii)
       fe_nds.push_back(apf::Vector3(dat.init_data[ii*3],dat.init_data[ii*3+1],dat.init_data[ii*3+2]));
-    macro = makeSingleEntityMesh(apf::Mesh::Type(hdr.data[ELEMENT_TYPE]),&fe_nds[0]);
+    macro = amsi::makeSingleEntityMesh(apf::Mesh::Type(hdr.data[ELEMENT_TYPE]),&fe_nds[0]);
     apf::MeshIterator * it = macro->begin(3);
     macro_ent = macro->iterate(it);
     macro->end(it);

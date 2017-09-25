@@ -37,7 +37,6 @@ set(micro_fo_src_files
   lasSparskitExterns.cc)
 
 find_package(sparskit REQUIRED)
-find_package(scorecutil REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
 add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})

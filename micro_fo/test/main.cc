@@ -20,13 +20,12 @@ int main(int, char * argv[])
   std::vector<FiberNetwork*> fns;
   std::vector<las::CSR*> csrs;
   int dof_max = -1;
-  NetworkLoader ldr;
   for(int ii = 0; ii < num_fns; ++ii)
   {
     std::stringstream fl;
     fl << fn_prfx.c_str() << ii+1 << ".txt";
     std::ifstream strm(fl.str());
-    FiberNetwork * fn = ldr.fromStream(strm);
+    FiberNetwork * fn = new FiberNetwork(loadFromFile(fl.str()));
     int dofs = fn->getDofCount();
     fns.push_back(fn);
     csrs.push_back(las::createCSR(fn->getUNumbering(),dofs));

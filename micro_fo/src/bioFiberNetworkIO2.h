@@ -7,43 +7,78 @@
 #include <apfMesh2.h>
 namespace bio
 {
-  FiberNetwork * loadFromFile(const std::string & fnm);
-  FiberNetwork * loadFromFileAndParams(const std::string & fnm);
+  apf::Mesh2 * loadFromFile(const std::string & fnm);
+  template <typename O>
+    void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns);
   /**
-   * A utility class typically used as an anonymous instance simply to process the
-   *  loading of the fiber network mesh from different sources.
-   * For example in load.cc : \snippet test/load.cc load from file stream
-   * @note When additional sources are being added, reevaluate whether this class should be
-   *       made into an abstract base class with different derived classes for different sources
-   *       since there is only a single source of fiber networks at the moment the decision
-   *       is moot at this point in time.
+   * Only here because templates
    */
-  class NetworkLoader
+  class ParamLoader
   {
   protected:
     apf::Mesh2 * msh;
+    apf::MeshTag * id_tg;
     apf::MeshTag * rct_tg;
-    apf::MeshTag * prd_tg;
-    std::vector<apf::MeshEntity*> vrts;
-    std::vector<apf::MeshEntity*> edgs;
-    void processVertLine(std::istream &);
-    void processEdgeLine(std::istream &);
-    void processPeriodicity(std::istream &);
-    apf::MeshEntity * processVertex(int, const apf::Vector3 &);
+    std::vector<FiberReaction*> rctns;
+    std::map<int,int> fbr_2_rctn;
     template <typename O>
-      void processReactionLine(std::istream &, O);
-    void processEdgeReactionLine(std::istream &,int);
+      void processReactionLine(std::istream & strm, O out)
+    {
+      int tp = -1;
+      strm >> tp;
+      if(tp == FiberConstitutive::linear)
+      {
+        LinearReaction * rct = new LinearReaction;
+        strm >> rct->fiber_area >> rct->E;
+        *out++ = rct;
+      }
+      else if(tp == FiberConstitutive::nonlinear)
+      {
+        NonlinearReaction * rct = new NonlinearReaction;
+        strm >> rct->fiber_area >> rct->E >> rct->B >> rct->length_ratio_trns;
+        *out++ = rct;
+      }
+    }
+    int processEdgeReactionLine(std::istream & strm)
+    {
+      int r = -1;
+      strm >> r;
+      return r;
+    }
+    void applyReactionLabels()
+    {
+      apf::MeshEntity * me = NULL;
+      for(apf::MeshIterator * it = msh->begin(1); (me = msh->iterate(it));)
+      {
+        long id = -1;
+        msh->getLongTag(me,id_tg,&id);
+        long rctn = fbr_2_rctn[id];
+        msh->setLongTag(me,rct_tg,&rctn);
+      }
+    }
   public:
-    NetworkLoader()
-      : msh(NULL)
-      , rct_tg(NULL)
-      , prd_tg(NULL)
-      , vrts()
-      , edgs()
-    {}
-    FiberNetwork * fromStream(std::istream &);
+    ParamLoader(apf::Mesh2 * m)
+      : msh(m)
+      , id_tg(msh->findTag("id"))
+      , rct_tg(msh->createIntTag("fiber_reaction",1))
+      , rctns()
+      , fbr_2_rctn()
+    { }
     template <typename O>
-      void paramsFromStream(std::istream &, O);
+    void fromStream(std::istream & strm, O out)
+    {
+      int nr = -1;
+      int ne = -1;
+      strm >> nr >> ne;
+      assert(ne == apf::countEntitiesOfType(msh,apf::Mesh::EDGE) && "Must have the same number of edges in the mesh as specified in the parameter file");
+      auto rctns_out = std::back_inserter(rctns);
+      for(int ii = 0; ii < nr; ++ii)
+        processReactionLine(strm,rctns_out);
+      for(int ii = 0; ii < ne; ++ii)
+        fbr_2_rctn[ii] = processEdgeReactionLine(strm);
+      applyReactionLabels();
+      std::copy(rctns.begin(),rctns.end(),out);
+    }
   };
 }
 #include "bioFiberNetworkIO2_impl.h"

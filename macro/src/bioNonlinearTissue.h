@@ -15,6 +15,7 @@
 #include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <apfFEA.h>
+#include <apfFunctions.h>
 #include <apfsimWrapper.h>
 #include <iostream>
 #include <list>
@@ -26,6 +27,7 @@ namespace bio
   class NonlinearTissue : public amsi::apfSimFEA
   {
     protected:
+    amsi::XpYFunc * xpyfnc;
     std::map<pGEntity, amsi::ElementalSystem*> constitutives;
     std::vector<StiffnessVariation*> stf_vrtn_cnst;
     std::vector<VolumeConstraint*> vol_cnst;
@@ -67,30 +69,9 @@ namespace bio
     apf::Field* getdUField() { return delta_u; }
     apf::Field* getUField() { return apf_primary_field; }
     apf::Mesh* getMesh() { return apf_mesh; }
-    CurrentCoordFunc* currentCoordFunc;
     // void logCnstrntParams(int ldstp, int iteration, int rnk);
     // function to get mapping by summing reference coordinate with
     // displacements
-  };
-  class CurrentCoordFunc : public apf::Function {
-  private:
-    apf::Field * Xf;
-    apf::Field * Uf;
-  public:
-    CurrentCoordFunc(apf::Field * xf, apf::Field * uf) : Xf(xf), Uf(uf) {}
-    void eval(apf::MeshEntity * e, double * result)
-    {
-      // make sure that we are only evaluating on vertices
-      assert(apf::getMesh(Xf)->getType(e) == apf::Mesh::VERTEX);
-      apf::Vector3 X, U;
-      // get the displacements
-      apf::getVector(Uf, e, 0, U);
-      // get the reference coordinates
-      apf::getVector(Xf, e, 0, X);
-      apf::Vector3 * r = (apf::Vector3*)result;
-      // set the current coordinates to be the reference plus the displacements
-      *r = X + U;
-    }
   };
 }
 #endif

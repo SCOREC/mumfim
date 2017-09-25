@@ -1,25 +1,8 @@
 #include "bioUtil.h"
 #include <maAffine.h>
 #include <maMap.h>
-#include <gmi.h>
-#include <gmi_null.h>
-#include <apfMDS.h>
 namespace bio
 {
-  apf::Mesh2 * makeNullMdlEmptyMesh()
-  {
-    gmi_register_null();
-    gmi_model * mdl = gmi_load(".null");
-    return apf::makeEmptyMdsMesh(mdl,3,false);
-  };
-  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs)
-  {
-    apf::Mesh2 * msh = makeNullMdlEmptyMesh();
-    apf::buildOneElement(msh,NULL,t,vs);
-    msh->acceptChanges();
-    apf::reorderMdsMesh(msh);
-    return msh;
-  }
   apf::Matrix3x3 eye()
   {
     apf::Matrix3x3 rslt;

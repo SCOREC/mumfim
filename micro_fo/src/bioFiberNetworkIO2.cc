@@ -2,31 +2,46 @@
 #include "bioFiber.h"
 #include "bioFiberNetwork2.h"
 #include "bioFiberReactions.h"
-#include "bioUtil.h"
+#include <apfMeshUtil.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
 namespace bio
 {
-  FiberNetwork * loadFromFile(const std::string & fnm)
+  class NetworkLoader
+  {
+  protected:
+    apf::Mesh2 * msh;
+    apf::MeshTag * prd_tg;
+    apf::MeshTag * ord_tg;
+    long vrt_cnt;
+    long edg_cnt;
+    std::vector<apf::MeshEntity*> vrts;
+    std::vector<apf::MeshEntity*> edgs;
+    void processVertLine(std::istream &);
+    void processEdgeLine(std::istream &);
+    void processPeriodicity(std::istream &);
+    apf::MeshEntity * processVertex(int, const apf::Vector3 &);
+  public:
+    NetworkLoader()
+      : msh(NULL)
+      , prd_tg(NULL)
+      , ord_tg(NULL)
+      , vrt_cnt(0)
+      , edg_cnt(0)
+      , vrts()
+      , edgs()
+    {}
+    apf::Mesh2 * fromStream(std::istream &);
+  };
+  apf::Mesh2 * loadFromFile(const std::string & fnm)
   {
     std::fstream strm(fnm);
     return NetworkLoader().fromStream(strm);
   }
-  FiberNetwork * loadFromFileAndParams(const std::string & fnm)
+  apf::Mesh2 * NetworkLoader::fromStream(std::istream & is)
   {
-    std::fstream strm(fnm);
-    NetworkLoader ldr;
-    FiberNetwork * fn = ldr.fromStream(strm);
-    strm.close();
-    std::string prms_fnm = fnm + std::string(".params");
-    std::fstream prm_strm(prms_fnm);
-    ldr.paramsFromStream(prm_strm,std::back_inserter(fn->getFiberReactions()));
-    return fn;
-  }
-  FiberNetwork * NetworkLoader::fromStream(std::istream & is)
-  {
-    msh = makeNullMdlEmptyMesh();
+    msh = amsi::makeNullMdlEmptyMesh();
     int nn = 0;
     int ne = 0;
     int np = 0;
@@ -36,6 +51,7 @@ namespace bio
       prd_tg = msh->createLongTag("periodic_bcs",1);
       assert(sizeof(void*) <= sizeof(long));
     }
+    ord_tg = msh->createLongTag("id", 1);
     for(int ii = 0; ii < nn; ++ii)
       processVertLine(is);
     for(int ii = 0; ii < ne; ++ii)
@@ -44,13 +60,17 @@ namespace bio
       processPeriodicity(is);
     msh->acceptChanges();
     apf::printStats(msh);
-    return new FiberNetwork(msh);
+    assert(nn == vrt_cnt);
+    assert(ne == edg_cnt);
+    return msh;
   }
   void NetworkLoader::processVertLine(std::istream & is)
   {
     apf::Vector3 crd;
     is >> crd[0] >> crd[1] >> crd[2];
-    vrts.push_back(msh->createVertex(NULL,crd,apf::Vector3(0,0,0)));
+    apf::MeshEntity * vrt = msh->createVertex(NULL,crd,apf::Vector3(0,0,0));
+    msh->setLongTag(vrt, ord_tg, &vrt_cnt);
+    vrts.push_back(vrt);
   }
   void NetworkLoader::processEdgeLine(std::istream & is)
   {
@@ -60,7 +80,9 @@ namespace bio
     apf::MeshEntity * v[2];
     v[0] = vrts[n0];
     v[1] = vrts[n1];
-    edgs.push_back(msh->createEntity(apf::Mesh::EDGE,NULL,&v[0]));
+    apf::MeshEntity * edg = msh->createEntity(apf::Mesh::EDGE, NULL, &v[0]);
+    msh->setLongTag(edg, ord_tg, &edg_cnt);
+    edgs.push_back(edg);
   }
   void NetworkLoader::processPeriodicity(std::istream & is)
   {
@@ -69,11 +91,5 @@ namespace bio
     is >> n0 >> n1;
     msh->setLongTag(vrts[n0-1],prd_tg,reinterpret_cast<long*>(vrts[n0-1]));
     msh->setLongTag(vrts[n1-1],prd_tg,reinterpret_cast<long*>(vrts[n1-1]));
-  }
-  void NetworkLoader::processEdgeReactionLine(std::istream & is, int ii)
-  {
-    int r = -1;
-    is >> r;
-    msh->setIntTag(edgs[ii],rct_tg,&r);
   }
 }

@@ -1,25 +1,12 @@
 #ifndef BIO_UTIL_H_
 #define BIO_UTIL_H_
-#include <apfFieldOp.h> //amsi
+#include "apfFieldOp.h" //amsi
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <cassert>
 namespace bio
 {
-  /**
-   * Create an empty mesh associated with a 'null' model;
-   * @return Pointer to an empty mesh.
-   */
-  apf::Mesh2 * makeNullMdlEmptyMesh();
-  /**
-   * Create a mesh containing a single entity related to a 'null' model.
-   * @param t The entity type of the single mesh entity.
-   * @param vs An array of correctly ordered coordinates defining the vertices of
-   *           mesh entity to be created.
-   * @return Pointer to a mesh with a single mesh entity.
-   */
-  apf::Mesh2 * makeSingleEntityMesh(apf::Mesh::Type t, const apf::Vector3 * vs);
   /**
    * Convert a global coordinate to a parametric coordinate on the specified entity.
    * @note This basically only works for linear entities (maybe only tets?)

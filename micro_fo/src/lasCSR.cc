@@ -6,20 +6,20 @@ namespace las
   CSR::CSR(int ne, int nz, int * rs, int * cs)
     : neq(ne)
     , nnz(nz)
-    , rws(rs,rs+ne)
+    , rws(rs,rs+ne+1)
     , cls(cs,cs+nz)
   { }
   int CSR::operator()(int rw, int cl) const
   {
     int result = -1;
     int kk = 0;
-    for(kk = rws.at(rw); (kk < rws.at(rw+1)) && (cls.at(kk) < (cl+1)); kk++){}
-    if(cls.at(kk) == (cl + 1))
-      result = kk;
+    for(kk = rws.at(rw); (kk < rws.at(rw+1)) && (cls.at(kk-1) < (cl+1)); kk++){}
+    if(cls.at(kk - 1) == (cl + 1))
+      result = kk - 1;
     else
     {
       std::cerr << "ERROR: Lost data point " << rw << "," << cl << std::endl;
-      std::exit(EXIT_FAILURE);
+      result = -1;
     }
     return result;
   }

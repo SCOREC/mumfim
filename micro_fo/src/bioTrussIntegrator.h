@@ -8,6 +8,7 @@
 #include <apf.h>
 #include <apfDynamicMatrix.h>
 #include <apfElementalSystem.h> //amsi
+#include <apfFunctions.h> //amsi
 #include <apfMeasure.h> //amsi
 #include <cassert>
 namespace las
@@ -31,6 +32,7 @@ namespace bio
    {
    protected:
     apf::Field * u;
+    apf::Field * xu;
     apf::Mesh * msh;
     apf::Numbering * nm;
     apf::Element * elmt;
@@ -46,9 +48,17 @@ namespace bio
     las::Mat * k;
     las::Vec * f;
   public:
-   TrussIntegrator(apf::Numbering * n, FiberReaction ** frs_, las::LasOps * op, las::Mat * k_, las::Vec * f_, int o)
+   TrussIntegrator(apf::Numbering * n,
+                   apf::Field * u_,
+                   apf::Field * xu_,
+                   FiberReaction ** frs_,
+                   las::LasOps * op,
+                   las::Mat * k_,
+                   las::Vec * f_,
+                   int o)
       : apf::Integrator(o)
-      , u(apf::getField(n))
+      , u(u_)
+      , xu(xu_)
       , msh(apf::getMesh(u))
       , nm(n)
       , elmt(NULL)
@@ -69,7 +79,9 @@ namespace bio
       elmt = apf::createElement(u,me);
       lo = apf::measure(me);
       apf::MeshEntity * ent = apf::getMeshEntity(me);
-      l = amsi::measureDisplacedMeshEntity(ent,u);
+      apf::MeshElement * ume = apf::createMeshElement(xu,ent);
+      l = apf::measure(ume);
+      apf::destroyMeshElement(ume);
       es = amsi::buildApfElementalSystem(elmt,nm);
       int tg = -1;
       msh->getIntTag(ent,rct_tg,&tg);
@@ -86,7 +98,7 @@ namespace bio
     }
     void atPoint(const apf::Vector3 &, double, double)
     {
-      auto f_dfdl = fr->forceReaction(l,lo);
+      auto f_dfdl = fr->forceReaction(lo,l);
       double f = f_dfdl.first;
       double dfdl = f_dfdl.second;
       double fl = f / l;

@@ -7,12 +7,22 @@
 #include "lasSparskit.h"
 namespace bio
 {
-  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn, las::LasOps * ops, las::Mat * k, las::Vec * f)
+  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+                                               las::LasOps * ops,
+                                               las::Mat * k,
+                                               las::Vec * f)
   {
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
     if(tp == FiberMember::truss)
-      es = new TrussIntegrator(fn->getUNumbering(),&fn->getFiberReactions()[0],ops,k,f,1);
+      es = new TrussIntegrator(fn->getUNumbering(),
+                               fn->getUField(),
+                               fn->getXpUField(),
+                               &fn->getFiberReactions()[0],
+                               ops,
+                               k,
+                               f,
+                               1);
     return es;
   }
   FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn,
@@ -66,7 +76,16 @@ namespace bio
                     an->f,
                     an->k);
     apf::NaiveOrder(an->fn->getUNumbering());
-    an->es->process(an->fn->getNetworkMesh());
+    apf::Mesh * fn = an->fn->getNetworkMesh();
+    apf::MeshEntity * me = NULL;
+    apf::MeshIterator * itr = fn->begin(1);
+    while((me = fn->iterate(itr)))
+    {
+      apf::MeshElement * mlm = apf::createMeshElement(fn,me);
+      an->es->process(mlm);
+      apf::destroyMeshElement(mlm);
+    }
+    fn->end(itr);
     an->slv->solve(an->k,an->u,an->f);
     amsi::WriteOp wrt;
     amsi::AccumOp acm;

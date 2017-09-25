@@ -1,12 +1,15 @@
 #include "bioRVE2.h"
-#include <cassert>
+#include <PCU.h>
+#include <mpi.h>
 int main(int argc, char * argv[])
 {
-  (void)argc;
-  (void)argv;
+  MPI_Init(&argc,&argv);
+  PCU_Comm_Init();
   bio::RVE rve(3);
-  assert(rve.getMeshEnt());
-  assert(rve.getElement());
-  assert(rve.getNumbering());
-  assert(rve.getField());
+  apf::DynamicVector xyz_rve_0;
+  bio::getRVEReferenceCoords(&rve,xyz_rve_0);
+  apf::DynamicVector u_rve;
+  bio::getRVEDisplacement(&rve,u_rve);
+  PCU_Comm_Free();
+  MPI_Finalize();
 }

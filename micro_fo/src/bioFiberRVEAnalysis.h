@@ -22,7 +22,7 @@ namespace bio
     las::LasOps * ops;
     las::LasSolve * slv;
   };
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::SparskitBuffers * b = NULL);
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *,las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);
   class FiberRVEIteration : public amsi::Iteration
   {

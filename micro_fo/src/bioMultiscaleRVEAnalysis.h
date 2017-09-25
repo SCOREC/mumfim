@@ -25,7 +25,7 @@ namespace bio
     MicroFODatatypes dat_tp;
     // analysis
     std::vector<int> rve_tp_cnt;
-    std::vector<FiberNetwork **> fns;
+    std::vector<FiberNetworkReactions **> fns;
     std::vector<las::CSR **> sprs;
     std::vector<FiberRVEAnalysis*> ans;
     las::SparskitBuffers * bfrs;
