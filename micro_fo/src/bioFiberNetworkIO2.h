@@ -7,6 +7,7 @@
 #include <apfMesh2.h>
 namespace bio
 {
+  apf::Mesh2 * loadFromStream(std::istream & strm);
   apf::Mesh2 * loadFromFile(const std::string & fnm);
   template <typename O>
     void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns);

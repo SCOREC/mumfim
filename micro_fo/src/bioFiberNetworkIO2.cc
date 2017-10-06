@@ -34,6 +34,10 @@ namespace bio
     {}
     apf::Mesh2 * fromStream(std::istream &);
   };
+  apf::Mesh2 * loadFromStream(std::istream & strm)
+  {
+    return NetworkLoader().fromStream(strm);
+  }
   apf::Mesh2 * loadFromFile(const std::string & fnm)
   {
     std::fstream strm(fnm);
@@ -70,6 +74,7 @@ namespace bio
     is >> crd[0] >> crd[1] >> crd[2];
     apf::MeshEntity * vrt = msh->createVertex(NULL,crd,apf::Vector3(0,0,0));
     msh->setLongTag(vrt, ord_tg, &vrt_cnt);
+    vrt_cnt++;
     vrts.push_back(vrt);
   }
   void NetworkLoader::processEdgeLine(std::istream & is)
@@ -82,6 +87,7 @@ namespace bio
     v[1] = vrts[n1];
     apf::MeshEntity * edg = msh->createEntity(apf::Mesh::EDGE, NULL, &v[0]);
     msh->setLongTag(edg, ord_tg, &edg_cnt);
+    edg_cnt++;
     edgs.push_back(edg);
   }
   void NetworkLoader::processPeriodicity(std::istream & is)
