@@ -6,12 +6,18 @@ namespace las
   bool needNonzero(int * rws, int rw, int * cls, int cl)
   {
     bool result = true;
-    for(int ii = rws[rw]; ii < rws[rw+1]; ii++)
+    // negative rw and cl correspond to fixed dofs and won't add a nonzero
+    if(rw < 0 || cl < 0)
+      result = false;
+    else
     {
-      if(cls[ii-1] == (cl+1))
+      for(int ii = rws[rw]; ii < rws[rw+1]; ii++)
       {
-        result = false;
-        break;
+        if(cls[ii-1] == (cl+1))
+        {
+          result = false;
+          break;
+        }
       }
     }
     return result;
@@ -37,7 +43,7 @@ namespace las
     }
     return result;
   }
-  class CSRBuilder : public amsi::FieldOp
+  class CSRBuilder
   {
   protected:
     apf::Numbering * nm;
@@ -55,26 +61,31 @@ namespace las
       , ndofs(nd)
       , nnz(0)
       , rws(ndofs+1)
-      , cls(ndofs+ndofs)
+      , cls(ndofs*ndofs)
     {
       assert(nm);
       rws.assign(ndofs+1,1);
       cls.assign(ndofs*ndofs,0);
     }
-    bool inEntity(apf::MeshEntity * me)
+    void apply()
     {
-      ment = me;
-      return true;
-    }
-    void outEntity() {}
-    void atNode(int)
-    {
-      apf::NewArray<int> dofs;
-      int nedofs = apf::getElementNumbers(nm,ment,dofs);
-      for(int ii = 0; ii < nedofs; ii++)
-        for(int jj = 0; jj < nedofs; jj++)
-          if(addNonzero(&rws[0],dofs[ii],&cls[0],dofs[jj],ndofs))
-            nnz++;
+      apf::Mesh * msh = apf::getMesh(apf::getField(nm));
+      // find the highest dimension with mesh entities
+      int dim = -1;
+      for(dim = 3; dim >= 0; --dim)
+        if(msh->count(dim) != 0)
+          break;
+      apf::MeshEntity * ent = NULL;
+      apf::MeshIterator * it = NULL;
+      for(it = msh->begin(dim); (ent = msh->iterate(it));)
+      {
+        apf::NewArray<int> dofs;
+        int nedofs = apf::getElementNumbers(nm, ent, dofs);
+        for(int ii = 0; ii < nedofs; ii++)
+          for(int jj = 0; jj < nedofs; jj++)
+            if(addNonzero(&rws[0],dofs[ii],&cls[0],dofs[jj],ndofs))
+              nnz++;
+      }
     }
     CSR * finalize()
     {
@@ -84,7 +95,7 @@ namespace las
   CSR * createCSR(apf::Numbering * num, int ndofs)
   {
     CSRBuilder bldr(num,ndofs);
-    bldr.apply(apf::getField(num));
+    bldr.apply();
     return bldr.finalize();
   }
   CSR * csrFromFull(double * mat, int rws, int cls)
