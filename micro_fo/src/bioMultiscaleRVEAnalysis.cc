@@ -177,10 +177,11 @@ namespace bio
         int tp = hdr.data[RVE_TYPE];
         int rnd = rand() % rve_tp_cnt[tp];
         apf::Mesh * msh_cpy = apf::createMdsMesh(nl_mdl,fns[tp][rnd]->msh);
-        msh_cpy->createIntTag("fiber_reaction",1);
-        
+        std::string fbr_rct_str("fiber_reaction");
         // copy fiber_reaction tag from origin mesh and set the reactions vector inside the fn
+        amsi::copyIntTag(fbr_rct_str,fns[tp][rnd]->msh,msh_cpy,1,1);
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
+        fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this
         *rve = initFromMultiscale(fn,bfrs,hdr,prm,dat);
         ii++;
       }
