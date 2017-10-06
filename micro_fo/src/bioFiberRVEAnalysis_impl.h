@@ -1,11 +1,8 @@
 namespace bio
 {
   template <typename I>
-    void applyRVEForceBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::LasOps * ops, las::Vec * f, las::Mat * k)
+    void applyRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * nm)
   {
-    (void)ops;
-    (void)f;
-    (void)k;
     for(auto ent = bnd_bgn; ent != bnd_end; ++ent)
     {
       for(int ii = 0; ii < 3; ++ii)

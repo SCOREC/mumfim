@@ -69,12 +69,9 @@ namespace bio
   void FiberRVEIteration::iterate()
   {
     // just fix the boundary nodes, remove them from the analysis... might need to update CSR though...
-    applyRVEForceBC(an->bnd_nds.begin(),
+    applyRVEBC(an->bnd_nds.begin(),
                     an->bnd_nds.end(),
-                    an->fn->getUNumbering(),
-                    an->ops,
-                    an->f,
-                    an->k);
+                    an->fn->getUNumbering());
     apf::NaiveOrder(an->fn->getUNumbering());
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;

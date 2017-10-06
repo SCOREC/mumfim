@@ -51,7 +51,7 @@ namespace bio
    * @param fn The fiber network to check for boundary nodes
    */
   template <typename I>
-    void applyRVEForceBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::LasOps * ops, las::Vec * f, las::Mat * k);
+    void applyRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * nm);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
 }
 #include "bioFiberRVEAnalysis_impl.h"
