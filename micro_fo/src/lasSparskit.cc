@@ -58,10 +58,12 @@ namespace las
   private:
     double * vls;
     CSR * csr;
+    double zero;
   public:
     skMat(CSR * c)
       : vls(new double [c->getNumNonzero()]())
       , csr(c)
+      , zero(0.0)
     { }
     ~skMat()
     {
@@ -69,7 +71,13 @@ namespace las
     }
     double & operator()(int rr, int cc)
     {
-      return vls[(*csr)(rr,cc)];
+      zero = 0.0;
+      if(rr < 0 || cc < 0)
+        return zero;
+      int idx = (*csr)(rr,cc);
+      if(idx < 0)
+        return zero;
+      return vls[idx];
     }
     CSR * getCSR()
     {
@@ -113,6 +121,20 @@ namespace las
   {
     return new SparskitLU(b);
   }
+  void printSparskitMat(std::ostream & o, Mat * mi)
+  {
+    skMat * m = getSparskitMatrix(mi);
+    int ndofs = m->getCSR()->getNumEqs();
+    for(int rr = 0; rr < ndofs; ++rr)
+    {
+      for(int cc = 0; cc < ndofs; ++cc)
+      {
+        o << (*m)(rr,cc) << ' ';
+      }
+      o << '\b' << std::endl;
+    }
+  }
+  // CLASS MEMBER FUNCTION DEFINITIONS
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
   {
     bfrs->zero();
@@ -170,7 +192,11 @@ namespace las
     skMat * mat = getSparskitMatrix(m);
     for(int ii = 0; ii < cntr; ++ii)
       for(int jj = 0; jj < cntc; ++jj)
-        (*mat)(rws[ii],cols[jj]) += vls[ii * cntc + jj];
+      {
+        double vl = vls[ii * cntc + jj];
+        if(vl != 0.0) // don't want to attempt to access zero locations in a CSR matrix
+          (*mat)(rws[ii],cols[jj]) += vls[ii * cntc + jj];
+      }
   }
   void SparskitOps::set(Vec * v, int cnt, int * rws, double * vls)
   {
