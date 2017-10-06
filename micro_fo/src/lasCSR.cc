@@ -18,7 +18,7 @@ namespace las
       result = kk - 1;
     else
     {
-      std::cerr << "ERROR: Lost data point " << rw << "," << cl << std::endl;
+      //std::cerr << "ERROR: Lost data point " << rw << "," << cl << std::endl;
       result = -1;
     }
     return result;
