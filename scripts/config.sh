@@ -2,7 +2,7 @@
 # Cmake config for bio
 # usage ./config.sh [build_type] [logrun_flag]
 source $DEVROOT/scripts/util
-ROOT=$DEVROOT/bio
+ROOT=`dirname $PWD`
 LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
   BUILD_TYPE=Debug
