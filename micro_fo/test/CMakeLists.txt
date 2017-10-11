@@ -26,3 +26,6 @@ target_link_libraries(serialization micro_fo)
 
 file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/fiber_networks
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+
+add_mpi_test(interp_onto interp_onto.cc 1 )
+target_link_libraries(interp_onto micro_fo)
