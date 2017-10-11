@@ -146,7 +146,7 @@ namespace las
     int bfr_lng = bfrs->matrixLength();
     int ierr = 0;
     int ndofs = csr->getNumEqs();
-    ilut_(&bfr_lng,
+    ilut_(&ndofs,
           &(*mat)(0,0),
           csr->getCols(),
           csr->getRows(),
