@@ -83,6 +83,7 @@ namespace bio
       l = apf::measure(ume);
       apf::destroyMeshElement(ume);
       es = amsi::buildApfElementalSystem(elmt,nm);
+      es->zero();
       int tg = -1;
       msh->getIntTag(ent,rct_tg,&tg);
       fr = frs[tg];
@@ -108,7 +109,7 @@ namespace bio
       {
        frc = strn[ii] * f;
        es->fe(ii)       = -frc;
-       es->fe(2*dim+ii) =  frc;
+       es->fe(dim+ii) =  frc;
      }
      apf::Matrix3x3 rctn = apf::tensorProduct(strn,strn*dfdl_fl) + eye()*fl;
      double op = -1.0;
