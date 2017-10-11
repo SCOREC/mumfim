@@ -31,10 +31,11 @@ namespace bio
     apf::MeshEntity * cbe_e;
     apf::Element * cbe_u_e;
     apf::Field * cbe_u;
+    apf::Field * cbe_du;
     apf::Numbering * cbe_dof;
   protected:
   public:
-    RVE(int d = 3);
+    RVE(double cr = 0.5, int d = 3);
     /**
      * Get the number of nodes for the RVE
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
@@ -85,7 +86,8 @@ namespace bio
     apf::MeshEntity * getMeshEnt() { return cbe_e; }
     apf::Element * getElement() { return cbe_u_e; }
     apf::Numbering * getNumbering() { return cbe_dof; }
-    apf::Field * getField() { return cbe_u; }
+    apf::Field * getUField() { return cbe_u; }
+    apf::Field * getdUField() { return cbe_du; }
   };
   /**
    * A FieldOp designed to take the shape function values from an 'enclosing' element
@@ -121,7 +123,7 @@ namespace bio
       apf::Vector3 p;
       apf::Vector3 u;
       apf::getVector(crd_fld,cur_ent,nde,p); // get xyz coord of fiber node
-      //mapGlobalToLocal(apf::getMesh(crd_fld),apf::getMeshEntity(src_elmnt),p,u);
+      mapGlobalToLocal(apf::getMesh(crd_fld),apf::getMeshEntity(src_elmnt),p,u);
       apf::getVector(src_elmnt,p,u);
       apf::setVector(dest_fld,cur_ent,nde,u);
     }

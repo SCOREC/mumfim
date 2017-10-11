@@ -36,7 +36,7 @@ namespace bio
     affineDeformation(rve, fn, disp); ///< Align fibers via affine deformation.
     // apply disp to rve nodes
     amsi::AccumOp acc;
-    amsi::ApplyVector(rve->getNumbering(),rve->getField(),disp,0,&acc).run();
+    amsi::ApplyVector(rve->getNumbering(),rve->getUField(),disp,0,&acc).run();
     //updateRVEBounds(rve, fn, disp);   ///< update RVE boundaries
     /// calculate size of hydrostatic expansion based on density
     double dens = calcFiberDensity(rve,fn);
@@ -116,7 +116,7 @@ namespace bio
     std::vector<double> lngths;
     calcDimMeasures(fn->getNetworkMesh(),1,std::back_inserter(lngths)); // calc lengths
     double ttl = std::accumulate(lngths.begin(),lngths.end(),0.0);
-    double vol = amsi::measureDisplacedMeshEntity(rve->getMeshEnt(),rve->getField());
+    double vol = amsi::measureDisplacedMeshEntity(rve->getMeshEnt(),rve->getUField());
     return ttl / vol;
   }
 } /// end bio namespace

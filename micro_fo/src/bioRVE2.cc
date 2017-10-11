@@ -25,13 +25,14 @@ namespace bio
     *cbe_crnrs++ = apf::Vector3( crd, crd, 0.0);
     *cbe_crnrs++ = apf::Vector3(-crd, crd, 0.0);
   }
-  RVE::RVE(int d)
+  RVE::RVE(double cr, int d)
   : dim(d)
-  , crd(0.5)
+  , crd(cr)
   , cbe(NULL)
   , cbe_e(NULL)
   , cbe_u_e(NULL)
   , cbe_u(NULL)
+  , cbe_du(NULL)
   , cbe_dof(NULL)
   {
     assert(d == 2 || d == 3);
@@ -53,6 +54,8 @@ namespace bio
     cbe->end(it);
     cbe_u = apf::createLagrangeField(cbe,"u",apf::VECTOR,1);
     apf::zeroField(cbe_u);
+    cbe_du = apf::createLagrangeField(cbe,"du",apf::VECTOR,1);
+    apf::zeroField(cbe_du);
     cbe_dof = apf::createNumbering(cbe_u);
     apf::NaiveOrder(cbe_dof);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
@@ -85,7 +88,7 @@ namespace bio
   }
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {
-    ApplySolution(rve->getNumbering(),&du[0],0,true).apply(rve->getField());
+    ApplySolution(rve->getNumbering(),&du[0],0,true).apply(rve->getUField());
   }
   void getRVEDisplacement(RVE * rve, apf::DynamicVector & u)
   {
@@ -94,7 +97,7 @@ namespace bio
     if(sz != ndofs)
       u.setSize(ndofs);
     amsi::WriteOp wrt;
-    amsi::ToArray(rve->getNumbering(),rve->getField(),&u(0),0,&wrt).run();
+    amsi::ToArray(rve->getNumbering(),rve->getUField(),&u(0),0,&wrt).run();
   }
   void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0)
   {
@@ -114,6 +117,6 @@ namespace bio
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
     amsi::ToArray(rve->getNumbering(),rve->getMesh()->getCoordinateField(),&xyz(0),0,&wrt).run();
-    amsi::ToArray(rve->getNumbering(),rve->getField(),&xyz(0),0,&acm).run();
+    amsi::ToArray(rve->getNumbering(),rve->getUField(),&xyz(0),0,&acm).run();
   }
 }
