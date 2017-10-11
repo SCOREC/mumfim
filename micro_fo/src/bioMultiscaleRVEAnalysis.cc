@@ -1,5 +1,6 @@
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioFiberNetworkIO2.h"
+#include <apfFEA.h> // amsi
 #include <apfMDS.h>
 #include <gmi.h>
 #include <cassert>
@@ -15,34 +16,64 @@ namespace bio
     rve->multi = new MultiscaleRVE(rve->rve,fn,hdr,prm,ini);
     return rve;
   }
+  class ApplyDeformationGradient : public amsi::FieldOp
+  {
+  protected:
+    apf::Field * xyz;
+    apf::Field * du;
+    apf::Field * u;
+    apf::MeshEntity * ent;
+    apf::Matrix3x3 FmI;
+  public:
+    ApplyDeformationGradient(apf::Matrix3x3 F, apf::Mesh * msh, apf::Field * du_, apf::Field * u_)
+      : xyz(msh->getCoordinateField())
+      , du(du_)
+      , u(u_)
+      , ent(NULL)
+    {
+      int d = msh->getDimension();
+      for(int ii = 0; ii < d; ++ii)
+        for(int jj = 0; jj < d; ++jj)
+          FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
+    }
+    virtual bool inEntity(apf::MeshEntity * m)
+    {
+      ent = m;
+      return true;
+    }
+    virtual void outEntity() {}
+    virtual void atNode(int nd)
+    {
+      apf::Vector3 nd_xyz;
+      apf::Vector3 nd_u_old;
+      apf::getVector(xyz,ent,nd,nd_xyz);
+      apf::getVector(u,ent,nd,nd_u_old);
+      apf::Vector3 nd_u = FmI * nd_xyz;
+      apf::Vector3 nd_du = nd_u - nd_u_old;
+      apf::setVector(u,ent,nd,nd_u);
+      apf::setVector(du,ent,nd,nd_du);
+    }
+    void run()
+    {
+      apply(u);
+    }
+  };
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
-    double * F = data->data;
-    RVE * rve = ans->rve;
-    int d = rve->getDim();
+    int d = ans->rve->getDim();
     assert(d == 3 || d == 2);
-    int nnds = rve->numNodes();
-    assert((d == 3 && nnds == 8) || (d == 2 && nnds == 4));
-    apf::DynamicVector xyz_rve_0;
-    getRVEReferenceCoords(rve,xyz_rve_0);
-    apf::DynamicVector u;
-    getRVEDisplacement(rve,u);
-    int ndofs = nnds * d;
-    apf::DynamicVector du(ndofs);
-    for(int nd = 0; nd < nnds; ++nd)
-    {
-      apf::Vector3 nd_u;
-      for(int ei = 0; ei < d; ++ei)
-      {
-        for(int ej = 0; ej < d; ++ej)
-        {
-          double I = ei == ej ? 1.0 : 0.0;
-          nd_u[ei] += (F[ei*d + ej] - I) * xyz_rve_0(nd*d+ej);
-        }
-        du(nd*d+ei) = nd_u[ei] - u(nd*d+ei);
-      }
-    }
-    displaceRVE(ans->rve,du);
+    apf::Matrix3x3 F;
+    for(int ei = 0; ei < d; ++ei)
+      for(int ej = 0; ej < d; ++ej)
+        F[ei][ej] = data->data[ei*d + ej];
+    apf::Mesh * rve_msh = ans->rve->getMesh();
+    apf::Field * rve_du = ans->rve->getdUField();
+    apf::Field * rve_u = ans->rve->getUField();
+    ApplyDeformationGradient(F,rve_msh,rve_du,rve_u).run();
+    apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
+    apf::Field * fn_du = ans->fn->getdUField();
+    apf::Field * fn_u = ans->fn->getUField();
+    ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
