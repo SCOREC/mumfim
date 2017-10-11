@@ -21,7 +21,7 @@ namespace bio
                         apf::Vector3 & local);
   /**
    * Convert many global coordinates to local coordinates for a single mesh entity.
-   * This function avoid multiply-calculating the inversion matrix (for linear elements)
+   * This function avoids multiply-calculating the inversion matrix (for linear elements)
    * which results from calling the calcLocalCoord() function multiple times.
    * @param lcl_crds A dynamic array containing the local coordinates converted from
    *                 global coordinates.

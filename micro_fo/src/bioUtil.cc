@@ -23,7 +23,15 @@ namespace bio
                         apf::Vector3 const & global,
                         apf::Vector3 & local)
   {
-    ma::Affine i = ma::getMap(msh,ent);
-    local = i * global;
+    int tp = msh->getType(ent);
+    if(tp == apf::Mesh::EDGE || tp == apf::Mesh::TRIANGLE || tp == apf::Mesh::TET)
+    {
+      ma::Affine i = ma::getMap(msh,ent);
+      local = i * global;
+    }
+    else
+      for(int ii = 0; ii < msh->getDimension(); ++ii)
+        local[ii] = 0.0;
+    return;
   }
 }
