@@ -150,7 +150,7 @@ namespace bio
    * node classified 'on' the boundary of the RVE.
    */
   template <typename O>
-    void getBoundaryVerts(const RVE * rve, const FiberNetwork * fn, RVE::side sd, O nds);
+    void getBoundaryVerts(const RVE * rve, apf::Mesh * fn, RVE::side sd, O nds);
   /**
    * Apply a vector of displacements to the coordinates of the rve mesh
    * @param rve The rve to displace
