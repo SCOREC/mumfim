@@ -27,6 +27,7 @@ set(micro_fo_src_files
   bioSolverBeam.cc
   bioMacroElement.cc
   bioMacroTerms.cc
+  bioMicroFOMultiscale.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc
   bioRVEUtil.cc

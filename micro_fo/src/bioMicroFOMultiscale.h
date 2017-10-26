@@ -1,6 +1,6 @@
-#ifndef MICROFOMULTISCALE_TYPES_H_
-#define MICROFOMULTISCALE_TYPES_H_
-#include <mpi.h>
+#ifndef BIO_MICROFOMULTISCALE_TYPES_H_
+#define BIO_MICROFOMULTISCALE_TYPES_H_
+#include <amsiMPI.h>
 namespace bio
 {
   enum header_fields
@@ -60,12 +60,25 @@ namespace bio
       MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&hdr);
       MPI_Type_contiguous(NUM_PARAM_FIELDS,MPI_DOUBLE,&prm);
       MPI_Type_contiguous(4*3,MPI_DOUBLE,&ini);
-      MPI_Type_contiguous(4*6,MPI_DOUBLE,&dat);
+      MPI_Type_contiguous(9,MPI_DOUBLE,&dat);
       MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&rst);
       MPI_Type_commit(&ini);
       MPI_Type_commit(&dat);
       MPI_Type_commit(&rst);
     }
   };
+}
+namespace amsi
+{
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_header>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_params>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_init_data>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_data>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_result>();
 }
 #endif
