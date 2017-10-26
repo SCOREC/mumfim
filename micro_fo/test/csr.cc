@@ -30,7 +30,7 @@ int main(int argc, char * argv[])
   bio::FiberNetwork fn(fn_msh);
   apf::Numbering * nm = fn.getUNumbering();
   std::vector<apf::MeshEntity*> bnds;
-  bio::getBoundaryVerts(&rve,&fn,bio::RVE::side::all,std::back_inserter(bnds));
+  bio::getBoundaryVerts(&rve,fn.getNetworkMesh(),bio::RVE::side::all,std::back_inserter(bnds));
   bio::applyRVEBC(bnds.begin(),bnds.end(),nm);
   int ndofs = apf::NaiveOrder(nm);
   //las::Vec * f = las::createSparskitVector(ndofs);
@@ -55,7 +55,7 @@ int main(int argc, char * argv[])
   bio::FiberNetwork fn2(fn_msh2);
   apf::Numbering * nm2 = fn2.getUNumbering();
   std::vector<apf::MeshEntity*> bnds2;
-  bio::getBoundaryVerts(&rve2,&fn2,bio::RVE::side::all,std::back_inserter(bnds2));
+  bio::getBoundaryVerts(&rve2,fn2.getNetworkMesh(),bio::RVE::side::all,std::back_inserter(bnds2));
   bio::applyRVEBC(bnds2.begin(),bnds2.end(),nm2);
   int ndofs2 = apf::NaiveOrder(nm2);
   las::CSR * fn_csr2 = las::createCSR(nm2,ndofs2);

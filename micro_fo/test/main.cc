@@ -35,14 +35,14 @@ int main(int, char * argv[])
   // Number of RVEs
   std::vector<FiberRVEAnalysis*> rves;
   for(int ii = 0; ii < num_fns; ++ii)
-    rves.push_back(makeFiberRVEAnalysis(fns[ii],&bfrs));
+    rves.push_back(makeFiberRVEAnalysis(fns[ii],csrs[ii],&bfrs));
   // Compute RVEs
   std::cout << "Running RVEs..." << std::endl;
   for(auto rve = rves.begin(); rve != rves.end(); ++rve)
   {
     FiberRVEIteration itr(*rve);
-    FiberRVEConvergence cnvrg(*rve);
-    amsi::numericalSolve(&itr,&cnvrg);
+    //FiberRVEConvergence cnvrg(*rve);
+    //amsi::numericalSolve(&itr,&cnvrg);
   }
   /*
   // Setup test data (Not used for size effect test)
