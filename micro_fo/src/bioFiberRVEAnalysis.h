@@ -19,10 +19,11 @@ namespace bio
     las::Mat * k;
     las::Vec * u;
     las::Vec * f;
+    las::Vec * f0;
     las::LasOps * ops;
     las::LasSolve * slv;
   };
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *,las::SparskitBuffers * b = NULL);
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::CSR *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);
   class FiberRVEIteration : public amsi::Iteration
   {
@@ -32,6 +33,7 @@ namespace bio
     FiberRVEIteration(FiberRVEAnalysis * a);
     void iterate();
   };
+  /*
   class FiberRVEConvergence : public amsi::Convergence
   {
   protected:
@@ -43,6 +45,7 @@ namespace bio
     bool converged();
     double & epsilon() {return eps;}
   };
+  */
   /**
    * Set the force vector value associated with dofs on nodes lying on the RVE
    *  boundaries to zero.
