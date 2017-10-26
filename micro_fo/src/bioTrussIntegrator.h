@@ -39,7 +39,7 @@ namespace bio
     amsi::ElementalSystem2 * es;
     double l;
     double lo;
-    apf::Vector3 strn;
+    apf::Vector3 spans_l;
     int dim;
     FiberReaction ** frs;
     FiberReaction * fr;
@@ -65,7 +65,7 @@ namespace bio
       , es(NULL)
       , l(0.0)
       , lo(0.0)
-      , strn()
+      , spans_l()
       , dim()
       , frs(frs_)
       , fr()
@@ -90,12 +90,11 @@ namespace bio
       dim = msh->getDimension();
       apf::MeshEntity * vs[2];
       msh->getDownward(ent,0,&vs[0]);
-      apf::Element * crd_elm = apf::createElement(msh->getCoordinateField(),me);
+      apf::Element * dsp_elm = apf::createElement(xu,me);
       apf::NewArray<apf::Vector3> crds;
-      apf::getVectorNodes(crd_elm,crds);
-      int nd_cnt = apf::countNodes(crd_elm);
-      // linear approx of strain on truss ignoring any mid-nodes
-      strn = (crds[nd_cnt-1] - crds[0]) / l;
+      apf::getVectorNodes(dsp_elm,crds);
+      int nd_cnt = apf::countNodes(dsp_elm);
+      spans_l = (crds[nd_cnt-1] - crds[0]) / l;
     }
     void atPoint(const apf::Vector3 &, double, double)
     {
@@ -107,11 +106,11 @@ namespace bio
       double frc = 0.0;
       for(int ii = 0; ii < dim; ii++)
       {
-       frc = strn[ii] * f;
-       es->fe(ii)       = -frc;
+       frc = spans_l[ii] * f;
+       es->fe(ii)     = -frc;
        es->fe(dim+ii) =  frc;
      }
-     apf::Matrix3x3 rctn = apf::tensorProduct(strn,strn*dfdl_fl) + eye()*fl;
+     apf::Matrix3x3 rctn = apf::tensorProduct(spans_l,spans_l*dfdl_fl) + eye()*fl;
      double op = -1.0;
      for(int ii = 0; ii < 2; ii++)
      {
@@ -121,7 +120,7 @@ namespace bio
          op *= -1.0;
          for(int kk = 0; kk < dim; kk++)
            for(int ll = 0; ll < dim; ll++)
-             es->ke(ii*dim + kk, jj*dim + ll) = rctn[ii][jj] * op;
+             es->ke(ii*dim + kk, jj*dim + ll) += rctn[kk][ll] * op;
          }
        }
      }
