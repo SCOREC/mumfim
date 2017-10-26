@@ -1,7 +1,6 @@
 #ifndef BIO_ULMULTISCALE_INTEGRATOR_H_
 #define BIO_ULMULTISCALE_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
-#include "bioRVECoupling.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <apfSIM.h>
