@@ -1,5 +1,7 @@
 #include "bioMultiscaleRVEAnalysis.h"
+#include "bioFiberRVEAnalysis.h"
 #include "bioFiberNetworkIO2.h"
+#include "bioMicroFOMultiscale.h"
 #include <apfFEA.h> // amsi
 #include <apfMDS.h>
 #include <gmi.h>
@@ -7,12 +9,13 @@
 namespace bio
 {
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
+                                        las::CSR * csr,
                                         las::SparskitBuffers * bfrs,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         micro_fo_init_data & ini)
   {
-    FiberRVEAnalysis * rve = makeFiberRVEAnalysis(fn,bfrs);
+    FiberRVEAnalysis * rve = makeFiberRVEAnalysis(fn,csr,bfrs);
     rve->multi = new MultiscaleRVE(rve->rve,fn,hdr,prm,ini);
     return rve;
   }
@@ -89,7 +92,7 @@ namespace bio
     , rve_dd(NULL)
     , M2m_id()
     , m2M_id()
-    , dat_tp()
+//    , dat_tp()
     , rve_tp_cnt(0)
     , fns()
     , sprs()
@@ -170,6 +173,11 @@ namespace bio
         apf::Field * u = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
         apf::zeroField(u);
         apf::Numbering * n = apf::createNumbering(u);
+        // fix boundary nodes before creating csr
+        RVE rve;
+        std::vector<apf::MeshEntity*> bnd_nds;
+        getBoundaryVerts(&rve, fn, RVE::all,std::back_inserter(bnd_nds));
+        applyRVEBC(bnd_nds.begin(),bnd_nds.end(),n);
         int dofs = apf::NaiveOrder(n);
         sprs[ii][jj] = las::createCSR(n,dofs);
         apf::destroyNumbering(n);
@@ -194,10 +202,23 @@ namespace bio
     size_t recv_init_ptrn = cs->AddData(recv_ptrn,empty,to_add);
     int ii = 0;
     ans.resize(ans.size()+to_add.size());
-    cs->Communicate(recv_init_ptrn, hdrs, dat_tp.hdr);
-    cs->Communicate(recv_init_ptrn, prms, dat_tp.prm);
-    cs->Communicate(recv_init_ptrn, inis, dat_tp.ini);
+    cs->Communicate(recv_init_ptrn,
+                    hdrs,
+                    amsi::mpi_type<bio::micro_fo_header>());
+    cs->Communicate(recv_init_ptrn,
+                    prms,
+                    amsi::mpi_type<bio::micro_fo_params>());
+    cs->Communicate(recv_init_ptrn,
+                    inis,
+                    amsi::mpi_type<bio::micro_fo_init_data>());
     gmi_model * nl_mdl = gmi_load(".null");
+    // apf mesh construction ops assume a lot takes place in parallel since apf is focused on parallel meshes, but the rve and fn meshes are serial so when copying them we need to keep the operations local, this is an implicit and horrible dependency
+    MPI_Comm scl;
+    MPI_Comm_dup(PCU_Get_Comm(),&scl);
+    // switching to MPI_COMM_SELF means that the next PCU_Switch_Comm will call MPI_Comm_free on MPI_COMM_SELF, which should cause an error, so maybe duplication MPI_COMM_SELF will work?
+    MPI_Comm slf;
+    MPI_Comm_dup(MPI_COMM_SELF,&slf);
+    PCU_Switch_Comm(slf);
     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       if(*rve == NULL)
@@ -213,10 +234,11 @@ namespace bio
         amsi::copyIntTag(fbr_rct_str,fns[tp][rnd]->msh,msh_cpy,1,1);
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
         fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this
-        *rve = initFromMultiscale(fn,bfrs,hdr,prm,dat);
+        *rve = initFromMultiscale(fn,sprs[tp][rnd],bfrs,hdr,prm,dat);
         ii++;
       }
     }
+    PCU_Switch_Comm(scl);
     cs->CommPattern_UpdateInverted(recv_ptrn,send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
@@ -233,19 +255,40 @@ namespace bio
         // migration
         updateCoupling();
         std::vector<micro_fo_data> data;
-        cs->Communicate(recv_ptrn,data,dat_tp.dat);
+        cs->Communicate(recv_ptrn,data,amsi::mpi_type<micro_fo_data>());
         std::vector<micro_fo_result> results(data.size());
         int ii = 0;
         for(auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
           applyMultiscaleCoupling(*rve,&data[ii]);
           FiberRVEIteration itr(*rve);
-          FiberRVEConvergence cnvrg(*rve);
+          auto val_gen = [&]() -> double
+            {
+              double nrm_f = (*rve)->ops->norm((*rve)->f);
+              return nrm_f;
+            };
+          auto eps_gen = [ ](int) -> double { return 1e-16; };
+          auto ref_gen = [&]() -> double
+            {
+              static double nrm_f0 = 0.0;
+              // this is called after an iteration completes, before the next iteration,
+              // so the following is true after the 0th iteration and before we start the 1st iteration,
+              // which is when we want to record the norm of the force residual
+              if(itr.iteration() == 1)
+                nrm_f0 = (*rve)->ops->norm((*rve)->f0);
+              return nrm_f0;
+            };
+          amsi::UpdatingConvergence resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);
+          amsi::Convergence * ptr[] = {&resid_cnvrg};
+          amsi::MultiConvergence cnvrg(&ptr[0],&ptr[0]+1);
+          // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
+          amsi::ResetIteration rst_iter(&cnvrg,&itr);
+          //FiberRVEConvergence cnvrg(*rve);
           amsi::numericalSolve(&itr,&cnvrg);
           recoverMultiscaleResults(*rve,&results[ii]);
           ++ii;
         }
-        cs->Communicate(send_ptrn,results,dat_tp.rst);
+        cs->Communicate(send_ptrn,results,amsi::mpi_type<micro_fo_result>());
         macro_iter++;
         cs->scaleBroadcast(M2m_id,&step_complete);
       }
