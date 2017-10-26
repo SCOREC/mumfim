@@ -26,33 +26,30 @@ namespace bio
     return es;
   }
   FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn,
+                                          las::CSR * csr,
                                           las::SparskitBuffers * b)
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = fn;
-    an->rve = new RVE(fn->getDim());
-    getBoundaryVerts(an->rve,an->fn,RVE::side::all,std::back_inserter(an->bnd_nds));
+    // todo determine rve size from input?
+    an->rve = new RVE(0.5,fn->getDim());
+    getBoundaryVerts(an->rve,an->fn->getNetworkMesh(),RVE::side::all,std::back_inserter(an->bnd_nds));
+    applyRVEBC(an->bnd_nds.begin(),an->bnd_nds.end(),an->fn->getUNumbering());
     apf::Numbering * udofs = an->fn->getUNumbering();
-    int nudofs = apf::NaiveOrder(udofs);
-    apf::Numbering * wdofs = an->fn->getdWNumbering();
-    int nwdofs = 0;
-    if(wdofs)
-    {
-      nwdofs = apf::NaiveOrder(wdofs);
-      apf::SetNumberingOffset(wdofs,nudofs);
-    }
-    int ndofs = nudofs + nwdofs;
+    int ndofs = apf::NaiveOrder(udofs);
+    an->f0 = las::createSparskitVector(ndofs);
     an->f = las::createSparskitVector(ndofs);
     an->u = las::createSparskitVector(ndofs);
-    // todo : won't work when we have a field for moments.
-    an->k = las::createSparskitMatrix(las::createCSR(udofs,nudofs)); // need to handle boths dofs eventually, or just make a larger field?
+    an->k = las::createSparskitMatrix(csr); // assumes the csr is based on the costrained field above.. this is shitty
     if(b == NULL)
       b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
     an->ops = las::initSparskitOps();
+    an->ops->zero(an->f0);
     an->slv = las::createSparskitLUSolve(b);
     an->es = createMicroElementalSystem(fn,an->ops,an->k,an->f);
     return an;
   }
+  
   void destroyAnalysis(FiberRVEAnalysis * fa)
   {
     las::deleteSparskitMatrix(fa->k);
@@ -70,9 +67,13 @@ namespace bio
   {
     // just fix the boundary nodes, remove them from the analysis... might need to update CSR though...
     applyRVEBC(an->bnd_nds.begin(),
-                    an->bnd_nds.end(),
-                    an->fn->getUNumbering());
+               an->bnd_nds.end(),
+               an->fn->getUNumbering());
+    // can't change at present due to CSR restriction
     apf::NaiveOrder(an->fn->getUNumbering());
+    an->ops->zero(an->k);
+    an->ops->zero(an->u);
+    an->ops->zero(an->f);
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
@@ -83,6 +84,8 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     fn->end(itr);
+    if(this->iteration() == 0)
+      an->ops->axpy(1.0,an->f,an->f0);
     an->slv->solve(an->k,an->u,an->f);
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
@@ -97,7 +100,9 @@ namespace bio
                       an->fn->getUField(),
                       s,0,&fr_acm).run();
     an->ops->restore(an->u,s);
+    Iteration::iterate();
   }
+  /*
   FiberRVEConvergence::FiberRVEConvergence(FiberRVEAnalysis * a, double e)
     : amsi::Convergence()
     , an(a)
@@ -113,6 +118,7 @@ namespace bio
       result = true;
     return result;
   }
+  */
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
   {
     for(int ii = 0; ii < 3; ++ii)
@@ -121,7 +127,7 @@ namespace bio
     double * f = NULL;
     fra->ops->get(fra->f,f);
     std::vector<apf::MeshEntity*> bnd;
-    getBoundaryVerts(fra->rve,fra->fn,RVE::side::all,std::back_inserter(bnd));
+    getBoundaryVerts(fra->rve,fra->fn->getNetworkMesh(),RVE::side::all,std::back_inserter(bnd));
     apf::Numbering * nm = fra->fn->getUNumbering();
     apf::Field * uf = fra->fn->getUField();
     apf::Mesh * fn = fra->fn->getNetworkMesh();
