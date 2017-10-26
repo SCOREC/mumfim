@@ -74,6 +74,7 @@ namespace bio
     (void)xlen;
     (void)ylen;
     (void)zlen;
+    (void)rvedisp;
     /*
     int num_nodes = fn.numNodes();
     for (int ii = 0; ii < num_nodes; ii++)
