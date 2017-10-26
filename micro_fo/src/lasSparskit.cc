@@ -36,7 +36,7 @@ namespace las
     int cnt;
   public:
     skVec(int n)
-      : vls(new double [n])
+      : vls(new double [n+1])
       , cnt(n)
     { }
     ~skVec()
@@ -45,12 +45,19 @@ namespace las
     }
     double & operator[](int idx)
     {
-      assert(idx >= 0 && idx < cnt);
+      assert(idx < cnt);
+      if(idx < 0)
+        idx = cnt;
       return vls[idx];
     }
     int size()
     {
       return cnt;
+    }
+    // too coupled to the implementation to leave external
+    void zero()
+    {
+      memset(&vls[0],0.0,sizeof(double)*(cnt+1));
     }
   };
   class skMat
@@ -58,30 +65,34 @@ namespace las
   private:
     double * vls;
     CSR * csr;
-    double zero;
   public:
     skMat(CSR * c)
-      : vls(new double [c->getNumNonzero()]())
+      : vls(new double [c->getNumNonzero()+1])
       , csr(c)
-      , zero(0.0)
-    { }
+    {
+      memset(&vls[0],0.0,sizeof(double)*(csr->getNumNonzero()+1));
+    }
     ~skMat()
     {
       delete [] vls;
     }
     double & operator()(int rr, int cc)
     {
-      zero = 0.0;
+      int idx = -1;
       if(rr < 0 || cc < 0)
-        return zero;
-      int idx = (*csr)(rr,cc);
-      if(idx < 0)
-        return zero;
+        idx = csr->getNumNonzero();
+      else
+        idx = (*csr)(rr,cc);
       return vls[idx];
     }
     CSR * getCSR()
     {
       return csr;
+    }
+    // too coupled to the implementation to leave external
+    void zero()
+    {
+      memset(&vls[0],0.0,sizeof(double)*(csr->getNumNonzero()+1));
     }
   };
   skMat * getSparskitMatrix(Mat * m)
@@ -173,13 +184,11 @@ namespace las
   }
   void SparskitOps::zero(Mat * m)
   {
-    skMat * mat = getSparskitMatrix(m);
-    memset(&(*mat)(0,0),0.0,mat->getCSR()->getNumNonzero()*sizeof(double));
+    getSparskitMatrix(m)->zero();
   }
   void SparskitOps::zero(Vec * v)
   {
-    skVec * vec = getSparskitVector(v);
-    memset(&vec[0],0.0,vec->size()*sizeof(double));
+    getSparskitVector(v)->zero();
   }
   void SparskitOps::assemble(Vec * v, int cnt, int * rws, double * vls)
   {

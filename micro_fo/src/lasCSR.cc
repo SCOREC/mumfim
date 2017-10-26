@@ -17,10 +17,7 @@ namespace las
     if(cls.at(kk - 1) == (cl + 1))
       result = kk - 1;
     else
-    {
-      //std::cerr << "ERROR: Lost data point " << rw << "," << cl << std::endl;
       result = -1;
-    }
     return result;
   }
   void constructFullMatrix(CSR * csr,double * sprs_mat,double * fll_mat)
