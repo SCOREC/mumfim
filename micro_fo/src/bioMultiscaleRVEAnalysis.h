@@ -22,7 +22,7 @@ namespace bio
     amsi::DataDistribution * rve_dd;
     size_t M2m_id;
     size_t m2M_id;
-    MicroFODatatypes dat_tp;
+    //MicroFODatatypes dat_tp;
     // analysis
     std::vector<int> rve_tp_cnt;
     std::vector<FiberNetworkReactions **> fns;
