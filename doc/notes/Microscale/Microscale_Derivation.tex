@@ -1,49 +1,6 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-\newcommand{\diff}{\mathop{}\!\mathrm{d}}
-
-\begin{document}
-\setstretch{1.5}
-\title{Microscale Derivation}
-\author{V. W. L. Chan}
-\maketitle
-
+\chapter{Microscale Derivation}
+\chapterauthor{V. W. L. Chan}
 \section{Motivation}
-
 The macroscale stress and derivative of the macroscale stress with respect to the macroscale finite element (FE) nodes are calculated in the microscale portion of the code. These stress and stress derivative values are used in the Newton-Raphson method in the macroscale portion of the code.
 
 \section{Calculation of (volume-averaged) macroscale stress}
@@ -517,27 +474,3 @@ DS_{ij}[\textbf{u}] &=&  \frac{1}{V} \sum_{\text{bcl}} \left(x_i^f \frac{\partia
 %
 
 \red{This is essentially the expression for dSdxr in the calc\_femjacob\_newmethod function in main\_solver\_psi.cc. Need to verify the calculation of dvol in the expression. More specifically, is dvol taken as the derivative with respect to fiber-node positions or something else?}
-\appendix
-%
-\section{Relationships for Directional Derivative}
-\label{app:relationships}
-\begin{eqnarray}
-Dl^2(\textbf{x}) &=& 2 (\textbf{x}^b - \textbf{x}^a) \cdot (\textbf{u}^b - \textbf{u}^a) \nonumber\\
-&=& l(\textbf{x})\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a) 
-\label{Dl^2}
-\end{eqnarray}
-%
-\begin{equation}
-D\frac{1}{l(\textbf{x})}[\textbf{u}] = -\frac{1}{l^{2}(\textbf{x})}\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)
-\label{Dl^-1}
-\end{equation}
-%
-\begin{equation}
-D(\textbf{x}^b - \textbf{x}^a)[\textbf{u}] = \textbf{u}^b - \textbf{u}^a
-\label{D(xb-xa)}
-\end{equation}
-%
-
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}

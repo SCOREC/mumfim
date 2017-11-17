@@ -1,44 +1,5 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-\begin{document}
-\setstretch{1.5}
-\title{Multi-Scale Formulation for Biotissue Code}
-\author{V. W. L. Chan}
-\maketitle
+\chapter{Multi-Scale Formulation}
+\chapterauthor{V. W. L. Chan}
 
 \section{Macro-scale}
 
@@ -481,7 +442,7 @@ where $A$ is the total area of the face on which the fiber node lies and $A_i$ i
 \begin{figure}[ht]
 \begin{center}$
 \begin{array}{cc}
-\includegraphics[height=2.5in]{dRdxRVE.pdf}
+\includegraphics[height=2.5in]{./Multiscale/dRdxRVE.pdf}
 \end{array}$
 \end{center}
 \caption{Two-dimensional schematic of $A_i/A$. Blue dot represents fiber node that lies on RVE face. Black dots represent the 4 nodes on an RVE face. The total area of the RVE face is $A=A_1+A_2+A_3+A_4$. }
@@ -642,7 +603,3 @@ where
 \end{eqnarray}
 %
 In the matrix of Eq.\ \eqref{eq:dRVEdFE_matrix}, each 3 $\times$ 3 submatrix describes the relationship between the degrees of freedom of an RVE corner node and a FE tetrahedron node. These relationships are approximated as 3 $\times$ 3 diagonal matrices where the diagonal terms are calculated as the difference between the $j^{th}$ ($j$ ranges from 1 to 4 for tetrahedron) shape function at the barycentric coordinate of the $k^{th}$ RVE corner-node and that at the barycentric coordinate of the Gauss integration point (c.f., Eq.\ \eqref{eq:DeltaN_j^k}). 
-
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}

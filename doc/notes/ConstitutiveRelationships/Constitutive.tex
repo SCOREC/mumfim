@@ -1,46 +1,5 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{hyperref}
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-
-\begin{document}
-\setstretch{1.5}
-\title{Compressible Hyperelastic Constitutive Relation}
-\author{V. W. L. Chan}
-\maketitle
+\chapter{Compressible Hyperelastic Constitutive Relation}
+\chapterauthor{V. W. L. Chan}
 
 \section{Strain Tensors}
 
@@ -359,7 +318,7 @@ D\delta W_{int}(\phi,\delta \pmb{v})[\pmb{u}] = \int_V D\pmb{E}[\delta\pmb{v}] :
 \end{equation}
 %
 
-The linearized equilibrium equation of Eq.\ \eqref{eq:DW[u]_Lagrangian} can be simplified to expressing in the Eulerian (or spatial) form. This is achieved by push-forward and pull-back operations on the individual terms to obtain (see Section 8.4 of Ref.\ \onlinecite{JavierBonet:2008uxa})
+The linearized equilibrium equation of Eq.\ \eqref{eq:DW[u]_Lagrangian} can be simplified to expressing in the Eulerian (or spatial) form. This is achieved by push-forward and pull-back operations on the individual terms to obtain (see Section 8.4 of Ref.\ \cite{JavierBonet:2008uxa})
 %
 \begin{eqnarray}
 D\pmb{E}[\delta\pmb{v}] :\pmb{\mathbb{C}}:D\pmb{E}[\pmb{u}]dV &=& \delta \pmb{d}:\pmb{c}:\varepsilon dv \nonumber\\
@@ -502,7 +461,7 @@ where $\pmb{B}_a$ is defined in terms of derivatives of the shape functions as
 \end{bmatrix}.
 \end{equation}
 %
-Note that the definition of $\pmb{B}_a$ is different from Ref.\ \onlinecite{JavierBonet:2008uxa} because the ordering of the small-strain and virtual displacement rate tensor components in Eqs.\ \eqref{eq:strain_Voigt} and \eqref{eq:virtual_displacement_Voigt} is different from what is presented in Ref.\ \onlinecite{JavierBonet:2008uxa}. Applying Voigt notation, Eq.\ \eqref{eq:DW_c[u]_discretize} is simplified to
+Note that the definition of $\pmb{B}_a$ is different from Ref.\ \cite{JavierBonet:2008uxa} because the ordering of the small-strain and virtual displacement rate tensor components in Eqs.\ \eqref{eq:strain_Voigt} and \eqref{eq:virtual_displacement_Voigt} is different from what is presented in Ref.\ \cite{JavierBonet:2008uxa}. Applying Voigt notation, Eq.\ \eqref{eq:DW_c[u]_discretize} is simplified to
 %
 \begin{eqnarray}
 D\delta W_c^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] &=& \int_{v^{(e)}}(\pmb{B}_a \delta \pmb{v}_a)^T \pmb{D} (\pmb{B}_b \pmb{u}_b) dv \nonumber\\
@@ -560,7 +519,7 @@ To apply the Newton-Raphson iteration procedure to Nonlinear FEM, one needs to c
 
 \subsection{Principle of Virtual Work} 
 
-Based on chapter 5 of Ref.\ \onlinecite{JavierBonet:2008uxa}, the spatial virtual work equation is
+Based on chapter 5 of Ref.\ \cite{JavierBonet:2008uxa}, the spatial virtual work equation is
 %
 \begin{equation}
 \delta W(\phi,\delta \pmb{v}) = \int_v \pmb{\sigma}:\delta \pmb{d} dv - \int_v \pmb{f} \cdot \delta\pmb{v}dv - \int_{\partial v} \pmb{t} \cdot \delta \pmb{v} da = 0,
@@ -571,7 +530,7 @@ where $\pmb{\sigma}$ is the Cauchy stress-tensor (2-tensor), $\pmb{f}$ is the bo
 
 \subsection{Discretization}
 
-Analogous to chapter 9 of Ref.\ \onlinecite{JavierBonet:2008uxa}, the discretization of Eq.\ \eqref{eq:spatial_virtual_work} is obtained by considering the contribution to $\delta W(\phi,\delta \pmb{v})$ caused by a single virtual nodal velocity of element $(e)$ $\delta \pmb{v}^{(e)}_a$  
+Analogous to chapter 9 of Ref.\ \cite{JavierBonet:2008uxa}, the discretization of Eq.\ \eqref{eq:spatial_virtual_work} is obtained by considering the contribution to $\delta W(\phi,\delta \pmb{v})$ caused by a single virtual nodal velocity of element $(e)$ $\delta \pmb{v}^{(e)}_a$  
 %
 \begin{equation}
 \delta W^{(e)}_a(\phi,N_a\delta\pmb{v}^{(e)}_a) = \int_{v^{(e)}} \pmb{\sigma}:(\delta \pmb{v}^{(e)}_a \otimes \nabla N_a) dv - \int_{v^{(e)}} \pmb{f} \cdot N_a \delta\pmb{v}^{(e)}_a dv - \int_{\partial v^{(e)}} \pmb{t} \cdot N_a \delta\pmb{v}^{(e)}_a da = 0,
@@ -580,7 +539,7 @@ Analogous to chapter 9 of Ref.\ \onlinecite{JavierBonet:2008uxa}, the discretiza
 %
 where the interpolations of Eqs.\ \eqref{eq:interpolate_velocity} and \eqref{eq:interpolate_displacement_rate} have been used for $\delta \pmb{v}$ and $\delta \pmb{d}$, respectively, in Eq.\ \eqref{eq:spatial_virtual_work}. Note that the symmetry of $\pmb{\sigma}$ has been used to simplify the interpolation of Eq.\ \eqref{eq:interpolate_displacement_rate}. 
 
-Observing that $\delta \pmb{v}$ is independent of the integration and using the tensor relationship $\pmb{\sigma}:(\delta \pmb{v}_a \otimes \nabla N_a) = \delta \pmb{v}_a \cdot \pmb{\sigma} \nabla N_a$ (see Eq.\ (2.52b) of Ref.\ \onlinecite{JavierBonet:2008uxa}), Eq.\ \eqref{eq:discretized_virtual_work} can be simplified to
+Observing that $\delta \pmb{v}$ is independent of the integration and using the tensor relationship $\pmb{\sigma}:(\delta \pmb{v}_a \otimes \nabla N_a) = \delta \pmb{v}_a \cdot \pmb{\sigma} \nabla N_a$ (see Eq.\ (2.52b) of Ref.\ \cite{JavierBonet:2008uxa}), Eq.\ \eqref{eq:discretized_virtual_work} can be simplified to
 %
 \begin{eqnarray}
 \delta W^{(e)}_a(\phi,N_a\delta\pmb{v}^{(e)}_a) &=& \delta \pmb{v}^{(e)}_a \cdot \left( \int_{v^{(e)}} \pmb{\sigma} \nabla N_a dv - \int_{v^{(e)}} \pmb{f} \cdot N_a dv - \int_{\partial v^{(e)}} \pmb{t} \cdot N_a da \right) \nonumber\\
@@ -648,7 +607,3 @@ and internal elemental forces becomes
 \end{equation}
 %
 which is the term \green{fe} variable in the biotissue code. \red{Note! The external elemental forces are implemented directly onto the degrees of freedom at the assembly stage}.
-
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}
