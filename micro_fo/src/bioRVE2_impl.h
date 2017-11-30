@@ -2,18 +2,20 @@
 #include <apfDynamicMatrix.h>
 namespace bio
 {
-  template <typename O>
-    void getBoundaryVerts(const RVE * rve, apf::Mesh * fn_msh, RVE::side sd, O nds)
+  template <typename I, typename O>
+    void getBoundaryVerts(const RVE * rve,
+                          apf::Mesh * msh,
+                          I bgn_vrts,
+                          I end_vrts,
+                          RVE::side sd,
+                          O nds)
   {
-    apf::MeshEntity * me = NULL;
-    apf::MeshIterator * it = NULL;
-    for(it = fn_msh->begin(0); (me = fn_msh->iterate(it)) ; )
+    for(auto vrt = bgn_vrts; vrt != end_vrts; ++vrt)
     {
       apf::Vector3 crd;
-      fn_msh->getPoint(me,0,crd);
+      msh->getPoint(*vrt,0,crd);
       if(rve->onBoundary(crd,sd))
-        *nds++ = me;
+        *nds++ = *vrt;
     }
-    fn_msh->end(it);
   }
 }

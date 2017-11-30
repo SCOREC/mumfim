@@ -15,6 +15,10 @@ namespace las
    *  trying to converge past 10e-8
    */
   LasSolve * createSparskitLUSolve(SparskitBuffers * b);
+  LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b);
+  LasSolve * createSparskitQuickLUSolve(LasSolve * slvr);
   void printSparskitMat(std::ostream &, Mat * m);
+  double getSparskitMatValue(Mat *, int rr, int cc);
+  void setSparskitMatValue(Mat *, int rr, int cc, double vl);
 }
 #endif

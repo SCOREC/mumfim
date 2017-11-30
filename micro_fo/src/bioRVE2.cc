@@ -2,6 +2,7 @@
 #include "bioFiberNetwork.h"
 #include "lasSparskit.h"
 #include <apfFunctions.h>
+#include <apfMeshIterator.h>
 #include <apfMeshUtil.h>
 namespace bio
 {
@@ -59,6 +60,29 @@ namespace bio
     cbe_dof = apf::createNumbering(cbe_u);
     apf::NaiveOrder(cbe_dof);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
+  }
+  apf::MeshEntity * RVE::getSide(side sd)
+  {
+    apf::MeshEntity * rslt = NULL;
+    int plnr_dim =
+      (sd == rgt || sd == lft) ? 0 :
+      (sd == bot || sd == top) ? 1 : 2;
+    double plnr_crd = sideCoord(sd);
+    for(auto fc_itr = amsi::apfMeshIterator(cbe,2); fc_itr != amsi::apfEndIterator(cbe); ++fc_itr)
+    {
+      apf::MeshEntity * vrts[4];
+      cbe->getDownward(*fc_itr,0,&vrts[0]);
+      for(int ii = 0; ii < 4; ++ii)
+      {
+        apf::Vector3 crd;
+        cbe->getPoint(vrts[ii],0,crd);
+        if(crd[plnr_dim] != plnr_crd)
+          break;
+        // hit iff all the planar coords are correct
+        rslt = *fc_itr;
+      }
+    }
+    return rslt;
   }
   void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn)
   {

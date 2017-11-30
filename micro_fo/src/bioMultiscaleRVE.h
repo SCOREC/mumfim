@@ -5,6 +5,7 @@
 namespace bio
 {
   double calcRVEDimensionality(FiberNetwork * fn, double fbr_area, double fbr_vol_frc);
+  // coupling terms that involve terms from micro and macro
   class MultiscaleRVE
   {
   private:

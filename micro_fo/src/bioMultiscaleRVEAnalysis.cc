@@ -3,6 +3,8 @@
 #include "bioFiberNetworkIO2.h"
 #include "bioMicroFOMultiscale.h"
 #include <apfFEA.h> // amsi
+#include <apfMatrixUtil.h> //amsi
+#include <apfMeshIterator.h> // amsi
 #include <apfMDS.h>
 #include <gmi.h>
 #include <cassert>
@@ -33,33 +35,33 @@ namespace bio
       , du(du_)
       , u(u_)
       , ent(NULL)
-    {
-      int d = msh->getDimension();
-      for(int ii = 0; ii < d; ++ii)
-        for(int jj = 0; jj < d; ++jj)
-          FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
-    }
+      {
+        int d = msh->getDimension();
+        for(int ii = 0; ii < d; ++ii)
+          for(int jj = 0; jj < d; ++jj)
+            FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
+      }
     virtual bool inEntity(apf::MeshEntity * m)
-    {
-      ent = m;
-      return true;
-    }
+      {
+        ent = m;
+        return true;
+      }
     virtual void outEntity() {}
     virtual void atNode(int nd)
-    {
-      apf::Vector3 nd_xyz;
-      apf::Vector3 nd_u_old;
-      apf::getVector(xyz,ent,nd,nd_xyz);
-      apf::getVector(u,ent,nd,nd_u_old);
-      apf::Vector3 nd_u = FmI * nd_xyz;
-      apf::Vector3 nd_du = nd_u - nd_u_old;
-      apf::setVector(u,ent,nd,nd_u);
-      apf::setVector(du,ent,nd,nd_du);
-    }
+      {
+        apf::Vector3 nd_xyz;
+        apf::Vector3 nd_u_old;
+        apf::getVector(xyz,ent,nd,nd_xyz);
+        apf::getVector(u,ent,nd,nd_u_old);
+        apf::Vector3 nd_u = FmI * nd_xyz;
+        apf::Vector3 nd_du = nd_u - nd_u_old;
+        apf::setVector(u,ent,nd,nd_u);
+        apf::setVector(du,ent,nd,nd_du);
+      }
     void run()
-    {
-      apply(u);
-    }
+      {
+        apply(u);
+      }
   };
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
@@ -78,10 +80,258 @@ namespace bio
     apf::Field * fn_u = ans->fn->getUField();
     ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
   }
-  void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
+  // might be duplicated from bioFiberRVEAnalysis.cc ?
+  void recoverMultiscaleStress(FiberRVEAnalysis * ans, double * stress)
+  {
+    apf::Field * xyz = ans->fn->getNetworkMesh()->getCoordinateField();
+    apf::Vector3 xyz_val;
+    apf::Vector3 f_val;
+    apf::Numbering * num = ans->fn->getUNumbering();
+    int dofs[3] {};
+    double * f = NULL;
+    ans->ops->get(ans->f,f);
+    apf::Matrix3x3 strs;
+    for(auto nd = ans->bnd_nds.begin(); nd != ans->bnd_nds.end(); ++nd)
+    {
+      apf::getVector(xyz,*nd,0,xyz_val);
+      for(int ii = 0; ii < ans->fn->getDim(); ++ii)
+        dofs[ii] = apf::getNumber(num,*nd,0,ii);
+      strs[0][0] += xyz_val[0] * f[dofs[0]];
+      strs[0][1] += xyz_val[1] * f[dofs[0]];
+      strs[0][2] += xyz_val[2] * f[dofs[0]];
+      strs[1][0] += xyz_val[0] * f[dofs[1]];
+      strs[1][1] += xyz_val[1] * f[dofs[1]];
+      strs[1][2] += xyz_val[2] * f[dofs[1]];
+      strs[2][0] += xyz_val[0] * f[dofs[2]];
+      strs[2][1] += xyz_val[1] * f[dofs[2]];
+      strs[2][2] += xyz_val[2] * f[dofs[2]];
+    }
+    stress[0] = strs[0][0];
+    stress[1] = strs[1][1];
+    stress[2] = strs[2][2];
+    stress[3] = (strs[1][2] + strs[2][1]) * 0.5;
+    stress[4] = (strs[0][2] + strs[2][0]) * 0.5;
+    stress[5] = (strs[0][1] + strs[1][0]) * 0.5;
+  }
+  void recoverAvgVolStress(FiberRVEAnalysis * ans, double * Q)
+  {
+    // Q terms
+    (void)ans;
+    (void)Q;
+  }
+  // honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
+  void recoverStressDerivs(FiberRVEAnalysis * ans, double * dstrss_drve)
   {
     (void)ans;
-    (void)data;
+    (void)dstrss_drve;
+    // stress derivative terms
+    apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
+    int dim = ans->rve->getMesh()->getDimension();
+    int fn_dof_cnt = ans->fn->getDofCount();
+    int rve_dof_cnt = ans->rve->numNodes()*dim;
+    // wierd area term matrix
+    // this is calculated on the reference domain and makes assumptions based on that fact
+    apf::DynamicMatrix dRdx_rve(fn_dof_cnt,rve_dof_cnt);
+    apf::Numbering * rve_dofs = ans->rve->getNumbering();
+    apf::Numbering * fn_dofs = ans->fn->getUNumbering();
+    for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
+    {
+      std::vector<apf::MeshEntity*> bnds[RVE::side::all];
+      for(int sd = RVE::side::bot; sd != RVE::side::all; ++sd)
+      {
+        int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 : (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
+        RVE::side rve_sd = static_cast<RVE::side>(sd);
+        apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
+        double a = apf::measure(ans->rve->getMesh(),sd_ent);
+        apf::Vector3 crd;
+        fn_msh->getPoint(*vrt,0,crd);
+        if(ans->rve->onBoundary(crd,rve_sd))
+        {
+          // extract method
+          int vrt_cnt = dim == 3 ? 4 : 2;
+          apf::MeshEntity * fc_vrts[vrt_cnt];
+          ans->rve->getMesh()->getDownward(sd_ent,0,&fc_vrts[0]);
+          // iterate over the line/face (dep on dim)
+          for(int ci = 0; ci < vrt_cnt; ++ci)
+          {
+            apf::Vector3 ci_crd;
+            ans->rve->getMesh()->getPoint(fc_vrts[ci],0,ci_crd);
+            // this method of calculating the area/length associated with the vertex is only valid on the reference domain as it depends on the verts of a face/edge being both coplanar and axis-aligned
+            apf::Vector3 spn = ci_crd - crd;
+            double ai = 1.0;
+            for(int ii = 0; ii < dim; ++ii)
+              ai *= ii == plnr_dim ? 1.0 : spn[ii];
+            // iterate over the dim
+            for(int ej = 0; ej < dim; ++ej)
+            {
+              int fn_dof = apf::getNumber(fn_dofs,(*vrt),0,ej);
+              int rve_dof = apf::getNumber(rve_dofs,sd_ent,0,ej);
+              dRdx_rve(fn_dof,rve_dof) = ci == ej ? ai / a : 0.0;
+            }
+          }
+          bnds[sd].push_back(*vrt);
+          break;
+        }
+      }
+    }
+    // have dRdx_rve
+    // setup additional solves with the rows of dRdx_rve as the force vector
+    // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
+    int sigma_length = dim == 3 ? 6 : 3;
+    apf::DynamicMatrix dS_dx_fn(sigma_length,fn_dof_cnt);
+    apf::Numbering * dofs = ans->fn->getUNumbering();
+    double * F = NULL;
+    ans->ops->get(ans->f,F);
+    // iterate over all fibers with a node on the boundary
+    for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
+    {
+      apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
+      assert(fn_msh->countUpward(*vrt) == 1);
+      apf::Vector3 Nx;
+      fn_msh->getPoint(*vrt,0,Nx);
+      apf::MeshEntity * edg = fn_msh->getUpward(*vrt,0);
+      apf::MeshEntity * vrts[2];
+      fn_msh->getDownward(edg,0,&vrts[0]);
+      int bnd_dofs[dim];
+      for(int dd = 0; dd < dim; ++dd)
+        bnd_dofs[0] = apf::getNumber(dofs,*vrt,0,dd);
+      for(int vrt = 0; vrt < 2; ++vrt)
+      {
+        for(int dd = 0; dd < dim; ++dd)
+        {
+          int dof = apf::getNumber(dofs,vrts[dd],0,dd);
+          apf::Vector3 ks;
+          ks.zero();
+          for(int ii = 0; ii < dim; ++ii)
+            ks[ii] = -1.0 * las::getSparskitMatValue(ans->k,dof,bnd_dofs[ii]);
+          apf::Vector3 delta;
+          for(int ii = 0; ii < dim; ++ii)
+            delta[ii] = dof == bnd_dofs[ii] ? 1.0 : 0.0;
+          apf::Vector3 fs;
+          for(int ii = 0; ii < dim; ++ii)
+            fs[ii] = F[bnd_dofs[ii]];
+          apf::Matrix3x3 m = apf::tensorProduct(ks,Nx) + apf::tensorProduct(delta,fs);
+          apf::Matrix3x3 ms = amsi::symmetricPart(m);
+          apf::DynamicVector vls(sigma_length);
+          amsi::mat2VoigtVec(dim,ms,&vls(0));
+          dS_dx_fn.setColumn(dof,vls);
+          for(int ii = 0; ii < dim; ++ii)
+            las::setSparskitMatValue(ans->k,dof,bnd_dofs[ii],0.0);
+        }
+      }
+      for(int ii = 0; ii < dim; ++ii)
+        las::setSparskitMatValue(ans->k,bnd_dofs[ii],bnd_dofs[ii],1.0);
+    }
+    // have dS_dx_fn
+    apf::DynamicVector f(fn_dof_cnt);
+    apf::DynamicVector u(fn_dof_cnt);
+    las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
+    las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
+    las::LasSolve * slv = las::createSparskitQuickLUSolve(ans->slv);
+    apf::DynamicMatrix dx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
+    for(int ii = 0; ii < rve_dof_cnt; ++ii)
+    {
+      // apf -> double * -> sparskit
+      dRdx_rve.getColumn(ii,f);
+      double * fptr = &f[0];
+      ans->ops->restore(skt_f,fptr);
+      // solve k u = f for modified f
+      slv->solve(ans->k,skt_u,skt_f);
+      // sparskit -> double * -> apf
+      double * uptr = NULL;
+      ans->ops->get(skt_u,uptr);
+      std::copy(uptr,uptr+fn_dof_cnt,u.begin());
+      dx_fn_dx_rve.setColumn(ii,u);
+    }
+    // have dx_fn_dx_rve
+    apf::DynamicMatrix dS_dx_rve;
+    apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
+    // need vol, det J and d_detJ / dx_rve to convert to macroscale
+    class CalcdV_dx_rve : public apf::Integrator
+    {
+    private:
+      int dim;
+      int nends;
+      apf::DynamicVector dV_dx_rve;
+      apf::Field * u;
+      apf::MeshElement * mlm;
+      apf::Element * e;
+    public:
+      CalcdV_dx_rve(int o, apf::Field * du)
+        : Integrator(o)
+        , dim(-1)
+        , nends(0)
+        , dV_dx_rve()
+        , u(du)
+        , mlm(NULL)
+        , e(NULL)
+      {}
+      virtual void inElement(apf::MeshElement * m)
+      {
+        dim = apf::getDimension(mlm);
+        mlm = m;
+        e = apf::createElement(u,m);
+        nends = apf::countNodes(e);
+        dV_dx_rve.resize(nends*dim);
+      }
+      virtual void atPoint(apf::Vector3 const& p, double w, double)
+      {
+        apf::NewArray<apf::Vector3> dx_dxi;
+        apf::getShapeGrads(e,p,dx_dxi);
+        for(int ii = 0; ii < nends; ++ii)
+        {
+          for(int dd = 0; dd < dim; ++dd)
+          {
+            apf::Matrix3x3 J;
+            apf::getJacobian(mlm,p,J);
+            for(int d2 = 0; d2 < dim; ++d2)
+              J[d2][dd] = dx_dxi[ii][d2];
+            dV_dx_rve[ii*dim+dd] += w * apf::getDeterminant(J);
+          }
+        }
+      }
+      virtual void outElement()
+      {
+        apf::destroyElement(e);
+      }
+      void getdVdxrve(apf::DynamicVector & dVdxrve)
+      {
+        dVdxrve = dV_dx_rve;
+      }
+    };
+    apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
+    apf::DynamicVector dV_dx_rve;
+    CalcdV_dx_rve calcdv_dx_rve(1,ans->rve->getUField());
+    calcdv_dx_rve.process(mlm);
+    calcdv_dx_rve.getdVdxrve(dV_dx_rve);
+    double vol = apf::measure(mlm);
+    apf::destroyMeshElement(mlm);
+    // convert to macro stress values
+    double scale_conversion = 1.0;
+    apf::DynamicVector col(sigma_length);
+    for(int ii = 0; ii < rve_dof_cnt; ++ii)
+    {
+      apf::DynamicVector sigma; // copy stress
+      dS_dx_rve.getColumn(ii,col);
+      col /= vol;
+      sigma *= (dV_dx_rve[ii] / (vol * vol)) * scale_conversion;
+      col -= sigma;
+      dS_dx_rve.setColumn(ii,col);
+    }
+    apf::DynamicMatrix dx_rve_dx_fe;
+    ans->multi->calcdRVEdFE(dx_rve_dx_fe,ans->rve);
+    apf::DynamicMatrix dS_dx;
+    apf::multiply(dS_dx_rve,dx_rve_dx_fe,dS_dx);
+    amsi::mat2Array(dS_dx,dstrss_drve);
+  }
+  void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
+  {
+    double * strs = &data->data[0];
+    recoverMultiscaleStress(ans,strs);
+    double * Q = &data->data[6];
+    recoverAvgVolStress(ans,Q);
+    double * dstrs_drve = &data->data[9];
+    recoverStressDerivs(ans,dstrs_drve);
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()
@@ -175,8 +425,14 @@ namespace bio
         apf::Numbering * n = apf::createNumbering(u);
         // fix boundary nodes before creating csr
         RVE rve;
+        auto bgn = amsi::apfMeshIterator(fn,0);
+        decltype(bgn) end = amsi::apfEndIterator(fn); // object slicing?
         std::vector<apf::MeshEntity*> bnd_nds;
-        getBoundaryVerts(&rve, fn, RVE::all,std::back_inserter(bnd_nds));
+        getBoundaryVerts(&rve,
+                         fn,
+                         bgn,end,
+                         RVE::all,
+                         std::back_inserter(bnd_nds));
         applyRVEBC(bnd_nds.begin(),bnd_nds.end(),n);
         int dofs = apf::NaiveOrder(n);
         sprs[ii][jj] = las::createCSR(n,dofs);
@@ -212,10 +468,6 @@ namespace bio
                     inis,
                     amsi::mpi_type<bio::micro_fo_init_data>());
     gmi_model * nl_mdl = gmi_load(".null");
-    // apf mesh construction ops assume a lot takes place in parallel since apf is focused on parallel meshes, but the rve and fn meshes are serial so when copying them we need to keep the operations local, this is an implicit and horrible dependency
-    MPI_Comm scl;
-    MPI_Comm_dup(PCU_Get_Comm(),&scl);
-    // switching to MPI_COMM_SELF means that the next PCU_Switch_Comm will call MPI_Comm_free on MPI_COMM_SELF, which should cause an error, so maybe duplication MPI_COMM_SELF will work?
     MPI_Comm slf;
     MPI_Comm_dup(MPI_COMM_SELF,&slf);
     PCU_Switch_Comm(slf);
@@ -232,13 +484,16 @@ namespace bio
         std::string fbr_rct_str("fiber_reaction");
         // copy fiber_reaction tag from origin mesh and set the reactions vector inside the fn
         amsi::copyIntTag(fbr_rct_str,fns[tp][rnd]->msh,msh_cpy,1,1);
+        // copy ids for edges to make debugging easier
+        AMSI_DEBUG(std::string id_tg_str("id"));
+        AMSI_DEBUG(amsi::copyIntTag(id_tg_str,fns[tp][rnd]->msh,msh_cpy,1,1));
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
-        fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this
+        fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this, fix
         *rve = initFromMultiscale(fn,sprs[tp][rnd],bfrs,hdr,prm,dat);
         ii++;
       }
     }
-    PCU_Switch_Comm(scl);
+    PCU_Switch_Comm(AMSI_COMM_SCALE);
     cs->CommPattern_UpdateInverted(recv_ptrn,send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
@@ -283,8 +538,9 @@ namespace bio
           amsi::MultiConvergence cnvrg(&ptr[0],&ptr[0]+1);
           // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
           amsi::ResetIteration rst_iter(&cnvrg,&itr);
-          //FiberRVEConvergence cnvrg(*rve);
           amsi::numericalSolve(&itr,&cnvrg);
+          // we've converged and have not reset the state of the vectors, matrices, and buffers
+          // the inversion of the tangent stiffness matrix should be available in the buffers?
           recoverMultiscaleResults(*rve,&results[ii]);
           ++ii;
         }

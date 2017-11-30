@@ -14,8 +14,8 @@ namespace bio
     apf::Mesh2 * msh;
     apf::MeshTag * prd_tg;
     apf::MeshTag * ord_tg;
-    long vrt_cnt;
-    long edg_cnt;
+    int vrt_cnt;
+    int edg_cnt;
     std::vector<apf::MeshEntity*> vrts;
     std::vector<apf::MeshEntity*> edgs;
     void processVertLine(std::istream &);
@@ -52,10 +52,10 @@ namespace bio
     is >> nn >> ne >> np;
     if(np)
     {
-      prd_tg = msh->createLongTag("periodic_bcs",1);
-      assert(sizeof(void*) <= sizeof(long));
+      prd_tg = msh->createIntTag("periodic_bcs",1);
+      assert(sizeof(void*) <= sizeof(int));
     }
-    ord_tg = msh->createLongTag("id", 1);
+    ord_tg = msh->createIntTag("id", 1);
     for(int ii = 0; ii < nn; ++ii)
       processVertLine(is);
     for(int ii = 0; ii < ne; ++ii)
@@ -73,7 +73,7 @@ namespace bio
     apf::Vector3 crd;
     is >> crd[0] >> crd[1] >> crd[2];
     apf::MeshEntity * vrt = msh->createVertex(NULL,crd,apf::Vector3(0,0,0));
-    msh->setLongTag(vrt, ord_tg, &vrt_cnt);
+    msh->setIntTag(vrt, ord_tg, &vrt_cnt);
     vrt_cnt++;
     vrts.push_back(vrt);
   }
@@ -86,7 +86,7 @@ namespace bio
     v[0] = vrts[n0];
     v[1] = vrts[n1];
     apf::MeshEntity * edg = msh->createEntity(apf::Mesh::EDGE, NULL, &v[0]);
-    msh->setLongTag(edg, ord_tg, &edg_cnt);
+    msh->setIntTag(edg, ord_tg, &edg_cnt);
     edg_cnt++;
     edgs.push_back(edg);
   }
@@ -95,7 +95,7 @@ namespace bio
     int n0 = -1;
     int n1 = -1;
     is >> n0 >> n1;
-    msh->setLongTag(vrts[n0-1],prd_tg,reinterpret_cast<long*>(vrts[n0-1]));
-    msh->setLongTag(vrts[n1-1],prd_tg,reinterpret_cast<long*>(vrts[n1-1]));
+    msh->setIntTag(vrts[n0-1],prd_tg,reinterpret_cast<int*>(&vrts[n0-1]));
+    msh->setIntTag(vrts[n1-1],prd_tg,reinterpret_cast<int*>(&vrts[n1-1]));
   }
 }

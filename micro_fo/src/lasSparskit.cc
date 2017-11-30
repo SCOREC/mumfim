@@ -8,10 +8,20 @@ namespace las
 {
   class SparskitLU : public LasSolve
   {
-  private:
+  protected:
     SparskitBuffers * bfrs;
+    friend class SparskitQuickLU;
   public:
     SparskitLU(SparskitBuffers * b) : bfrs(b) {}
+    virtual void solve(Mat * k, Vec * u, Vec * f);
+  };
+  // only perform the solve, do not decompose the matrix
+  class SparskitQuickLU : public SparskitLU
+  {
+  public:
+    SparskitQuickLU(SparskitBuffers * b) : SparskitLU(b) {}
+    SparskitQuickLU(SparskitLU * lu) : SparskitLU(lu->bfrs) {}
+    // the matrix k must have a csr format identical to that used previously in a normal SparskitLU solve
     virtual void solve(Mat * k, Vec * u, Vec * f);
   };
   class SparskitOps : public LasOps
@@ -132,6 +142,15 @@ namespace las
   {
     return new SparskitLU(b);
   }
+  LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b)
+  {
+    return new SparskitQuickLU(b);
+  }
+  LasSolve * createSparskitQuickLUSolve(LasSolve * slv)
+  {
+    SparskitLU * skt_slv = reinterpret_cast<SparskitLU*>(slv);
+    return new SparskitQuickLU(skt_slv);
+  }
   void printSparskitMat(std::ostream & o, Mat * mi)
   {
     skMat * m = getSparskitMatrix(mi);
@@ -144,6 +163,22 @@ namespace las
       }
       o << '\b' << std::endl;
     }
+  }
+  double getSparskitMatValue(Mat * k, int rr, int cc)
+  {
+    skMat * m = getSparskitMatrix(k);
+    int ndofs = m->getCSR()->getNumEqs();
+    assert(rr < ndofs && rr >= 0);
+    assert(cc < ndofs && cc >= 0);
+    return (*m)(rr,cc);
+  }
+  void setSparskitMatValue(Mat * k, int rr, int cc, double vl)
+  {
+    skMat * m = getSparskitMatrix(k);
+    int ndofs = m->getCSR()->getNumEqs();
+    assert(rr < ndofs && rr >= 0);
+    assert(cc < ndofs && cc >= 0);
+    (*m)(rr,cc) = vl;
   }
   // CLASS MEMBER FUNCTION DEFINITIONS
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
@@ -175,6 +210,19 @@ namespace las
       std::cerr << "ERROR: ilut_ returned error code " << ierr << std::endl;
       return;
     }
+    lusol_(&ndofs,
+           &(*fv)[0],
+           &(*uv)[0],
+           bfrs->matrixBuffer(),
+           bfrs->colsBuffer(),
+           bfrs->rowsBuffer());
+  }
+  void SparskitQuickLU::solve(Mat * k, Vec * u, Vec * f)
+  {
+    skMat * mat = getSparskitMatrix(k);
+    skVec * uv = getSparskitVector(u);
+    skVec * fv = getSparskitVector(f);
+    int ndofs = mat->getCSR()->getNumEqs();
     lusol_(&ndofs,
            &(*fv)[0],
            &(*uv)[0],

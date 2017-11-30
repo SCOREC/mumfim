@@ -5,8 +5,10 @@
 #include "bioRVE2.h"
 #include "bioTrussIntegrator.h"
 #include "lasSparskit.h"
+#include <apfMeshIterator.h>
 namespace bio
 {
+  // todo: rename (shouldn't have reference to micro in a single-scale file)
   apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
                                                las::LasOps * ops,
                                                las::Mat * k,
@@ -31,16 +33,23 @@ namespace bio
   {
     FiberRVEAnalysis * an = new FiberRVEAnalysis;
     an->fn = fn;
-    // todo determine rve size from input?
+    // todo determine rve size from input
     an->rve = new RVE(0.5,fn->getDim());
-    getBoundaryVerts(an->rve,an->fn->getNetworkMesh(),RVE::side::all,std::back_inserter(an->bnd_nds));
+    auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(),0);
+    decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
+    getBoundaryVerts(an->rve,
+                     an->fn->getNetworkMesh(),
+                     bgn,
+                     end,
+                     RVE::side::all,
+                     std::back_inserter(an->bnd_nds));
     applyRVEBC(an->bnd_nds.begin(),an->bnd_nds.end(),an->fn->getUNumbering());
     apf::Numbering * udofs = an->fn->getUNumbering();
     int ndofs = apf::NaiveOrder(udofs);
     an->f0 = las::createSparskitVector(ndofs);
     an->f = las::createSparskitVector(ndofs);
     an->u = las::createSparskitVector(ndofs);
-    an->k = las::createSparskitMatrix(csr); // assumes the csr is based on the costrained field above.. this is shitty
+    an->k = las::createSparskitMatrix(csr); // no direct connection between csr and u field internal to this function, might need to refactor for that
     if(b == NULL)
       b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
     an->ops = las::initSparskitOps();
@@ -49,7 +58,6 @@ namespace bio
     an->es = createMicroElementalSystem(fn,an->ops,an->k,an->f);
     return an;
   }
-  
   void destroyAnalysis(FiberRVEAnalysis * fa)
   {
     las::deleteSparskitMatrix(fa->k);
@@ -69,7 +77,7 @@ namespace bio
     applyRVEBC(an->bnd_nds.begin(),
                an->bnd_nds.end(),
                an->fn->getUNumbering());
-    // can't change at present due to CSR restriction
+    // will not change at present due to CSR restriction, run every time anyway
     apf::NaiveOrder(an->fn->getUNumbering());
     an->ops->zero(an->k);
     an->ops->zero(an->u);
@@ -126,8 +134,7 @@ namespace bio
         sigma[ii][jj] = 0.0;
     double * f = NULL;
     fra->ops->get(fra->f,f);
-    std::vector<apf::MeshEntity*> bnd;
-    getBoundaryVerts(fra->rve,fra->fn->getNetworkMesh(),RVE::side::all,std::back_inserter(bnd));
+    auto & bnd = fra->bnd_nds;
     apf::Numbering * nm = fra->fn->getUNumbering();
     apf::Field * uf = fra->fn->getUField();
     apf::Mesh * fn = fra->fn->getNetworkMesh();

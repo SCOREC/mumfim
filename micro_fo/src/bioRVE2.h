@@ -36,6 +36,7 @@ namespace bio
   protected:
   public:
     RVE(double cr = 0.5, int d = 3);
+    apf::MeshEntity * getSide(side sd);
     /**
      * Get the number of nodes for the RVE
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
@@ -81,7 +82,7 @@ namespace bio
       else if (sd == side::frt || sd == side::bck)
         idx = 2;
       return fabs(sideCoord(sd) - crd[idx]) < eps;
-    }
+     }
     apf::Mesh * getMesh() { return cbe; }
     apf::MeshEntity * getMeshEnt() { return cbe_e; }
     apf::Element * getElement() { return cbe_u_e; }
@@ -149,8 +150,10 @@ namespace bio
    * Compile a list of MeshEntities in the fiber network which have at least a single
    * node classified 'on' the boundary of the RVE.
    */
-  template <typename O>
-    void getBoundaryVerts(const RVE * rve, apf::Mesh * fn, RVE::side sd, O nds);
+  template <typename I, typename O>
+    void getBoundaryVerts(const RVE * rve, apf::Mesh * msh,
+                          I bgn_vrts, I end_vrts,
+                          RVE::side sd, O nds);
   /**
    * Apply a vector of displacements to the coordinates of the rve mesh
    * @param rve The rve to displace

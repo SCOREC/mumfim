@@ -3,6 +3,7 @@
 #include "bioFiberRVEAnalysis.h"
 #include "bioRVE2.h"
 #include <amsiAnalysis.h>
+#include <apfMeshIterator.h>
 #include <mpi.h>
 #include <cassert>
 #include <sstream>
@@ -30,7 +31,9 @@ int main(int argc, char * argv[])
   bio::FiberNetwork fn(fn_msh);
   apf::Numbering * nm = fn.getUNumbering();
   std::vector<apf::MeshEntity*> bnds;
-  bio::getBoundaryVerts(&rve,fn.getNetworkMesh(),bio::RVE::side::all,std::back_inserter(bnds));
+  auto bgn = amsi::apfMeshIterator(fn_msh,0);
+  decltype(bgn) end = amsi::apfEndIterator(fn_msh);
+  bio::getBoundaryVerts(&rve,fn_msh,bgn,end,bio::RVE::side::all,std::back_inserter(bnds));
   bio::applyRVEBC(bnds.begin(),bnds.end(),nm);
   int ndofs = apf::NaiveOrder(nm);
   //las::Vec * f = las::createSparskitVector(ndofs);
@@ -55,7 +58,9 @@ int main(int argc, char * argv[])
   bio::FiberNetwork fn2(fn_msh2);
   apf::Numbering * nm2 = fn2.getUNumbering();
   std::vector<apf::MeshEntity*> bnds2;
-  bio::getBoundaryVerts(&rve2,fn2.getNetworkMesh(),bio::RVE::side::all,std::back_inserter(bnds2));
+  auto bgn2 = amsi::apfMeshIterator(fn_msh2,0);
+  decltype(bgn2) end2 = amsi::apfEndIterator(fn_msh2);
+  bio::getBoundaryVerts(&rve2,fn_msh2,bgn2,end2,bio::RVE::side::all,std::back_inserter(bnds2));
   bio::applyRVEBC(bnds2.begin(),bnds2.end(),nm2);
   int ndofs2 = apf::NaiveOrder(nm2);
   las::CSR * fn_csr2 = las::createCSR(nm2,ndofs2);

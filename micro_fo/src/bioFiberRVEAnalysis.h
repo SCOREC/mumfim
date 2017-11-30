@@ -12,6 +12,7 @@ namespace bio
   struct FiberRVEAnalysis
   {
     FiberNetwork * fn;
+    // move this out of here! requires coupling data structures as currently written hmmm...
     MultiscaleRVE * multi;
     RVE * rve;
     std::vector<apf::MeshEntity*> bnd_nds;
