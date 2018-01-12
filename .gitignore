@@ -6,6 +6,9 @@ dep/sparskit/dep/build/
 build_debug/
 build_release/
 simmetrix_log
+tags
+compile_commands.json
+
 # Prerequisites
 *.d
 
