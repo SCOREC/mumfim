@@ -37,7 +37,7 @@ namespace bio
   TissueAnalysis::~TissueAnalysis()
   {
     delete cvg;
-    for(auto c = cvg_stps.begin(); c != cvg_stps.begin(); ++c)
+    for(auto c = cvg_stps.begin(); c != cvg_stps.end(); ++c)
     {
       amsi::Convergence * cn = *c;
       delete cn;

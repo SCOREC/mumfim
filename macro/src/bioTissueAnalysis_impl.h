@@ -2,6 +2,12 @@
 #include <simNonlinearAnalysis.h>
 namespace bio
 {
+  /**
+   * Extracts the volume convergence regions from a simmetrix case
+   * @param ss simmetrix case
+   * @param las the amsi las system used for convergence
+   * @param out typically std::back_inserter to some sort of list type.
+   */
   template <typename O>
     void buildLASConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, O out)
   {
@@ -14,6 +20,14 @@ namespace bio
         *out++ = cvg;
     }
   }
+  /**
+   * Extracts the volume convergence regions from a simmetrix case
+   * @param ss simmetrix case
+   * @param it amsi iterator
+   * @param u displacement
+   * @param vl_tks list of volumes tracked for volume convergence
+   * @param out typically std::back_inserter to some sort of list type.
+   */
   template <typename I, typename O>
     void buildVolConvergenceOperators(pACase ss, amsi::Iteration * it, apf::Field * u, I vl_tks, O out)
   {
