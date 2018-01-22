@@ -488,7 +488,26 @@ The computation demands are substantially greater for the collagen-network scale
 
 The large computational demands of the neuron-in-gel multi-scale model requires both the macroscopic and microscopic scale calculations to be performed in parallel. We employ the AMSI libraries to manage the parallel execution space for each scale. For our simulations, a total of 2048 cores were used on the AMOS BlueGene/Q maintained by the Center for Computational Innovations at RPI. Each node on the AMOS system has a 16-core 1.6GHz A2 processor with 16GB of DDR3 RAM, thus 128 nodes were allocated to the execution of this problem, with 128GB of memory. Of the assigned cores, 128 were devoted to the macroscale computation, while the remaining 1920 cores were used to compute the microscale RVE simulations. 
 
-While the DOF count at each scale provides some metric of the computational demand of the problem, the complexity of the physics and software implementation of each scale contributes a heuristic weight which, when applied to the DOF count, allows a more appropriate comparison of the computational demand at each scale. Particularly, this approach justifies the use of a core ratio between the macroscale and microscale problems other than one derived simply from the DOF count, which would be approximately 1:57 macroscale cores to microscale cores if only taking DOFs into account. Instead the ratio of 1:15 was heuristically determined to provide a better overall process utilization by minimizing core idle time. For additional discussion see \citep{Tobin:2017ip}.
+As the macroscale and microscale codes are assigned separate partitions of the parallel execution space, the simulation never sees 100\% parallel utilization due to the need of each scale to block while waiting for the other to compute. In order to achieve good performance given this constraint, we consider the computational demand of each scale and partition the simulation scales to prioritize process utilization and reduce process idle time.
+
+The DOF count at each scale provides an initial estimate of the computational demand of the problem, however the complexity of the physics and software implementation of each scale also contributes a heuristic weight which, when applied to the DOF count, allows a more appropriate comparison of the computational demand at each scale. Particularly, this approach justifies the use of a core ratio between the macroscale and microscale problems other than one derived simply from the DOF count, which would be approximately 1:57 macroscale cores to microscale cores if only taking DOFs into account. Instead the ratio of 1:15 was heuristically determined to provide a better overall process utilization by minimizing core idle time.
+
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=4cm]{figure/ss-macro.png} &
+\includegraphics[height=4cm]{figure/ss-micro.png} \\
+(a) & (b) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:strong-scaling} Strong-scaling the (a) macroscale and (b) microscale parallel allocations while holding the other scale allocation constant. Measurements taken with the multi-scale code applied to a different problem.}
+\end{figure}
+
+As the allocation and processing of individual microscale simulations is embarrassingly parallel, the allocation ratio can be scaled in favor of the microscale to reduce overall time-to-solution (see figure \ref{fig:strong-scaling}b). This approach sacrifices misroscale process utilization when holding the macroscale allocation and problem size constant as it increases the microscale idle time linearly since the time-to-solution of the macroscale is held constant. Increasing the allocation ratio in favor of the macroscale has less impact on the overall process utilization (see figure \ref{fig:strong-scaling}a) or time-to-solution as both of these are dominated by the work to be conducted at the microscale.
+
+Increasing the total parallel allocation while holding the problem size and allocation ratio constant reduces time-to-solution while retaining the same process utilization characteristics up to the point where the microscale code begins to lose efficiency due to increasing communication overhead on a problem of constant size.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results and Discussion}
@@ -644,7 +663,7 @@ In the above analysis, we used the strains along and transverse to the axons, as
 
 We have presented a general modeling strategy in which (1) a realistic representation of a complex cell geometry is generated from confocal microscopy images of dorsal root ganglion neurons embedded in a collagen gel; (2) the geometric model is converted into a finite-element mesh; (3) a multi-scale model is implemented in the mesh corresponding to the extracellular matrix (collagen gel); and (4) an analysis of the strain distributions within the neuron due to mechanical loading on the extracellular matrix.
 
-The large computational demands that arise from the unstructured mesh of a complex cell geometry coupled by with a multi-scale model is accommodated through the AMSI library, which is used to manage the parallel execution spaces of the macroscopic and microscopic scale simulation codes and to plan and enact the necessary parallel communication operations in order to couple the two separate codes together into a multi-scale simulation.
+The large computational demands that arise from the unstructured mesh of a complex cell geometry coupled by with a multi-scale model is accommodated through the AMSI library, which is used to manage the parallel execution spaces of the macroscopic and microscopic scale simulation codes and to plan and enact the parallel communication operations required to couple the two codes together into a multi-scale simulation. 
 
 The simulation results for the embedded neuron provides local strain information that is not accessible by current experimental techniques, thereby providing important insights about the mechanism of neuronal injury under mechanical loading. We find that the strain distribution in the neuron depends strongly on the configuration of the embedded neuron relative to the loading direction, which reflects the anisotropic mechanical properties of the neuron. More importantly, we observe that the applied strain on the surrounding environment is amplified within the neuron for all loading configurations considered. In the most severe cases, the applied strain is amplified by at least a factor of 2 in 10$\%$ of the neuron volume. 
 
