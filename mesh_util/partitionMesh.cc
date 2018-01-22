@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     trailingNum++; // "the additional '_'"
   }
   memcpy(pmeshname,argv[3],strlen(argv[3])-trailingNum);
-  pmeshname[strlen(argv[3])-4] = '\0';
+  pmeshname[strlen(argv[3])-trailingNum] = '\0';
 
   //strcat(modelFilename,argv[1]);
   strcat( meshFilename,argv[3]);
