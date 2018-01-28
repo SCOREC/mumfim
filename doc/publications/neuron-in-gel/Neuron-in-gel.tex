@@ -523,7 +523,7 @@ The strain within the neuron was quantified by a complementary cumulative distri
 \label{eq:ccdf}
 \end{equation}
 %
-where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$, and $\epsilon^*$ is either the axial, $\epsilon_{\text{ax}}$, or transverse, $\epsilon_{\text{trns}}$, strain with respect to the local axon axis; the four regions corresponding to the different local axes in the neuron were shown schematically in Fig.\ \ref{fig:image_to_model}(b). Equation \ref{eq:ccdf} is the probability that an arbitrary point within the neuron experiences an axial or transverse strain of \textit{greater than or equal to} $X$. The value measured in Eq.\ \eqref{eq:ccdf} is approximately equal to the volume fraction of the neuron. In the analysis below, the Green-Lagrange strain was used for measuring deformation. 
+where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$, and $\epsilon^*$ is either the axial, $\epsilon_{\text{ax}}$, or transverse, $\epsilon_{\text{trns}}$, strain with respect to the local axon axis; the four regions corresponding to the different local axes in the neuron were shown schematically in Fig.\ \ref{fig:image_to_model}(b). Equation \ref{eq:ccdf} is the probability that an arbitrary point within the neuron experiences an axial or transverse strain of \textit{greater than or equal to} $X$. The value measured in Eq.\ \eqref{eq:ccdf} is approximately equal to the volume fraction of the neuron that experiences a strain of greater than or equal to $X$. In the analysis below, the Green-Lagrange strain was used for measuring deformation. 
 
 %=========================================================================================================
 \subsection{Strain Distribution within Neuronal Bodies}
@@ -631,9 +631,9 @@ $90^{\circ}$ & 13$\%$ & 13$\%$ & 67$\%$ & 67$\%$\\ \hline \hline
 %
 As seen in Table \ref{table:ccdf_volfrac_compare}, the applied strain on the collagen gel is amplified in the neuron predominantly along the axial direction for $0^{\circ}$ loading and in the transverse direction for $45^{\circ}$ and $90^{\circ}$ loading. For $45^{\circ}$ loading, less than 0.1$\%$ of the neuron volume experiences an axial strain that is greater than or equal to the applied strain.
 
-The values listed in Table \ref{table:ccdf_volfrac_compare} are consistent with how the embedded neuron is oriented relative to the different loading directions. When loading at $0^{\circ}$ a majority of the neuron volume (regions 1, 2, and 4 in Fig.\ \ref{fig:image_to_model}(b)) are loaded predominantly in the axial direction giving rise to the largest fraction of neuron volume that amplifies the applied strain in the axial direction. On the other hand, when loading at $90^{\circ}$ a majority of the neuron volume (regions 1, 3, and 4 in Fig.\ \ref{fig:image_to_model}(b)) are loaded predominantly in the transverse direction giving rise to the largest fraction of neuron volume that amplifies the applied strain in the transverse direction. The amplification of the applied strain in the transverse direction is significantly greater because the neuron is much more compliant in the transverse direction relative to the axial direction.  The neuron also experiences a significant strain amplification in the transverse direction when loaded at $45^{\circ}$ because the axial direction of region 1 lies perpendicular to the $45^{\circ}$ loading direction.
+The values listed in Table \ref{table:ccdf_volfrac_compare} are consistent with how the embedded neuron is oriented relative to the different loading directions. When loading at $0^{\circ}$ a majority of the neuron volume (regions 1, 2, and 4 in Fig.\ \ref{fig:image_to_model}(b)) is loaded predominantly in the axial direction causing a larger fraction of the neuron to be amplified in the axial direction. On the other hand, when loading at $90^{\circ}$ a majority of the neuron volume (regions 1, 3, and 4 in Fig.\ \ref{fig:image_to_model}(b)) are loaded predominantly in the transverse direction causing a larger fraction of the neuron to be amplified in the transverse direction. The amplification of the applied strain in the transverse direction is significantly greater because the neuron is much more compliant in the transverse direction relative to the axial direction.  The neuron also experiences a significant strain amplification in the transverse direction when loaded at $45^{\circ}$ because the axial direction of region 1 lies perpendicular to the $45^{\circ}$ loading direction.
 
-Physiologically more important are the tails of the strain distributions, which represent the largest strains experienced by the neuron. The strain values corresponding to the largest 10$\%$ (by neuron volume) of deformation in the neuron are listed in Table \ref{table:ccdf_tail_strains}. 
+Physiologically more important are the tails of the strain distributions, which represent the largest strains experienced by the neuron. The minimum strains experienced by the most-deformed 10$\%$ of the neuron (by volume fraction) are listed in Table \ref{table:ccdf_tail_strains} for each loading case. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht]
@@ -643,17 +643,17 @@ Physiologically more important are the tails of the strain distributions, which 
 & \multicolumn{2}{c}{Largest 10$\%$ of axial strain} & \multicolumn{2}{c}{Largest 10$\%$ of transverse strain} \\ \hline 
 Loading Direction & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ \\
 \hline 
-$0^{\circ}$ & $0.11^*$ & $0.19^*$ & 0.04 & 0.06\\ 
-$45^{\circ}$ & $0.06$ & $0.10$ & $0.17^*$ & $0.28^*$\\
-$90^{\circ}$ & 0.05 & 0.09 & $0.22^*$ & $0.37^*$\\ \hline \hline
+$0^{\circ}$ & $11\%^*$ & $19\%^*$ & 4\% & 6\%\\ 
+$45^{\circ}$ & $6\%$ & $10\%$ & $17\%^*$ & $28\%^*$\\
+$90^{\circ}$ & 5\% & 9\% & $22\%^*$ & $37\%^*$\\ \hline \hline
 \end{tabular}
 \end{center}
-\caption{Strain values corresponding to the largest 10$\%$ of deformation in the neuron. Asterisks indicate strain values that are greater than the applied strain, i.e., applied strain is amplified within neuron.}
+\caption{The minimum strain values experienced by the most-deformed 10$\%$ of the neuron. Asterisks indicate strain values that are greater than the applied strain, i.e., applied strain is amplified within neuron.}
 \label{table:ccdf_tail_strains}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-Consistent with above, the applied strain is amplified along the axial direction for $0^{\circ}$ loading and the transverse direction for $45^{\circ}$ and $90^{\circ}$ loading. Of these cases, the largest and smallest amplifications arise for $90^{\circ}$ and $0^{\circ}$ loading, respectively.
+Consistent with above, the largest minimum strain experienced by the most-deformed 10$\%$ of the neuron occurs in the axial direction for $0^{\circ}$ loading and in the transverse direction for $45^{\circ}$ and $90^{\circ}$ loading. When this minimum strain is greater than the applied grip strain, amplification arises. Loading cases in which amplification arises are marked with an asterisk in Table \ref{table:ccdf_tail_strains}.
 
 When the system is loaded at $90^{\circ}$, 10$\%$ of the neuron volume experiences a strain amplification of at least a factor of 2 in the transverse direction. When loaded at $45^{\circ}$, the same fraction of the neuron volume experiences an amplification of at least a factor of 1.7. When loaded at $0^{\circ}$, 10$\%$ of the neuron volume experiences a strain amplification of at least a factor of 1.1 in the axial direction. The smaller amplification in the axial direction is due to the larger stiffness of the neuron in the axial direction relative to the transverse direction. 
 
