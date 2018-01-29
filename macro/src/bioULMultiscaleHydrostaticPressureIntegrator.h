@@ -11,15 +11,17 @@ namespace bio
   class ULMultiscaleHydrostaticPressureIntegrator : public amsi::ElementalSystem
   {
   public:
-  ULMultiscaleHydrostaticPressureIntegrator(MultiscaleTissue * n,
-					    apf::Field * u,
-					    apf::Field * rve_tp,
-					    apf::Field * dfm_grd,
-					    int o)
-    : ElementalSystem(u,o)
+    ULMultiscaleHydrostaticPressureIntegrator(RVECoupling * r,
+                                              apf::Field * strn,
+                                              apf::Field * strs,
+                                              apf::Field * u,
+                                              apf::Field * dfm_grd,
+                                              int o)
+      : ElementalSystem(u,o)
       , current_integration_point(0)
-      , analysis(n)
-      , micro_type_field(rve_tp)
+      , coupling(r)
+      , strain_field(strn)
+      , stress_field(strs)
       , dfm_grd_fld(dfm_grd)
     {
       matrixShearModulus  = 0.0;
@@ -39,10 +41,9 @@ namespace bio
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double dV)
+    void atPoint(apf::Vector3 const &p, double w, double)
     {
-      RVE_Info * rve_info = analysis->getRVEResult(apf::getMeshEntity(me),
-                                                   current_integration_point);
+      micro_fo_result * rslt = coupling->getRVEResult(apf::getMeshEntity(me),current_integration_point);
       // Note: Macro and micro solvers index stress tensor differently
       //
       //   micro    ----->    macro
@@ -99,12 +100,12 @@ namespace bio
             grads(ii,jj) += Jinv[jj][kk] * local_grads[ii][kk];
       int offset = 9;
       double * stress_deriv[6];
-      stress_deriv[0] = &(rve_info->derivS[offset]);
-      stress_deriv[1] = &(rve_info->derivS[offset + 3*nedof]);
-      stress_deriv[2] = &(rve_info->derivS[offset + 5*nedof]);
-      stress_deriv[3] = &(rve_info->derivS[offset +   nedof]);
-      stress_deriv[4] = &(rve_info->derivS[offset + 4*nedof]);
-      stress_deriv[5] = &(rve_info->derivS[offset + 2*nedof]);
+      stress_deriv[0] = &(rslt->data[offset]);
+      stress_deriv[1] = &(rslt->data[offset + 3*nedof]);
+      stress_deriv[2] = &(rslt->data[offset + 5*nedof]);
+      stress_deriv[3] = &(rslt->data[offset +   nedof]);
+      stress_deriv[4] = &(rslt->data[offset + 4*nedof]);
+      stress_deriv[5] = &(rslt->data[offset + 2*nedof]);
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6,nedof); // linear strain disp
       BL.zero();
@@ -152,18 +153,12 @@ namespace bio
 //      double P = (rve_info->derivS[0] + rve_info->derivS[3] + rve_info->derivS[5])/3.0;
       double P = 0.0;
       double HydroStaticP = P * (std::exp(coeff * (1.0-detF)) - 1.0)/(std::exp(coeff) - 1.0);
-      SV[0] = (rve_info->derivS[0]); 
-      SV[1] = (rve_info->derivS[3])*detF + HydroStaticP*(1-detF);
-      SV[2] = (rve_info->derivS[5])*detF + HydroStaticP*(1-detF);
-      SV[3] = (rve_info->derivS[1]);
-      SV[4] = (rve_info->derivS[4]);
-      SV[5] = (rve_info->derivS[2]);
-/*
-      std::cout<<"sigma 11:"<<rve_info->derivS[0]<<std::endl;
-      std::cout<<"sigma 22:"<<rve_info->derivS[3]<<std::endl;
-      std::cout<<"sigma 33:"<<rve_info->derivS[5]<<std::endl;
-      std::cout<<"Hydro P:"<<HydroStaticP<<std::endl;
-*/
+      SV[0] = rslt->data[0];
+      SV[1] = rslt->data[3] * detF + HydroStaticP * (1 - detF);
+      SV[2] = rslt->data[5] * detF + HydroStaticP * (1 - detF);
+      SV[3] = rslt->data[1];
+      SV[4] = rslt->data[4];
+      SV[5] = rslt->data[2];
       S[0][0] = S[0+3][0+3] = S[0+6][0+6] = SV[0];
       S[0][1] = S[0+3][1+3] = S[0+6][1+6] = SV[3];
       S[0][2] = S[0+3][2+3] = S[0+6][2+6] = SV[5];
@@ -188,9 +183,9 @@ namespace bio
           BLTxSV(ii,0) += BL(jj,ii) * SV[jj];
       // retrieve virtual strain/stress for force vector calc
       double Q[3];
-      Q[0] = rve_info->derivS[6];
-      Q[1] = rve_info->derivS[7];
-      Q[2] = rve_info->derivS[8];
+      Q[0] = rslt->data[6];
+      Q[1] = rslt->data[7];
+      Q[2] = rslt->data[8];
       apf::DynamicMatrix N(num_field_components,nedof);
       N.zero();
       for(int ii = 0; ii < num_field_components; ii++)
@@ -218,11 +213,18 @@ namespace bio
       // Compute strains and stresses (for force vector)
       apf::DynamicVector strain(6);
       apf::multiply(BL,u,strain);
-      analysis->storeStrain(me,strain.begin());
-      analysis->storeStress(me,SV);
+      apf::Matrix3x3 strn(strain(0),strain(4),strain(5),
+                          strain(4),strain(1),strain(3),
+                          strain(5),strain(3),strain(2));
+      apf::Matrix3x3 strs(SV[0],SV[4],SV[5],
+                          SV[4],SV[1],SV[3],
+                          SV[5],SV[3],SV[2]);
+      apf::MeshEntity * m = apf::getMeshEntity(me);
+      apf::setMatrix(strain_field,m,current_integration_point,strn);
+      apf::setMatrix(stress_field,m,current_integration_point,strs);
       current_integration_point++;
     }
-    void atPointMatrix(apf::Vector3 const &p, double w, double dV)
+    void atPointMatrix(apf::Vector3 const &p, double w, double)
     {
       apf::Matrix3x3 Jac;
       apf::getJacobian(me,p,Jac);
@@ -273,17 +275,6 @@ namespace bio
         //maxtrixStress(ii) += 2.0*GJ*matrixPoissonsRatio/(1.0-2.0*matrixPoissonsRatio) * log(J) - GJ;
         cauchy(ii,ii) += matrixBulkModulus*(J-1) - GJ*oneThird * (Bqq);
       }
-      // Store matrix stress
-      /*
-        double stress[6];
-        stress[0] = cauchy(0,0);
-        stress[1] = cauchy(1,1);
-        stress[2] = cauchy(2,2);
-        stress[3] = cauchy(0,1);
-        stress[4] = cauchy(1,2);
-        stress[5] = cauchy(0,2);
-        //analysis->storeMatrixStress(me,stress);
-        */
       double dl[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
       // Calculate C tensor
       double C[3][3][3][3];
@@ -320,7 +311,7 @@ namespace bio
               }
             }
     }
-    void atPointLinearElastic(apf::Vector3 const &p, double w, double dV)
+    void atPointLinearElastic(apf::Vector3 const &p, double w, double)
     {
       apf::Matrix3x3 Jac;
       apf::getJacobian(me,p,Jac);
@@ -398,9 +389,6 @@ namespace bio
       apf::multiply(BL,u,strain);
       apf::DynamicVector stress(6);
       apf::multiply(D,strain,stress);
-      // store stress and strain values for post processing.
-      analysis->storeStrain(me,strain.begin());
-      analysis->storeStress(me,stress.begin());
       // for force vector calculation
       apf::DynamicVector BLTxSV(nedof);
       apf::multiply(BLT,stress,BLTxSV);
@@ -422,14 +410,13 @@ namespace bio
     }
     int current_integration_point;
   private:
-    MultiscaleTissue * analysis;
+    RVECoupling * coupling;
+    apf::Field * strain_field;
+    apf::Field * stress_field;
     int dim;
     apf::FieldShape * fs;
     apf::EntityShape * es;
-    apf::Field * micro_type_field;
     apf::Field * dfm_grd_fld;
-    double linearYoungsModulus;
-    double linearPoissonsRatio;
     double matrixShearModulus;
     double matrixPoissonsRatio;
     double matrixBulkModulus;

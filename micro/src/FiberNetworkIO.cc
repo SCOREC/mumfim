@@ -11,7 +11,6 @@ namespace bio
     std::fstream strm(fnm);
     return new FiberNetwork(NetworkLoader().fromStream(strm));
   }
-  
   apf::Mesh2 * NetworkLoader::fromStream(std::istream & is)
   {
     apf::Mesh2 * msh = makeNullMdlEmptyMesh();
@@ -23,16 +22,14 @@ namespace bio
     apf::printStats(msh);
     return msh;
   }
-
   void NetworkLoader::parseHeader(std::istream & is, int & num_edges)
   {
     int nn, ndof;
     is >> nn >> ndof >> num_edges;
   }
-
   void NetworkLoader::parseLine(std::istream & is,
-				int & n1, int & n2,
-				apf::Vector3 & n1p, apf::Vector3 & n2p)
+                                int & n1, int & n2,
+                                apf::Vector3 & n1p, apf::Vector3 & n2p)
   {
     int edge_id = -1;
     double n1d[3];
@@ -41,7 +38,6 @@ namespace bio
     n1p.fromArray(n1d);
     n2p.fromArray(n2d);
   }
-
   void NetworkLoader::processLine(std::istream & is, apf::Mesh2 * msh)
   {
     int n1 = -1;
@@ -54,10 +50,9 @@ namespace bio
     v[1] = processVertex(msh,n2,n2c);
     msh->createEntity(apf::Mesh::EDGE,NULL,&v[0]);
   }
-
   apf::MeshEntity * NetworkLoader::processVertex(apf::Mesh2 * msh,
-						 int id,
-						 const apf::Vector3 & coord)
+                                                 int id,
+                                                 const apf::Vector3 & coord)
   {
     apf::MeshEntity * result = NULL;
     if(ldd.count(id))
@@ -69,11 +64,4 @@ namespace bio
     }
     return result;
   }
-
-
-
-
-
-  
-
 }

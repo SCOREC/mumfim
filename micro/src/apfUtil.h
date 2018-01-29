@@ -36,8 +36,8 @@ namespace bio
    * @return The barycentric coordinates of the global coordinate.
    */
   apf::Vector3 calcLocalCoord(apf::Mesh * msh,
-			      apf::MeshEntity * ent,
-			      const apf::Vector3 & glb);
+                              apf::MeshEntity * ent,
+                              const apf::Vector3 & glb);
   /**
    * Convert many global coordinates to local coordinates for a single mesh entity.
    * This function avoid multiply-calculating the inversion matrix (for linear elements)
@@ -49,9 +49,9 @@ namespace bio
    * @param gbl_crds The global coordinates to convert.
    */
   void calcLocalCoords(apf::DynamicArray<apf::Vector3> & lcl_crds,
-		       apf::Mesh * macro_msh,
-		       apf::MeshEntity * macro_ent,
-		       const apf::DynamicArray<apf::Vector3> & gbl_crds);
+                       apf::Mesh * macro_msh,
+                       apf::MeshEntity * macro_ent,
+                       const apf::DynamicArray<apf::Vector3> & gbl_crds);
   /**
    * Calculate the primary measure (lenght, area, volume) for every entity
    * of the specified dimension in the mesh.
@@ -61,9 +61,9 @@ namespace bio
    */
   void calcDimMeasures(apf::Mesh * msh, int dim, std::vector<double> & msrs);
   void getCoords(apf::Mesh * msh,
-		 apf::MeshEntity ** vrts,
-		 apf::Vector3 * crds,
-		 int nm);
+                 apf::MeshEntity ** vrts,
+                 apf::Vector3 * crds,
+                 int nm);
   double calcDeformedLength(apf::Field * f, apf::MeshEntity * e);
   double calcDistance(const apf::Vector3 & a, const apf::Vector3 & b);
   /**
@@ -111,17 +111,17 @@ namespace bio
       double cmps[fldcmp];
       apf::getComponents(fld,me,0,&cmps[0]);
       if(add)
-	for(int ii = 0; ii < fldcmp; ii++)
-	{
-	  int dof = apf::getNumber(num,me,0,ii);
-	  cmps[ii] += sol[dof - dof0];
-	}
+        for(int ii = 0; ii < fldcmp; ii++)
+        {
+          int dof = apf::getNumber(num,me,0,ii);
+          cmps[ii] += sol[dof - dof0];
+        }
       else
-	for(int ii = 0; ii < fldcmp; ii++)
-	{
-	  int dof = apf::getNumber(num,me,0,ii);
-	  cmps[ii] = sol[dof - dof0];
-	}
+        for(int ii = 0; ii < fldcmp; ii++)
+        {
+          int dof = apf::getNumber(num,me,0,ii);
+          cmps[ii] = sol[dof - dof0];
+        }
       apf::setComponents(fld,me,0,&cmps[0]);
     }
   };

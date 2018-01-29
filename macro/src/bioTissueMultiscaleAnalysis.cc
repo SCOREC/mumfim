@@ -46,8 +46,8 @@ namespace bio
     tssu = mt = new MultiscaleTissue(mdl,msh,pd,cm);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
-    amsi::ModularIteration * mdlr = NULL;
-    itr = mdlr = new MultiscaleTissueIteration(mt,las);
+    amsi::ModularIteration * mdl_itr = NULL;
+    itr = mdl_itr = new MultiscaleTissueIteration((MultiscaleTissue*)tssu,las);
     std::vector<pANode> trk_vols;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"track volume"),std::back_inserter(trk_vols));
     std::vector<VolCalc*> vls;
@@ -56,7 +56,7 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      mdlr->addOperation(trkd_vols[*trk_vol]);
+      mdl_itr->addOperation(trkd_vols[*trk_vol]);
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));

@@ -1,7 +1,6 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioMultiscaleTissue.h"
-#include "NonLinFibMtx.h"
-#include "RVE_Util.h"
+#include <bioMultiscaleRVEAnalysis.h>
 #include <amsiMultiscale.h>
 #include <amsiAnalysis.h>
 #include <amsiUtil.h>
@@ -54,7 +53,7 @@ bool parse_options(int & argc, char ** & argv)
       mesh_filename = optarg;
       break;
     case 'b':
-      bio::rve_load_balancing = atoi(optarg);
+      //bio::rve_load_balancing = atoi(optarg);
       break;
     case 'c':
       analysis_case = optarg;
@@ -71,15 +70,18 @@ bool parse_options(int & argc, char ** & argv)
   opterr = 1;
   return result;
 }
-int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
+int run_micro_fo(int & , char ** &, MPI_Comm comm)
 {
   int rnk = MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs();
+  //bio::P_computeRVEs();
+  bio::MultiscaleRVEAnalysis rves;
+  rves.init();
+  rves.run();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
-int run_micro_fm(int & argc, char ** & argv, MPI_Comm comm)
+int run_micro_fm(int &, char ** &, MPI_Comm)
 {
   return 0;
 }

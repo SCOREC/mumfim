@@ -1,8 +1,6 @@
-#include "RepresentVolElem.h"
-#include "RVE_Util.h"
-#include "SparseMatrix.h"
-#include <amsiMultiscale.h>
-#include <amsiUtil.h>
+//#include <amsiMultiscale.h>
+//#include <amsiUtil.h>
+/*
 void planMigration(std::vector<int> & to_serialize,
                    std::vector<int> & send_to,
                    MPI_Comm comm,
@@ -17,8 +15,12 @@ void planMigration(std::vector<int> & to_serialize,
     send_to.push_back(1);
   }
 }
+*/
 int main(int argc, char ** argv)
 {
+  (void)argc;
+  (void)argv;
+  /*
   using namespace bio;
   amsi::initMultiscale(argc,argv);
   amsi::Migration migrator(AMSI_COMM_SCALE,
@@ -90,4 +92,7 @@ int main(int argc, char ** argv)
                                           &buffers);
   }
   amsi::freeMultiscale();
+  */
+  return 0;
 }
+

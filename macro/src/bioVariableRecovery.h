@@ -26,5 +26,5 @@ namespace bio
                                  int * cmps,
                                  O out);
 }
-#endif
 #include "bioVariableRecovery_impl.h"
+#endif

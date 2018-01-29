@@ -1,28 +1,43 @@
 set(micro_fo_public_headers
-  RepresentVolElem.h
-  FiberNetwork.h
-  RVE_Util.h
-  globals.h
-  MicroFOMultiscaleTypes.h
-  SparseMatrix.h)
+  bioRVE.h
+  bioRVE2.h
+  bioFiberNetwork.h
+  bioFiberRVEAnalysis.h
+  bioFiberRVEAnalysis_impl.h
+  bioRVEUtil.h
+  bioMicroFOMultiscale.h
+  bioMultiscaleRVEAnalysis.h
+  bioMultiscaleRVE.h
+  bioTrussIntegrator.h
+  bioUtil.h
+  bioUtil_impl.h
+  lasCSR.h
+  lasSparskit.h
+  lasSparskitExterns.h)
 
 set(micro_fo_src_files
-  RepresentVolElem.cc
-  FiberNetwork.cc
-  FiberNetworkIO.cc
-  AlignFiberNetwork.cc
-  main_solver_psi.cc
-  solver_gmres_df.cc
-  solver_beam.cc
-  create_element_new.cc
-  make_structure_fict_i2.cc
-  avgvolstress.cc
-  RVE_Util.cc
-  SparseMatrix.cc
-  Sparskit_Externs.cc)
+  bioRVE.cc
+  bioRVE2.cc
+  bioFiberNetwork.cc
+  bioFiberNetworkIO2.cc
+  bioFiberRVEAnalysis.cc
+  bioAlignFiberNetwork.cc
+  bioSolverPsi.cc
+  bioSolverGMRES.cc
+  bioSolverBeam.cc
+  bioMacroElement.cc
+  bioMacroTerms.cc
+  bioMicroFOMultiscale.cc
+  bioMultiscaleRVEAnalysis.cc
+  bioMultiscaleRVE.cc
+  bioRVEUtil.cc
+  bioUtil.cc
+  lasCSR.cc
+  lasCSRBuilder.cc
+  lasSparskit.cc
+  lasSparskitExterns.cc)
 
 find_package(sparskit REQUIRED)
-find_package(scorecutil REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
 add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})
