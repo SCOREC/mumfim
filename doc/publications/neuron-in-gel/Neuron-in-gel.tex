@@ -492,19 +492,19 @@ The large computational demands of the neuron-in-gel multi-scale model requires 
 As the macroscale and microscale codes are assigned separate partitions of the parallel execution space, the simulation never sees 100\% parallel utilization due to the need of each scale to block while waiting for the other to compute. In order to achieve good performance given this constraint, we consider the computational demand of each scale and partition the simulation scales to prioritize process utilization and reduce process idle time.
 
 The DOF count at each scale provides an initial estimate of the computational demand of the problem, however the complexity of the physics and software implementation of each scale also contributes a heuristic weight which, when applied to the DOF count, allows a more appropriate comparison of the computational demand at each scale. Particularly, this approach justifies the use of a core ratio between the macroscale and microscale problems other than one derived simply from the DOF count, which would be approximately 1:57 macroscale cores to microscale cores if only taking DOFs into account. Instead the ratio of 1:15 was heuristically determined to provide a better overall process utilization by minimizing core idle time.
-%
-%\begin{figure}[ht]
-%\begin{center}
-%$
-%\begin{array}{cc}
-%\includegraphics[height=4cm]{figure/ss-macro.png} &
-%\includegraphics[height=4cm]{figure/ss-micro.png} \\
-%(a) & (b) 
-%\end{array}
-%$
-%\end{center}
-%\caption{\label{fig:strong-scaling} Strong-scaling the (a) macroscale and (b) microscale parallel allocations while holding the other scale allocation constant. Measurements taken with the multi-scale code applied to a different problem.}
-%\end{figure}
+
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=4cm]{figure/ss-macro.png} &
+\includegraphics[height=4cm]{figure/ss-micro.png} \\
+(a) & (b) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:strong-scaling} Strong-scaling the (a) macroscale and (b) microscale parallel allocations while holding the other scale allocation constant. Measurements taken with the multi-scale code applied to a different problem.}
+\end{figure}
 
 As the allocation and processing of individual microscale simulations is embarrassingly parallel, the allocation ratio can be scaled in favor of the microscale to reduce overall time-to-solution (see figure \ref{fig:strong-scaling}b). This approach sacrifices misroscale process utilization when holding the macroscale allocation and problem size constant as it increases the microscale idle time linearly since the time-to-solution of the macroscale is held constant. Increasing the allocation ratio in favor of the macroscale has less impact on the overall process utilization (see figure \ref{fig:strong-scaling}a) or time-to-solution as both of these are dominated by the work to be conducted at the microscale.
 
