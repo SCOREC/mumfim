@@ -363,7 +363,7 @@ P_2 = 2 <\cos^2\theta> - 1,
 %
 where $<x>$ denotes the ensemble average of $x$ over all fibers. The value of $P_2$ ranges from 1 in which the fibers are completely aligned in the stretch direction to -1 in which all fibers are orthogonal to the stretch direction. When $P_2=0$, the fiber network is randomly oriented. 
 
-Experimentally, the fiber alignment in innervated collagenous tissue was measured using quantitative polarized light imaging (QPLI) \citep{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ were measured in each pixel. The customized QPLI system used in these experiments \citep{Zhang:2016ga} is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \citep{Zhang:2016ga}. The QPLI system was integrated with a mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \citep{Tower:2002hk,Quinn:2008df}. The orientation index $P_2$ is calculated from $\alpha$ and $\delta$ of the QPLI method via (see Appendix A)
+Experimentally, the fiber alignment in innervated collagenous tissue was measured using quantitative polarized light imaging (QPLI) \citep{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ were measured in each pixel. The customized QPLI system used in these experiments \citep{Zhang:2016ga} is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \citep{Zhang:2016ga}. The QPLI system was integrated with a mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \citep{Tower:2002hk,Quinn:2008df}. The orientation index $P_2$ is calculated from $\alpha$ and $\delta$ of the QPLI method via (see Appendix \ref{app:P2_derivation})
 %
 \begin{align}
 &P_2 = 2 \int_0^{\pi} p(\theta) \cos^2\theta d\theta - 1 \nonumber\\
@@ -451,7 +451,7 @@ $
 \caption{\label{fig:axial_stiffness} Axial stiffness of neuron structure analyzed.}
 \end{figure}
 %
-The transition in the axial stiffness within the cell bodies presented in Eq.\ \eqref{eq:cellEA} is artificial. To understand how this transition affects the final strain distribution in the neuron, the transition rate was varied by adjusting $t$ in Eq.\ \eqref{eq:cellEA}. Values of $t = 28$ $\mu$m, 30 $\mu$m, and 50 $\mu$m were considered (discussed in Appendix B), and the strain distribution within the neurons was found to be insensitive to the parameter $t$.
+The transition in the axial stiffness within the cell bodies presented in Eq.\ \eqref{eq:cellEA} is artificial. To understand how this transition affects the final strain distribution in the neuron, the transition rate was varied by adjusting $t$ in Eq.\ \eqref{eq:cellEA}. Values of $t = 28$ $\mu$m, 30 $\mu$m, and 50 $\mu$m were considered (discussed in Appendix \ref{app:vary_t}), and the strain distribution within the neurons was found to be insensitive to the parameter $t$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
 \label{sec:implementation}
@@ -708,7 +708,7 @@ The work presented in this paper provides an extension to the capability of past
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \appendix
-\section*{Appendix A: Derivation of $P_2$ from $\alpha$ and $\delta$ of the QPLI method}
+\section{Derivation of $P_2$ from $\alpha$ and $\delta$ of the QPLI method}
 \label{app:P2_derivation}
 
 Consider a distribution of orientation $\theta$ for pixel $i$ as 
@@ -791,7 +791,7 @@ p(\theta) = \frac{1}{N} \sum_{i=1}^N p_i(\theta) = \frac{1}{N} \sum_{i=1}^N \lef
 which is the equation presented in Eq.\ \eqref{eq:P2_experiment}.
 
 %=========================================================================================================
-\section*{Appendix B: Varying Axial Stiffness ($t$) in the Cell Body}
+\section{Varying Axial Stiffness ($t$) in the Cell Body}
 \label{app:vary_t}
 
 The complementary cumulative distribution function for different axial stiffnesses of the cell body (different values of $t$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a} for the $0^{\circ}$ loading case for a grip strain of 16$\%$ on the collagen gel. 
