@@ -1,46 +1,34 @@
 #include "bioMultiscaleTissue.h"
 #include "bioULMultiscaleIntegrator.h"
 #include "bioULMultiscaleHydrostaticPressureIntegrator.h"
-#include <RVE_Util.h> // micro
+#include <bioRVEUtil.h> // micro
 #include <amsiControlService.h> // amsi
 namespace bio
 {
   MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm)
     : NonlinearTissue(g,m,pd,cm)
     , mltscl(NULL)
-    , crt_rve(NULL)
-    , prv_rve(NULL)
+    , crt_rve(apf::createIPField(apf_mesh,"micro_rve_type",apf::SCALAR,1))
+    , prv_rve(apf::createIPField(apf_mesh,"micro_old_type",apf::SCALAR,1))
     , fbr_ornt(NULL)
+    , fo_cplg(apf_mesh,crt_rve,prv_rve,apf::getShape(apf_primary_field)->getOrder())
     , nm_rves(0)
-    , nm_rve_rgns(0)
-    , rve_ents()
-    , rslts()
-    , rslt_mp()
-    , rve_ptrns()
-    , snd_ptrns()
-    , ini_ptrns()
-    , rcv_ptrns()
-    , M2m_id()
-    , m2M_id()
-    , mtd()
+    , rve_dirs()
   {
-    // primary field created in NonlinearTissue
-    crt_rve = apf::createIPField(apf_mesh,"current_rve",apf::SCALAR,1);
-    prv_rve = apf::createIPField(apf_mesh,"previous_rve",apf::SCALAR,1);
-//    fbr_ornt = apf::createIPField(apf_mesh,"fiber_orientation",apf::MATRIX,1);
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
-    mltscl = new ULMultiscaleIntegrator(this,apf_primary_field,crt_rve,dfm_grd,1);
-    //mltscl = new ULMultiscaleHydrostaticPressureIntegrator(this,apf_primary_field,crt_rve,dfm_grd,1);
+    mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,apf_primary_field,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
     apf::zeroField(fbr_ornt);
+    apf::zeroField(crt_rve);
+    apf::zeroField(prv_rve);
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
     delete mltscl;
-    apf::destroyField(fbr_ornt);
-    apf::destroyField(prv_rve);
     apf::destroyField(crt_rve);
+    apf::destroyField(prv_rve);
+    apf::destroyField(fbr_ornt);
   }
   void MultiscaleTissue::Assemble(amsi::LAS * las)
   {
@@ -71,84 +59,28 @@ namespace bio
   }
   void MultiscaleTissue::computeRVEs()
   {
-    amsi::ControlService * cs = amsi::ControlService::Instance();
     std::vector<micro_fo_data> fo_data;
-    rslts.clear(); // make output param
-    rslt_mp.clear();
     serializeRVEData(std::back_inserter(fo_data)); // serialize data for fiber_only
-    if(lb_per_iteration) // on first iteration (0) this should simply be empty...
-    {
-      cs->shareMigration(snd_ptrns[FIBER_ONLY],rve_ents);
-      cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
-    }
-    cs->Communicate(snd_ptrns[FIBER_ONLY],fo_data,mtd.micro_fo_data_type);    // send fiber_only data
-    cs->Communicate(rcv_ptrns[FIBER_ONLY],rslts,mtd.micro_fo_result_type);    // wait for fiber_only results
-    std::list<apf::MeshEntity*>::iterator me = rve_ents.begin(); // apply result data (implicit ordering)
-    int ent_rve = 0;
-    int ii = 0;
-    for(std::vector<micro_fo_result>::iterator it = rslts.begin(); it != rslts.end(); ++it)
-    {
-      int ent_rves = countRVEsOn(*me);
-      std::vector<RVE_Info> & rslt_vc = rslt_mp[*me]; // retrieve the result vector related to the current element
-      RVE_Info & info = rslt_vc[ent_rve];             // set result struct info
-      info.mType = apf_mesh->getType(*me);
-      info.order = 1;
-      info.derivS = &it->data[0];
-      // todo (m) : fix hacky hard-coded bs
-      /*
-      apf::setMatrix(fbr_ornt,*me,0,apf::Matrix3x3(it->data[81],it->data[82],it->data[83],
-                                                   it->data[84],it->data[85],it->data[86],
-                                                   it->data[87],it->data[88],it->data[89]));
-      */
-      apf::setScalar(fbr_ornt,*me,0,it->data[81]);
-      if(ent_rve == ent_rves-1)
-      {
-        ent_rve = 0;
-        me++;
-      }
-      else
-      {
-        ent_rve++;
-      }
-      ii++;
-    }
+    fo_cplg.sendRVEData(fo_data);
+    fo_cplg.recvRVEData();
   }
   void MultiscaleTissue::initMicro()
   {
-    mtd.MultiscaleDataTypesMPICommit();
     amsi::ControlService * cs = amsi::ControlService::Instance();
-    amsi::Task * macro = amsi::getLocal();
-    amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
-    (*dd) = 0;
-    amsi::Assemble(dd,macro->comm());
-    snd_ptrns[FIBER_ONLY] = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
-    cs->CommPattern_Reconcile(snd_ptrns[FIBER_ONLY]);
-    rcv_ptrns[FIBER_ONLY] = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
-    cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
-    computeRVETypeInfo();
-    int num_rve_tps = rve_tps.size();
+    fo_cplg.initCoupling();
+    loadRVELibraryInfo();
+    int num_rve_tps = rve_dirs.size();
     cs->scaleBroadcast(M2m_id,&num_rve_tps);
-    int rve_cnts[num_rve_tps];
+    std::vector<int> rve_cnts(num_rve_tps);
     int ii = 0;
-    for(auto tp = rve_tps.begin(); tp != rve_tps.end(); ++tp)
+    for(auto tp = rve_dirs.begin(); tp != rve_dirs.end(); ++tp)
     {
       std::vector<MPI_Request> rqsts;
-      cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->first.c_str(),tp->first.size()+1);
-      rve_cnts[ii++] = tp->second;
+      cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->c_str(),tp->size()+1);
+      rve_cnts[ii++] = rve_dir_cnts[std::distance(rve_dirs.begin(),tp)];
     }
     MPI_Request hdr_rqst;
     cs->aSendBroadcast(&hdr_rqst,M2m_id,&rve_cnts[0],num_rve_tps);
-  }
-  int MultiscaleTissue::countRVEsOn(apf::MeshEntity * me)
-  {
-    int cnt = 0;
-    if(apf::getScalar(crt_rve,me,0) == FIBER_ONLY)
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
-      cnt = apf::countIntPoints(mlm,getOrder(mlm));
-      apf::destroyMeshElement(mlm);
-    }
-    return cnt;
   }
   void MultiscaleTissue::updateMicro()
   {
@@ -217,9 +149,9 @@ namespace bio
     apf::getIntPoint(mlm,1,pt_num,pcoords); // assume polynomial order of accuracy = 1.
     amsi::deformationGradient(e,pcoords,F);
     /*
-    if (detF > 0.6)
+      if (detF > 0.6)
       return FIBER_ONLY;
-    else
+      else
       return NONE;
     */
     // multiscale based purely off of simmodeler specification, no adaptivity, need differentiate between initialization and updating
@@ -231,42 +163,17 @@ namespace bio
   }
   void MultiscaleTissue::updateRVEExistence()
   {
-    std::vector<apf::MeshEntity*> nw_ents;
     std::vector<micro_fo_header> nw_hdrs;
     std::vector<micro_fo_params> nw_prms;
     std::vector<micro_fo_init_data> nw_data;
     std::vector<int> to_dlt;
-    updateRVEDeletion(std::back_inserter(to_dlt));
-    updateRVEAddition(std::back_inserter(nw_ents),
-                      std::back_inserter(nw_hdrs),
-                      std::back_inserter(nw_prms),
-                      std::back_inserter(nw_data));
-    std::copy(nw_ents.begin(),nw_ents.end(),std::back_inserter(rve_ents));
-    // update comm patterns
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    amsi::Task * lt = amsi::getLocal();
-    cs->RemoveData(snd_ptrns[FIBER_ONLY],to_dlt);
-    std::vector<int> to_add(nw_ents.size());
-    std::fill(to_add.begin(),to_add.end(),0);
-    size_t add_id = cs->AddData(snd_ptrns[FIBER_ONLY],rve_ents,to_add);
-    nm_rves += to_add.size();
-    amsi::DataDistribution * dd = lt->getDD("micro_fo_data");
-    (*dd) = nm_rves;
-    amsi::Assemble(dd,lt->comm());
-    cs->CommPattern_Assemble(snd_ptrns[FIBER_ONLY]);
-    cs->Communicate(add_id,nw_hdrs,mtd.micro_fo_header_data_type);
-    cs->Communicate(add_id,nw_prms,mtd.micro_fo_parameter_data_type);
-    cs->Communicate(add_id,nw_data,mtd.micro_fo_init_data_type);
-    /*
-    // check for microscale load balancing (this reorders fiberOnly_elements depending on the microscale load balancing)
-    cs->shareMigration(send_patterns[FIBER_ONLY],fiber_only_elements);
-    */
-    // update micro->macro communication
-    cs->CommPattern_Reconcile(rcv_ptrns[FIBER_ONLY]);
-  }
-  RVE_Info * MultiscaleTissue::getRVEResult(apf::MeshEntity * me, int ip)
-  {
-    return &rslt_mp[me][ip]; // check existence
+    fo_cplg.updateRVEDeletion(std::back_inserter(to_dlt));
+    serializeNewRVEData(std::back_inserter(nw_hdrs),std::back_inserter(nw_prms),std::back_inserter(nw_data));
+    fo_cplg.deleteRVEs(to_dlt.begin(),to_dlt.end());
+    size_t add_ptrn = fo_cplg.addRVEs(nw_hdrs.size());
+    fo_cplg.sendNewRVEs(add_ptrn,nw_hdrs,nw_prms,nw_data);
+    fo_cplg.updateRecv();
+    nm_rves += nw_hdrs.size();
   }
   amsi::ElementalSystem * MultiscaleTissue::getIntegrator(apf::MeshEntity * me, int ip)
   {
@@ -281,7 +188,7 @@ namespace bio
       return NULL;
     }
   }
-  void MultiscaleTissue::computeRVETypeInfo()
+  void MultiscaleTissue::loadRVELibraryInfo()
   {
     pGEntity rgn = NULL;
     GRIter ri = GM_regionIter(model);
@@ -297,32 +204,69 @@ namespace bio
         char * dir_str = AttributeString_value(dir);
         char * tp_str = AttributeString_value(prfx);
         std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
-        if(rve_tps.find(tp) == rve_tps.end())
-          rve_tps[tp] = AttributeInt_value(cnt);
+        if(std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
+        {
+          rve_dirs.push_back(tp);
+          rve_dir_cnts.push_back(AttributeInt_value(cnt));
+        }
         Sim_deleteString(dir_str);
         Sim_deleteString(tp_str);
       }
     }
   }
-  int MultiscaleTissue::getRVEType(apf::ModelEntity * ent)
+  void MultiscaleTissue::getExternalRVEData(apf::MeshEntity * ent,
+                                            micro_fo_header & hdr,
+                                            micro_fo_params & prm)
   {
-    int ii = -1;
-    pGEntity rgn = reinterpret_cast<pGEntity>(ent);
-    pAttribute mdl = GEN_attrib(rgn,"material model");
-    pAttribute sm = Attribute_childByType(mdl, "multiscale model");
-    if(sm)
+    pGEntity smdl_ent = EN_whatIn(reinterpret_cast<pEntity>(ent));
+    pAttribute mm = GEN_attrib(smdl_ent, "material model");
+    pAttribute sm = Attribute_childByType(mm, "multiscale model");
+    assert(sm);
+    pAttributeTensor0 fbr_rd = (pAttributeTensor0)Attribute_childByType(sm,"radius");
+    pAttributeTensor0 vl_frc = (pAttributeTensor0)Attribute_childByType(sm,"volume fraction");
+    pAttribute prms = Attribute_childByType(sm, "force reaction");
+    pAttributeTensor0 yngs = (pAttributeTensor0)Attribute_childByType(prms,"youngs modulus");
+    pAttributeTensor0 nnlr = (pAttributeTensor0)Attribute_childByType(prms,"nonlinearity parameter");
+    pAttributeTensor0 lntr = (pAttributeTensor0)Attribute_childByType(prms,"linear transition");
+    pAttribute ornt = Attribute_childByType(sm, "fiber orientation");
+    bool orntd = ornt != NULL;
+    pAttributeTensor1 axs = NULL;
+    pAttributeTensor0 algn = NULL;
+    if(orntd)
     {
-      pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
-      pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
-      char * dir_str = AttributeString_value(dir);
-      char * tp_str = AttributeString_value(prfx);
-      std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
-      auto fnd = rve_tps.find(tp);
-      if(fnd != rve_tps.end())
-	ii = std::distance(rve_tps.begin(),fnd);
-      Sim_deleteString(dir_str);
-      Sim_deleteString(tp_str);
+      axs = (pAttributeTensor1)Attribute_childByType(ornt,"axis");
+      algn = (pAttributeTensor0)Attribute_childByType(ornt,"alignment");
     }
-    return ii;
+    hdr.data[FIBER_REACTION]     = nnlr ? 1 : 0; // assumption about ordering of fiber reactions in micro
+    hdr.data[IS_ORIENTED]        = orntd;
+    prm.data[FIBER_RADIUS]       = AttributeTensor0_value(fbr_rd);
+    prm.data[VOLUME_FRACTION]    = AttributeTensor0_value(vl_frc);
+    prm.data[YOUNGS_MODULUS]     = AttributeTensor0_value(yngs);
+    prm.data[NONLINEAR_PARAM]    = nnlr ? AttributeTensor0_value(nnlr)   : 0.0;
+    prm.data[LINEAR_TRANSITION]  = lntr ? AttributeTensor0_value(lntr)   : 0.0;
+    prm.data[ORIENTATION_AXIS_X] = orntd ? AttributeTensor1_value(axs,0) : 0.0;
+    prm.data[ORIENTATION_AXIS_Y] = orntd ? AttributeTensor1_value(axs,1) : 0.0;
+    prm.data[ORIENTATION_AXIS_Z] = orntd ? AttributeTensor1_value(axs,2) : 0.0;
+    prm.data[ORIENTATION_ALIGN]  = orntd ? AttributeTensor0_value(algn)  : 0.0;
+  }
+  void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
+                                            micro_fo_header & hdr,
+                                            micro_fo_params & ,
+                                            micro_fo_init_data & dat)
+  {
+    apf::ModelEntity * mnt = reinterpret_cast<apf::ModelEntity*>(EN_whatIn(reinterpret_cast<pEntity>(rgn)));
+    hdr.data[RVE_TYPE]     = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),mnt);
+    hdr.data[FIELD_ORDER]  = apf::getShape(delta_u)->getOrder();
+    hdr.data[ELEMENT_TYPE] = apf_mesh->getType(rgn);
+    hdr.data[GAUSS_ID]     = -1; // needs to be set for each IP
+    apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
+    apf::Element * ce = apf::createElement(apf_mesh->getCoordinateField(),mlm);
+    apf::NewArray<apf::Vector3> Ni;
+    apf::getVectorNodes(ce,Ni);
+    int nds = apf::countNodes(ce);
+    for(int nd = 0; nd < nds; ++nd)
+      Ni[nd].toArray(&dat.init_data[nd*3]);
+    apf::destroyElement(ce);
+    apf::destroyMeshElement(mlm);
   }
 }

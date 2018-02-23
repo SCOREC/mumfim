@@ -14,7 +14,7 @@ namespace bio
 {
   /**
    * Responsible for managing the internal state of a single fiber-network
-   *  quasistatics simulation. 
+   *  quasistatics simulation.
    */
   class FiberNetwork
   {
@@ -26,20 +26,17 @@ namespace bio
     int dim;
   protected:
   public:
-
     /**
      * Construct a FiberRVE object.
      * @param f A pointer to a fiber network mesh (contains only vertices and edges)
-     *          typically loaded using the NetworkLoader classes 
+     *          typically loaded using the NetworkLoader classes
      */
     FiberNetwork(apf::Mesh * f);
-
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)
      */
     int getDim() const { return fn->getDimension(); }
-
     /**
      * Calculate the current length of each fiber in the network
      * @param lngths A vector containing the lengths of all fibers in the network;
@@ -54,15 +51,13 @@ namespace bio
     apf::Field * getIncrementalDispField() { return fn_du; }
     apf::Numbering * getNumbering() { return fn_dof; }
   };
-
   /**
    * TODO (m) Bill : move to FiberNetworkIO files
    */
   FiberNetwork * loadFromFile(const std::string & fnm);
-
   void assembleElementalSystem(las::skMat * k,
-			                         las::skVec * f,
-			                         const ElementalSystem * es,
-			                         apf::NewArray<int> & dofs);
+                               las::skVec * f,
+                               const ElementalSystem * es,
+                               apf::NewArray<int> & dofs);
 }
 #endif

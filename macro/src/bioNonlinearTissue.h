@@ -1,41 +1,48 @@
 #ifndef BIO_NONLINEAR_TISSUE_H_
 #define BIO_NONLINEAR_TISSUE_H_
+#include "bioLinearTissue.h"
+#include "bioStiffnessVariation.h"
+#include "bioVolumeConstraint.h"
+// micro_fo
+#include <bioMicroFOMultiscale.h>
+#include <bioRVE2.h>
+// amsi
+#include <apfFEA.h>
+#include <Solvers.h>
 #include <NonLinElasticity.h>
 #include <Solvers.h>
 #include <amsiAnalysis.h>
 #include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <apfFEA.h>
+#include <apfFunctions.h>
 #include <apfsimWrapper.h>
 #include <iostream>
 #include <list>
 #include <string>
 #include <vector>
-#include "MicroFOMultiscaleTypes.h"
-#include "RepresentVolElem.h"  // should be able to take this out... (needed for RVE_Info struct)
-#include "bioLinearTissue.h"
-#include "bioStiffnessVariation.h"
-#include "bioVolumeConstraint.h"
-namespace bio {
+namespace bio
+{
   class CurrentCoordFunc;
-  class NonlinearTissue : public amsi::apfSimFEA {
+  class NonlinearTissue : public amsi::apfSimFEA
+  {
     protected:
+    amsi::XpYFunc * xpyfnc;
     std::map<pGEntity, amsi::ElementalSystem*> constitutives;
     std::vector<StiffnessVariation*> stf_vrtn_cnst;
     std::vector<VolumeConstraint*> vol_cnst;
-    apf::Field* delta_u;
-    apf::Field* current_coords;  // coordinates in current config
-    apf::Field* strs;
-    apf::Field* rcvrd_strs;
-    apf::Field* strn;
-    apf::Field* dfm_grd;
-    apf::Field* previous_rve;
-    apf::Field* stf_vrtn;
-    apf::Field* axl_yngs_mod;
+    apf::Field * delta_u;
+    apf::Field * current_coords;  // coordinates in current config
+    apf::Field * strs;
+    apf::Field * rcvrd_strs;
+    apf::Field * strn;
+    apf::Field * dfm_grd;
+    apf::Field * previous_rve;
+    apf::Field * stf_vrtn;
+    apf::Field * axl_yngs_mod;
     double dv_prev;
     int load_step;
     int iteration;
-
     public:
     NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
                     MPI_Comm cm = AMSI_COMM_SCALE);
@@ -62,30 +69,9 @@ namespace bio {
     apf::Field* getdUField() { return delta_u; }
     apf::Field* getUField() { return apf_primary_field; }
     apf::Mesh* getMesh() { return apf_mesh; }
-    CurrentCoordFunc* currentCoordFunc;
     // void logCnstrntParams(int ldstp, int iteration, int rnk);
     // function to get mapping by summing reference coordinate with
     // displacements
-  };
-  class CurrentCoordFunc : public apf::Function {
-  private:
-    apf::Field * Xf;
-    apf::Field * Uf;
-  public:
-    CurrentCoordFunc(apf::Field * xf, apf::Field * uf) : Xf(xf), Uf(uf) {}
-    void eval(apf::MeshEntity * e, double * result)
-    {
-      // make sure that we are only evaluating on vertices
-      assert(apf::getMesh(Xf)->getType(e) == apf::Mesh::VERTEX);
-      apf::Vector3 X, U;
-      // get the displacements
-      apf::getVector(Uf, e, 0, U);
-      // get the reference coordinates
-      apf::getVector(Xf, e, 0, X);
-      apf::Vector3 * r = (apf::Vector3*)result;
-      // set the current coordinates to be the reference plus the displacements
-      *r = X + U;
-    }
   };
 }
 #endif

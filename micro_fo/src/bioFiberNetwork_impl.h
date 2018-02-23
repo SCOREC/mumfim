@@ -1,0 +1,4 @@
+#include <cassert>
+namespace bio
+{
+}

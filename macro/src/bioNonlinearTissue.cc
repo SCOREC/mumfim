@@ -1,7 +1,9 @@
 #include "bioNonlinearTissue.h"
 #include "bioAnalysis.h"
 #include "bioNeoHookeanIntegrator.h"
-//#include "bioNeoHookeanIntegratorUL.h"
+#include "bioTrnsIsoNeoHookeanIntegrator.h"
+#include "bioHolmesMowIntegrator.h"
+#include "bioVariableRecovery.h"
 #include <ErrorEstimators.h>
 #include <amsiControlService.h>
 #include <amsiLinearStressStrainIntegrator.h>
@@ -20,11 +22,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "RVE_Util.h"
 #include "bioHolmesMowIntegrator.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioVariableRecovery.h"
-namespace bio {
+namespace bio
+{
   NonlinearTissue::NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
                                    MPI_Comm cm)
       : FEA(cm)
@@ -41,8 +43,8 @@ namespace bio {
     delta_u = apf::createLagrangeField(apf_mesh, "displacement_delta",
                                        apf::VECTOR, 1);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
-    currentCoordFunc = new CurrentCoordFunc(apf_mesh->getCoordinateField(),apf_primary_field);
-    current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), currentCoordFunc);
+    xpyfnc = new amsi::XpYFunc(apf_mesh->getCoordinateField(),apf_primary_field);
+    current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), xpyfnc);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh, "stress", apf::MATRIX, 1);
     rcvrd_strs =
@@ -126,7 +128,7 @@ namespace bio {
   }
   NonlinearTissue::~NonlinearTissue()
   {
-    delete currentCoordFunc;
+    delete xpyfnc;
     apf::destroyField(current_coords);
     apf::destroyField(delta_u);
     apf::destroyField(strs);
