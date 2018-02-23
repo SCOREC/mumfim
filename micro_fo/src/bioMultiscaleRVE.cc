@@ -40,8 +40,7 @@ namespace bio
                        hdr.data[FIELD_ORDER],
                        gss_id,
                        lcl_gss);
-    //rve_dim = calcRVEDimenstionality(fn,fbr_area,fbr_vl_frc);
-    rve_dim = 1.0;
+    rve_dim = calcRVEDimensionality(fn,fbr_area,fbr_vl_frc);
     std::vector<apf::Vector3> fe_nds;
     int nv = apf::Mesh::adjacentCount[hdr.data[ELEMENT_TYPE]][0];
     for(int ii = 0; ii < nv; ++ii)

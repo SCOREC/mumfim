@@ -4,6 +4,14 @@
 #include "bioMicroFOMultiscale.h"
 namespace bio
 {
+  /*
+   * \brief computes RVE scaling factor
+   * Computes the scaling factor. This correlates to the RVE side length in "physical space"
+   * \param fn a pointer to the fiber network data structure
+   * \param fbr_area fiber cross-sectional area (from experiment)
+   * \fbr_vol_frc volume fraction of the fiber network (from experiment)
+   * \warning This function assumes that all of the fibers have the same cross-sectional area
+   */
   double calcRVEDimensionality(FiberNetwork * fn, double fbr_area, double fbr_vol_frc);
   // coupling terms that involve terms from micro and macro
   class MultiscaleRVE
