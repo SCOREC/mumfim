@@ -533,7 +533,7 @@ namespace bio
                 nrm_f0 = (*rve)->ops->norm((*rve)->f0);
               return nrm_f0;
             };
-          amsi::UpdatingConvergence resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);
+          amsi::UpdatingConvergence<decltype(&val_gen), decltype(&eps_gen), decltype(&ref_gen)> resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);
           amsi::Convergence * ptr[] = {&resid_cnvrg};
           amsi::MultiConvergence cnvrg(&ptr[0],&ptr[0]+1);
           // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
