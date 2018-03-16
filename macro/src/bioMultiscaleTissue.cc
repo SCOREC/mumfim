@@ -79,8 +79,8 @@ namespace bio
       cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->c_str(),tp->size()+1);
       rve_cnts[ii++] = rve_dir_cnts[std::distance(rve_dirs.begin(),tp)];
     }
-    MPI_Request hdr_rqst;
-    cs->aSendBroadcast(&hdr_rqst,M2m_id,&rve_cnts[0],num_rve_tps);
+    std::vector<MPI_Request> hdr_rqst;
+    cs->aSendBroadcast(std::back_inserter(hdr_rqst),M2m_id,&rve_cnts[0],num_rve_tps);
   }
   void MultiscaleTissue::updateMicro()
   {
