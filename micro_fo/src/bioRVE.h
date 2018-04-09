@@ -1,6 +1,5 @@
-#ifndef BIO_RVE2_H_
-#define BIO_RVE2_H_
-//#include "MicroFOUtil.h"
+#ifndef BIO_RVE_H_
+#define BIO_RVE_H_
 #include "bioUtil.h"
 #include <amsiLAS2.h>
 #include <apfFieldOp.h>
@@ -91,50 +90,6 @@ namespace bio
     apf::Field * getdUField() { return cbe_du; }
   };
   /**
-   * A FieldOp designed to take the shape function values from an 'enclosing' element
-   *  and apply them as displacements on 'contained' mesh elements. Used by the MacroCoupling
-   *  to interpolate the displacements on the cube contatining the rve fiber network onto
-   *  the individual nodes in the fiber network.
-   */
-  class InterpOnto : public amsi::FieldOp
-  {
-  protected:
-    apf::Element * src_elmnt;
-    apf::MeshEntity * cur_ent;
-    apf::Field * dest_fld;
-    apf::Field * crd_fld;
-  public:
-    InterpOnto(apf::Element * se, apf::Field * d) :
-      src_elmnt(se),
-      cur_ent(NULL),
-      dest_fld(d),
-      crd_fld(NULL)
-    {
-      crd_fld = apf::getMesh(dest_fld)->getCoordinateField();
-    }
-    bool inEntity(apf::MeshEntity * me)
-    {
-      cur_ent = me;
-      return true;
-    }
-    void outEntity() {}
-    // todo (h) : fix this (this might be fixed... i dunno anymore, lol)
-    void atNode(int nde)
-    {
-      apf::Vector3 p;
-      apf::Vector3 u;
-      apf::getVector(crd_fld,cur_ent,nde,p); // get xyz coord of fiber node
-      mapGlobalToLocal(apf::getMesh(crd_fld),apf::getMeshEntity(src_elmnt),p,u);
-      apf::getVector(src_elmnt,p,u);
-      apf::setVector(dest_fld,cur_ent,nde,u);
-    }
-  };
-  /**
-   * Use the displacement of the RVE to displace the fiber network nodes
-   *  'inside' of the RVE
-   */
-  void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn);
-  /**
    * Calculate the position of the corner nodes of the square/cube enclosing the RVE
    *  in the cartesian space of the problem.
    * @param rve_crds The coordinates of the 8 vertices of the RVE (using the standard
@@ -171,5 +126,5 @@ namespace bio
   void updateRVEBounds(RVE * rve, FiberNetwork * fn, const double disp[6]);
   double calcFiberDensity(RVE * rve,FiberNetwork * fn);
 }
-#include <bioRVE2_impl.h>
+#include <bioRVE_impl.h>
 #endif

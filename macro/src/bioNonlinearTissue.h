@@ -5,7 +5,7 @@
 #include "bioVolumeConstraint.h"
 // micro_fo
 #include <bioMicroFOMultiscale.h>
-#include <bioRVE2.h>
+#include <bioRVE.h>
 // amsi
 #include <apfFEA.h>
 #include <Solvers.h>

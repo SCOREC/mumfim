@@ -1,7 +1,6 @@
 #include "bioMultiscaleTissue.h"
 #include "bioULMultiscaleIntegrator.h"
 #include "bioULMultiscaleHydrostaticPressureIntegrator.h"
-#include <bioRVEUtil.h> // micro
 #include <amsiControlService.h> // amsi
 namespace bio
 {

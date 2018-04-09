@@ -1,4 +1,4 @@
-#include "bioRVE2.h"
+#include "bioRVE.h"
 #include <amsiAnalysis.h>
 #include <algorithm>
 int main(int argc, char * argv[])
@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
   apf::DynamicVector du(24);
   std::copy(u.begin(),u.end(),du.begin());
   bio::displaceRVE(&rve,du);
-  bio::InterpOnto(rve.getElement(),inr.getUField()).apply(inr.getUField());
+  //bio::InterpOnto(rve.getElement(),inr.getUField()).apply(inr.getUField());
   apf::Element * inr_elmt = inr.getElement();
   apf::NewArray<apf::Vector3> inr_du;
   apf::getVectorNodes(inr_elmt,inr_du);

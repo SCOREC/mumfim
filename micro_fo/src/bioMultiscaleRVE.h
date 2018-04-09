@@ -1,6 +1,6 @@
 #ifndef BIO_MULTISCALE_RVE_H_
 #define BIO_MULTISCALE_RVE_H_
-#include "bioRVE2.h"
+#include "bioRVE.h"
 #include "bioMicroFOMultiscale.h"
 namespace bio
 {

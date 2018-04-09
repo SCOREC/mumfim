@@ -1,4 +1,4 @@
-#include "bioRVE2.h"
+#include "bioRVE.h"
 #include "bioFiberNetwork.h"
 #include "lasSparskit.h"
 #include <apfFunctions.h>
@@ -83,13 +83,6 @@ namespace bio
       }
     }
     return rslt;
-  }
-  void forwardRVEDisplacement(RVE * rve, FiberNetwork * fn)
-  {
-    apf::Element * cbe_e = rve->getElement();
-    apf::Field * fn_u = fn->getUField();
-    InterpOnto forward_u(cbe_e,fn_u);
-    forward_u.apply(fn_u);
   }
   void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
                            double rve_dim,

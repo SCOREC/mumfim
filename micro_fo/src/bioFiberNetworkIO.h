@@ -1,5 +1,5 @@
-#ifndef BIO_FIBER_NETWORK_IO2_H_
-#define BIO_FIBER_NETWORK_IO2_H_
+#ifndef BIO_FIBER_NETWORK_IO_H_
+#define BIO_FIBER_NETWORK_IO_H_
 #include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
 #include <iostream>
@@ -82,5 +82,5 @@ namespace bio
     }
   };
 }
-#include "bioFiberNetworkIO2_impl.h"
+#include "bioFiberNetworkIO_impl.h"
 #endif

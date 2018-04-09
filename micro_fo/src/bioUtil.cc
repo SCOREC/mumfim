@@ -1,6 +1,4 @@
 #include "bioUtil.h"
-#include <maAffine.h>
-#include <maMap.h>
 namespace bio
 {
   apf::Matrix3x3 eye()
@@ -23,11 +21,12 @@ namespace bio
                         apf::Vector3 const & global,
                         apf::Vector3 & local)
   {
+    (void)global;
     int tp = msh->getType(ent);
     if(tp == apf::Mesh::EDGE || tp == apf::Mesh::TRIANGLE || tp == apf::Mesh::TET)
     {
-      ma::Affine i = ma::getMap(msh,ent);
-      local = i * global;
+      //ma::Affine i = ma::getMap(msh,ent);
+      //local = i * global;
     }
     else
       for(int ii = 0; ii < msh->getDimension(); ++ii)

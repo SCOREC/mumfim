@@ -1,7 +1,7 @@
 #ifndef BIO_FIBER_RVE_ANALYSIS_H_
 #define BIO_FIBER_RVE_ANALYSIS_H_
 #include "bioFiberNetwork.h"
-#include "bioRVE2.h"
+#include "bioRVE.h"
 #include "bioTrussIntegrator.h"
 #include "bioMultiscaleRVE.h"
 #include "lasSparskit.h"

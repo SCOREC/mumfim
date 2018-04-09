@@ -1,6 +1,6 @@
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioFiberRVEAnalysis.h"
-#include "bioFiberNetworkIO2.h"
+#include "bioFiberNetworkIO.h"
 #include "bioMicroFOMultiscale.h"
 #include <apfFEA.h> // amsi
 #include <apfMatrixUtil.h> //amsi
@@ -35,33 +35,33 @@ namespace bio
       , du(du_)
       , u(u_)
       , ent(NULL)
-      {
-        int d = msh->getDimension();
-        for(int ii = 0; ii < d; ++ii)
-          for(int jj = 0; jj < d; ++jj)
-            FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
-      }
+    {
+      int d = msh->getDimension();
+      for(int ii = 0; ii < d; ++ii)
+        for(int jj = 0; jj < d; ++jj)
+          FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
+    }
     virtual bool inEntity(apf::MeshEntity * m)
-      {
-        ent = m;
-        return true;
-      }
+    {
+      ent = m;
+      return true;
+    }
     virtual void outEntity() {}
     virtual void atNode(int nd)
-      {
-        apf::Vector3 nd_xyz;
-        apf::Vector3 nd_u_old;
-        apf::getVector(xyz,ent,nd,nd_xyz);
-        apf::getVector(u,ent,nd,nd_u_old);
-        apf::Vector3 nd_u = FmI * nd_xyz;
-        apf::Vector3 nd_du = nd_u - nd_u_old;
-        apf::setVector(u,ent,nd,nd_u);
-        apf::setVector(du,ent,nd,nd_du);
-      }
+    {
+      apf::Vector3 nd_xyz;
+      apf::Vector3 nd_u_old;
+      apf::getVector(xyz,ent,nd,nd_xyz);
+      apf::getVector(u,ent,nd,nd_u_old);
+      apf::Vector3 nd_u = FmI * nd_xyz;
+      apf::Vector3 nd_du = nd_u - nd_u_old;
+      apf::setVector(u,ent,nd,nd_u);
+      apf::setVector(du,ent,nd,nd_du);
+    }
     void run()
-      {
-        apply(u);
-      }
+    {
+      apply(u);
+    }
   };
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
   {

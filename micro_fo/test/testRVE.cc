@@ -1,4 +1,4 @@
-#include "bioRVE2.h"
+#include "bioRVE.h"
 #include <PCU.h>
 #include <mpi.h>
 int main(int argc, char * argv[])

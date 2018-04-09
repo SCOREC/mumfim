@@ -1,6 +1,6 @@
 #ifndef BIO_TRUSS_INTEGRATOR_H_
 #define BIO_TRUSS_INTEGRATOR_H_
-#include "bioFiberNetwork2.h"
+#include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
 #include "bioUtil.h"
 #include <amsiElementalSystem.h>

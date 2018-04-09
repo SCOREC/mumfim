@@ -1,10 +1,8 @@
 set(micro_fo_public_headers
   bioRVE.h
-  bioRVE2.h
   bioFiberNetwork.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
-  bioRVEUtil.h
   bioMicroFOMultiscale.h
   bioMultiscaleRVEAnalysis.h
   bioMultiscaleRVE.h
@@ -17,20 +15,15 @@ set(micro_fo_public_headers
 
 set(micro_fo_src_files
   bioRVE.cc
-  bioRVE2.cc
   bioFiberNetwork.cc
-  bioFiberNetworkIO2.cc
+  bioFiberNetworkIO.cc
   bioFiberRVEAnalysis.cc
   bioAlignFiberNetwork.cc
-  bioSolverPsi.cc
-  bioSolverGMRES.cc
-  bioSolverBeam.cc
   bioMacroElement.cc
   bioMacroTerms.cc
   bioMicroFOMultiscale.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc
-  bioRVEUtil.cc
   bioUtil.cc
   lasCSR.cc
   lasCSRBuilder.cc
