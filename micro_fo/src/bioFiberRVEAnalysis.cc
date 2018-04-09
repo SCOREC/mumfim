@@ -108,23 +108,6 @@ namespace bio
     an->ops->restore(an->u,s);
     Iteration::iterate();
   }
-  /*
-  FiberRVEConvergence::FiberRVEConvergence(FiberRVEAnalysis * a, double e)
-    : amsi::Convergence()
-    , an(a)
-    , eps(e)
-    , resid_im(0.0)
-  {}
-  bool FiberRVEConvergence::converged()
-  {
-    // don't bother recalculating force vector, just overconverge to get more accuracy
-    bool result = false;
-    double resid = an->ops->norm(an->f);
-    if(resid < eps)
-      result = true;
-    return result;
-  }
-  */
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
   {
     for(int ii = 0; ii < 3; ++ii)

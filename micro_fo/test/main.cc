@@ -6,7 +6,6 @@
 #include <getopt.h>
 #include <string>
 #include <fenv.h>
-#include <globals.h>
 int main(int, char * argv[])
 {
   using namespace bio;

@@ -59,5 +59,4 @@ namespace bio
     std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
   };
 }
-#include "bioFiberNetwork_impl.h"
 #endif

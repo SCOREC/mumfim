@@ -19,8 +19,6 @@ set(micro_fo_src_files
   bioFiberNetworkIO.cc
   bioFiberRVEAnalysis.cc
   bioAlignFiberNetwork.cc
-  bioMacroElement.cc
-  bioMacroTerms.cc
   bioMicroFOMultiscale.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc

@@ -34,20 +34,7 @@ namespace bio
     FiberRVEIteration(FiberRVEAnalysis * a);
     void iterate();
   };
-  /*
-  class FiberRVEConvergence : public amsi::Convergence
-  {
-  protected:
-    FiberRVEAnalysis * an;
-    double eps;
-    double resid_im;
-  public:
-    FiberRVEConvergence(FiberRVEAnalysis * a, double e = 1e-8);
-    bool converged();
-    double & epsilon() {return eps;}
-  };
-  */
-  /**
+   /**
    * Set the force vector value associated with dofs on nodes lying on the RVE
    *  boundaries to zero.
    * @param f The force vector
