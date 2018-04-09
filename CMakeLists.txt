@@ -73,5 +73,5 @@ endif()
 
 find_package(SCOREC CONFIG REQUIRED)
 add_subdirectory(micro_fo)
-add_subdirectory(micro_fm)
+#add_subdirectory(micro_fm)
 add_subdirectory(macro)

@@ -38,7 +38,6 @@ find_package(amsi COMPONENTS util analysis multiscale)
 add_library(biotissue ${biotissue_src_files} ${biotissue_public_headers})
 target_link_libraries(biotissue
                       micro_fo
-                      micro_fm
                       amsi::util
                       amsi::analysis
                       amsi::multiscale)
