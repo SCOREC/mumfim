@@ -42,6 +42,7 @@ namespace bio
      *          typically loaded using the NetworkLoader classes
      */
     FiberNetwork(apf::Mesh * f);
+    ~FiberNetwork();
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)

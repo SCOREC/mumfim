@@ -13,6 +13,8 @@ if [ "$1" == "Debug" -o "$1" == "Release" ]; then
   cd ../build 
 
   cmake \
+    -DCMAKE_C_COMPILER=mpicc\
+    -DCMAKE_CXX_COMPILER=mpicxx\
     -DCMAKE_BUILD_TYPE=$1 \
     -DCMAKE_INSTALL_PREFIX=$2 \
     -DBOOST_INCLUDE_DIR=$DEVROOT/boost_1_56_0/ \
