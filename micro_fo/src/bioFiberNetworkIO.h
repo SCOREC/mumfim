@@ -73,6 +73,8 @@ namespace bio
       strm >> nr >> ne;
       assert(ne == apf::countEntitiesOfType(msh,apf::Mesh::EDGE) && "Must have the same number of edges in the mesh as specified in the parameter file");
       auto rctns_out = std::back_inserter(rctns);
+      // TODO these process functions should verify the number of items
+      // in the line as to not cause errors in strange places if the input files are not correct
       for(int ii = 0; ii < nr; ++ii)
         processReactionLine(strm,rctns_out);
       for(int ii = 0; ii < ne; ++ii)

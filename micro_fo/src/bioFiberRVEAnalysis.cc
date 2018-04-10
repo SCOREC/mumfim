@@ -72,6 +72,8 @@ namespace bio
   void FiberRVEIteration::iterate()
   {
     // just fix the boundary nodes, remove them from the analysis... might need to update CSR though...
+    // FIXME this is only valid if we are applying dirichlet BC
+    // should be ok for now since the fiber network only has dirichlet bc in multiscale
     applyRVEBC(an->bnd_nds.begin(),
                an->bnd_nds.end(),
                an->fn->getUNumbering());

@@ -85,6 +85,9 @@ namespace bio
     apf::MeshEntity * v[2];
     v[0] = vrts[n0];
     v[1] = vrts[n1];
+    // we get errors here when the input file uses 1 indexing instead of zero
+    // indexing. since we don't know the size of the file we can't assert
+    // that n0, n1 must be less than the number of elements
     apf::MeshEntity * edg = msh->createEntity(apf::Mesh::EDGE, NULL, &v[0]);
     msh->setIntTag(edg, ord_tg, &edg_cnt);
     edg_cnt++;
