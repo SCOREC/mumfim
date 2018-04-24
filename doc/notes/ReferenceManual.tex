@@ -58,7 +58,10 @@
 \makeatother
 
 \newcommand{\diff}{\mathop{}\!\mathrm{d}}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\newcommand{\mat}[1]{\mathbf{#1}}
 
+%\includeonly{./Multiscale/MultiscaleNotes}
 \author{Victor Chan, Jacob Merson, Bill Tobin}
 \title{Biotissue Reference Manual}
 \begin{document}
@@ -77,7 +80,25 @@
 \part{Constraints}
 \include{./VolumeConstraint/VolumeConstraint}
 
-%\part{Convergence Operators}
+
+\part{Solution Techniques}
+\chapter{Newton Iteration}
+Basic information on how we do nonlinear analysis
+\chapter{Convergence Operators}
+What sort of convergence norms are available
+
+\part{Tutorial}
+\chapter{Building Biotissue Codebase}
+\chapter{Analysis}
+\section{Setup}
+give some information on how to set up analysis with simmodeler
+\section{Running Analysis}
+How do you run an analysis on SCOREC machines and on BGQ
+\chapter{Development}
+\section{Implementing a New Material}
+How to set up an integrator for a new material
+\section{Contributing to the Project}
+Point people to readme on github.
 
 \appendix
 \include{./Microscale/Microscale_Derivation_Appendix}

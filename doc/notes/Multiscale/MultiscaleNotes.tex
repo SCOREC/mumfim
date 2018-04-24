@@ -343,9 +343,9 @@ The derivative of the Cauchy stress is evaluated by using Eq.\ \eqref{eq:macro_s
 \begin{eqnarray}
 \frac{\partial \sigma_{ij}^{(M)}}{\partial  u^{(M)}_k}  &=& \frac{\partial \sigma_{ij}^{(M)}}{\partial {}^c u_l^{(m)}} \frac{\partial {}^c u_l^{(m)}}{\partial u^{(M)}_k} \nonumber\\
 %
-&=& \left [ \frac{\partial}{\partial {}^c u^{(m)}_l}  \left(\frac{1}{V^{(m)}} \sum_{n \in bcl} {}^nx_i^{(m)} {}^nT_j^{(m)}\right)+ \frac{1}{V^{(m)}} \frac{\partial}{\partial {}^c u^{(m)}_l} \left(\sum_{n \in bcl} {}^nx_i^{(m)} {}^nT_j^{(m)} \right) \right] \frac{\partial {}^c u_l^{{(m)}}}{\partial u^{(M)}_k} \nonumber\\
+&=& \left [ \frac{\partial}{\partial {}^c u^{(m)}_l}  \left(\frac{1}{V^{(m)}}\right) \sum_{n \in bcl} {}^nx_i^{(m)} {}^nT_j^{(m)}+ \frac{1}{V^{(m)}} \frac{\partial}{\partial {}^c u^{(m)}_l} \left(\sum_{n \in bcl} {}^nx_i^{(m)} {}^nT_j^{(m)} \right) \right] \frac{\partial {}^c u_l^{{(m)}}}{\partial u^{(M)}_k} \nonumber\\
 %
-&=&  \left[\frac{\partial}{\partial {}^c u^{(m)}_l}  \left(\frac{s_{ij}^{(m)}}{V^{(m)}} \right) + \frac{1}{V^{(m)}} \frac{\partial s_{ij}^{(m)}}{\partial {}^c u^{(m)}_l}\right] \frac{\partial {}^c u_l^{{(m)}}}{\partial u^{(M)}_k} \nonumber\\
+&=&  \left[\frac{\partial}{\partial {}^c u^{(m)}_l}  \left(\frac{1}{V^{(m)}} \right)s_{ij}^{(m)} + \frac{1}{V^{(m)}} \frac{\partial s_{ij}^{(m)}}{\partial {}^c u^{(m)}_l}\right] \frac{\partial {}^c u_l^{{(m)}}}{\partial u^{(M)}_k} \nonumber\\
 %
 &=& \left[\frac{1}{V^{(m)}} \frac{\partial s_{ij}^{(m)}}{\partial {}^c u^{(m)}_l} -\frac{1}{(V^{(m)})^2}\frac{\partial V^{(m)}}{\partial {}^c u^{(m)}_l}s_{ij}^{(m)} \right] \frac{\partial {}^c u_l^{{(m)}}}{\partial u^{(M)}_k},
 \label{eq:dsigma_duM}
@@ -360,6 +360,11 @@ where ${}^c u_l^{{(m)}}$ is the $l^{th}$ corner (left superscript $c$) displacem
 \end{equation}
 %
 where the first two involve only microscale quantities and the third links the micro and macro scales.
+
+To come up with these derivatives we had to note the equivalence of taking the derivative with respect to the current coordinate \(x\), and the displacement \(u\). This is show in the following chain rule:
+\begin{equation}
+\frac{\partial f(\vec{x})}{\partial\vec{x}} = \frac{\partial f(\vec{x})}{\partial\vec{u}}\frac{\partial \vec{u}}{\partial\vec{x}} = \frac{\partial f(\vec{x})}{\partial \vec{u}}\frac{\partial (\vec{x}-\vec{X})}{\partial\vec{x}}=\frac{\partial f(\vec{x})}{\partial \vec{u}}
+\end{equation}
 
 \subsubsection{Derivative of $s_{ij}$ with respect to RVE corner coordinates}
 %
