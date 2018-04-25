@@ -75,7 +75,6 @@ namespace bio
     freeRVEBC(an->bnd_nds.begin(),
               an->bnd_nds.end(),
               an->fn->getUNumbering());
-    // number all dofs
     apf::NaiveOrder(an->fn->getUNumbering());
     an->ops->zero(an->k);
     an->ops->zero(an->u);

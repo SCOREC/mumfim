@@ -118,6 +118,7 @@ namespace bio
       double frc = 0.0;
       for(int ii = 0; ii < dim; ii++)
       {
+        // parametric coordinate along length
         frc = spans_l[ii] * f;
         es->fe(ii)     = -frc;
         es->fe(dim+ii) =  frc;
@@ -156,8 +157,14 @@ namespace bio
     }
     void outElement()
     {
+      // this could potentially cause issues
+      // since we are passing out a pointer to es
+      // which gets destroyed.
       amsi::assemble(ops,k,f,es);
-      delete es;
+      amsi::destroyElement(dsp_elm);
+      amsi::destroyApfElementalSystem(es);
+      apf::destroyMeshElement(ume);
+      apf::destroyElement(elmt);
     }
   };
 }

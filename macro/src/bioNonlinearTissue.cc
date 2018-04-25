@@ -40,25 +40,32 @@ namespace bio
     //    Sim_logOn(filename);
     apf_primary_field =
         apf::createLagrangeField(apf_mesh, "displacement", apf::VECTOR, 1);
+    apf::zeroField(apf_primary_field);
     delta_u = apf::createLagrangeField(apf_mesh, "displacement_delta",
                                        apf::VECTOR, 1);
+    apf::zeroField(delta_u);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
     xpyfnc = new amsi::XpYFunc(apf_mesh->getCoordinateField(),apf_primary_field);
+    // user field is not zeroed because it is the sum of two other fields
     current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), xpyfnc);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh, "stress", apf::MATRIX, 1);
+    apf::zeroField(strs);
     rcvrd_strs =
         apf::createLagrangeField(apf_mesh, "recovered_stress", apf::MATRIX, 1);
+    apf::zeroField(rcvrd_strs);
     strn = apf::createIPField(apf_mesh, "strain", apf::MATRIX, 1);
+    apf::zeroField(strn);
     dfm_grd = apf::createIPField(apf_mesh, "F", apf::MATRIX, 1);
+    apf::zeroField(dfm_grd);
     stf_vrtn =
         apf::createIPField(apf_mesh, "stiffness_variation", apf::SCALAR, 1);
+    apf::zeroField(stf_vrtn);
     axl_yngs_mod =
         apf::createIPField(apf_mesh, "axial_youngs_modulus", apf::SCALAR, 1);
+    apf::zeroField(axl_yngs_mod);
     amsi::applyUniqueRegionTags(imdl, part, apf_mesh);
     // zero stiffness_variation and axial_youngs_modulus fields
-    apf::zeroField(stf_vrtn);
-    apf::zeroField(axl_yngs_mod);
     std::vector<pANode> stf_vrtn_nds;
     amsi::cutPaste<pANode>(
         AttNode_childrenByType((pANode)pd, "stiffness gradient"),
