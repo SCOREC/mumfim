@@ -423,17 +423,6 @@ namespace bio
         apf::Field * u = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
         apf::zeroField(u);
         apf::Numbering * n = apf::createNumbering(u);
-        // fix boundary nodes before creating csr
-        RVE rve;
-        auto bgn = amsi::apfMeshIterator(fn,0);
-        decltype(bgn) end = amsi::apfEndIterator(fn); // object slicing?
-        std::vector<apf::MeshEntity*> bnd_nds;
-        getBoundaryVerts(&rve,
-                         fn,
-                         bgn,end,
-                         RVE::all,
-                         std::back_inserter(bnd_nds));
-        applyRVEBC(bnd_nds.begin(),bnd_nds.end(),n);
         int dofs = apf::NaiveOrder(n);
         sprs[ii][jj] = las::createCSR(n,dofs);
         apf::destroyNumbering(n);

@@ -35,14 +35,25 @@ namespace bio
     void iterate();
   };
    /**
-   * Set the force vector value associated with dofs on nodes lying on the RVE
-   *  boundaries to zero.
-   * @param f The force vector
-   * @param rve The rve which defines which nodes are on the boundary
-   * @param fn The fiber network to check for boundary nodes
+    * Fix the boundary dofs and set the
+    *  rows in the mat/vec corresponing
+    *  to the dof numbering to identity rows
+    */
+  template <typename I>
+  void applyRVEBC(I bnd_bgn,
+                  I bnd_end,
+                  apf::Numbering * nm,
+                  las::LasOps * ops,
+                  las::Mat * k,
+                  las::Vec * f);
+  /**
+   * Free all boundary dofs so they can
+   *   be numbered prior to being fixed again.
    */
   template <typename I>
-    void applyRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * nm);
+  void freeeRVEBC(I bnd_bgn,
+                  I bnd_end,
+                  apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
 }
 #include "bioFiberRVEAnalysis_impl.h"

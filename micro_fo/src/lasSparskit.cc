@@ -161,7 +161,7 @@ namespace las
       {
         o << (*m)(rr,cc) << ' ';
       }
-      o << '\b' << std::endl;
+      o << '\n' << std::endl;
     }
   }
   double getSparskitMatValue(Mat * k, int rr, int cc)

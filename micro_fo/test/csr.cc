@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
   auto bgn = amsi::apfMeshIterator(fn_msh,0);
   decltype(bgn) end = amsi::apfEndIterator(fn_msh);
   bio::getBoundaryVerts(&rve,fn_msh,bgn,end,bio::RVE::side::all,std::back_inserter(bnds));
-  bio::applyRVEBC(bnds.begin(),bnds.end(),nm);
+  //bio::applyRVEBC(bnds.begin(),bnds.end(),nm,ops,k,f);
   int ndofs = apf::NaiveOrder(nm);
   //las::Vec * f = las::createSparskitVector(ndofs);
   las::CSR * fn_csr = las::createCSR(nm,ndofs);
@@ -61,7 +61,7 @@ int main(int argc, char * argv[])
   auto bgn2 = amsi::apfMeshIterator(fn_msh2,0);
   decltype(bgn2) end2 = amsi::apfEndIterator(fn_msh2);
   bio::getBoundaryVerts(&rve2,fn_msh2,bgn2,end2,bio::RVE::side::all,std::back_inserter(bnds2));
-  bio::applyRVEBC(bnds2.begin(),bnds2.end(),nm2);
+  //bio::applyRVEBC(bnds2.begin(),bnds2.end(),nm2,ops,k,f);
   int ndofs2 = apf::NaiveOrder(nm2);
   las::CSR * fn_csr2 = las::createCSR(nm2,ndofs2);
   las::Mat * k2 = las::createSparskitMatrix(fn_csr2);

@@ -4,6 +4,7 @@
 #include "bioFiberNetworkIO.h"
 #include "lasSparskit.h"
 #include <apfMeshIterator.h>
+#include <PCU.h>
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
@@ -41,7 +42,6 @@ namespace bio
                      end,
                      RVE::side::all,
                      std::back_inserter(an->bnd_nds));
-    applyRVEBC(an->bnd_nds.begin(),an->bnd_nds.end(),an->fn->getUNumbering());
     apf::Numbering * udofs = an->fn->getUNumbering();
     int ndofs = apf::NaiveOrder(udofs);
     an->f0 = las::createSparskitVector(ndofs);
@@ -71,15 +71,26 @@ namespace bio
   {}
   void FiberRVEIteration::iterate()
   {
-    // just fix the boundary nodes, remove them from the analysis... might need to update CSR though...
-    applyRVEBC(an->bnd_nds.begin(),
-               an->bnd_nds.end(),
-               an->fn->getUNumbering());
-    // will not change at present due to CSR restriction, run every time anyway
+    // free fixed bcs so all dofs get numbers
+    freeRVEBC(an->bnd_nds.begin(),
+              an->bnd_nds.end(),
+              an->fn->getUNumbering());
+    // number all dofs
     apf::NaiveOrder(an->fn->getUNumbering());
     an->ops->zero(an->k);
     an->ops->zero(an->u);
     an->ops->zero(an->f);
+    // set the rows/cols for each boundary node
+    //  to identity rows, and fix the dofs
+    //  themselves so all assembly routines
+    //  don't write to the fixed rows, leaving
+    //  them as identity rows
+    applyRVEBC(an->bnd_nds.begin(),
+               an->bnd_nds.end(),
+               an->fn->getUNumbering(),
+               an->ops,
+               an->k,
+               an->f);
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
@@ -90,6 +101,11 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     fn->end(itr);
+    if(!PCU_Comm_Self())
+    {
+      std::ofstream fout("micro_fo_matrix_0");
+      printSparskitMat(fout,an->k);
+    }
     if(this->iteration() == 0)
       an->ops->axpy(1.0,an->f,an->f0);
     an->slv->solve(an->k,an->u,an->f);
