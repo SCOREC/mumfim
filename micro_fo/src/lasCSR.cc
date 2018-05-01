@@ -12,10 +12,11 @@ namespace las
   int CSR::operator()(int rw, int cl) const
   {
     int result = -1;
-    int kk = 0;
-    for(kk = rws.at(rw); (kk < rws.at(rw+1)) && (cls.at(kk-1) < (cl+1)); kk++){}
-    if(cls.at(kk - 1) == (cl + 1))
-      result = kk - 1;
+    int fst = rws[rw] - 1; // 1-indexing    v also here
+    while((fst < rws[rw+1] - 2) && (cls[fst] - 1 < cl))
+      ++fst;
+    if(cls[fst] - 1 == cl) // 1-indexing
+      result = fst;
     else
       result = -1;
     return result;

@@ -77,10 +77,10 @@ namespace las
     CSR * csr;
   public:
     skMat(CSR * c)
-      : vls(new double [c->getNumNonzero()+1])
+      : vls(new double [c->getNumNonzero()+2])
       , csr(c)
     {
-      memset(&vls[0],0.0,sizeof(double)*(csr->getNumNonzero()+1));
+      memset(&vls[0],0.0,sizeof(double)*(csr->getNumNonzero()+2));
     }
     ~skMat()
     {
@@ -88,12 +88,9 @@ namespace las
     }
     double & operator()(int rr, int cc)
     {
-      int idx = -1;
-      if(rr < 0 || cc < 0)
-        idx = csr->getNumNonzero();
-      else
-        idx = (*csr)(rr,cc);
-      return vls[idx];
+      int idx[] = { (*csr)(rr,cc), csr->getNumNonzero(), csr->getNumNonzero()+1 };
+      int dmy = (rr < 0 || cc < 0) ? 1 : idx[0] < 0 ? 2 : 0;
+      return vls[idx[dmy]];
     }
     CSR * getCSR()
     {

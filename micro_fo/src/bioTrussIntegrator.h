@@ -102,11 +102,10 @@ namespace bio
       apf::NewArray<apf::Vector3> crds;
       apf::getVectorNodes(dsp_elm,crds);
       int nd_cnt = apf::countNodes(dsp_elm);
+      apf::destroyElement(dsp_elm);
       spans_l = (crds[nd_cnt-1] - crds[0]) / l;
       int id = -1;
       msh->getIntTag(ent,id_tg,&id);
-      if(id == 139)
-        (void)NULL;
     }
     void atPoint(const apf::Vector3 &, double, double)
     {
@@ -136,6 +135,7 @@ namespace bio
               es->ke(ii*dim + kk, jj*dim + ll) += rctn[kk][ll] * op;
         }
       }
+      /*
       // have ke and fe, modify fe based on fixed dofs
       apf::NewArray<int> dofs;
       apf::getElementNumbers(nm,apf::getMeshEntity(elmt),dofs);
@@ -154,6 +154,7 @@ namespace bio
       for(int ii = 0; ii < nen*dim; ++ii)
         for(int jj = 0; jj < nen*dim; ++jj)
           es->fe(ii) += es->ke(ii,jj) * u_fxd(jj);
+      */
     }
     void outElement()
     {
@@ -161,9 +162,7 @@ namespace bio
       // since we are passing out a pointer to es
       // which gets destroyed.
       amsi::assemble(ops,k,f,es);
-      amsi::destroyElement(dsp_elm);
       amsi::destroyApfElementalSystem(es);
-      apf::destroyMeshElement(ume);
       apf::destroyElement(elmt);
     }
   };
