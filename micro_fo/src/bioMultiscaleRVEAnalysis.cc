@@ -506,21 +506,24 @@ namespace bio
         {
           applyMultiscaleCoupling(*rve,&data[ii]);
           FiberRVEIteration itr(*rve);
+          double prv_nrm = 1.0;
           auto val_gen = [&]() -> double
             {
-              double nrm_f = (*rve)->ops->norm((*rve)->f);
-              return nrm_f;
+              double nrm = (*rve)->ops->norm((*rve)->f);
+              double val = fabs(prv_nrm - nrm);
+              prv_nrm = nrm;
+              return val;
             };
-          auto eps_gen = [ ](int) -> double { return 1e-16; };
+          auto eps_gen = [ ](int) -> double { return 1e-8; };
           auto ref_gen = [&]() -> double
             {
+              return 1.0;
+              /*
               static double nrm_f0 = 0.0;
-              // this is called after an iteration completes, before the next iteration,
-              // so the following is true after the 0th iteration and before we start the 1st iteration,
-              // which is when we want to record the norm of the force residual
               if(itr.iteration() == 1)
                 nrm_f0 = (*rve)->ops->norm((*rve)->f0);
               return nrm_f0;
+              */
             };
           amsi::UpdatingConvergence<decltype(&val_gen), decltype(&eps_gen), decltype(&ref_gen)> resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);
           amsi::Convergence * ptr[] = {&resid_cnvrg};

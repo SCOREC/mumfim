@@ -78,7 +78,7 @@ namespace bio
               an->fn->getUNumbering());
     */
     // todo : this isn't needed every iteration, move this out of here
-    int ndofs = apf::NaiveOrder(an->fn->getUNumbering());
+    //int ndofs = apf::NaiveOrder(an->fn->getUNumbering());
     an->ops->zero(an->k);
     an->ops->zero(an->u);
     an->ops->zero(an->f);
@@ -98,6 +98,7 @@ namespace bio
                an->ops,
                an->k,
                an->f);
+    /*
     if(!PCU_Comm_Self())
     {
       std::ofstream fout("micro_fo_matrix_pre_solve");
@@ -109,6 +110,7 @@ namespace bio
         vout << vec[rw] << std::endl;
       an->ops->restore(an->f,vec);
     }
+    */
     if(this->iteration() == 0)
       an->ops->axpy(1.0,an->f,an->f0);
     an->slv->solve(an->k,an->u,an->f);

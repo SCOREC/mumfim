@@ -25,8 +25,10 @@ namespace bio
         for(int jj = 0; jj < nedofs; ++jj)
           eye(ii,jj) = ii == jj ? 1.0 : 0.0;
       ops->set(k,nedofs,&fxd_row_ids[0],nedofs,&fxd_row_ids[0],&eye(0,0));
+      /*
       for(int ii = 0; ii < 3; ++ii)
         apf::fix(nm,*ent,0,ii,true);
+      */
     }
   }
   template <typename I>
