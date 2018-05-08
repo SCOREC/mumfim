@@ -90,7 +90,8 @@ namespace bio
     int dofs[3] {};
     double * f = NULL;
     ans->ops->get(ans->f,f);
-    apf::Matrix3x3 strs;
+    // make sure we initialize strs because we sum into it
+    apf::Matrix3x3 strs(0,0,0,0,0,0,0,0,0);
     for(auto nd = ans->bnd_nds.begin(); nd != ans->bnd_nds.end(); ++nd)
     {
       apf::getVector(xyz,*nd,0,xyz_val);
@@ -142,6 +143,8 @@ namespace bio
         int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 : (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
         RVE::side rve_sd = static_cast<RVE::side>(sd);
         apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
+        // we should never get an entity that's not on a side based on our loop
+        assert(sd_ent != NULL);
         double a = apf::measure(ans->rve->getMesh(),sd_ent);
         apf::Vector3 crd;
         fn_msh->getPoint(*vrt,0,crd);
