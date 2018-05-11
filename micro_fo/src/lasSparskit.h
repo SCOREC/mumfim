@@ -17,7 +17,10 @@ namespace las
   LasSolve * createSparskitLUSolve(SparskitBuffers * b);
   LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b);
   LasSolve * createSparskitQuickLUSolve(LasSolve * slvr);
-  void printSparskitMat(std::ostream &, Mat * m);
+  /*
+   * sparse defines wheter to print the matrix in sparse mode, or as full matrix
+   */
+  void printSparskitMat(std::ostream &, Mat * m, bool sparse=false);
   double getSparskitMatValue(Mat *, int rr, int cc);
   void setSparskitMatValue(Mat *, int rr, int cc, double vl);
 }

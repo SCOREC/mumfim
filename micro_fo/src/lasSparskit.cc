@@ -148,17 +148,30 @@ namespace las
     SparskitLU * skt_slv = reinterpret_cast<SparskitLU*>(slv);
     return new SparskitQuickLU(skt_slv);
   }
-  void printSparskitMat(std::ostream & o, Mat * mi)
+  void printSparskitMat(std::ostream & o, Mat * mi, bool sparse)
   {
     skMat * m = getSparskitMatrix(mi);
-    int ndofs = m->getCSR()->getNumEqs();
-    for(int rr = 0; rr < ndofs; ++rr)
-    {
-      for(int cc = 0; cc < ndofs; ++cc)
+    CSR * csr = m->getCSR();
+    int ndofs = csr->getNumEqs();
+    if(!sparse) {
+      for(int rr = 0; rr < ndofs; ++rr)
       {
-        o << (*m)(rr,cc) << ' ';
+        for(int cc = 0; cc < ndofs; ++cc)
+        {
+          o << (*m)(rr,cc) << ' ';
+        }
+        o << '\n' << std::endl;
       }
-      o << '\n' << std::endl;
+    }
+    else {
+      int lc = -1;
+      for(int r=0; r<ndofs; ++r) {
+        for(int c=0; c<ndofs;++c) {
+          if((lc=(*csr)(r,c)) != -1) {
+            o<<r<<"\t"<<c<<"\t"<<(*m)(r,c)<<"\n";
+          }
+        }
+      }
     }
   }
   double getSparskitMatValue(Mat * k, int rr, int cc)
