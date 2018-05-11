@@ -90,7 +90,9 @@ namespace bio
     int dofs[3] {};
     double * f = NULL;
     ans->ops->get(ans->f,f);
-    apf::Matrix3x3 strs;
+    apf::Matrix3x3 strs(0.0,0.0,0.0,
+                        0.0,0.0,0.0,
+                        0.0,0.0,0.0);
     for(auto nd = ans->bnd_nds.begin(); nd != ans->bnd_nds.end(); ++nd)
     {
       apf::getVector(xyz,*nd,0,xyz_val);
@@ -120,7 +122,7 @@ namespace bio
     (void)Q;
   }
   // honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
-  void recoverStressDerivs(FiberRVEAnalysis * ans, double * dstrss_drve)
+  void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
   {
     (void)ans;
     (void)dstrss_drve;
@@ -141,17 +143,27 @@ namespace bio
       {
         int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 : (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
         RVE::side rve_sd = static_cast<RVE::side>(sd);
-        apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
-        double a = apf::measure(ans->rve->getMesh(),sd_ent);
         apf::Vector3 crd;
         fn_msh->getPoint(*vrt,0,crd);
         if(ans->rve->onBoundary(crd,rve_sd))
         {
+          apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
+          double a = apf::measure(ans->rve->getMesh(),sd_ent);
           // extract method
           int vrt_cnt = dim == 3 ? 4 : 2;
           apf::MeshEntity * fc_vrts[vrt_cnt];
           ans->rve->getMesh()->getDownward(sd_ent,0,&fc_vrts[0]);
+          apf::NewArray<int> rve_dof_ids(vrt_cnt * dim);
+          apf::getElementNumbers(rve_dofs,sd_ent,rve_dof_ids);
+          apf::NewArray<int> fn_dof_ids(dim);
+          apf::getElementNumbers(fn_dofs,*vrt,fn_dof_ids);
           // iterate over the line/face (dep on dim)
+          // assumes dim = 3
+          // get the vert opposite the current vert on the face, which is what the
+          //  value given by the calculation below is applicable to,
+          //  we are basically calculating barycentric coordinates using
+          //  the fact the RVE is unit cube as a huge shortcut inverting the global mapping
+          int opp_vrt[] = {2,3,0,1};
           for(int ci = 0; ci < vrt_cnt; ++ci)
           {
             apf::Vector3 ci_crd;
@@ -161,13 +173,10 @@ namespace bio
             double ai = 1.0;
             for(int ii = 0; ii < dim; ++ii)
               ai *= ii == plnr_dim ? 1.0 : spn[ii];
+            ai = fabs(ai / a);
             // iterate over the dim
             for(int ej = 0; ej < dim; ++ej)
-            {
-              int fn_dof = apf::getNumber(fn_dofs,(*vrt),0,ej);
-              int rve_dof = apf::getNumber(rve_dofs,sd_ent,0,ej);
-              dRdx_rve(fn_dof,rve_dof) = ci == ej ? ai / a : 0.0;
-            }
+              dRdx_rve(fn_dof_ids[ej],rve_dof_ids[opp_vrt[ci]*dim + ej]) = ai;
           }
           bnds[sd].push_back(*vrt);
           break;
@@ -194,12 +203,12 @@ namespace bio
       fn_msh->getDownward(edg,0,&vrts[0]);
       int bnd_dofs[dim];
       for(int dd = 0; dd < dim; ++dd)
-        bnd_dofs[0] = apf::getNumber(dofs,*vrt,0,dd);
+        bnd_dofs[dd] = apf::getNumber(dofs,*vrt,0,dd);
       for(int vrt = 0; vrt < 2; ++vrt)
       {
         for(int dd = 0; dd < dim; ++dd)
         {
-          int dof = apf::getNumber(dofs,vrts[dd],0,dd);
+          int dof = apf::getNumber(dofs,vrts[vrt],0,dd);
           apf::Vector3 ks;
           ks.zero();
           for(int ii = 0; ii < dim; ++ii)
@@ -268,9 +277,9 @@ namespace bio
       {}
       virtual void inElement(apf::MeshElement * m)
       {
-        dim = apf::getDimension(mlm);
         mlm = m;
-        e = apf::createElement(u,m);
+        dim = apf::getDimension(mlm);
+        e = apf::createElement(u,mlm);
         nends = apf::countNodes(e);
         dV_dx_rve.resize(nends*dim);
       }
@@ -309,13 +318,15 @@ namespace bio
     // convert to macro stress values
     double scale_conversion = 1.0;
     apf::DynamicVector col(sigma_length);
+    apf::Vector<6> vsig(sigma);
+    apf::DynamicVector dsig = apf::fromVector(vsig);
+    //apf::DynamicVector sigma(sigma_length); // copy stress
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
-      apf::DynamicVector sigma; // copy stress
       dS_dx_rve.getColumn(ii,col);
       col /= vol;
-      sigma *= (dV_dx_rve[ii] / (vol * vol)) * scale_conversion;
-      col -= sigma;
+      dsig *= (dV_dx_rve[ii] / (vol * vol)) * scale_conversion;
+      col -= dsig;
       dS_dx_rve.setColumn(ii,col);
     }
     apf::DynamicMatrix dx_rve_dx_fe;
@@ -326,12 +337,24 @@ namespace bio
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
+    // reformulate the stiffness matrix and force vector but don't apply bcs
+    // if the elemental system applies bcs this won't work correctly
+    apf::Mesh * fn  = ans->fn->getNetworkMesh();
+    apf::MeshEntity * me = NULL;
+    apf::MeshIterator * it = fn->begin(1);
+    while((me = fn->iterate(it)))
+    {
+      apf::MeshElement * mlm = apf::createMeshElement(fn,me);
+      ans->es->process(mlm);
+      apf::destroyMeshElement(mlm);
+    }
+    fn->end(it);
     double * strs = &data->data[0];
     recoverMultiscaleStress(ans,strs);
     double * Q = &data->data[6];
     recoverAvgVolStress(ans,Q);
     double * dstrs_drve = &data->data[9];
-    recoverStressDerivs(ans,dstrs_drve);
+    recoverStressDerivs(ans,strs,dstrs_drve);
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()

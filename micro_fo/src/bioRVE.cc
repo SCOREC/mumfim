@@ -58,7 +58,8 @@ namespace bio
     cbe_du = apf::createLagrangeField(cbe,"du",apf::VECTOR,1);
     apf::zeroField(cbe_du);
     cbe_dof = apf::createNumbering(cbe_u);
-    apf::NaiveOrder(cbe_dof);
+    int cbe_dof_cnt = apf::NaiveOrder(cbe_dof);
+    assert(dim == 3 ? cbe_dof_cnt == 24 : cbe_dof_cnt == 8);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
   }
   apf::MeshEntity * RVE::getSide(side sd)
@@ -72,14 +73,18 @@ namespace bio
     {
       apf::MeshEntity * vrts[4];
       cbe->getDownward(*fc_itr,0,&vrts[0]);
-      for(int ii = 0; ii < 4; ++ii)
+      bool found = true;
+      for(int ii = 0; ii < 4 && found; ++ii)
       {
         apf::Vector3 crd;
         cbe->getPoint(vrts[ii],0,crd);
         if(crd[plnr_dim] != plnr_crd)
-          break;
-        // hit iff all the planar coords are correct
+          found = false;
+      }
+      if(found)
+      {
         rslt = *fc_itr;
+        break;
       }
     }
     return rslt;
