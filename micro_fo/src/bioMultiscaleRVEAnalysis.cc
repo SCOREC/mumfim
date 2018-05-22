@@ -197,7 +197,9 @@ namespace bio
       apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
       assert(fn_msh->countUpward(*vrt) == 1);
       apf::Vector3 Nx;
-      fn_msh->getPoint(*vrt,0,Nx);
+      // need the displaced node coordinates, not the reference coords
+      apf::getVector(ans->fn->getXpUField(),*vrt,0,Nx);
+      //fn_msh->getPoint(*vrt,0,Nx);
       apf::MeshEntity * edg = fn_msh->getUpward(*vrt,0);
       apf::MeshEntity * vrts[2];
       fn_msh->getDownward(edg,0,&vrts[0]);
@@ -212,7 +214,10 @@ namespace bio
           apf::Vector3 ks;
           ks.zero();
           for(int ii = 0; ii < dim; ++ii)
-            ks[ii] = -1.0 * las::getSparskitMatValue(ans->k,dof,bnd_dofs[ii]);
+          {
+            ks[ii] = las::getSparskitMatValue(ans->k,dof,bnd_dofs[ii]);
+            ks[ii] *= -1.0;
+          }
           apf::Vector3 delta;
           for(int ii = 0; ii < dim; ++ii)
             delta[ii] = dof == bnd_dofs[ii] ? 1.0 : 0.0;
@@ -223,7 +228,10 @@ namespace bio
           apf::Matrix3x3 ms = amsi::symmetricPart(m);
           apf::DynamicVector vls(sigma_length);
           amsi::mat2VoigtVec(dim,ms,&vls(0));
-          dS_dx_fn.setColumn(dof,vls);
+          for(int ii = 0; ii < sigma_length; ++ii)
+            dS_dx_fn(dof,ii) = vls(ii);
+          // need to accumulate, not just set
+          //dS_dx_fn.setColumn(dof,vls);
           for(int ii = 0; ii < dim; ++ii)
             las::setSparskitMatValue(ans->k,dof,bnd_dofs[ii],0.0);
         }
@@ -337,8 +345,9 @@ namespace bio
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
-    // reformulate the stiffness matrix and force vector but don't apply bcs
-    // if the elemental system applies bcs this won't work correctly
+    // rebuild everything since we want the force vector without
+    // boundary conditions anyway
+    ans->ops->zero(ans->k);
     apf::Mesh * fn  = ans->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * it = fn->begin(1);
@@ -554,6 +563,9 @@ namespace bio
           // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
           amsi::ResetIteration rst_iter(&cnvrg,&itr);
           amsi::numericalSolve(&itr,&cnvrg);
+          // dump the matrix for debugging
+          std::ofstream fout("new_mat_post_solve");
+          las::printSparskitMat(fout,(*rve)->k);
           // we've converged and have not reset the state of the vectors, matrices, and buffers
           // the inversion of the tangent stiffness matrix should be available in the buffers?
           recoverMultiscaleResults(*rve,&results[ii]);
