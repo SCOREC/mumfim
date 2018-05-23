@@ -188,6 +188,7 @@ namespace bio
     // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
     int sigma_length = dim == 3 ? 6 : 3;
     apf::DynamicMatrix dS_dx_fn(sigma_length,fn_dof_cnt);
+    dS_dx_fn.zero();
     apf::Numbering * dofs = ans->fn->getUNumbering();
     double * F = NULL;
     ans->ops->get(ans->f,F);
@@ -229,9 +230,7 @@ namespace bio
           apf::DynamicVector vls(sigma_length);
           amsi::mat2VoigtVec(dim,ms,&vls(0));
           for(int ii = 0; ii < sigma_length; ++ii)
-            dS_dx_fn(dof,ii) = vls(ii);
-          // need to accumulate, not just set
-          //dS_dx_fn.setColumn(dof,vls);
+            dS_dx_fn(ii,dof) += vls(ii);
           for(int ii = 0; ii < dim; ++ii)
             las::setSparskitMatValue(ans->k,dof,bnd_dofs[ii],0.0);
         }
@@ -563,9 +562,6 @@ namespace bio
           // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
           amsi::ResetIteration rst_iter(&cnvrg,&itr);
           amsi::numericalSolve(&itr,&cnvrg);
-          // dump the matrix for debugging
-          std::ofstream fout("new_mat_post_solve");
-          las::printSparskitMat(fout,(*rve)->k);
           // we've converged and have not reset the state of the vectors, matrices, and buffers
           // the inversion of the tangent stiffness matrix should be available in the buffers?
           recoverMultiscaleResults(*rve,&results[ii]);
