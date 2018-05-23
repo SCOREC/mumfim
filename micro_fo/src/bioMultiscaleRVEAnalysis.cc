@@ -192,6 +192,11 @@ namespace bio
     apf::Numbering * dofs = ans->fn->getUNumbering();
     double * F = NULL;
     ans->ops->get(ans->f,F);
+    if(!PCU_Comm_Self())
+    {
+      std::ofstream fout("new_mat_pre_dS_dx_fn");
+      las::printSparskitMat(fout,ans->k);
+    }
     // iterate over all fibers with a node on the boundary
     for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
     {
@@ -216,7 +221,7 @@ namespace bio
           ks.zero();
           for(int ii = 0; ii < dim; ++ii)
           {
-            ks[ii] = las::getSparskitMatValue(ans->k,dof,bnd_dofs[ii]);
+            ks[ii] = las::getSparskitMatValue(ans->k,bnd_dofs[ii],dof);
             ks[ii] *= -1.0;
           }
           apf::Vector3 delta;
@@ -232,7 +237,7 @@ namespace bio
           for(int ii = 0; ii < sigma_length; ++ii)
             dS_dx_fn(ii,dof) += vls(ii);
           for(int ii = 0; ii < dim; ++ii)
-            las::setSparskitMatValue(ans->k,dof,bnd_dofs[ii],0.0);
+            las::setSparskitMatValue(ans->k,bnd_dofs[ii],dof,0.0);
         }
       }
       for(int ii = 0; ii < dim; ++ii)
@@ -244,13 +249,33 @@ namespace bio
     las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
     las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
     las::LasSolve * slv = las::createSparskitQuickLUSolve(ans->slv);
+    // zero rows in the matrix w/ boundary conditions
+    // this effects the force vector which is used in the calculation of
+    // dS_dx_fn above so we must do it after.
+    // this might not be necessary anymore since the change in the
+    //  matrix modification indices in the dS_dx_fn term
+    applyRVEBC(ans->bnd_nds.begin(),ans->bnd_nds.end(),
+               ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
     apf::DynamicMatrix dx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
+    if(!PCU_Comm_Self())
+    {
+      std::ofstream fout("new_mat_pre_dydxr");
+      las::printSparskitMat(fout,ans->k);
+    }
+    // there are some small differeneces in the cols
+    //  of dRdx_rve due to values not canceling
+    // precisely during formulation I think....
+    // regardless there are some 10-77 and 10-128 terms
+    // which are essentially 0 that are alterning the results
+    //  *slightly* but if we can get rid of those it will be identical
+    // to the old results
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
       // apf -> double * -> sparskit
       dRdx_rve.getColumn(ii,f);
-      double * fptr = &f[0];
-      ans->ops->restore(skt_f,fptr);
+      double * fptr = NULL;
+      ans->ops->get(skt_f,fptr);
+      std::copy(f.begin(),f.end(),fptr);
       // solve k u = f for modified f
       slv->solve(ans->k,skt_u,skt_f);
       // sparskit -> double * -> apf
@@ -357,6 +382,11 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     fn->end(it);
+    if(!PCU_Comm_Self())
+    {
+      std::ofstream fout("mat_new_post_reasemble");
+      las::printSparskitMat(fout,ans->k);
+    }
     double * strs = &data->data[0];
     recoverMultiscaleStress(ans,strs);
     double * Q = &data->data[6];
