@@ -9,20 +9,26 @@ namespace bio
   template <typename O>
   void originCenterCube(O cbe_crnrs, double crd)
   {
+    // APF orders differently than canonical
+    // iosparametric hexs
+    // front
     *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd * -1.0,crd * -1.0);
     *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd * -1.0,crd * -1.0);
-    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd * -1.0,crd *  1.0);
-    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd * -1.0,crd *  1.0);
-    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd * -1.0);
     *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd *  1.0,crd * -1.0);
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd * -1.0);
+    // back
+    *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd * -1.0,crd *  1.0);
+    *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd * -1.0,crd *  1.0);
     *cbe_crnrs++ = apf::Vector3(crd *  1.0,crd *  1.0,crd *  1.0);
     *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd *  1.0);
   }
   template <typename O>
   void originCenterSquare(O cbe_crnrs, double crd)
   {
+    // bottom
     *cbe_crnrs++ = apf::Vector3(-crd,-crd, 0.0);
     *cbe_crnrs++ = apf::Vector3( crd,-crd, 0.0);
+    // top
     *cbe_crnrs++ = apf::Vector3( crd, crd, 0.0);
     *cbe_crnrs++ = apf::Vector3(-crd, crd, 0.0);
   }
@@ -58,9 +64,15 @@ namespace bio
     cbe_du = apf::createLagrangeField(cbe,"du",apf::VECTOR,1);
     apf::zeroField(cbe_du);
     cbe_dof = apf::createNumbering(cbe_u);
+    xpufnc = new amsi::XpYFunc(cbe->getCoordinateField(),cbe_u);
+    cbe_xpu = apf::createUserField(cbe,"xpu",apf::VECTOR,apf::getShape(cbe_u),xpufnc);
     int cbe_dof_cnt = apf::NaiveOrder(cbe_dof);
     assert(dim == 3 ? cbe_dof_cnt == 24 : cbe_dof_cnt == 8);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
+  }
+  RVE::~RVE()
+  {
+    delete xpufnc;
   }
   apf::MeshEntity * RVE::getSide(side sd)
   {

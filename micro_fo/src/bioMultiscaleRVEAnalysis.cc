@@ -2,6 +2,7 @@
 #include "bioFiberRVEAnalysis.h"
 #include "bioFiberNetworkIO.h"
 #include "bioMicroFOMultiscale.h"
+#include "bioRVEVolumeTerms.h"
 #include <apfFEA.h> // amsi
 #include <apfMatrixUtil.h> //amsi
 #include <apfMeshIterator.h> // amsi
@@ -287,65 +288,13 @@ namespace bio
     // have dx_fn_dx_rve
     apf::DynamicMatrix dS_dx_rve;
     apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
-    // need vol, det J and d_detJ / dx_rve to convert to macroscale
-    class CalcdV_dx_rve : public apf::Integrator
-    {
-    private:
-      int dim;
-      int nends;
-      apf::DynamicVector dV_dx_rve;
-      apf::Field * u;
-      apf::MeshElement * mlm;
-      apf::Element * e;
-    public:
-      CalcdV_dx_rve(int o, apf::Field * du)
-        : Integrator(o)
-        , dim(-1)
-        , nends(0)
-        , dV_dx_rve()
-        , u(du)
-        , mlm(NULL)
-        , e(NULL)
-      {}
-      virtual void inElement(apf::MeshElement * m)
-      {
-        mlm = m;
-        dim = apf::getDimension(mlm);
-        e = apf::createElement(u,mlm);
-        nends = apf::countNodes(e);
-        dV_dx_rve.resize(nends*dim);
-      }
-      virtual void atPoint(apf::Vector3 const& p, double w, double)
-      {
-        apf::NewArray<apf::Vector3> dx_dxi;
-        apf::getShapeGrads(e,p,dx_dxi);
-        for(int ii = 0; ii < nends; ++ii)
-        {
-          for(int dd = 0; dd < dim; ++dd)
-          {
-            apf::Matrix3x3 J;
-            apf::getJacobian(mlm,p,J);
-            for(int d2 = 0; d2 < dim; ++d2)
-              J[d2][dd] = dx_dxi[ii][d2];
-            dV_dx_rve[ii*dim+dd] += w * apf::getDeterminant(J);
-          }
-        }
-      }
-      virtual void outElement()
-      {
-        apf::destroyElement(e);
-      }
-      void getdVdxrve(apf::DynamicVector & dVdxrve)
-      {
-        dVdxrve = dV_dx_rve;
-      }
-    };
-    apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
+    apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getXpUField(),ans->rve->getMeshEnt());
+    //apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
     apf::DynamicVector dV_dx_rve;
-    CalcdV_dx_rve calcdv_dx_rve(1,ans->rve->getUField());
+    double vol = apf::measure(mlm);
+    CalcdV_dx_rve calcdv_dx_rve(2,ans->rve->getUField());
     calcdv_dx_rve.process(mlm);
     calcdv_dx_rve.getdVdxrve(dV_dx_rve);
-    double vol = apf::measure(mlm);
     apf::destroyMeshElement(mlm);
     // convert to macro stress values
     double scale_conversion = 1.0;

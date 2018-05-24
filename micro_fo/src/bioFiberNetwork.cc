@@ -32,7 +32,8 @@ namespace bio
     //wcnt = apf::AdjReorder(wdof);
     //apf::SetNumberingOffset(wdof,ucnt);
   }
-  FiberNetwork::~FiberNetwork() {
+  FiberNetwork::~FiberNetwork()
+  {
     apf::destroyNumbering(udof);
     apf::destroyField(xpu);
     delete xpufnc;

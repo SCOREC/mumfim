@@ -2,6 +2,7 @@
 #define BIO_RVE_H_
 #include "bioUtil.h"
 #include <amsiLAS2.h>
+#include <apfFunctions.h> //amsi
 #include <apfFieldOp.h>
 #include <apf.h>
 #include <apfDynamicVector.h>
@@ -31,10 +32,13 @@ namespace bio
     apf::Element * cbe_u_e;
     apf::Field * cbe_u;
     apf::Field * cbe_du;
+    amsi::XpYFunc * xpufnc;
+    apf::Field * cbe_xpu;
     apf::Numbering * cbe_dof;
   protected:
   public:
     RVE(double cr = 0.5, int d = 3);
+    ~RVE();
     apf::MeshEntity * getSide(side sd);
     /**
      * Get the number of nodes for the RVE
@@ -88,6 +92,7 @@ namespace bio
     apf::Numbering * getNumbering() { return cbe_dof; }
     apf::Field * getUField() { return cbe_u; }
     apf::Field * getdUField() { return cbe_du; }
+    apf::Field * getXpUField() { return cbe_xpu; }
   };
   /**
    * Calculate the position of the corner nodes of the square/cube enclosing the RVE

@@ -1,11 +1,12 @@
 set(micro_fo_public_headers
-  bioRVE.h
   bioFiberNetwork.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
   bioMicroFOMultiscale.h
   bioMultiscaleRVEAnalysis.h
   bioMultiscaleRVE.h
+  bioRVE.h
+  bioRVEVolumeTerms.h
   bioTrussIntegrator.h
   bioUtil.h
   bioUtil_impl.h
