@@ -513,7 +513,7 @@ D\delta W_{\sigma}^{(e)}(\phi,N_a\delta \pmb{v}_a)[N_b\pmb{u}_b] &=& \delta \pmb
 %
 where $\pmb{K}_{\sigma,ab}^{(e)}$ is the initial-stress component of the tangent stiffness matrix relating nodes $a$ and $b$ in element $(e)$.
 
-\section{Derivation of Residual Form for NonLinear FEM}
+\section{Derivation of Residual Form for NonLinear FEM} \label{sec:NLFEM}
 
 To apply the Newton-Raphson iteration procedure to Nonlinear FEM, one needs to calculate the elasticity tensor. As shown above, the elasticity tensor is a 4-tensor that is determined by taking directional derivatives of a potential energy with respect to second-order tensors. Often times, it is non-trivial to handle the high-dimensionality of the elasticity tensor. To bypass the need to handle the elasticity tensor, one can use auto differentiation, which is implemented based on the residual form of the discretized virtual work. Since the residual form of the discretized virtual work involves only up to a 2-tensor, the Cauchy stress-tensor. Therefore, in this section the residual form of the discretized virtual work is derived in detail.
 

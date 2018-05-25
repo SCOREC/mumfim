@@ -1,4 +1,4 @@
-\documentclass[12pt]{book}
+\documentclass[12pt,draft]{book}
 %\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
 \usepackage{graphicx, epsfig,cancel}
 \usepackage{color}
@@ -10,6 +10,8 @@
 \usepackage[nottoc,notlot,notlof]{tocbibind}
 % for writing code snippets in latex
 \usepackage{listings}
+% use option disable to turn off all notes
+\usepackage{todonotes}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -61,13 +63,17 @@
 \renewcommand{\vec}[1]{\mathbf{#1}}
 \newcommand{\mat}[1]{\mathbf{#1}}
 
-%\includeonly{./Multiscale/MultiscaleNotes}
+
+%\includeonly{./Macroscale/Macroscale_Derivation,./Microscale/Microscale_Derivation,./Multiscale/MultiscaleNotes}
+%\includeonly{./ConstitutiveRelationships/Constitutive}
+%\includeonly{./VolumeConstrain/VolumeConstraint}
+
 \author{Victor Chan, Jacob Merson, Bill Tobin}
 \title{Biotissue Reference Manual}
 \begin{document}
+\listoftodos
 \maketitle
 \tableofcontents
-
 
 \part{Multiscale FEM Derivation}
 \include{./Macroscale/Macroscale_Derivation}

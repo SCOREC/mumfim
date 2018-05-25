@@ -3,10 +3,11 @@
 
 \section{Motivation}
 
-Formulation for Biotissue code.
+This chapter describes the formulation of the boundary value problem (BVP) at the macroscopic size scale. It discusses the weak form of the BVP, and solution method. It describes some of the numerical details which are needed to construct the macroscopic solution, e.g. the linear tetrahedral shape function, and residual formulation.
 
 \section{Macro Scale}
 
+\todo{replace with section \ref{sec:NLFEM}}
 \subsection{Momentum Balance and Formulation of the Residual}
 
 We are interested in solving the Cauchy Momentum Balance Equation for a body in static equilibrium and in absence of body forces:
@@ -38,7 +39,7 @@ Since we intend to use the Galerkin Finite Element Method (FEM), we will need to
 \end{equation}
 %
 
-Using the divergenge identity 
+Using the divergence identity \todo{correct terminology?}
 
 %
 \begin{equation}
@@ -55,15 +56,7 @@ to arrive at
 \end{equation}
 %
 
-seperating the integrand terms and applying the Divergence Theorem: 
-
-%
-\begin{equation}
-\int_\Omega \nabla \cdot \textbf{F} \diff \Omega = \iint_{\partial \Omega} \textbf{F} \cdot \textbf{n} \; \diff \partial \Omega \nonumber
-\end{equation}
-%
-
-where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\textbf{n}$ is the normal to the surface, to the first term in Eq.\ \eqref{weak_form2} we have
+separating the integrand terms and applying the Divergence Theorem to the first term we arrive at:
 
 %
 \begin{equation}
@@ -72,6 +65,9 @@ where $\partial \Omega$ indicates that the integral is over the boundary of the 
 \end{equation}
 %
 
+where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\textbf{n}$ is the unit normal to the surface.
+
+\todo[prepend, caption={Complete BVP derivation}]{I don't think we make this assumption in code formulation. E.G. we should show the formulation in terms of the full, BVP with no assumption.}
 If we consider a surface-traction free problem, the first term in Eq.\ \eqref{weak_form3} goes to zero and we have
 
 %
@@ -92,6 +88,7 @@ Finally, we cast the problem in a Galerkin form by selecting a finite subspace o
 
 which is the problem we will set out to solve in this note.
 
+\todo{Should these matrices be explicitly written out, or can we just write them in summation form e.g. Hughes}
 To clearly see the problem, the terms within the integral of Eq.\ \eqref{galerkin_weak_form} can be explicitly written out as
 %
 \begin{eqnarray}
@@ -133,13 +130,15 @@ where the $x$, $y$, and $z$ in the subscript indicate the $x$, $y$, and $z$ cont
 
 \subsection{Newton-Raphson Procedure}
 
+\todo[prepend, caption={NR wrong for specified BVP}]{this section makes no sense w.r.t the previous section. e.g. how are we solving a newton raphson iteration in displacements, when our bvp is formulated in terms of stresses and a weighting function.}
 To minimize the residual in Eq.\ \eqref{galerkin_weak_form}, and hence solve the problem, the Newton-Raphson Procedure is used
 %
 \begin{equation}
 \pmb{K}_T \delta u = -R, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
 \end{equation}
 %
-and 
+
+\todo[prepend,caption={incorrect residual}]{I think the residual should be in terms of the displacements, since the NR proceedure was written out in terms of displacements, granted you can make comment that taking derivative w.r.t. the current coord is same as taking the derivative w.r.t. the displacements.} and
 %
 \begin{eqnarray}
 \pmb{K}_T \equiv
@@ -151,6 +150,7 @@ and
 \end{bmatrix}
 \end{eqnarray}
 %
+
 where $x_n$, $y_n$, and $z_n$ are the nodal positions (the vertices in this case) of the element.
 
 As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each node of the element. The derivatives indicated in Eq.\ \eqref{tangent_stiffness} for the $x$ contribution to each node are
@@ -173,14 +173,15 @@ As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each no
 && + \left(  \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
 \label{dRx}
 \end{eqnarray}
+ \todo{write in indicial form, not sure if needed at all here, move to multiscale formulation section?}
 %
 
 Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account \red{this is essentially the 3D Leibniz integration rule. Discuss Eq.\ \eqref{dRx} in terms of Leibniz integration rule}. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
 
-The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.
+The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.\todo{We need to state that we can pull out the stresses due to the fact that they are just nodal constants.}
 
 \subsection{Tetrahedral Shape Functions and Their Derivatives}
-
+\todo{this section has not been edited yet.}
 The shape functions, $\phi_i$, for the four nodes of a linear tetrahedral element are
 %
 \begin{equation}
@@ -581,9 +582,7 @@ dkdx =
 %
 where the rows correspond to the ``current" node number and the columns correspond to the derivative of the shape functions of the ``other" nodes with respect to $x_n$, $y_n$, and $z_n$.
 
-The derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/\partial z$ with respect to $x_n$, $y_n$, and $z_n$ are determined by following the same procedures used to determine the derivatives in Eq.\ \eqref{dkdx}. These terms, dkdy and dkdz, are explicitly written out in the appendix \red{need to add this later}.
-
-\section{Micro Scale}
+The derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/\partial z$ with respect to $x_n$, $y_n$, and $z_n$ are determined by following the same procedures used to determine the derivatives in Eq.\ \eqref{dkdx}. These terms, dkdy and dkdz, are explicitly written out in the appendix \todo{need to add this later}.
 
 \section{Code Implementation of Macro Scale}
 
@@ -730,7 +729,7 @@ where
 \nonumber\\
 \end{eqnarray}
 %
-represents the first terms on the right-hand-sides of the relationships in Eq.\ \eqref{dRx}. Note that the terms in first\_term are different for each node ($n$) and shape function ($i$). 
+represents the first terms on the right-hand-sides of the relationships in Eq.\ \eqref{dRx}. Note that the terms in first\_term are different for each node ($n$) and shape function ($i$). \todo{the way this is written is extremely unclear}
 
 \subsection{Second Term}
 
