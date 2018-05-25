@@ -1,23 +1,27 @@
 \chapter{Microscale Derivation}
 \chapterauthor{V. W. L. Chan}
 \section{Motivation}
-The macroscale stress and derivative of the macroscale stress with respect to the macroscale finite element (FE) nodes are calculated in the microscale portion of the code. These stress and stress derivative values are used in the Newton-Raphson method in the macroscale portion of the code.
+
+This chapter deals with the development of the microscale analysis. For the current use case this is limited to a fiber network, where each fiber is made up of a truss element. Due to the limited use case, this chapter will also discuss the fiber constitutive properties. \todo{do we want to move fiber constitutive properties to the constitutive property section?}
+
+It describes volume averaged stress of the network (which maps to the Cauchy stress at the macroscale) and derivative of the volume averaged stress with respect to the macroscale finite element (FE) nodes. These quantities are calculated in the microscale portion of the code. The stress and stress derivative values are used in the Newton-Raphson method in the macroscale portion of the code.
+
 
 \section{Calculation of (volume-averaged) macroscale stress}
 \label{sec:macrostress}
 
-According to Stylianooulos and Barocas, the macroscopic stress tensor, $S_{ij}$, is determined from the forces, $T_j^f$, that act on the nodes $f$ of a fiber element in the direction $j$ through a volume averaging process given by
+According to Stylianopoulos and Barocas, the macroscopic stress tensor, $S_{ij}$, is determined from the forces, $T_j^f$, that act on the nodes $f$ of a fiber element in the direction $j$ through a volume averaging process given by
 %
 \begin{equation}
 S_{ij} = \frac{1}{V} \sum_{\text{bcl}} x_i^f T_j^f,
 \label{S_ij}
 \end{equation}
 %
-where the summation is over fiber nodes that lie on the boundary faces of a representative volume element (RVE) and bcl stands for boundary cross link. The volume average is over the current volume of the RVE, $V$, and $x_i^f$ is the $i^{th}$-component (i=1,2, or 3) of the positions of fiber node $f$ that is on the boundary face of the RVE.
+where the summation is over fiber nodes that lie on the boundary faces of a representative volume element (RVE) and $bcl$ stands for boundary cross link. The volume average is over the current volume of the RVE, $V$, and $x_i^f$ is the $i^{th}$-component (i=1,2, or 3) of the positions of fiber node $f$ that is on the boundary face of the RVE \cite{Stylianopoulos:2007dp,nemat-nasser_micromechanics:1999}.
 
 \subsection{Microscale forces on fiber nodes}
 
-Prior to the volume averaging described in Eq.\ \eqref{S_ij}, the forces that act on the fiber nodes in the RVE must be calculated and are determined from the equilibrium nodal positions of each fiber in the RVE via \red{reference}
+Prior to the volume averaging described in Eq.\ \eqref{S_ij}, the forces that act on the fiber nodes in the RVE must be calculated and are determined from the equilibrium nodal positions of each fiber in the RVE via 
 %
 \begin{equation}
 F \equiv \frac{E A}{B}[\exp(B \varepsilon) - 1],
@@ -31,7 +35,7 @@ where $E$ is the linear modulus of the fiber, $A$ is the cross-sectional area of
 \label{Green_strain}
 \end{equation}
 % 
-where $\lambda$ is the fiber stretch ratio.
+where $\lambda$ is the fiber stretch ratio \cite{Chandran:2007hy}. \todo{Should we bother with a discussion on how the force is not the "real force" here? e.g. GL strain gives PK2 Stress}
 
 The force on fiber node $b$, $\textbf{T}^b$, is defined in terms of $F$ as
 %
@@ -53,7 +57,9 @@ l(\textbf{x}) = \sqrt{(\textbf{x}^b - \textbf{x}^a) \cdot (\textbf{x}^b - \textb
 \label{fiber_length}
 \end{equation}
 %
-\red{Note that the definitions in Eqs.\ \eqref{fiber_node_force} through \eqref{fiber_length} are based on the convention that the force acting on nodes $b$ and $a$ are positive and negative, respectively, when the corresponding fiber element is loaded in tension.}  Consequently, $\textbf{T}^a = - \textbf{T}^b$. The equilibrium fiber node positions in a RVE ($\textbf{x}^b$ and $\textbf{x}^a$ of each fiber) are determined via a Newton-Raphson method, which is implemented in the int Micro::Solver function in solver\_gmres\_df.cc. 
+Note that the definitions in Eqs.\ \eqref{fiber_node_force} through \eqref{fiber_length} are based on the convention that the force acting on nodes $b$ and $a$ are positive and negative, respectively, when the corresponding fiber element is loaded in tension.
+
+Consequently, $\textbf{T}^a = - \textbf{T}^b$. The equilibrium fiber node positions in a RVE ($\textbf{x}^b$ and $\textbf{x}^a$ of each fiber) are determined via a Newton-Raphson method, which is implemented in the int Micro::Solver function in solver\_gmres\_df.cc. \todo{the location of the implementation has moved.} 
 
 \subsection{Microscale Tangent Stiffness Tensor}
 \label{subsec:tangent_stiffness_tensor}
@@ -67,7 +73,7 @@ D\textbf{T}^b [\textbf{u}] &=& D F \textbf{n} [\textbf{u}] \nonumber\\
 \label{DT_i}
 \end{eqnarray}
 %
-where the notation $D f(\textbf{x}) [\textbf{u}]$ denotes the directional derivative of $f(\textbf{x})$ in the direction of $\textbf{u}$, and
+where the notation $D f(\textbf{x}) [\textbf{u}]$ denotes the directional derivative of $f(\textbf{x})$ in the direction of $\textbf{u}$, and \todo{Stopping point of editing for tonight}
 % 
 \begin{equation}
 R \equiv D \{ \exp(B \varepsilon) - 1\} [\textbf{u}] \ \ \text{and} \ \
