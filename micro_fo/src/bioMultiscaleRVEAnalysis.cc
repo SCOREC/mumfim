@@ -84,6 +84,7 @@ namespace bio
   // might be duplicated from bioFiberRVEAnalysis.cc ?
   void recoverMultiscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
+    int dim = ans->fn->getNetworkMesh()->getDimension();
     apf::Field * xyz = ans->fn->getNetworkMesh()->getCoordinateField();
     apf::Vector3 xyz_val;
     apf::Vector3 f_val;
@@ -109,12 +110,14 @@ namespace bio
       strs[2][1] += xyz_val[1] * f[dofs[2]];
       strs[2][2] += xyz_val[2] * f[dofs[2]];
     }
-    stress[0] = strs[0][0];
-    stress[1] = strs[1][1];
-    stress[2] = strs[2][2];
-    stress[3] = (strs[1][2] + strs[2][1]) * 0.5;
-    stress[4] = (strs[0][2] + strs[2][0]) * 0.5;
-    stress[5] = (strs[0][1] + strs[1][0]) * 0.5;
+    // take the symmetric part of the current stress matrix
+    apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
+    // convert to a macro-scale term
+    double vol = ans->rve->measureDu();
+    double scale_conversion = ans->multi->getScaleConversion();
+    sym_strs = sym_strs * (scale_conversion / vol);
+    // pack into output vector
+    amsi::mat2VoigtVec(dim,sym_strs,&stress[0]);
   }
   void recoverAvgVolStress(FiberRVEAnalysis * ans, double * Q)
   {
@@ -135,6 +138,7 @@ namespace bio
     // wierd area term matrix
     // this is calculated on the reference domain and makes assumptions based on that fact
     apf::DynamicMatrix dRdx_rve(fn_dof_cnt,rve_dof_cnt);
+    dRdx_rve.zero();
     apf::Numbering * rve_dofs = ans->rve->getNumbering();
     apf::Numbering * fn_dofs = ans->fn->getUNumbering();
     for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
@@ -193,11 +197,6 @@ namespace bio
     apf::Numbering * dofs = ans->fn->getUNumbering();
     double * F = NULL;
     ans->ops->get(ans->f,F);
-    if(!PCU_Comm_Self())
-    {
-      std::ofstream fout("new_mat_pre_dS_dx_fn");
-      las::printSparskitMat(fout,ans->k);
-    }
     // iterate over all fibers with a node on the boundary
     for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
     {
@@ -239,6 +238,16 @@ namespace bio
             dS_dx_fn(ii,dof) += vls(ii);
           for(int ii = 0; ii < dim; ++ii)
             las::setSparskitMatValue(ans->k,bnd_dofs[ii],dof,0.0);
+          /*
+          if(!PCU_Comm_Self())
+          {
+            std::stringstream fnm;
+            fnm << "dSdx_fn_" << v;
+            std::ofstream fout(fnm.str().c_str());
+            fout << dS_dx_fn;
+            v++;
+          }
+          */
         }
       }
       for(int ii = 0; ii < dim; ++ii)
@@ -258,11 +267,6 @@ namespace bio
     applyRVEBC(ans->bnd_nds.begin(),ans->bnd_nds.end(),
                ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
     apf::DynamicMatrix dx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
-    if(!PCU_Comm_Self())
-    {
-      std::ofstream fout("new_mat_pre_dydxr");
-      las::printSparskitMat(fout,ans->k);
-    }
     // there are some small differeneces in the cols
     //  of dRdx_rve due to values not canceling
     // precisely during formulation I think....
@@ -288,16 +292,15 @@ namespace bio
     // have dx_fn_dx_rve
     apf::DynamicMatrix dS_dx_rve;
     apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
-    apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getXpUField(),ans->rve->getMeshEnt());
     //apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
     apf::DynamicVector dV_dx_rve;
-    double vol = apf::measure(mlm);
+    double vol = ans->rve->measureDu();
     CalcdV_dx_rve calcdv_dx_rve(2,ans->rve->getUField());
+    apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getXpUField(),ans->rve->getMeshEnt());
     calcdv_dx_rve.process(mlm);
     calcdv_dx_rve.getdVdxrve(dV_dx_rve);
     apf::destroyMeshElement(mlm);
-    // convert to macro stress values
-    double scale_conversion = 1.0;
+    double scale_conversion = ans->multi->getScaleConversion();
     apf::DynamicVector col(sigma_length);
     apf::Vector<6> vsig(sigma);
     apf::DynamicVector dsig = apf::fromVector(vsig);
@@ -306,8 +309,9 @@ namespace bio
     {
       dS_dx_rve.getColumn(ii,col);
       col /= vol;
-      dsig *= (dV_dx_rve[ii] / (vol * vol)) * scale_conversion;
+      dsig *= (dV_dx_rve[ii] / (vol * vol));
       col -= dsig;
+      col *= scale_conversion;
       dS_dx_rve.setColumn(ii,col);
     }
     apf::DynamicMatrix dx_rve_dx_fe;
@@ -331,17 +335,12 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     fn->end(it);
-    if(!PCU_Comm_Self())
-    {
-      std::ofstream fout("mat_new_post_reasemble");
-      las::printSparskitMat(fout,ans->k);
-    }
-    double * strs = &data->data[0];
-    recoverMultiscaleStress(ans,strs);
+    double * S = &data->data[0];
+    recoverMultiscaleStress(ans,S);
     double * Q = &data->data[6];
     recoverAvgVolStress(ans,Q);
-    double * dstrs_drve = &data->data[9];
-    recoverStressDerivs(ans,strs,dstrs_drve);
+    double * dS_dx_rve = &data->data[9];
+    recoverStressDerivs(ans,S,dS_dx_rve);
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()

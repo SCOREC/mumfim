@@ -29,7 +29,7 @@ namespace bio
     double fbr_area;
     double fbr_vl_frc;
     double rve_dim;
-    void dCidFE(apf::DynamicMatrix & dRVEdFE, const int ii, const apf::Vector3 & ci, const double rve_dim);
+    double scale_conversion;
   public:
     MultiscaleRVE(RVE * rve,
                   FiberNetwork * fn,
@@ -38,6 +38,7 @@ namespace bio
                   micro_fo_init_data & dat);
     ~MultiscaleRVE();
     void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE, const RVE * rve);
+    double getScaleConversion() const { return scale_conversion; }
   };
 }
 #endif

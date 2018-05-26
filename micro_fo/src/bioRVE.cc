@@ -105,20 +105,22 @@ namespace bio
                            double rve_dim,
                            const apf::Vector3 & gbl_gss)
   {
-    static double op[8][3] = {{-1.0,-1.0, 1.0},
-                              { 1.0,-1.0, 1.0},
-                              {-1.0,-1.0,-1.0},
-                              { 1.0 -1.0,-1.0},
-                              {-1.0, 1.0, 1.0},
-                              { 1.0, 1.0, 1.0},
+    // depends on hex winding order in core
+    static double op[8][3] = {{-1.0,-1.0,-1.0},
+                              { 1.0,-1.0,-1.0},
+                              { 1.0, 1.0,-1.0},
                               {-1.0, 1.0,-1.0},
-                              { 1.0, 1.0,-1.0}};
+                              {-1.0,-1.0, 1.0},
+                              { 1.0,-1.0, 1.0},
+                              { 1.0, 1.0, 1.0},
+                              {-1.0, 1.0, 1.0}};
+    double hd = 0.5 * rve_dim;
     int sz = rve_crds.getSize();
     int d = sz == 8 ? 3 : 2;
     int o = d == 3 ? 0 : 2;
     for(int ii = 0; ii < sz; ii++)
       for(int jj = 0; jj < d; jj++)
-        rve_crds[ii][jj] = gbl_gss[jj] + rve_dim*op[ii+o][jj];
+        rve_crds[ii][jj] = gbl_gss[jj] + hd*op[ii+o][jj];
   }
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {

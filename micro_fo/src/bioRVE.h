@@ -11,6 +11,7 @@
 namespace bio
 {
   class FiberNetwork;
+  // TODO : pull calculation of dV_dx_rve in here since the term is derived entirely from RVE values
   class RVE
   {
   public:
@@ -45,7 +46,38 @@ namespace bio
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
      */
     int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
+    /*
+     * Get the dimensionality of the RVE
+     */
     int getDim() const {return dim;}
+    /*
+     * Measure the RVE based on dimensionality
+     *  gives area for a 2d RVE and volume for a 3d
+     *  rve.
+     * @note This is the displaced RVE measure,
+     *  not the reference measure.
+     */
+    double measureDu() const
+    {
+      apf::MeshElement * mlmt = apf::createMeshElement(cbe_xpu,cbe_e);
+      double msr = apf::measure(mlmt);
+      apf::destroyMeshElement(mlmt);
+      return msr;
+    }
+    /*
+     * Measure the RVE based on dimensionality
+     *  gives area for a 2d RVE and volume for a 3d
+     *  rve.
+     * @note This is the reference RVE measure,
+     *  not the displaced measure.
+     */
+    double measure() const
+    {
+      apf::MeshElement * mlmt = apf::createMeshElement(cbe,cbe_e);
+      double msr = apf::measure(mlmt);
+      apf::destroyMeshElement(mlmt);
+      return msr;
+    }
     /**
      * Retrieve the coordinate related to a side of the RVE. This operates on the
      *  reference configuration of the RVE, so all faces of the cube are axis-aligned
