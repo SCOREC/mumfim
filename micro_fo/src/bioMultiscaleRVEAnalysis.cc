@@ -82,7 +82,7 @@ namespace bio
     ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
   }
   // might be duplicated from bioFiberRVEAnalysis.cc ?
-  void recoverMultiscaleStress(FiberRVEAnalysis * ans, double * stress)
+  void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
     int dim = ans->fn->getNetworkMesh()->getDimension();
     apf::Field * xyz = ans->fn->getNetworkMesh()->getCoordinateField();
@@ -112,12 +112,17 @@ namespace bio
     }
     // take the symmetric part of the current stress matrix
     apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
+    amsi::mat2VoigtVec(dim,sym_strs,&stress[0]);
+  }
+  void convertStress(FiberRVEAnalysis * ans, double * stress)
+  {
+    int dim = ans->fn->getNetworkMesh()->getDimension();
+    int sigma_length = dim == 3 ? 6 : 3;
     // convert to a macro-scale term
     double vol = ans->rve->measureDu();
     double scale_conversion = ans->multi->getScaleConversion();
-    sym_strs = sym_strs * (scale_conversion / vol);
-    // pack into output vector
-    amsi::mat2VoigtVec(dim,sym_strs,&stress[0]);
+    for(int ii = 0; ii < sigma_length; ++ii)
+      stress[ii] *= scale_conversion / vol;
   }
   void recoverAvgVolStress(FiberRVEAnalysis * ans, double * Q)
   {
@@ -238,16 +243,6 @@ namespace bio
             dS_dx_fn(ii,dof) += vls(ii);
           for(int ii = 0; ii < dim; ++ii)
             las::setSparskitMatValue(ans->k,bnd_dofs[ii],dof,0.0);
-          /*
-          if(!PCU_Comm_Self())
-          {
-            std::stringstream fnm;
-            fnm << "dSdx_fn_" << v;
-            std::ofstream fout(fnm.str().c_str());
-            fout << dS_dx_fn;
-            v++;
-          }
-          */
         }
       }
       for(int ii = 0; ii < dim; ++ii)
@@ -303,10 +298,10 @@ namespace bio
     double scale_conversion = ans->multi->getScaleConversion();
     apf::DynamicVector col(sigma_length);
     apf::Vector<6> vsig(sigma);
-    apf::DynamicVector dsig = apf::fromVector(vsig);
     //apf::DynamicVector sigma(sigma_length); // copy stress
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
+      apf::DynamicVector dsig = apf::fromVector(vsig);
       dS_dx_rve.getColumn(ii,col);
       col /= vol;
       dsig *= (dV_dx_rve[ii] / (vol * vol));
@@ -336,11 +331,15 @@ namespace bio
     }
     fn->end(it);
     double * S = &data->data[0];
-    recoverMultiscaleStress(ans,S);
+    recoverMicroscaleStress(ans,S);
     double * Q = &data->data[6];
     recoverAvgVolStress(ans,Q);
     double * dS_dx_rve = &data->data[9];
+    // calculate macroscale stress derivs
+    // requires microscale stress
     recoverStressDerivs(ans,S,dS_dx_rve);
+    // convert microscale stress to macroscale
+    convertStress(ans,S);
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()
@@ -506,7 +505,8 @@ namespace bio
       while(!step_complete)
       {
         // migration
-        updateCoupling();
+        if(macro_iter == 0)
+          updateCoupling();
         std::vector<micro_fo_data> data;
         cs->Communicate(recv_ptrn,data,amsi::mpi_type<micro_fo_data>());
         std::vector<micro_fo_result> results(data.size());
