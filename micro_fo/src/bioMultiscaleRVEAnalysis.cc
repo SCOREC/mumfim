@@ -262,13 +262,6 @@ namespace bio
     applyRVEBC(ans->bnd_nds.begin(),ans->bnd_nds.end(),
                ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
     apf::DynamicMatrix dx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
-    // there are some small differeneces in the cols
-    //  of dRdx_rve due to values not canceling
-    // precisely during formulation I think....
-    // regardless there are some 10-77 and 10-128 terms
-    // which are essentially 0 that are alterning the results
-    //  *slightly* but if we can get rid of those it will be identical
-    // to the old results
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
       // apf -> double * -> sparskit
@@ -286,6 +279,23 @@ namespace bio
     }
     // have dx_fn_dx_rve
     apf::DynamicMatrix dS_dx_rve;
+    apf::DynamicMatrix odS_dx_fn(sigma_length,fn_dof_cnt);
+    apf::DynamicVector rw(fn_dof_cnt);
+    int sigma_pmt[6] = {0, 3, 5, 4, 2, 1};
+    for(int ii = 0; ii < sigma_length; ++ii)
+    {
+      dS_dx_fn.getRow(ii,rw);
+      odS_dx_fn.setRow(sigma_pmt[ii],rw);
+    }
+    apf::DynamicMatrix odx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
+    apf::DynamicVector cl(fn_dof_cnt);
+    int rve_pmt[8] = {2, 0, 6, 3, 4, 1, 7, 5};
+    for(int ii = 0; ii < rve_dof_cnt; ++ii)
+    {
+      dx_fn_dx_rve.getColumn(ii,cl);
+      odx_fn_dx_rve.setColumn((rve_pmt[ii/3]*3)+(ii%3),cl);
+    }
+    apf::multiply(odS_dx_fn,odx_fn_dx_rve,dS_dx_rve);
     apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
     //apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
     apf::DynamicVector dV_dx_rve;
@@ -298,7 +308,6 @@ namespace bio
     double scale_conversion = ans->multi->getScaleConversion();
     apf::DynamicVector col(sigma_length);
     apf::Vector<6> vsig(sigma);
-    //apf::DynamicVector sigma(sigma_length); // copy stress
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
       apf::DynamicVector dsig = apf::fromVector(vsig);

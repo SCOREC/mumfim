@@ -47,7 +47,7 @@ namespace bio
     virtual void atPoint(apf::Vector3 const& p, double w, double dV)
     {
       apf::NewArray<apf::Vector3> dx_dxi;
-      //apf::getShapeGrads(e,p,dx_dxi);
+      // need local grads, not global
       es->getLocalGradients(msh,me,p,dx_dxi);
       V += w * dV;
       double ddett[24] = {0};

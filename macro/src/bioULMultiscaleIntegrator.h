@@ -7,16 +7,21 @@
 #include <cstring>
 namespace bio
 {
+  // this class is a mess...
+  // the field passed in can't be used to create meshelements for use in the
+  //  process function, which expects deformed xpu elements
+  // but the deformation gradient calculation requires the element
+  // including just the incremenetal displacements
   class ULMultiscaleIntegrator : public amsi::ElementalSystem
   {
   public:
     ULMultiscaleIntegrator(RVECoupling * r,
                            apf::Field * strn,
                            apf::Field * strs,
-                           apf::Field * xpu,
+                           apf::Field * u,
                            apf::Field * dfm_grd,
                            int o)
-      : ElementalSystem(xpu,o)
+      : ElementalSystem(u,o)
       , current_integration_point(0)
       , coupling(r)
       , strain_field(strn)
@@ -30,6 +35,8 @@ namespace bio
     void inElement(apf::MeshElement * me)
     {
       ElementalSystem::inElement(me);
+      ref_lmnt = apf::createMeshElement(apf::getMesh(f),apf::getMeshEntity(me));
+      du_lmnt = apf::createElement(f,me);
       fs = apf::getShape(f);
       es = fs->getEntityShape(apf::getMesh(f)->getType(apf::getMeshEntity(me)));
       dim = apf::getDimension(me);
@@ -43,7 +50,9 @@ namespace bio
     // after the refactor, the micro-scale and macro-scale stress tesnors are indexed identically
     void atPoint(apf::Vector3 const &p, double w, double dV)
     {
-      micro_fo_result * rslt = coupling->getRVEResult(apf::getMeshEntity(me), current_integration_point);
+      apf::MeshEntity * m = apf::getMeshEntity(me);
+      micro_fo_result * rslt = coupling->getRVEResult(m, current_integration_point);
+      static const int prmt[] = {0, 1, 2, 4, 5, 3};
       int & nen = nenodes; // = 4 (tets)
       int & nedof = nedofs; // = 12 (tets)
       apf::NewArray<apf::Vector3> grads;
@@ -52,7 +61,7 @@ namespace bio
       int offset = 9;
       double * stress_deriv[6] = {nullptr};
       for(int ii = 0; ii < 6; ii++)
-        stress_deriv[ii] = &(rslt->data[offset + ii * nedof]);
+        stress_deriv[ii] = &(rslt->data[offset + prmt[ii] * nedof]);
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6,nedof); // linear strain disp
       BL.zero();
@@ -92,19 +101,19 @@ namespace bio
       double S[9][9] = {{0.0}};
       double SV[6] = {0.0};
       for(int ii = 0; ii < 6; ++ii)
-        SV[ii] = (rslt->data[ii]);
+        SV[prmt[ii]] = (rslt->data[ii]);
       // diagonal terms
       S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rslt->data[0];
       S[1][1] = S[1+3][1+3] = S[1+6][1+6] = rslt->data[1];
       S[2][2] = S[2+3][2+3] = S[2+6][2+6] = rslt->data[2];
       // off-diag terms
       S[1][2] = S[1+3][2+3] = S[1+6][2+6] = S[2][1] = S[2+3][1+3] = S[2+6][1+6] = rslt->data[3];
-      S[0][2] = S[1+3][2+3] = S[1+6][2+6] = S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rslt->data[4];
+      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rslt->data[4];
       S[0][1] = S[0+3][1+3] = S[0+6][1+6] = S[1][0] = S[1+3][0+3] = S[1+6][0+6] = rslt->data[5];
       // Calculate Deformation Gradient and rightCauchyGreen tensor.
       apf::Matrix3x3 F;
-      amsi::deformationGradient(e,p,F);
-      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, F);
+      amsi::deformationGradient(du_lmnt,p,F);
+      apf::setMatrix(dfm_grd_fld, m, current_integration_point, F);
       // Calculate rightCauchyGreen tensor.
       apf::DynamicMatrix rightCauchyGreen(3, 3);  // rightCauchyGreen.zero();
       apf::DynamicMatrix FT(3, 3);
@@ -160,7 +169,6 @@ namespace bio
       apf::Matrix3x3 stress(S[0][0],S[0][1],S[0][2],
                             S[1][0],S[1][1],S[1][2],
                             S[2][0],S[2][1],S[2][2]);
-      apf::MeshEntity * m = apf::getMeshEntity(me);
       apf::setMatrix(strain_field,m,current_integration_point,greenStrain);
       apf::setMatrix(stress_field,m,current_integration_point,stress);
       current_integration_point++;
@@ -369,6 +377,8 @@ namespace bio
     apf::Field * strain_field;
     apf::Field * stress_field;
     int dim;
+    apf::MeshElement * ref_lmnt;
+    apf::Element * du_lmnt;
     apf::FieldShape * fs;
     apf::EntityShape * es;
     apf::Field * dfm_grd_fld;

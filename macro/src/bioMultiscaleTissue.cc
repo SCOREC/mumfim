@@ -15,7 +15,7 @@ namespace bio
     , rve_dirs()
   {
     fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
-    mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,current_coords,dfm_grd,1);
+    mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,apf_primary_field,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
     apf::zeroField(fbr_ornt);
@@ -36,7 +36,8 @@ namespace bio
     apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
     for(apf::MeshEntity * me = NULL; (me = apf_mesh->iterate(it));)
     {
-      apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
+      //apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
+      apf::MeshElement * mlm = apf::createMeshElement(current_coords,me);
       amsi::ElementalSystem * sys = getIntegrator(me,0); // ERROR: assumes 1 type per ent
       sys->process(mlm);
       apf::NewArray<apf::Vector3> dofs;
