@@ -10,13 +10,13 @@ namespace bio
   class ULMultiscaleIntegrator : public amsi::ElementalSystem
   {
   public:
-  ULMultiscaleIntegrator(RVECoupling * r,
-                         apf::Field * strn,
-                         apf::Field * strs,
-                         apf::Field * u,
-                         apf::Field * dfm_grd,
-                         int o)
-    : ElementalSystem(u,o)
+    ULMultiscaleIntegrator(RVECoupling * r,
+                           apf::Field * strn,
+                           apf::Field * strs,
+                           apf::Field * xpu,
+                           apf::Field * dfm_grd,
+                           int o)
+      : ElementalSystem(xpu,o)
       , current_integration_point(0)
       , coupling(r)
       , strain_field(strn)
@@ -40,85 +40,33 @@ namespace bio
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double)
+    // after the refactor, the micro-scale and macro-scale stress tesnors are indexed identically
+    void atPoint(apf::Vector3 const &p, double w, double dV)
     {
       micro_fo_result * rslt = coupling->getRVEResult(apf::getMeshEntity(me), current_integration_point);
-      // Note: Macro and micro solvers index stress tensor differently
-      //
-      //   micro    ----->    macro
-      //
-      // [ 0 1 2 ]          [ 0 3 5 ]
-      // [   3 4 ]  ----->  [   1 4 ]
-      // [     5 ]          [     2 ]
-      //
       int & nen = nenodes; // = 4 (tets)
       int & nedof = nedofs; // = 12 (tets)
-      // Calculate current coordinates using accumulated displacements up to this point.
-      // 1. Get coordinates on underlying mesh
-      apf::Mesh * mesh = apf::getMesh(f);
-      apf::Field * apf_coord_field = mesh->getCoordinateField();
-      apf::Element * mesh_coord_elem = apf::createElement(apf_coord_field,me);
-      apf::NewArray<apf::Vector3> mesh_xyz;
-      apf::getVectorNodes(mesh_coord_elem,mesh_xyz);
-      // 2. Get coordinates from apf_primary_field (passed in), which contains the accumulated displacement
-      apf::NewArray<apf::Vector3> primary_field_xyz;
-      apf::getVectorNodes(e,primary_field_xyz);
-      // 3. Calculate current coordinates
-      apf::Matrix<4,3> xyz;
-      for (int ii = 0; ii < 4; ii++)
-        for (int jj = 0; jj < 3; jj++)
-          xyz[ii][jj] = mesh_xyz[ii][jj] + primary_field_xyz[ii][jj];
-      // For Updated Lagrangian, the Jacobian of the current coordinate is used
-      // Note: that entires of Jacobian is hard coded for Linear tetrahedra elements.
-      // TO DO: Generalize Jacobian for current configuration.
-      // Note: Form of Jacobian in is
-      // [dx/dr dx/ds dx/dt]    (x,y,z): physical domain coordinates.
-      // [dy/dr dy/ds dy/dt]    (r,s,t): parent domain coordiantes.
-      // [dz/dr dz/ds dz/dt]
-      // This is equivalent to how Jacobian is calculated in apf.
-      apf::Matrix<3,3> J, Jinv;
-      J[0][0] = xyz[1][0] - xyz[0][0]; // x2-x1
-      J[1][0] = xyz[2][0] - xyz[0][0]; // x3-x1
-      J[2][0] = xyz[3][0] - xyz[0][0]; // x4-x1
-      J[0][1] = xyz[1][1] - xyz[0][1]; // y2-y1
-      J[1][1] = xyz[2][1] - xyz[0][1]; // y3-y1
-      J[2][1] = xyz[3][1] - xyz[0][1]; // y4-y1
-      J[0][2] = xyz[1][2] - xyz[0][2]; // z2-z1
-      J[1][2] = xyz[2][2] - xyz[0][2]; // z3-z1
-      J[2][2] = xyz[3][2] - xyz[0][2]; // z4-z1
-      double detJ = getDeterminant(J);
-      Jinv = apf::invert(J);
-      // Calculate derivative of shape fxns wrt current coordinates.
-      apf::DynamicMatrix grads(nen,dim);
-      grads.zero();
-      apf::NewArray<apf::Vector3> local_grads;
-      es->getLocalGradients(mesh, apf::getMeshEntity(me), p, local_grads);
-      for (int ii = 0; ii < nen; ii++)
-        for (int jj = 0; jj < dim; jj++)
-          for (int kk = 0; kk < dim; kk++)
-            grads(ii,jj) += Jinv[jj][kk] * local_grads[ii][kk];
+      apf::NewArray<apf::Vector3> grads;
+      apf::getShapeGrads(e,p,grads);
+      // todo : remove assumptions, use api
       int offset = 9;
-      double * stress_deriv[6];
-      stress_deriv[0] = &(rslt->data[offset]);
-      stress_deriv[1] = &(rslt->data[offset + 3*nedof]);
-      stress_deriv[2] = &(rslt->data[offset + 5*nedof]);
-      stress_deriv[3] = &(rslt->data[offset +   nedof]);
-      stress_deriv[4] = &(rslt->data[offset + 4*nedof]);
-      stress_deriv[5] = &(rslt->data[offset + 2*nedof]);
+      double * stress_deriv[6] = {nullptr};
+      for(int ii = 0; ii < 6; ii++)
+        stress_deriv[ii] = &(rslt->data[offset + ii * nedof]);
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6,nedof); // linear strain disp
       BL.zero();
       for(int ii = 0; ii < nen; ii++)
       {
-        BL(0,dim*ii  ) = grads(ii,0); // N_(ii,1)
-        BL(1,dim*ii+1) = grads(ii,1); // N_(ii,2)
-        BL(2,dim*ii+2) = grads(ii,2); // N_(ii,3)
-        BL(3,dim*ii  ) = grads(ii,1); // N_(ii,2)
-        BL(3,dim*ii+1) = grads(ii,0); // N_(ii,1)
-        BL(4,dim*ii+1) = grads(ii,2); // N_(ii,3)
-        BL(4,dim*ii+2) = grads(ii,1); // N_(ii,2)
-        BL(5,dim*ii  ) = grads(ii,2); // N_(ii,3)
-        BL(5,dim*ii+2) = grads(ii,0); // N_(ii,1)
+        BL(0,dim*ii  ) = grads[ii][0]; // N_(ii,1)
+        BL(1,dim*ii+1) = grads[ii][1]; // N_(ii,2)
+        BL(2,dim*ii+2) = grads[ii][2]; // N_(ii,3)
+        BL(3,dim*ii  ) = grads[ii][1]; // N_(ii,2)
+        BL(3,dim*ii+1) = grads[ii][0]; // N_(ii,1)
+        BL(4,dim*ii+1) = grads[ii][2]; // N_(ii,3)
+        BL(4,dim*ii+2) = grads[ii][1]; // N_(ii,2)
+        BL(5,dim*ii  ) = grads[ii][2]; // N_(ii,3)
+        BL(5,dim*ii+2) = grads[ii][0]; // N_(ii,1)
       }
       apf::DynamicMatrix K0(nedof,nedof);
       K0.zero();
@@ -132,7 +80,7 @@ namespace bio
       double Bp[3][10] = {};
       for(int ii = 0; ii < 3; ii++)
         for(int jj = 0; jj < 4; jj++)
-          Bp[ii][jj*3] = grads(jj,ii);
+          Bp[ii][jj*3] = grads[jj][ii];
       for(int ii = 0; ii < 3; ii++)
         for(int jj = 0; jj < 10; jj++)
         {
@@ -141,8 +89,18 @@ namespace bio
           BNL(6+ii,jj+2) = Bp[ii][jj];
         }
       // Fill S matrix - in block notation contains stress tensor along diagonal, zero elsewhere
-      double S[9][9] = {};
-      double SV[6];
+      double S[9][9] = {{0.0}};
+      double SV[6] = {0.0};
+      for(int ii = 0; ii < 6; ++ii)
+        SV[ii] = (rslt->data[ii]);
+      // diagonal terms
+      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = rslt->data[0];
+      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = rslt->data[1];
+      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = rslt->data[2];
+      // off-diag terms
+      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = S[2][1] = S[2+3][1+3] = S[2+6][1+6] = rslt->data[3];
+      S[0][2] = S[1+3][2+3] = S[1+6][2+6] = S[2][0] = S[2+3][0+3] = S[2+6][0+6] = rslt->data[4];
+      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = S[1][0] = S[1+3][0+3] = S[1+6][0+6] = rslt->data[5];
       // Calculate Deformation Gradient and rightCauchyGreen tensor.
       apf::Matrix3x3 F;
       amsi::deformationGradient(e,p,F);
@@ -153,21 +111,6 @@ namespace bio
       FT.zero();
       apf::transpose(fromMatrix(F), FT);
       apf::multiply(FT, fromMatrix(F), rightCauchyGreen);
-      SV[0] = rslt->data[0];
-      SV[1] = rslt->data[3];
-      SV[2] = rslt->data[5];
-      SV[3] = rslt->data[1];
-      SV[4] = rslt->data[4];
-      SV[5] = rslt->data[2];
-      S[0][0] = S[0+3][0+3] = S[0+6][0+6] = SV[0];
-      S[0][1] = S[0+3][1+3] = S[0+6][1+6] = SV[3];
-      S[0][2] = S[0+3][2+3] = S[0+6][2+6] = SV[5];
-      S[1][0] = S[1+3][0+3] = S[1+6][0+6] = SV[3];
-      S[1][1] = S[1+3][1+3] = S[1+6][1+6] = SV[1];
-      S[1][2] = S[1+3][2+3] = S[1+6][2+6] = SV[4];
-      S[2][0] = S[2+3][0+3] = S[2+6][0+6] = SV[5];
-      S[2][1] = S[2+3][1+3] = S[2+6][1+6] = SV[4];
-      S[2][2] = S[2+3][2+3] = S[2+6][2+6] = SV[2];
       apf::DynamicMatrix BNLTxS(nedof,9);
       BNLTxS.zero();
       // BNLTxS = BNL^T * S
@@ -200,19 +143,20 @@ namespace bio
       apf::DynamicMatrix K1(nedof,nedof);
       K1.zero();
       apf::multiply(BNLTxS,BNL,K1);
+      double wxdV = w * dV;
       for(int ii = 0; ii < nedof; ii++)
       {
-        fe[ii] += w * detJ * (NTxQ(ii,0) - BLTxSV(ii,0)); // P - F
+        fe[ii] += (NTxQ(ii,0) - BLTxSV(ii,0)) * wxdV; // P - F
         for(int jj = 0; jj < nedof; jj++)
-          Ke(ii,jj) += w * detJ * (K0(ii,jj) + K1(ii,jj));
+          Ke(ii,jj) += (K0(ii,jj) + K1(ii,jj)) * wxdV;
       }
       // E_G = 1/2(C-I), C=F^T.F, Green-Lagrange Strain.
       apf::Matrix3x3 greenStrain(
-          0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),
-          0.5 * rightCauchyGreen(0, 2), 0.5 * rightCauchyGreen(1, 0),
-          0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
-          0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
-          0.5 * (rightCauchyGreen(2, 2) - 1));
+        0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),
+        0.5 * rightCauchyGreen(0, 2), 0.5 * rightCauchyGreen(1, 0),
+        0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
+        0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
+        0.5 * (rightCauchyGreen(2, 2) - 1));
       apf::Matrix3x3 stress(S[0][0],S[0][1],S[0][2],
                             S[1][0],S[1][1],S[1][2],
                             S[2][0],S[2][1],S[2][2]);
