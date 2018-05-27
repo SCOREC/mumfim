@@ -253,7 +253,8 @@ namespace bio
     apf::DynamicVector u(fn_dof_cnt);
     las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
     las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
-    las::LasSolve * slv = las::createSparskitQuickLUSolve(ans->slv);
+    //las::LasSolve * slv = las::createSparskitQuickLUSolve(ans->slv);
+    las::LasSolve * slv = ans->slv;
     // zero rows in the matrix w/ boundary conditions
     // this effects the force vector which is used in the calculation of
     // dS_dx_fn above so we must do it after.
