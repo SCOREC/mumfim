@@ -279,25 +279,26 @@ namespace bio
     }
     // have dx_fn_dx_rve
     apf::DynamicMatrix dS_dx_rve;
-    apf::DynamicMatrix odS_dx_fn(sigma_length,fn_dof_cnt);
-    apf::DynamicVector rw(fn_dof_cnt);
-    int sigma_pmt[6] = {0, 3, 5, 4, 2, 1};
-    for(int ii = 0; ii < sigma_length; ++ii)
-    {
+    /*
+      apf::DynamicMatrix odS_dx_fn(sigma_length,fn_dof_cnt);
+      apf::DynamicVector rw(fn_dof_cnt);
+      int sigma_pmt[6] = {0, 3, 5, 4, 2, 1};
+      for(int ii = 0; ii < sigma_length; ++ii)
+      {
       dS_dx_fn.getRow(ii,rw);
       odS_dx_fn.setRow(sigma_pmt[ii],rw);
-    }
-    apf::DynamicMatrix odx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
-    apf::DynamicVector cl(fn_dof_cnt);
-    int rve_pmt[8] = {2, 0, 6, 3, 4, 1, 7, 5};
-    for(int ii = 0; ii < rve_dof_cnt; ++ii)
-    {
+      }
+      apf::DynamicMatrix odx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
+      apf::DynamicVector cl(fn_dof_cnt);
+      int rve_pmt[8] = {2, 0, 6, 3, 4, 1, 7, 5};
+      for(int ii = 0; ii < rve_dof_cnt; ++ii)
+      {
       dx_fn_dx_rve.getColumn(ii,cl);
       odx_fn_dx_rve.setColumn((rve_pmt[ii/3]*3)+(ii%3),cl);
-    }
-    apf::multiply(odS_dx_fn,odx_fn_dx_rve,dS_dx_rve);
+      }
+      apf::multiply(odS_dx_fn,odx_fn_dx_rve,dS_dx_rve);
+    */
     apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
-    //apf::createMeshElement(ans->rve->getMesh(),ans->rve->getMeshEnt());
     apf::DynamicVector dV_dx_rve;
     double vol = ans->rve->measureDu();
     CalcdV_dx_rve calcdv_dx_rve(2,ans->rve->getUField());
@@ -320,6 +321,23 @@ namespace bio
     }
     apf::DynamicMatrix dx_rve_dx_fe;
     ans->multi->calcdRVEdFE(dx_rve_dx_fe,ans->rve);
+    if(!PCU_Comm_Self())
+    {
+      std::ofstream fout("new_drvedfe");
+      for(int rve_nd = 0; rve_nd < 24; rve_nd++)
+      {
+        for(int fe_nd = 0; fe_nd < 12; fe_nd++)
+          fout << dx_rve_dx_fe(rve_nd,fe_nd) << " ";
+        fout << std::endl;
+      }
+      std::ofstream fout2("new_dsdxrve");
+      for(int sgm_trm = 0; sgm_trm < sigma_length; ++sgm_trm)
+      {
+        for(int rve_nd = 0; rve_nd < 24; ++rve_nd)
+          fout2 << dS_dx_rve(sgm_trm,rve_nd) << " ";
+        fout2 << std::endl;
+      }
+    }
     apf::DynamicMatrix dS_dx;
     apf::multiply(dS_dx_rve,dx_rve_dx_fe,dS_dx);
     amsi::mat2Array(dS_dx,dstrss_drve);
@@ -537,10 +555,10 @@ namespace bio
             {
               return 1.0;
               /*
-              static double nrm_f0 = 0.0;
-              if(itr.iteration() == 1)
+                static double nrm_f0 = 0.0;
+                if(itr.iteration() == 1)
                 nrm_f0 = (*rve)->ops->norm((*rve)->f0);
-              return nrm_f0;
+                return nrm_f0;
               */
             };
           amsi::UpdatingConvergence<decltype(&val_gen), decltype(&eps_gen), decltype(&ref_gen)> resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);

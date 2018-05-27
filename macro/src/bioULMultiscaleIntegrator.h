@@ -61,7 +61,7 @@ namespace bio
       int offset = 9;
       double * stress_deriv[6] = {nullptr};
       for(int ii = 0; ii < 6; ii++)
-        stress_deriv[ii] = &(rslt->data[offset + prmt[ii] * nedof]);
+        stress_deriv[prmt[ii]] = &(rslt->data[offset + ii * nedof]);
       // hard-coded for 3d, make a general function... to produce this
       apf::DynamicMatrix BL(6,nedof); // linear strain disp
       BL.zero();
