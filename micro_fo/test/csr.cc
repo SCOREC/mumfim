@@ -78,12 +78,14 @@ int main(int argc, char * argv[])
     ops->assemble(k2,nedofs,&dofs[0],nedofs,&dofs[0],&vls2[0]);
   }
   fn_msh2->end(it);
+  // todo : refactor this because it is terrible
   // hacky way to get the matrix out, but it works!
+  /*
   las::printSparskitMat(k2_strm,k2);
   double k2_bare[21][21] {};
   std::string ln;
   int ln_cnt = 0;
-  while(std::getline(k2_strm,ln) && ln_cnt < 21)
+  while(ln_cnt < 21 && std::getline(k2_strm,ln))
   {
     std::stringstream ln_strm(ln);
     std::copy(std::istream_iterator<double>(ln_strm),
@@ -106,6 +108,7 @@ int main(int argc, char * argv[])
       assert(insidence[idx] == k2_bare[rr][cc]);
       idx++;
     }
+  */
   amsi::freeAnalysis();
   return 0;
 }
