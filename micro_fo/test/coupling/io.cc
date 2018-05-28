@@ -89,3 +89,16 @@ void rowPermute(const apf::DynamicMatrix & a,
     b.setRow(prmt[rw],arw);
   }
 }
+void colPermute(const apf::DynamicMatrix & a,
+                int * prmt,
+                apf::DynamicMatrix & b)
+{
+  int cls = a.getColumns();
+  b.setSize(a.getRows(),cls);
+  for(int cl = 0; cl < cls; ++cl)
+  {
+    apf::DynamicVector acl;
+    a.getColumn(cl,acl);
+    b.setColumn(prmt[cl],acl);
+  }
+}

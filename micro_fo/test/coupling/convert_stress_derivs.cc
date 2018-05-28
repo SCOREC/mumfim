@@ -42,12 +42,12 @@ int main(int ac, char * av[])
   // convert
   std::cout << "Converting..." << std::endl;
   apf::DynamicMatrix dS_dx_rve;
-  bio::convertStressDiv(ds_dx_rve,
-                        strs,
-                        dV_dx_rve,
-                        vol,
-                        cnv,
-                        dS_dx_rve);
+  bio::dsdxrve_2_dSdxrve(ds_dx_rve,
+                         strs,
+                         dV_dx_rve,
+                         vol,
+                         cnv,
+                         dS_dx_rve);
   // read comparison dS_dx_rve
   notify(std::cout,fn_dS_dx_rve);
   std::ifstream fin_dS_dx_rve(fn_dS_dx_rve.c_str());

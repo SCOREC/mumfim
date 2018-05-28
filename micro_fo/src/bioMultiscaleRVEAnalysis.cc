@@ -95,7 +95,7 @@ namespace bio
     apf::Matrix3x3 strs(0.0,0.0,0.0,
                         0.0,0.0,0.0,
                         0.0,0.0,0.0);
-    for(auto nd = ans->bnd_nds.begin(); nd != ans->bnd_nds.end(); ++nd)
+    for(auto nd = ans->bnd_nds[RVE::all].begin(); nd != ans->bnd_nds[RVE::all].end(); ++nd)
     {
       apf::getVector(xyz,*nd,0,xyz_val);
       for(int ii = 0; ii < ans->fn->getDim(); ++ii)
@@ -130,12 +130,12 @@ namespace bio
     (void)ans;
     (void)Q;
   }
-  void convertStressDiv(const apf::DynamicMatrix & ds_dx_rve,
-                        const apf::DynamicVector & strs,
-                        const apf::DynamicVector & dV_dx_rve,
-                        double vol,
-                        double cnv,
-                        apf::DynamicMatrix & dS_dx_rve)
+  void dsdxrve_2_dSdxrve(const apf::DynamicMatrix & ds_dx_rve,
+                         const apf::DynamicVector & strs,
+                         const apf::DynamicVector & dV_dx_rve,
+                         double vol,
+                         double cnv,
+                         apf::DynamicMatrix & dS_dx_rve)
   {
     int rve_dof_cnt = ds_dx_rve.getColumns();
     int sigma_length = ds_dx_rve.getRows();
@@ -152,71 +152,109 @@ namespace bio
       dS_dx_rve.setColumn(rve_dof,col);
     }
   }
-  // honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
-  void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
+  void calcdRdx_rve_term(apf::DynamicMatrix & dRdx_rve,
+                         FiberNetwork * fn,
+                         RVE * rve,
+                         apf::MeshEntity * sd_ent,
+                         apf::MeshEntity * vrt,
+                         int plnr_dim,
+                         double a)
   {
-    (void)ans;
-    (void)dstrss_drve;
-    // stress derivative terms
-    apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
-    int dim = ans->rve->getMesh()->getDimension();
+    int dim = rve->getDim();
+    apf::Vector3 crd;
+    fn->getNetworkMesh()->getPoint(vrt,0,crd);
+    int vrt_cnt = dim == 3 ? 4 : 2;
+    apf::MeshEntity * sd_vrts[vrt_cnt];
+    rve->getMesh()->getDownward(sd_ent,0,&sd_vrts[0]);
+    apf::NewArray<int> rve_dof_ids(vrt_cnt * dim);
+    apf::getElementNumbers(rve->getNumbering(),sd_ent,rve_dof_ids);
+    apf::NewArray<int> fn_dof_ids(dim);
+    apf::getElementNumbers(fn->getUNumbering(),vrt,fn_dof_ids);
+    // iterate over the line/face (dep on dim)
+    // assumes dim = 3
+    // get the vert opposite the current vert on the face, which is what the
+    //  value given by the calculation below is applicable to,
+    //  we are basically calculating barycentric coordinates using
+    //  the fact the RVE is unit cube as a huge shortcut rather than
+    //  inverting the fe mapping
+    int opp_vrt[] = {2,3,0,1};
+    for(int ci = 0; ci < vrt_cnt; ++ci)
+    {
+      apf::Vector3 ci_crd;
+      rve->getMesh()->getPoint(sd_vrts[ci],0,ci_crd);
+      // this method of calculating the area/length associated
+      //  with the vertex is only valid on the reference domain
+      //  as it depends on the verts of a face/edge being both
+      //  coplanar and axis-aligned
+      apf::Vector3 spn = ci_crd - crd;
+      double ai = 1.0;
+      for(int ii = 0; ii < dim; ++ii)
+        ai *= ii == plnr_dim ? 1.0 : spn[ii];
+      ai = fabs(ai / a);
+      // iterate over the dim
+      for(int ej = 0; ej < dim; ++ej)
+        dRdx_rve(fn_dof_ids[ej],rve_dof_ids[opp_vrt[ci]*dim + ej]) = ai;
+    }
+  }
+  // wierd area term matrix
+  // this is calculated on the reference domain and makes assumptions based on that fact
+  void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve,
+                    FiberRVEAnalysis * ans)
+  {
+    int dim = ans->rve->getDim();
     int fn_dof_cnt = ans->fn->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes()*dim;
-    // wierd area term matrix
-    // this is calculated on the reference domain and makes assumptions based on that fact
-    apf::DynamicMatrix dRdx_rve(fn_dof_cnt,rve_dof_cnt);
+    dRdx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     dRdx_rve.zero();
-    apf::Numbering * rve_dofs = ans->rve->getNumbering();
-    apf::Numbering * fn_dofs = ans->fn->getUNumbering();
-    for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
+    // this assumes 3d, use dim to change the sides we iterate over
+    for(int sd = RVE::side::bot; sd != RVE::side::all; ++sd)
     {
-      std::vector<apf::MeshEntity*> bnds[RVE::side::all];
-      for(int sd = RVE::side::bot; sd != RVE::side::all; ++sd)
-      {
-        int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 : (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
-        RVE::side rve_sd = static_cast<RVE::side>(sd);
-        apf::Vector3 crd;
-        fn_msh->getPoint(*vrt,0,crd);
-        if(ans->rve->onBoundary(crd,rve_sd))
-        {
-          apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
-          double a = apf::measure(ans->rve->getMesh(),sd_ent);
-          // extract method
-          int vrt_cnt = dim == 3 ? 4 : 2;
-          apf::MeshEntity * fc_vrts[vrt_cnt];
-          ans->rve->getMesh()->getDownward(sd_ent,0,&fc_vrts[0]);
-          apf::NewArray<int> rve_dof_ids(vrt_cnt * dim);
-          apf::getElementNumbers(rve_dofs,sd_ent,rve_dof_ids);
-          apf::NewArray<int> fn_dof_ids(dim);
-          apf::getElementNumbers(fn_dofs,*vrt,fn_dof_ids);
-          // iterate over the line/face (dep on dim)
-          // assumes dim = 3
-          // get the vert opposite the current vert on the face, which is what the
-          //  value given by the calculation below is applicable to,
-          //  we are basically calculating barycentric coordinates using
-          //  the fact the RVE is unit cube as a huge shortcut inverting the global mapping
-          int opp_vrt[] = {2,3,0,1};
-          for(int ci = 0; ci < vrt_cnt; ++ci)
-          {
-            apf::Vector3 ci_crd;
-            ans->rve->getMesh()->getPoint(fc_vrts[ci],0,ci_crd);
-            // this method of calculating the area/length associated with the vertex is only valid on the reference domain as it depends on the verts of a face/edge being both coplanar and axis-aligned
-            apf::Vector3 spn = ci_crd - crd;
-            double ai = 1.0;
-            for(int ii = 0; ii < dim; ++ii)
-              ai *= ii == plnr_dim ? 1.0 : spn[ii];
-            ai = fabs(ai / a);
-            // iterate over the dim
-            for(int ej = 0; ej < dim; ++ej)
-              dRdx_rve(fn_dof_ids[ej],rve_dof_ids[opp_vrt[ci]*dim + ej]) = ai;
-          }
-          bnds[sd].push_back(*vrt);
-          break;
-        }
-      }
+      RVE::side rve_sd = static_cast<RVE::side>(sd);
+      apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
+      double a = apf::measure(ans->rve->getMesh(),sd_ent);
+      // also assuming 3d
+      int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 :
+        (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
+      for(auto vrt = ans->bnd_nds[sd].begin(); vrt != ans->bnd_nds[sd].end(); ++vrt)
+        calcdRdx_rve_term(dRdx_rve,ans->fn,ans->rve,sd_ent,*vrt,plnr_dim,a);
     }
-    // have dRdx_rve
-    // setup additional solves with the rows of dRdx_rve as the force vector
+  }
+  // ans->k needs to be modified during calculation ofr dS_dx_fn prior to calling this
+  void calcdx_fn_dx_rve(apf::DynamicMatrix & dx_fn_dx_rve,
+                        FiberRVEAnalysis * ans,
+                        apf::DynamicMatrix & dR_dx_rve)
+  {
+    int dim = ans->rve->getDim();
+    int fn_dof_cnt = ans->fn->getDofCount();
+    int rve_dof_cnt = ans->rve->numNodes()*dim;
+    apf::DynamicVector f(fn_dof_cnt);
+    apf::DynamicVector u(fn_dof_cnt);
+    las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
+    las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
+    las::LasSolve * slv = ans->slv;
+    dx_fn_dx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
+    double * fptr = NULL;
+    double * uptr = NULL;
+    for(int ii = 0; ii < rve_dof_cnt; ++ii)
+    {
+      dR_dx_rve.getColumn(ii,f);
+      ans->ops->get(skt_f,fptr);
+      std::copy(f.begin(),f.end(),fptr);
+      slv->solve(ans->k,skt_u,skt_f);
+      ans->ops->get(skt_u,uptr);
+      std::copy(uptr,uptr+fn_dof_cnt,u.begin());
+      dx_fn_dx_rve.setColumn(ii,u);
+    }
+  }
+// honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
+  void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
+  {
+    int dim = ans->rve->getMesh()->getDimension();
+    int fn_dof_cnt = ans->fn->getDofCount();
+    //int rve_dof_cnt = ans->rve->numNodes()*dim;
+    apf::DynamicMatrix dR_dx_rve;
+    calcdR_dx_rve(dR_dx_rve,ans);
+    // setup additional solves with the rows of dR_dx_rve as the force vector
     // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
     int sigma_length = dim == 3 ? 6 : 3;
     apf::DynamicMatrix dS_dx_fn(sigma_length,fn_dof_cnt);
@@ -225,7 +263,7 @@ namespace bio
     double * F = NULL;
     ans->ops->get(ans->f,F);
     // iterate over all fibers with a node on the boundary
-    for(auto vrt = ans->bnd_nds.begin(); vrt != ans->bnd_nds.end(); ++vrt)
+    for(auto vrt = ans->bnd_nds[RVE::all].begin(); vrt != ans->bnd_nds[RVE::all].end(); ++vrt)
     {
       apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
       assert(fn_msh->countUpward(*vrt) == 1);
@@ -270,36 +308,14 @@ namespace bio
       for(int ii = 0; ii < dim; ++ii)
         las::setSparskitMatValue(ans->k,bnd_dofs[ii],bnd_dofs[ii],1.0);
     }
-    // have dS_dx_fn
-    apf::DynamicVector f(fn_dof_cnt);
-    apf::DynamicVector u(fn_dof_cnt);
-    las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
-    las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
-    //las::LasSolve * slv = las::createSparskitQuickLUSolve(ans->slv);
-    las::LasSolve * slv = ans->slv;
     // zero rows in the matrix w/ boundary conditions
     // this effects the force vector which is used in the calculation of
     // dS_dx_fn above so we must do it after.
-    // this might not be necessary anymore since the change in the
-    //  matrix modification indices in the dS_dx_fn term
-    applyRVEBC(ans->bnd_nds.begin(),ans->bnd_nds.end(),
+    applyRVEBC(ans->bnd_nds[RVE::all].begin(),ans->bnd_nds[RVE::all].end(),
                ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
-    apf::DynamicMatrix dx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
-    for(int ii = 0; ii < rve_dof_cnt; ++ii)
-    {
-      // apf -> double * -> sparskit
-      dRdx_rve.getColumn(ii,f);
-      double * fptr = NULL;
-      ans->ops->get(skt_f,fptr);
-      std::copy(f.begin(),f.end(),fptr);
-      // solve k u = f for modified f
-      slv->solve(ans->k,skt_u,skt_f);
-      // sparskit -> double * -> apf
-      double * uptr = NULL;
-      ans->ops->get(skt_u,uptr);
-      std::copy(uptr,uptr+fn_dof_cnt,u.begin());
-      dx_fn_dx_rve.setColumn(ii,u);
-    }
+    // calculate dx_fn_dx_rve;
+    apf::DynamicMatrix dx_fn_dx_rve;
+    calcdx_fn_dx_rve(dx_fn_dx_rve,ans,dR_dx_rve);
     // have dx_fn_dx_rve
     apf::DynamicMatrix ds_dx_rve;
     apf::multiply(dS_dx_fn,dx_fn_dx_rve,ds_dx_rve);
@@ -315,12 +331,12 @@ namespace bio
     apf::DynamicVector stress(sigma_length);
     memcpy(&stress[0],sigma,sizeof(double)*sigma_length);
     apf::DynamicMatrix dS_dx_rve;
-    convertStressDiv(ds_dx_rve,
-                     stress,
-                     dV_dx_rve,
-                     ans->rve->measureDu(),
-                     ans->multi->getScaleConversion(),
-                     dS_dx_rve);
+    dsdxrve_2_dSdxrve(ds_dx_rve,
+                      stress,
+                      dV_dx_rve,
+                      ans->rve->measureDu(),
+                      ans->multi->getScaleConversion(),
+                      dS_dx_rve);
     apf::DynamicMatrix dx_rve_dx_fe;
     ans->multi->calcdRVEdFE(dx_rve_dx_fe);
     apf::DynamicMatrix dS_dx;

@@ -36,12 +36,15 @@ namespace bio
     an->rve = new RVE(0.5,fn->getDim());
     auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(),0);
     decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
-    getBoundaryVerts(an->rve,
-                     an->fn->getNetworkMesh(),
-                     bgn,
-                     end,
-                     RVE::side::all,
-                     std::back_inserter(an->bnd_nds));
+    for(int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
+    {
+      getBoundaryVerts(an->rve,
+                       an->fn->getNetworkMesh(),
+                       bgn,
+                       end,
+                       static_cast<RVE::side>(sd),
+                       std::back_inserter(an->bnd_nds[sd]));
+    }
     apf::Numbering * udofs = an->fn->getUNumbering();
     int ndofs = apf::NaiveOrder(udofs);
     an->f0 = las::createSparskitVector(ndofs);
@@ -84,8 +87,8 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     fn->end(itr);
-    applyRVEBC(an->bnd_nds.begin(),
-               an->bnd_nds.end(),
+    applyRVEBC(an->bnd_nds[RVE::all].begin(),
+               an->bnd_nds[RVE::all].end(),
                an->fn->getUNumbering(),
                an->ops,
                an->k,
@@ -115,7 +118,7 @@ namespace bio
         sigma[ii][jj] = 0.0;
     double * f = NULL;
     fra->ops->get(fra->f,f);
-    auto & bnd = fra->bnd_nds;
+    auto & bnd = fra->bnd_nds[RVE::all];
     apf::Numbering * nm = fra->fn->getUNumbering();
     apf::Field * uf = fra->fn->getUField();
     apf::Mesh * fn = fra->fn->getNetworkMesh();

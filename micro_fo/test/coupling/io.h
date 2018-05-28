@@ -11,4 +11,7 @@ bool operator==(const apf::DynamicMatrix & a,
 void rowPermute(const apf::DynamicMatrix & a,
                 int * prmt,
                 apf::DynamicMatrix & b);
+void colPermute(const apf::DynamicMatrix & a,
+                int * ptrm,
+                apf::DynamicMatrix & b);
 #endif

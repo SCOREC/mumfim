@@ -11,7 +11,7 @@ namespace las
   void deleteSparskitVector(Vec * v);
   LasOps * initSparskitOps();
   /**
-   * @note Sparskit is a single-precision solver, so don't use this for anything nonlinear where you're
+   * @note Sparskit is a single-precision solver, so don't use this for anything where you're
    *  trying to converge past 10e-8
    */
   LasSolve * createSparskitLUSolve(SparskitBuffers * b);
@@ -23,5 +23,6 @@ namespace las
   void printSparskitMat(std::ostream &, Mat * m, bool sparse=false);
   double getSparskitMatValue(Mat *, int rr, int cc);
   void setSparskitMatValue(Mat *, int rr, int cc, double vl);
+  double * getskMatNNZArray(Mat * m);
 }
 #endif

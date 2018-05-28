@@ -15,7 +15,7 @@ namespace bio
     // move this out of here! requires coupling data structures as currently written hmmm...
     MultiscaleRVE * multi;
     RVE * rve;
-    std::vector<apf::MeshEntity*> bnd_nds;
+    std::vector<apf::MeshEntity*> bnd_nds[RVE::side::all+1];
     apf::Integrator * es;
     las::Mat * k;
     las::Vec * u;

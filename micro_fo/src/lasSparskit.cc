@@ -190,6 +190,12 @@ namespace las
     assert(cc < ndofs && cc >= 0);
     (*m)(rr,cc) = vl;
   }
+  // assumes 0,0 is an nz location
+  double * getskMatNNZArray(Mat * m)
+  {
+    skMat * skm = getSparskitMatrix(m);
+    return &(*skm)(0,0);
+  }
   // CLASS MEMBER FUNCTION DEFINITIONS
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
   {
