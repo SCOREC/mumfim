@@ -76,3 +76,16 @@ bool operator==(const apf::DynamicMatrix & a,
 finish:
   return eq;
 }
+void rowPermute(const apf::DynamicMatrix & a,
+                int * prmt,
+                apf::DynamicMatrix & b)
+{
+  int rws = a.getRows();
+  b.setSize(rws,a.getColumns());
+  for(int rw = 0; rw < rws; ++rw)
+  {
+    apf::DynamicVector arw;
+    a.getRow(rw,arw);
+    b.setRow(prmt[rw],arw);
+  }
+}

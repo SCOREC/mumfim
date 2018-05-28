@@ -8,4 +8,7 @@ std::istream & operator>>(std::istream & in,
                            apf::DynamicVector & v);
 bool operator==(const apf::DynamicMatrix & a,
                 const apf::DynamicMatrix & b);
+void rowPermute(const apf::DynamicMatrix & a,
+                int * prmt,
+                apf::DynamicMatrix & b);
 #endif
