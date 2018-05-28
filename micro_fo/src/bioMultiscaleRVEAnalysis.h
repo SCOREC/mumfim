@@ -42,4 +42,5 @@ namespace bio
     virtual void run();
   };
 }
+#include "bioMultiscaleRVEAnalysis_impl.h"
 #endif

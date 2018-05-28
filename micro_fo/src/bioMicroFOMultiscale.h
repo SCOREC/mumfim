@@ -3,6 +3,7 @@
 #include <amsiMPI.h>
 namespace bio
 {
+  // fiber_reaction is obsolete, remove it
   enum header_fields
   {
     RVE_TYPE = 0,

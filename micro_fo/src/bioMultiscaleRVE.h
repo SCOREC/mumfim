@@ -17,6 +17,7 @@ namespace bio
   class MultiscaleRVE
   {
   private:
+    RVE * rve;
     int gss_id;
     int dim;
     apf::Vector3 lcl_gss;
@@ -37,7 +38,7 @@ namespace bio
                   micro_fo_params & prms,
                   micro_fo_init_data & dat);
     ~MultiscaleRVE();
-    void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE, const RVE * rve);
+    void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE);
     double getScaleConversion() const { return scale_conversion; }
   };
 }

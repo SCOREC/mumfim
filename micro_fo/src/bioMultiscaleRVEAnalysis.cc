@@ -130,6 +130,28 @@ namespace bio
     (void)ans;
     (void)Q;
   }
+  void convertStressDiv(const apf::DynamicMatrix & ds_dx_rve,
+                        const apf::DynamicVector & strs,
+                        const apf::DynamicVector & dV_dx_rve,
+                        double vol,
+                        double cnv,
+                        apf::DynamicMatrix & dS_dx_rve)
+  {
+    int rve_dof_cnt = ds_dx_rve.getColumns();
+    int sigma_length = ds_dx_rve.getRows();
+    dS_dx_rve.setSize(sigma_length,rve_dof_cnt);
+    apf::DynamicVector col(sigma_length);
+    for(int rve_dof = 0; rve_dof < rve_dof_cnt; ++rve_dof)
+    {
+      apf::DynamicVector sig(strs);
+      ds_dx_rve.getColumn(rve_dof,col);
+      col /= vol;
+      sig *= (dV_dx_rve[rve_dof]) / (vol * vol);
+      col -= sig;
+      col *= cnv;
+      dS_dx_rve.setColumn(rve_dof,col);
+    }
+  }
   // honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
   void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
   {
@@ -279,66 +301,28 @@ namespace bio
       dx_fn_dx_rve.setColumn(ii,u);
     }
     // have dx_fn_dx_rve
-    apf::DynamicMatrix dS_dx_rve;
-    /*
-      apf::DynamicMatrix odS_dx_fn(sigma_length,fn_dof_cnt);
-      apf::DynamicVector rw(fn_dof_cnt);
-      int sigma_pmt[6] = {0, 3, 5, 4, 2, 1};
-      for(int ii = 0; ii < sigma_length; ++ii)
-      {
-      dS_dx_fn.getRow(ii,rw);
-      odS_dx_fn.setRow(sigma_pmt[ii],rw);
-      }
-      apf::DynamicMatrix odx_fn_dx_rve(fn_dof_cnt,rve_dof_cnt);
-      apf::DynamicVector cl(fn_dof_cnt);
-      int rve_pmt[8] = {2, 0, 6, 3, 4, 1, 7, 5};
-      for(int ii = 0; ii < rve_dof_cnt; ++ii)
-      {
-      dx_fn_dx_rve.getColumn(ii,cl);
-      odx_fn_dx_rve.setColumn((rve_pmt[ii/3]*3)+(ii%3),cl);
-      }
-      apf::multiply(odS_dx_fn,odx_fn_dx_rve,dS_dx_rve);
-    */
-    apf::multiply(dS_dx_fn,dx_fn_dx_rve,dS_dx_rve);
+    apf::DynamicMatrix ds_dx_rve;
+    apf::multiply(dS_dx_fn,dx_fn_dx_rve,ds_dx_rve);
+    // calculate volume derivative
     apf::DynamicVector dV_dx_rve;
-    double vol = ans->rve->measureDu();
-    CalcdV_dx_rve calcdv_dx_rve(2,ans->rve->getUField());
+    CalcdV_dx_rve calcdv_dx_rve(2,
+                                ans->rve->getUField(),
+                                ans->rve->getNumbering());
     apf::MeshElement * mlm = apf::createMeshElement(ans->rve->getXpUField(),ans->rve->getMeshEnt());
     calcdv_dx_rve.process(mlm);
     calcdv_dx_rve.getdVdxrve(dV_dx_rve);
     apf::destroyMeshElement(mlm);
-    double scale_conversion = ans->multi->getScaleConversion();
-    apf::DynamicVector col(sigma_length);
-    apf::Vector<6> vsig(sigma);
-    for(int ii = 0; ii < rve_dof_cnt; ++ii)
-    {
-      apf::DynamicVector dsig = apf::fromVector(vsig);
-      dS_dx_rve.getColumn(ii,col);
-      col /= vol;
-      dsig *= (dV_dx_rve[ii] / (vol * vol));
-      col -= dsig;
-      col *= scale_conversion;
-      dS_dx_rve.setColumn(ii,col);
-    }
+    apf::DynamicVector stress(sigma_length);
+    memcpy(&stress[0],sigma,sizeof(double)*sigma_length);
+    apf::DynamicMatrix dS_dx_rve;
+    convertStressDiv(ds_dx_rve,
+                     stress,
+                     dV_dx_rve,
+                     ans->rve->measureDu(),
+                     ans->multi->getScaleConversion(),
+                     dS_dx_rve);
     apf::DynamicMatrix dx_rve_dx_fe;
-    ans->multi->calcdRVEdFE(dx_rve_dx_fe,ans->rve);
-    if(!PCU_Comm_Self())
-    {
-      std::ofstream fout("new_drvedfe");
-      for(int rve_nd = 0; rve_nd < 24; rve_nd++)
-      {
-        for(int fe_nd = 0; fe_nd < 12; fe_nd++)
-          fout << dx_rve_dx_fe(rve_nd,fe_nd) << " ";
-        fout << std::endl;
-      }
-      std::ofstream fout2("new_dsdxrve");
-      for(int sgm_trm = 0; sgm_trm < sigma_length; ++sgm_trm)
-      {
-        for(int rve_nd = 0; rve_nd < 24; ++rve_nd)
-          fout2 << dS_dx_rve(sgm_trm,rve_nd) << " ";
-        fout2 << std::endl;
-      }
-    }
+    ans->multi->calcdRVEdFE(dx_rve_dx_fe);
     apf::DynamicMatrix dS_dx;
     apf::multiply(dS_dx_rve,dx_rve_dx_fe,dS_dx);
     amsi::mat2Array(dS_dx,dstrss_drve);

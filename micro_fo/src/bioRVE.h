@@ -40,7 +40,7 @@ namespace bio
   public:
     RVE(double cr = 0.5, int d = 3);
     ~RVE();
-    apf::MeshEntity * getSide(side sd);
+    apf::MeshEntity * getSide(side sd) const;
     /**
      * Get the number of nodes for the RVE
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
@@ -118,13 +118,13 @@ namespace bio
         idx = 2;
       return fabs(sideCoord(sd) - crd[idx]) < eps;
      }
-    apf::Mesh * getMesh() { return cbe; }
-    apf::MeshEntity * getMeshEnt() { return cbe_e; }
-    apf::Element * getElement() { return cbe_u_e; }
-    apf::Numbering * getNumbering() { return cbe_dof; }
-    apf::Field * getUField() { return cbe_u; }
-    apf::Field * getdUField() { return cbe_du; }
-    apf::Field * getXpUField() { return cbe_xpu; }
+    apf::Mesh * getMesh() const { return cbe; }
+    apf::MeshEntity * getMeshEnt() const { return cbe_e; }
+    apf::Element * getElement() const { return cbe_u_e; }
+    apf::Numbering * getNumbering() const { return cbe_dof; }
+    apf::Field * getUField() const { return cbe_u; }
+    apf::Field * getdUField() const { return cbe_du; }
+    apf::Field * getXpUField() const { return cbe_xpu; }
   };
   /**
    * Calculate the position of the corner nodes of the square/cube enclosing the RVE
@@ -135,7 +135,8 @@ namespace bio
    *                system, using calculated by calling calcRVEDimensionality().
    * @param gbl_gss The macro-scale coordinate at the center of the RVE
    */
-  void calcGlobalRVECoords(apf::DynamicArray<apf::Vector3> & rve_crds,
+  void calcGlobalRVECoords(const RVE * rve,
+                           apf::DynamicArray<apf::Vector3> & rve_crds,
                            double rve_dim,
                            const apf::Vector3 & gbl_gss);
   /**

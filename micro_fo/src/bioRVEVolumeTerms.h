@@ -18,8 +18,10 @@ namespace bio
     apf::Element * e;
     apf::FieldShape * s;
     apf::EntityShape * es;
+    apf::Numbering * nm;
+    apf::NewArray<int> dofs;
   public:
-    CalcdV_dx_rve(int o, apf::Field * du)
+    CalcdV_dx_rve(int o, apf::Field * du, apf::Numbering * n)
       : Integrator(o)
       , dim(-1)
       , nends(0)
@@ -32,6 +34,7 @@ namespace bio
       , e(NULL)
       , s(apf::getShape(du))
       , es(NULL)
+      , nm(n)
     {}
     virtual void inElement(apf::MeshElement * m)
     {
@@ -43,6 +46,7 @@ namespace bio
       nends = apf::countNodes(e);
       dV_dx_rve.resize(nends*dim);
       dV_dx_rve.zero();
+      apf::getElementNumbers(nm,me,dofs);
     }
     virtual void atPoint(apf::Vector3 const& p, double w, double dV)
     {
@@ -62,8 +66,10 @@ namespace bio
           ddett[ii * dim + dd] = apf::getDeterminant(J);
         }
       }
-      for(int ii = 0; ii < 24; ++ii)
-        dV_dx_rve[ii] += w * ddett[ii];
+      // numerical integration and assemble with numbers
+      for(int nd = 0; nd < nends; ++nd)
+        for(int dd = 0; dd < dim; ++dd)
+          dV_dx_rve[dofs[nd*dim+dd]] += w * ddett[nd*dim+dd];
     }
     virtual void outElement()
     {

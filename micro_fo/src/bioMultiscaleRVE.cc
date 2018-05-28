@@ -16,12 +16,13 @@ namespace bio
     double ttl_fbr_lngth = std::accumulate(lngths.begin(),lngths.end(),0.0);
     return sqrt(ttl_fbr_lngth * fbr_area / fbr_vl_frc);
   }
-  MultiscaleRVE::MultiscaleRVE(RVE * rve,
+  MultiscaleRVE::MultiscaleRVE(RVE * r,
                                FiberNetwork * fn,
                                micro_fo_header & hdr,
                                micro_fo_params & prm,
                                micro_fo_init_data & dat)
-    : gss_id(hdr.data[GAUSS_ID])
+    : rve(r)
+    , gss_id(hdr.data[GAUSS_ID])
     , dim(rve->getDim())
     , lcl_gss()
     , macro(NULL)
@@ -62,14 +63,13 @@ namespace bio
     apf::destroyElement(macro_elmnt);
     apf::destroyMeshElement(macro_melmnt);
   }
-  void MultiscaleRVE::calcdRVEdFE(apf::DynamicMatrix & dRVEdFE,
-                                  const RVE * rve)
+  void MultiscaleRVE::calcdRVEdFE(apf::DynamicMatrix & dRVEdFE)
   {
     int num_rve_nds = rve->numNodes();
     apf::Vector3 gbl_gss;
     apf::mapLocalToGlobal(macro_melmnt,lcl_gss,gbl_gss);
     apf::DynamicArray<apf::Vector3> gbl_rve_crds(num_rve_nds);
-    calcGlobalRVECoords(gbl_rve_crds,rve_dim,gbl_gss);
+    calcGlobalRVECoords(rve,gbl_rve_crds,rve_dim,gbl_gss);
     std::vector<apf::Vector3> lcl_rve_crds;
     mapGlobalsToLocals(macro,
                        macro_ent,
