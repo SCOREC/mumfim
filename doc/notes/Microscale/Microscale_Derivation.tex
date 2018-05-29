@@ -28,16 +28,18 @@ F \equiv \frac{E A}{B}[\exp(B \varepsilon) - 1],
 \label{fiber_force}
 \end{equation}
 %
-where $E$ is the linear modulus of the fiber, $A$ is the cross-sectional area of the fiber, $B$ is a constant, and $\varepsilon$ is the fiber's Green strain
+where $E$ is the linear modulus of the fiber, $A$ is the cross-sectional area of the fiber, $B$ is a constant, and $\varepsilon$ is the fiber's Green strain (along its axis).
+
+Rotating the green strain along the principal axis of the truss, we see that the green strain can be written as:
 %
 \begin{equation}
-\varepsilon \equiv 0.5 \left(\lambda^2-1\right),
+\varepsilon \equiv \frac{1}{2} \left(\lambda^2-1\right),
 \label{Green_strain}
 \end{equation}
 % 
 where $\lambda$ is the fiber stretch ratio \cite{Chandran:2007hy}. \todo{Should we bother with a discussion on how the force is not the "real force" here? e.g. GL strain gives PK2 Stress}
 
-The force on fiber node $b$, $\textbf{T}^b$, is defined in terms of $F$ as
+The force on fiber node $b$, $\textbf{T}^b$, is defined in terms of the scalar $F$ as
 %
 \begin{equation}
 \textbf{T}^b = F \textbf{n},
@@ -59,56 +61,57 @@ l(\textbf{x}) = \sqrt{(\textbf{x}^b - \textbf{x}^a) \cdot (\textbf{x}^b - \textb
 %
 Note that the definitions in Eqs.\ \eqref{fiber_node_force} through \eqref{fiber_length} are based on the convention that the force acting on nodes $b$ and $a$ are positive and negative, respectively, when the corresponding fiber element is loaded in tension.
 
-Consequently, $\textbf{T}^a = - \textbf{T}^b$. The equilibrium fiber node positions in a RVE ($\textbf{x}^b$ and $\textbf{x}^a$ of each fiber) are determined via a Newton-Raphson method, which is implemented in the int Micro::Solver function in solver\_gmres\_df.cc. \todo{the location of the implementation has moved.} 
+Consequently, $\textbf{T}^a = - \textbf{T}^b$. The equilibrium fiber node positions in a RVE ($\textbf{x}^b$ and $\textbf{x}^a$ of each fiber) are determined via a Newton-Raphson method.
 
 \subsection{Microscale Tangent Stiffness Tensor}
 \label{subsec:tangent_stiffness_tensor}
 
+\todo{Need to add the linear constitutive as well}
 In order to find the equilibrium fiber-node positions in the RVEs via the Newton-Raphson procedure, we need to define the tangent stiffness tensor. The tangent stiffness tensor is determined by taking the directional derivative of $\textbf{T}^b$ (we can equivalently take the directional derivative of $\textbf{T}^a$, in which case the result will be equal and opposite) in the direction of the displacement of the fiber, $\textbf{u} \equiv \textbf{u}^b - \textbf{u}^a$:
 %
 \begin{eqnarray}
 D\textbf{T}^b [\textbf{u}] &=& D F \textbf{n} [\textbf{u}] \nonumber\\
-&=& \frac{E A}{B} \bigg(D \{ \exp(B \varepsilon) - 1\} [\textbf{u}] \textbf{n}+ D \textbf{n} [\textbf{u}] \{ \exp(B \varepsilon) - 1\} \bigg) \nonumber\\
-&=& \frac{E A}{B} \bigg( R\textbf{n} + S\{\exp(B \varepsilon) - 1\} \bigg),
+&=& \frac{E A}{B} \bigg(D \{ \exp(B \varepsilon) - 1\} [\vec{u}] \vec{n}+ D \vec{n} [\vec{u}] \{ \exp(B \varepsilon) - 1\} \bigg) \nonumber\\
+&=& \frac{E A}{B} \bigg( R \vec{n} + \vec{S}\{\exp(B \mat{\varepsilon}) - 1\} \bigg),
 \label{DT_i}
 \end{eqnarray}
 %
-where the notation $D f(\textbf{x}) [\textbf{u}]$ denotes the directional derivative of $f(\textbf{x})$ in the direction of $\textbf{u}$, and \todo{Stopping point of editing for tonight}
+where the notation $D f(\vec{x}) [\vec{u}]$ denotes the directional derivative of $f(\vec{x})$ in the direction of $\vec{u}$, and 
 % 
 \begin{equation}
-R \equiv D \{ \exp(B \varepsilon) - 1\} [\textbf{u}] \ \ \text{and} \ \
-S \equiv D \textbf{n} [\textbf{u}].
+R \equiv D \{ \exp(B \varepsilon) - 1\} [\vec{u}] \ \ \text{and} \ \
+\vec{S} \equiv D \vec{n} [\vec{u}].
 \end{equation}
 %
 
-To obtain a more useful form of Eq.\ \eqref{DT_i}, $R$ and $S$ can be written out explicitly by expanding the directional derivative and using $\lambda \equiv l(\textbf{x})/L$:
+To obtain a more useful form of Eq.\ \eqref{DT_i}, $\vec{R}$ and $\mat{S}$ can be written out explicitly by expanding the directional derivative and using $\lambda \equiv l(\vec{x})/L$, and Eq. \eqref{Green_strain}: \todo{Write in general terms first, then give the constitutive properties. Similar to write up I did on truss integrator.}
 %
 \begin{eqnarray}
-D \{ \exp(B \varepsilon) - 1\} [\textbf{u}] &=& B \exp(B \varepsilon) D \varepsilon [\textbf{u}] \nonumber\\
-&=& \frac{0.5B}{L^2} \exp(B \varepsilon)  D( l^2(\textbf{x}) - 1) [\textbf{u}] \nonumber\\
-&=&  \frac{0.5B}{L^2}\exp(B \varepsilon)   l(\textbf{x})\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a) \nonumber\\
+D \{ \exp(B \varepsilon) - 1\} [\vec{u}] &=& B \exp(B \varepsilon) D \varepsilon [\vec{u}] \nonumber\\
+&=& \frac{0.5B}{L^2} \exp(B \varepsilon) D( l^2(\vec{x}) - 1) [\vec{u}]\nonumber\\
+&=& \frac{B}{L^2}\exp(B \varepsilon)   l(\vec{x})\vec{n} \cdot (\vec{u}^b - \vec{u}^a) \nonumber\\
 &=& R
 \label{R}
 \end{eqnarray}
 %
-and
+We also have:
 %
 \begin{eqnarray}
 D \textbf{n} [\textbf{u}]  &=& D \frac{1}{l(\textbf{x})}(\textbf{x}^b - \textbf{x}^a) [\textbf{u}] \nonumber\\
 &=& D \frac{1}{l(\textbf{x})} [\textbf{u}](\textbf{x}^b - \textbf{x}^a) + D (\textbf{x}^b - \textbf{x}^a) [\textbf{u}] \frac{1}{l(\textbf{x})} \nonumber\\
 &=& -\frac{1}{l^{2}(\textbf{x})}\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)(\textbf{x}^b - \textbf{x}^a) + (\textbf{u}^b - \textbf{u}^a)  \frac{1}{l(\textbf{x})} \nonumber\\
-&=& -\frac{1}{l(\textbf{x})}\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n} + (\textbf{u}^b - \textbf{u}^a)  \frac{1}{l(\textbf{x})} \nonumber\\
-&=& S.
+&=& \frac{(\textbf{u}^b - \textbf{u}^a)-\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}}{l(\textbf{x})} \nonumber\\
+&=& \vec{S}.
 \label{S}
 \end{eqnarray}
 %
-In Eqs.\ \eqref{R} and \eqref{S}, we have used the relationships listed in Appendix \ref{app:relationships}. Finally, substituting Eqs.\ \eqref{R} and \eqref{S} into Eq.\ \eqref{DT_i} we arrive at
+In Eqs.\ \eqref{R} and \eqref{S}, we have used the relationships listed in Appendix \ref{app:relationships}. Finally, substituting Eqs.\ \eqref{R} and \eqref{S} into Eq.\ \eqref{DT_i} we arrive at:
 %
 \begin{eqnarray}
-D\textbf{T}^b [\textbf{u}] &=& \frac{E A}{B} \bigg[ \left(\frac{0.5B }{L^2} \exp(B \varepsilon) l(\textbf{x})\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a) \right)\textbf{n} \nonumber\\
-&& + \left( -\frac{1}{l(\textbf{x})}\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n} + (\textbf{u}^b - \textbf{u}^a)  \frac{1}{l(\textbf{x})} \right) \{ \exp(B \varepsilon) - 1 \} \bigg] \nonumber\\
-&=& \bigg[ \frac{0.5E A }{L^2} \exp(B \varepsilon)  l(\textbf{x})-\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}) + \frac{F}{l(\textbf{x})} (\textbf{u}^b - \textbf{u}^a) \nonumber\\
-&=& \bigg[ \frac{0.5E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \otimes \textbf{n})_{3\times3}(\textbf{u}^b - \textbf{u}^a) + \frac{F}{l(\textbf{x})} \text{\textbf{I}}_{3\times3} (\textbf{u}^b - \textbf{u}^a) , \nonumber\\
+D\textbf{T}^b [\textbf{u}] &=& \frac{E A}{B} \bigg[ \left(\frac{B }{L^2} \exp(B \varepsilon) l(\textbf{x})\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\right)\textbf{n} \nonumber\\
+&+& \left( \frac{(\textbf{u}^b - \textbf{u}^a)-\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}}{l(\textbf{x})} \right) \{ \exp(B \varepsilon) - 1 \} \bigg] \nonumber\\
+&=& \bigg[ \frac{E A }{L^2} \exp(B \varepsilon)  l(\textbf{x})-\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}) + \frac{F}{l(\textbf{x})}(\textbf{u}^b - \textbf{u}^a) \nonumber\\
+&=& \bigg[ \frac{E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \otimes \textbf{n})_{3\times3}(\textbf{u}^b - \textbf{u}^a) + \frac{F}{l(\textbf{x})} \text{\textbf{I}}_{3\times3} \cdot (\textbf{u}^b - \textbf{u}^a) , \nonumber\\
 \label{DTi_final}
 \end{eqnarray}
 %
@@ -118,7 +121,10 @@ where the property of the tensor product,
 (\textbf{u} \otimes \textbf{v})\textbf{w} = (\textbf{w} \cdot \textbf{v})\textbf{u}
 \end{equation}
 %
-has been used, where $\textbf{u} = \textbf{n}$ and $\textbf{v} = \textbf{u}^b-\textbf{u}^a$. The directional derivative for node $a$ is $D \textbf{T}^a(\textbf{x})[\textbf{u}] = - D\textbf{T}^b(\textbf{x})[\textbf{u}]$.
+has been used.
+
+\subsubsection{Matrix Equations}
+Also note,  the directional derivative for node $a$ is $D \textbf{T}^a(\textbf{x})[\textbf{u}] = - D\textbf{T}^b(\textbf{x})[\textbf{u}]$ since \(\vec{T}^a(\vec{x})=-\vec{T}^b(\vec{x})\).
 
 Equation \eqref{DTi_final} can be rearranged into matrix form. For a single fiber element e, the directional derivative in matrix form is 
 %
@@ -145,7 +151,7 @@ where
 and
 %
 \begin{equation}
-k \equiv \frac{0.5E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})}.
+k \equiv \frac{E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})}.
 \label{k}
 \end{equation}
 %
@@ -173,7 +179,7 @@ with
 \cos(\alpha) = \frac{x^b_1 - x^a_1}{l(\textbf{x})}, \ \ \cos(\beta) = \frac{x^b_2 - x^a_2}{l(\textbf{x})}, \ \ \text{and} \cos(\gamma) = \frac{x^b_3 - x^a_3}{l(\textbf{x})} 
 \end{equation}
 %
-and
+and \todo{this should be made more clear what is $e_i$}
 %
 \begin{equation}
 \textbf{u}^a = (x^a_i - x^b_i) \textbf{e}_i \ \ \text{and} \ \ \textbf{u}^b = (x^b_i - x^a_i) \textbf{e}_i .
@@ -191,28 +197,6 @@ k \cos(\gamma)\cos(\alpha) & k \cos(\gamma)\cos(\beta) & k \cos(\gamma)\cos(\gam
 \label{K^e_aa_matrix}
 \end{eqnarray}
 %
-
-The relationship in Eq.\ \eqref{k} is implemented in the void MicroFO::calc\_fiber\_str function in RVE\_Util.cc. \red{However, note that there is a discrepancy of a factor of 0.5 between Eq.\ \eqref{k} and what is implemented in the code}. Furthermore, the relationship in Eq.\ \eqref{K_aa} is implemented in the double MicroFO::gfunc function in RVE\_Util.cc and is assembled into the matrix form in Eq.\ \eqref{DT^e_matrix} in the void::MicroFO::calc\_precond function in solver\_gmres\_df.cc.
-
-In the calc\_precond function in solver\_gmres\_df.cc, $\textbf{K}^{(\text{e})}$ is stored in the matrix variable as
-%
-\begin{eqnarray}
-\text{matrix} =
-\begin{bmatrix}
-\text{e.Ke[0]} & \text{e.Ke[1]} & \text{e.Ke[2]} & \text{e.Ke[3]} & \text{e.Ke[4]} & \text{e.Ke[5]} \\
-\text{e.Ke[6]} & \text{e.Ke[7]} & \text{e.Ke[8]} & \text{e.Ke[9]} & \text{e.Ke[10]} & \text{e.Ke[11]} \\
-\text{e.Ke[12]} & \text{e.Ke[13]} & \text{e.Ke[14]} & \text{e.Ke[15]} & \text{e.Ke[16]} & \text{e.Ke[17]} \\
-\text{e.Ke[18]} & \text{e.Ke[19]} & \text{e.Ke[20]} & \text{e.Ke[21]} & \text{e.Ke[22]} & \text{e.Ke[23]} \\
-\text{e.Ke[24]} & \text{e.Ke[25]} & \text{e.Ke[26]} & \text{e.Ke[27]} & \text{e.Ke[28]} & \text{e.Ke[29]} \\
-\text{e.Ke[30]} & \text{e.Ke[31]} & \text{e.Ke[32]} & \text{e.Ke[33]} & \text{e.Ke[34]} & \text{e.Ke[35]} 
-\end{bmatrix} = -\textbf{K}^{(\text{e})}
-\label{matrix}
-\end{eqnarray}
-%
-
-\subsection{Newton-Raphson Method for Microscale}
-\label{subsec:Newton_Microscale}
-
 The Newton-Raphson method for a single fiber element is
 %
 \begin{equation}
@@ -247,56 +231,12 @@ F\begin{bmatrix}
 \label{u_T_matrix}
 \end{eqnarray}
 %
-where the superscript (e) denotes that Eq.\ \eqref{u_T_matrix} is for a single fiber element. The matrix $\textbf{T}^{(\text{e})}$ is constructed in the void MicroFO::calc\_force\_vector function in RVE\_Util.cc. 
+where the superscript (e) denotes that Eq.\ \eqref{u_T_matrix} is for a single fiber element.
+\todo{show summation of elemental equations}
 
-Based on Eq.\ \eqref{matrix} (where matrix = $-\textbf{K}^{(\text{e})}$), the Newton-Raphson method is
+Once the equilibrium fiber-node positions in a RVE are determined, the forces of the fiber nodes can be volume averaged as in Eq.\ \eqref{S_ij} to calculate the macroscopic stresses.
 %
-\begin{eqnarray}
-\textbf{M}^{(\text{e})}
-%
-\begin{bmatrix}
-\delta x^a_1 \\ \delta x^a_2 \\ \delta x^a_3 \\ \delta x^b_1 \\ \delta x^b_2 \\ \delta x^b_3
-\end{bmatrix}^{(\text{e})} =
-%
-F\begin{bmatrix}
--\cos(\alpha) \\ -\cos(\beta) \\ -\cos(\gamma) \\ \cos(\alpha) \\ \cos(\beta) \\ \cos(\gamma)
-\end{bmatrix}^{(\text{e})}  \ \text{where} \ \
-%
-\begin{bmatrix}
- x^a_1 \\  x^a_2 \\  x^a_3 \\  x^b_1 \\ x^b_2 \\  x^b_3
-\end{bmatrix}^{(\text{e}),t+1}  =
-%
-\begin{bmatrix}
- x^a_1 \\  x^a_2 \\  x^a_3 \\  x^b_1 \\ x^b_2 \\  x^b_3
-\end{bmatrix}^{(\text{e}),t} +
-%
-\begin{bmatrix}
-\delta x^a_1 \\ \delta x^a_2 \\ \delta x^a_3 \\ \delta x^b_1 \\ \delta x^b_2 \\ \delta x^b_3
-\end{bmatrix}^{(\text{e})},
-%
-\label{Newton_Raphson_M}
-\end{eqnarray}
-% 
-and $\textbf{M}^{(\text{e})} \equiv$ matrix. Equation \eqref{Newton_Raphson_M} is implemented in the int MicroFO::Solver function in solver\_gmres\_df.cc. 
-
-\subsection{Calculation of Macroscopic (volume-averaged) Stress}
-
-Once the equilibrium fiber-node positions in a RVE are determined using the procedure described in Section \ref{subsec:Newton_Microscale}, the forces of the fiber nodes can be volume averaged as in Eq.\ \eqref{S_ij} to calculate the macroscopic stresses. The macroscopic stresses can be written in matrix form as
-%
-\begin{eqnarray}
-\begin{bmatrix}
-S_{ij}
-\end{bmatrix} = 
-%
-\begin{bmatrix}
-S_{11} & S_{12} & S_{13} \\
-S_{21} & S_{22} & S_{23} \\
-S_{31} & S_{32} & S_{33} 
-\end{bmatrix} .
-\label{S_ij_matrix}
-\end{eqnarray}
-%
-Since $S_{ij} = S_{ji}$ in Eq.\ \eqref{S_ij_matrix}, only the six terms on the upper triangle are unique. Consequently, the macroscopic stress can be represented as a vector
+Noting $S_{ij} = S_{ji}$ (e.g. the Cauchy stress tensor is symmetric), there are only six unique terms. Therefore, we can represent the \(\mat{S}\) as a vector.
 %
 \begin{eqnarray}
 \begin{bmatrix}
@@ -323,8 +263,6 @@ S_{11} \\ S_{12} \\ S_{13} \\ S_{22} \\ S_{23} \\ S_{33}
 \label{S_ij_vector}
 \end{eqnarray}
 %
-where $S_{12} = (S_{12}+S_{21})/2$, $S_{13} = (S_{13}+S_{31})/2$, and $S_{23} = (S_{23}+S_{32})/2$. The summation part of the stress vector in Eq.\ \eqref{S_ij_vector} is carried out in the void MicroFO::calc\_stress function in main\_solver\_psi.cc, while the volume averaging part is implemented towards the end of the function int MicroFO::main\_solver function in main\_solver\_psi.cc.
-
 \section{Derivative of Macroscopic Stress With Respect to FE Node Positions}
 
 As discussed in Section \ref{sec:macrostress}, the macroscale stresses are calculated from the equilibrium fiber-node positions of each fiber element within a RVE. Since the macroscale stresses explicitly depend on the fiber-node positions, a natural first step is to consider the derivative of the macroscopic stress with respect to the fiber-node positions.
@@ -393,6 +331,7 @@ and the second equality in Eq.\ \eqref{C_ij_matrix} uses the relationship
 %
 
 Since $C_{ij}^f = C_{ji}^f$ in Eq.\ \eqref{C_ij_matrix}, only the six terms on the upper triangle of the matrix are unique. Consequently, the matrix in Eq.\ \eqref{C_ij_matrix} can be rewritten as a matrix-vector product
+\todo{write this in standard voigt notation}
 %
 \begin{eqnarray}
 \begin{bmatrix}
@@ -416,6 +355,7 @@ u_1^f \\ u_2^f \\ u_3^f
 \end{eqnarray}
 %
 Furthermore, since $C_{ij}^f = C_{ji}^f$, the off diagonal terms (i.e., $C_{12}^f$, $C_{13}^f$, and $C_{23}^f$) can be expressed as averages:
+\todo{why is C symmetric?}
 %
 \begin{eqnarray}
 %
@@ -440,20 +380,19 @@ u_1^f \\ u_2^f \\ u_3^f
 \label{Cu}
 \end{eqnarray}
 %
-The left product in Eq.\ \eqref{Cu} is constructed in the calc\_precond function as ttdSdy in solver\_gmres\_df.cc. Note that $\partial T_i^f/\partial x_j^f$ is the $i$, $j^{th}$ element of Eq.\ \eqref{K^e_aa_matrix} when $f=a$. Since the matrix variable in Eq.\ \eqref{matrix} is negative of $\textbf{K}^{(\textbf{e})}$, the terms in ttdSdy are obtained from -matrix. \red{Further note that the matrix explicitly written out in Eq.\ \eqref{Cu} constitutes a single fiber node of the variable ttdSdy. The full ttdSdy variable, which is of size 6 $\times$ num\_dof, is constructed when summing over all boundary nodes (see summation in Eq.\ \eqref{DS_ij}).} 
+Note that $\partial T_i^f/\partial x_j^f$ is the $i$, $j^{th}$ element of Eq.\ \eqref{K^e_aa_matrix} when $f=a$. Note that the matrix explicitly written out in Eq.\ \eqref{Cu} constitutes a single fiber node of the variable ttdSdy. The full ttdSdy variable, which is of size 6 $\times$ num\_dof, is constructed when summing over all boundary nodes (see summation in Eq.\ \eqref{DS_ij}).
 
 \subsubsection{Directional Derivative of $1/V$}
 
 In order to determine the directional derivative of $S_{ij}$ in Eq.\ \eqref{DS_ij}, we need to also determine $D \left(1/V\right) [\textbf{u}]$:
 %
-\begin{eqnarray}
-D \frac{1}{V}[\textbf{u}] &=& \frac{\partial (1/V)}{\partial x_1^f} u_1^f + \frac{\partial (1/V)}{\partial x_2^f} u_2^f + \frac{\partial (1/V)}{\partial x_3^f} u_3^f \nonumber\\
-%
-&=& -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_1^f} u_1^f + \frac{\partial V}{\partial x_2^f} u_2^f + \frac{\partial V}{\partial x_3^f} u_3^f \right).
+
+\begin{equation}
+D \frac{1}{V}[\textbf{u}] = \frac{\partial (1/V)}{\partial x_i^f} u_i^f = -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_i^f} u_i^f\right).
 \label{D1/V}
-\end{eqnarray}
+\end{equation}
 %
-Equation \eqref{D1/V} can be further written as a dot product
+Equation \eqref{D1/V} can be further written in matrix form as:
 %
 \begin{eqnarray}
 D\frac{1}{V}[\textbf{u}] = -\frac{1}{V^2}
@@ -473,10 +412,8 @@ u_1^f \\ u_2^f \\ u_3^f
 Substituting Eq.\ \eqref{D1/V} in Eq.\ \eqref{DS_ij} we obtain
 %
 \begin{eqnarray}
-DS_{ij}[\textbf{u}] &=&  \frac{1}{V} \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f \right) -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_1^f} u_1^f + \frac{\partial V}{\partial x_2^f} u_2^f + \frac{\partial V}{\partial x_3^f} u_3^f \right) V S_{ij} \nonumber\\
+DS_{ij}[\textbf{u}] &=&  \frac{1}{V} \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f \right) -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_k^f} u_k^f\right) V S_{ij} \nonumber\\
 %
-&=&  \frac{1}{V} \left[ \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f \right) -  \frac{\partial V}{\partial x_k^f} u_k^f S_{ij} \right]
+&=&  \frac{1}{V} \left[ \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} + \frac{\partial x_i^f}{\partial x_k^f} T_j^f \right) -  \frac{\partial V}{\partial x_k^f} S_{ij} \right] u_k^f
 \end{eqnarray}
 %
-
-\red{This is essentially the expression for dSdxr in the calc\_femjacob\_newmethod function in main\_solver\_psi.cc. Need to verify the calculation of dvol in the expression. More specifically, is dvol taken as the derivative with respect to fiber-node positions or something else?}
