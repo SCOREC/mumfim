@@ -5,36 +5,45 @@
 
 \subsection{Governing Equation}
 
-The divergence of the macroscopic stress tensor, $\pmb{\sigma}$ is derived by applying the Reynolds transport theorem to the volume-averaged stress and invoking microscopic equilibrium \cite{Chandran:2007hy,Stylianopoulos:2007dp} 
+\todo{add derivation}
+The divergence of the macroscopic stress tensor, $\pmb{\sigma}$ is derived by applying the Reynolds transport theorem to the volume-averaged stress and invoking microscopic equilibrium:
 %
 \begin{equation}
 \sigma_{ij,i}^{(M)} = \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)},
 \label{eq:macro_stress_divergence}
 \end{equation}
 %
-where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale (right superscript $(m)$), $n_k$ is the unit normal vector, and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor. A volume averaging of $s_{ij}^{(m)}$ is employed to obtain $\sigma_{ij}^{(M)}$ \cite{Chandran:2007hy}:
+\todo{description of what is RHS in equation \ref{eq:macro_stress_divergence}}
+where the superscript \(m\) is applied to microscale quantities, and \(M\) is applied to macroscale quantities. Also, $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale, $n_k$ is the unit normal vector, and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor \cite{Chandran:2007hy,Stylianopoulos:2007dp}. A volume averaging of $s_{ij}^{(m)}$ is employed to obtain $\sigma_{ij}^{(M)}$ \todo{repeat of volume averaged stess from microscale}:
 %
 \begin{equation}
 \sigma_{ij}^{(M)} = \frac{1}{V^{(m)}}\int_{V^{(m)}}s_{ij}^{(m)} dV^{(m)},
 \label{eq:macro_stress_volume_avg}
 \end{equation}
 %
-where $V^{(m)}$ is the microscale volume.
+where $V^{(m)}$ is the microscale volume \cite{Chandran:2007hy}. 
 
-The virtual work, $\delta W$, is obtained by multiplying Eq.\ \eqref{eq:macro_stress_divergence} by multiplying by a virtual velocity, $\delta \pmb{v}$ (also known as a test function), and integrating over the current volume \cite{JavierBonet:2008uxa}
+From Eq. \eqref{eq:macro_stress_divergence} we see that the conservation of momentum equation becomes:
+\begin{equation}
+\sigma_{ij,i}^{(M)}-\frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)}=0,
+\label{eq:multi_cons_mom}
+\end{equation}
+
+
+The virtual work, $\delta W$, is obtained by multiplying Eq.\ \eqref{eq:multi_cons_mom} by a virtual velocity, $\delta \pmb{v}$ (also known as a test function), and integrating over the current volume:
 %
 \begin{align}
 \delta W &= \int_{V^{(M)}} \left(\sigma_{ij,i}^{(M)} - \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)} \right)  \delta v_j^{(M)}  dV^{(M)} \nonumber\\
 %
-&= \int_{V_0^{(M)}} \left(\sigma_{ij,i}^{(M)} - \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)} \right)  \delta v_j^{(M)}J dV_0^{(M)}  \nonumber\\
+&= \int_{V_0^{(M)}} \left(\sigma_{ij,i}^{(M)} - \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)} \right)  \delta v_j^{(M)}J^{(M)} dV_0^{(M)}  \nonumber\\
 %
-&= \int_{V_0^{(M)}} \left(\sigma_{ij,i}^{(M)} - Q_j^{(m/M)} \right) \delta v_j^{(M)}J dV_0^{(M)}   \nonumber\\
+&= \int_{V_0^{(M)}} \left(\sigma_{ij,i}^{(M)} - Q_j^{(m/M)} \right) \delta v_j^{(M)}J^{(M)} dV_0^{(M)}   \nonumber\\
 %
-&= \int_{V_0^{(M)}} \left(\text{div}\pmb{\sigma}^{(M)} - \pmb{Q}^{(m/M)} \right)  \cdot \delta \pmb{v}^{(M)}J dV_0^{(M)} ,
+&= \int_{V_0^{(M)}} \left(\text{div}\pmb{\sigma}^{(M)} - \pmb{Q}^{(m/M)} \right)  \cdot \delta \pmb{v}^{(M)}J^{(M)} dV_0^{(M)} ,
 \label{eq:virtual_work}
 \end{align}
 %
-where  
+where \(J^{(M)}\) is the Jacobian of the macroscale, and:
 %
 \begin{equation}
 Q_j^{(m/M)} = \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)}.
@@ -45,40 +54,40 @@ Note that the superscript $(m/M)$ indicates the quantity involves variables from
 Using the identity
 %
 \begin{equation}
-\text{div}(\pmb{\sigma}\delta\pmb{v} J) =  (\pmb{\sigma}:\nabla\delta\pmb{v})J + (\delta \pmb{v} \cdot \text{div}\pmb{\sigma})J + (\pmb{\sigma} \delta\pmb{v})\cdot \nabla J
+\text{div}(\pmb{\sigma}\cdot\delta\pmb{v} J) =  (\pmb{\sigma}:\nabla\delta\pmb{v})J + (\delta \pmb{v} \cdot \text{div}\pmb{\sigma})J + (\pmb{\sigma} \cdot \delta\pmb{v})\cdot \nabla J,
 \end{equation}
 %
 Eq.\ \eqref{eq:virtual_work} becomes
 %
 \begin{eqnarray}
-\delta W &=& \int_{V_0^{(M)}} \left(\text{div}(\pmb{\sigma}^{(M)} \delta\pmb{v}^{(M)} J) - (\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J - (\pmb{\sigma}^{(M)}\delta \pmb{v}^{(M)})\cdot \nabla J \right)dV_0^{(M)} \nonumber\\
+\delta W &=& \int_{V_0^{(M)}} \left(\text{div}(\pmb{\sigma}^{(M)} \cdot \delta\pmb{v}^{(M)} J^{(M)}) - (\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J^{(M)} - (\pmb{\sigma}^{(M)}\cdot \delta \pmb{v}^{(M)})\cdot \nabla J^{(M)} \right)dV_0^{(M)} \nonumber\\
 %
-&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J dV_0^{(M)} 
+&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J^{(M)} dV_0^{(M)} 
 %
 \end{eqnarray}
 %
 Further applying the divergence theorem we have
 %
 \begin{eqnarray}
-\delta W &=& \int_{\partial V_0^{(M)}} \pmb{n} \cdot \pmb{\sigma}^{(M)} \delta\pmb{v}^{(M)} J dA_0^{(M)} - \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J + (\pmb{\sigma}^{(M)}\delta \pmb{v}^{(M)})\cdot \nabla J \right)dV_0^{(M)} \nonumber\\
+\delta W &=& \int_{\partial V_0^{(M)}} \pmb{n} \cdot \pmb{\sigma}^{(M)} \delta\pmb{v}^{(M)} J^{(M)} dA_0^{(M)} - \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J^{(M)} + (\pmb{\sigma}^{(M)} \cdot \delta \pmb{v}^{(M)})\cdot \nabla J^{(M)} \right)dV_0^{(M)} \nonumber\\
 %
-&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J dV_0^{(M)} \nonumber\\
+&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J^{(M)} dV_0^{(M)} \nonumber\\
 %
-&=& \int_{\partial V_0^{(M)}} \pmb{t}^{(M)} \cdot \delta\pmb{v}^{(M)} J dA_0^{(M)} - \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J + (\pmb{\sigma}^{(M)}\delta \pmb{v}^{(M)})\cdot \nabla J \right)dV_0^{(M)} \nonumber\\
+&=& \int_{\partial V_0^{(M)}} \pmb{t}^{(M)} \cdot \delta\pmb{v}^{(M)} J^{(M)} dA_0^{(M)} - \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\nabla \delta \pmb{v}) J^{(M)} + (\pmb{\sigma}^{(M)} \cdot \delta \pmb{v}^{(M)})\cdot \nabla J^{(M)} \right)dV_0^{(M)} \nonumber\\
 %
-&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J dV_0^{(M)} \nonumber\\
-&=& \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\delta \pmb{d}) J + (\pmb{\sigma}^{(M)}\delta \pmb{v}^{(M)})\cdot \nabla J \right)dV_0^{(M)} \nonumber\\
+&-& \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J^{(M)} dV_0^{(M)} \nonumber\\
+&=& \int_{V_0^{(M)}} \left((\pmb{\sigma}^{(M)}:\delta \pmb{d}) J^{(M)} + (\pmb{\sigma}^{(M)}\cdot\delta \pmb{v}^{(M)})\cdot \nabla J^{(M)} +\pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J^{(M)}\right)dV_0^{(M)} \nonumber\\
 %
-&-& \int_{\partial V_0^{(M)}} \pmb{t}^{(M)} \cdot \delta\pmb{v}^{(M)} J dA_0^{(M)} + \int_{V_0^{(M)}} \pmb{Q}^{(m/M)} \cdot \delta \pmb{v}^{(M)}J dV_0^{(M)} \nonumber\\
+&-& \int_{\partial V_0^{(M)}} \pmb{t}^{(M)} \cdot \delta\pmb{v}^{(M)} J^{(M)} dA_0^{(M)} \nonumber\\
 %
-&=& \delta W_{int} + \delta W_{ext}
+&=& \delta W_{int} - \delta W_{ext} = 0
 \label{eq:virtual_work_final}
 \end{eqnarray}
 %
-where $\delta \pmb{d}^{(M)}$ is the virtual rate of deformation tensor and $\pmb{t}^{(M)}$ is the traction vector.
+where the virtual rate of deformation tensor, $\delta \pmb{d}^{(M)}$, can be used instead of $\nabla \delta \vec{v}$ in the double contraction with the Cauchy stress due to the symmetry of the Cauchy stress $\sigma$. Also, $\pmb{t}^{(M)}$ is the traction vector.
 
 \subsection{Newton-Raphson Method and the Tangent-Stiffness Matrix}
-
+\todo{this does not need to be repeated (this might be most general version)}
 The Newton-Raphson procedure for solving a nonlinear set of equations is \cite{JavierBonet:2008uxa}
 %
 \begin{eqnarray}
@@ -145,7 +154,7 @@ D\delta W(\phi,\delta \pmb{v}^{(M)})[\delta \pmb{u}^{(M)}]
 \label{eq:virtual_work_linearized}
 \end{eqnarray}
 %
-where $\pmb{e}$ and $\pmb{\varepsilon}$ are the Eulerian (or Almansi) strain tensor and small-strain tensor, respectively, and $\delta \pmb{d}$ is the virtual rate of deformation tensor:
+where $\pmb{e}$ and $\pmb{\varepsilon}$ are the Eulerian (or Almansi) strain tensor and small-strain tensor, respectively, and $\delta \pmb{d}$ is the virtual rate of deformation tensor: \todo{choice of strain tensor is not consistent with rest of document here}
 %
 \begin{align}
 &\pmb{e} = \frac{1}{2}(\pmb{I} - \pmb{b}^{-1}) \nonumber\\
@@ -161,7 +170,7 @@ where $\pmb{e}$ and $\pmb{\varepsilon}$ are the Eulerian (or Almansi) strain ten
 The linearization in Eq.\ \eqref{eq:virtual_work_linearized} can be cast into the framework of the Newton-Raphson procedure in Eq.\ \eqref{eq:Newton-Raphson} by discretization via shape functions:
 %
 \begin{align}
-&\delta \pmb{u}^{(M)} = \sum_{a=1}^n N_a \pmb{x}_a^{(M)} \nonumber\\
+&\delta \pmb{u}^{(M)} = \sum_{a=1}^n N_a \pmb{u}_a^{(M)} \nonumber\\
 %
 &\delta \pmb{v}^{(M)} = \sum_{a=1}^n N_a \delta \pmb{v}_a^{(M)} \nonumber\\
 %
@@ -171,7 +180,7 @@ The linearization in Eq.\ \eqref{eq:virtual_work_linearized} can be cast into th
 \label{eq:discretization}
 \end{align}
 %
-where $N_a$ is the $a^{th}$ node of the shape function and $n$ is the number of nodes contained in each shape function. The discretized form of Eq.\ \eqref{eq:virtual_work_linearized} is obtained by applying the approximations in Eq.\ \eqref{eq:discretization}
+where $N_a$ is the $a^{th}$ node of the shape function and $n$ is the number of nodes contained in each shape function. The discretized form of Eq.\ \eqref{eq:virtual_work_linearized} is obtained by applying the approximations in Eq.\ \eqref{eq:discretization} \todo{stopping here for tonight}
 %
 \begin{eqnarray}
 D\delta W(\phi,N_a\delta \pmb{v}_a^{(M)})[N_b\delta \pmb{u}_b^{(M)}] &=& \delta v_i^{(M),a}\left(\int_{V^{(e)}}\frac{\partial N_a}{\partial x_j^{(M)}} c_{ijkl}^{(M)} \frac{\partial N_b}{\partial x_l^{(M)}} dV^{(e)} \right) \delta u_k^{(M),b} 

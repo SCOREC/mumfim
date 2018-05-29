@@ -8,7 +8,7 @@ This chapter describes the formulation of the boundary value problem (BVP) at th
 \section{Macro Scale}
 
 \todo{replace with section \ref{sec:NLFEM}}
-\subsection{Momentum Balance and Formulation of the Residual}
+\subsection{Momentum Balance and Residual}
 
 We are interested in solving the Cauchy Momentum Balance Equation for a body in static equilibrium and in absence of body forces:
 %
@@ -564,7 +564,7 @@ x_3 & \frac{\partial \phi_n}{\partial t} &  \frac{\partial \phi_i}{\partial t}
 %
 The above terms are calculated in microscale. % and the derivatives of $\partial \phi_i/\partial x$ with respect to $x_n$, $y_n$, and $z_n$ are stored in the variable dkdx as dkdx[in][3*n], dkdx[in][3*n+1], and dkdx[in][3*n+2], respectively. Note that ``in" corresponds to the subscript $n$, while ``n'' corresponds to the subscript $i$. Since we are employing a linear tetrahedral element, ``in" and ``n" range from 0 to 3. 
 
-Each node of the tetrahedral element contains three derivatives $(\partial/\partial x_n, \partial/\partial y_n, \partial/\partial z_n)$ for each shape function (total of 4 for the tetrahedral element). Therefore, each node contains 12 entries. Since there are 4 nodes for each tetrahedral element, dkdx for each element is a 4 $\times$ 12 array:
+Each node of the tetrahedral element contains three derivatives $(\frac{\partial}{\partial x_n}, \frac{\partial}{\partial y_n}, \frac{\partial}{\partial z_n})$ for each shape function (total of 4 for the tetrahedral element). Therefore, each node contains 12 entries. Since there are 4 nodes for each tetrahedral element, dkdx for each element is a 4 $\times$ 12 array:
 %
 \begin{eqnarray}
 dkdx = 

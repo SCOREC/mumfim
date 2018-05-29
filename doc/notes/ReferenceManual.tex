@@ -3,7 +3,7 @@
 \usepackage{graphicx, epsfig,cancel}
 \usepackage{color}
 \usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
+\usepackage{amssymb,amsmath,amsfonts} 
 \usepackage{setspace}
 \usepackage{hyperref}
 % add the bibliography to the table of contents
@@ -12,6 +12,7 @@
 \usepackage{listings}
 % use option disable to turn off all notes
 \usepackage{todonotes}
+\usepackage{bm}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -60,21 +61,32 @@
 \makeatother
 
 \newcommand{\diff}{\mathop{}\!\mathrm{d}}
-\renewcommand{\vec}[1]{\mathbf{#1}}
-\newcommand{\mat}[1]{\mathbf{#1}}
+%\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\renewcommand{\vec}[1]{\bm{#1}} % bolded regular vector
+\newcommand{\mat}[1]{\bm{#1}} % matrix 
+%\newcommand{\hvec}[1]{\ensuremath{\vec{\hat{#1}}}} % hat-vector
+%\newcommand{\bvec}[1]{\ensuremath{\vec{\bar{#1}}}} % bar-vector 
+%\newcommand{\sfnc}[1]{\ensuremath{\mathcal{#1}}} % scalar-valued function
+%\newcommand{\vfnc}[1]{\ensuremath{\vec{\mathcal{#1}}}} % vector-valued function
+%\newcommand{\rspc}[1]{\ensuremath{\mathbb{R}^{#1}}} % real vector space
+%\newcommand{\pjac}[2]{\ensuremath{\; \frac{\partial #1}{\partial #2}} \;} % partial jacobian
 
 
 %\includeonly{./Macroscale/Macroscale_Derivation,./Microscale/Microscale_Derivation,./Multiscale/MultiscaleNotes}
 %\includeonly{./ConstitutiveRelationships/Constitutive}
 %\includeonly{./VolumeConstrain/VolumeConstraint}
 
+%\includeonly{./Multiscale/MultiscaleNotes}
+
 \author{Victor Chan, Jacob Merson, Bill Tobin}
 \title{Biotissue Reference Manual}
+
 \begin{document}
 \listoftodos
 \maketitle
 \tableofcontents
 
+\todo{fix boldface in equations...e.g. make them all use mathbf}
 \part{Multiscale FEM Derivation}
 \include{./Macroscale/Macroscale_Derivation}
 \include{./Microscale/Microscale_Derivation}
