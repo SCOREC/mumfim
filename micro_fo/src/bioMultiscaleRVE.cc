@@ -42,7 +42,9 @@ namespace bio
                        hdr.data[FIELD_ORDER],
                        gss_id,
                        lcl_gss);
-    rve_dim = calcRVEDimensionality(fn,fbr_area,fbr_vl_frc);
+    //rve_dim = calcRVEDimensionality(fn,fbr_area,fbr_vl_frc);
+    // TODO REMOVE, only here to match old code
+    rve_dim = 7.0;
     scale_conversion = 1.0 / (rve_dim * rve_dim);
     std::vector<apf::Vector3> fe_nds;
     int nv = apf::Mesh::adjacentCount[hdr.data[ELEMENT_TYPE]][0];
@@ -66,6 +68,8 @@ namespace bio
   void MultiscaleRVE::calcdRVEdFE(apf::DynamicMatrix & dRVEdFE)
   {
     int num_rve_nds = rve->numNodes();
+    apf::NewArray<int> rw_ids;
+    apf::getElementNumbers(rve->getNumbering(),rve->getMeshEnt(),rw_ids);
     apf::Vector3 gbl_gss;
     apf::mapLocalToGlobal(macro_melmnt,lcl_gss,gbl_gss);
     apf::DynamicArray<apf::Vector3> gbl_rve_crds(num_rve_nds);
@@ -90,7 +94,7 @@ namespace bio
         double diff  = rvec_shps[jj] - gss_shps[jj];
         diff /= rve_dim;
         for(int kk = 0; kk < dim; ++kk)
-          dRVEdFE(ii*dim+kk,jj*dim+kk) = diff;
+          dRVEdFE(rw_ids[ii*dim+kk],jj*dim+kk) = diff;
       }
     }
   }

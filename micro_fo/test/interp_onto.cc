@@ -4,7 +4,7 @@
 int main(int argc, char * argv[])
 {
   int result = 0;
-  amsi::initAnalysis(argc,argv);
+  amsi::initAnalysis(argc,argv,MPI_COMM_WORLD);
   bio::RVE rve;
   bio::RVE inr(0.25);
   std::vector<double> u {-1.0, -1.0, -1.0,

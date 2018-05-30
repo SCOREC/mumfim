@@ -21,6 +21,7 @@ namespace las
    * sparse defines wheter to print the matrix in sparse mode, or as full matrix
    */
   void printSparskitMat(std::ostream &, Mat * m, bool sparse=false);
+  void printSparskitVec(std::ostream &, Vec * v);
   double getSparskitMatValue(Mat *, int rr, int cc);
   void setSparskitMatValue(Mat *, int rr, int cc, double vl);
   double * getskMatNNZArray(Mat * m);

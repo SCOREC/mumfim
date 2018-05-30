@@ -174,6 +174,13 @@ namespace las
       }
     }
   }
+  void printSparskitVec(std::ostream & o, Vec * vi)
+  {
+    skVec * v = getSparskitVector(vi);
+    int rws = v->size();
+    for(int rw = 0; rw < rws; ++rw)
+      o << (*v)[rw] << " ";
+  }
   double getSparskitMatValue(Mat * k, int rr, int cc)
   {
     skMat * m = getSparskitMatrix(k);
@@ -200,7 +207,7 @@ namespace las
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
   {
     bfrs->zero();
-    double tol = 1e-6;
+    double tol = 0.0;//1e-6;
     skMat * mat = getSparskitMatrix(k);
     skVec * uv = getSparskitVector(u);
     skVec * fv = getSparskitVector(f);

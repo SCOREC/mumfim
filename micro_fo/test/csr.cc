@@ -9,7 +9,7 @@
 #include <sstream>
 int main(int argc, char * argv[])
 {
-  amsi::initAnalysis(argc,argv);
+  amsi::initAnalysis(argc,argv,MPI_COMM_WORLD);
   double eye[] = { 1.0 , 0.0 , 0.0 ,
                    0.0 , 1.0 , 0.0 ,
                    0.0 , 0.0 , 1.0 };

@@ -94,6 +94,7 @@ namespace bio
       es->zero();
       int tg = -1;
       msh->getIntTag(ent,rct_tg,&tg);
+      assert(tg == 0 || tg == 1);
       fr = frs[tg];
       dim = msh->getDimension();
       apf::MeshEntity * vs[2];

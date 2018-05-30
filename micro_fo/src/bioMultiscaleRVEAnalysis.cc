@@ -146,7 +146,8 @@ namespace bio
       apf::DynamicVector sig(strs);
       ds_dx_rve.getColumn(rve_dof,col);
       col /= vol;
-      sig *= (dV_dx_rve[rve_dof]) / (vol * vol);
+      sig *= (dV_dx_rve[rve_dof]);
+      sig *= 1 / (vol * vol);
       col -= sig;
       col *= cnv;
       dS_dx_rve.setColumn(rve_dof,col);
@@ -207,8 +208,10 @@ namespace bio
     dRdx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     dRdx_rve.zero();
     // this assumes 3d, use dim to change the sides we iterate over
-    for(int sd = RVE::side::bot; sd != RVE::side::all; ++sd)
+    int sds[] = {RVE::side::top, RVE::side::bot, RVE::side::lft, RVE::side::rgt, RVE::side::bck, RVE::side::frt};
+    for(int sd_idx = 0; sd_idx != RVE::side::all; ++sd_idx)
     {
+      int sd = sds[sd_idx];
       RVE::side rve_sd = static_cast<RVE::side>(sd);
       apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
       double a = apf::measure(ans->rve->getMesh(),sd_ent);
@@ -246,19 +249,16 @@ namespace bio
       dx_fn_dx_rve.setColumn(ii,u);
     }
   }
-// honestly break most of this out into an class (maybe the drve/dfe one?) and find a way to require that the operations happen in the correct order (modifications of the stiffness matrix)
-  void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
+  // setup additional solves with the rows of dR_dx_rve as the force vector
+  // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
+  void calcds_dx_fn(apf::DynamicMatrix & ds_dx_fn,
+                    FiberRVEAnalysis * ans)
   {
-    int dim = ans->rve->getMesh()->getDimension();
-    int fn_dof_cnt = ans->fn->getDofCount();
-    //int rve_dof_cnt = ans->rve->numNodes()*dim;
-    apf::DynamicMatrix dR_dx_rve;
-    calcdR_dx_rve(dR_dx_rve,ans);
-    // setup additional solves with the rows of dR_dx_rve as the force vector
-    // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
+    int dim = ans->rve->getDim();
     int sigma_length = dim == 3 ? 6 : 3;
-    apf::DynamicMatrix dS_dx_fn(sigma_length,fn_dof_cnt);
-    dS_dx_fn.zero();
+    int fn_dof_cnt = ans->fn->getDofCount();
+    ds_dx_fn.setSize(sigma_length,fn_dof_cnt);
+    ds_dx_fn.zero();
     apf::Numbering * dofs = ans->fn->getUNumbering();
     double * F = NULL;
     ans->ops->get(ans->f,F);
@@ -300,7 +300,7 @@ namespace bio
           apf::DynamicVector vls(sigma_length);
           amsi::mat2VoigtVec(dim,ms,&vls(0));
           for(int ii = 0; ii < sigma_length; ++ii)
-            dS_dx_fn(ii,dof) += vls(ii);
+            ds_dx_fn(ii,dof) += vls(ii);
           for(int ii = 0; ii < dim; ++ii)
             las::setSparskitMatValue(ans->k,bnd_dofs[ii],dof,0.0);
         }
@@ -308,6 +308,16 @@ namespace bio
       for(int ii = 0; ii < dim; ++ii)
         las::setSparskitMatValue(ans->k,bnd_dofs[ii],bnd_dofs[ii],1.0);
     }
+  }
+  void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
+  {
+    int dim = ans->rve->getDim();
+    //int fn_dof_cnt = ans->fn->getDofCount();
+    int sigma_length = dim == 3 ? 6 : 3;
+    apf::DynamicMatrix dR_dx_rve;
+    calcdR_dx_rve(dR_dx_rve,ans);
+    apf::DynamicMatrix ds_dx_fn;
+    calcds_dx_fn(ds_dx_fn,ans);
     // zero rows in the matrix w/ boundary conditions
     // this effects the force vector which is used in the calculation of
     // dS_dx_fn above so we must do it after.
@@ -316,9 +326,8 @@ namespace bio
     // calculate dx_fn_dx_rve;
     apf::DynamicMatrix dx_fn_dx_rve;
     calcdx_fn_dx_rve(dx_fn_dx_rve,ans,dR_dx_rve);
-    // have dx_fn_dx_rve
     apf::DynamicMatrix ds_dx_rve;
-    apf::multiply(dS_dx_fn,dx_fn_dx_rve,ds_dx_rve);
+    apf::multiply(ds_dx_fn,dx_fn_dx_rve,ds_dx_rve);
     // calculate volume derivative
     apf::DynamicVector dV_dx_rve;
     CalcdV_dx_rve calcdv_dx_rve(2,
@@ -348,6 +357,7 @@ namespace bio
     // rebuild everything since we want the force vector without
     // boundary conditions anyway
     ans->ops->zero(ans->k);
+    ans->ops->zero(ans->f);
     apf::Mesh * fn  = ans->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * it = fn->begin(1);

@@ -74,7 +74,7 @@ int main(int argc, char ** argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::initAnalysis(argc,argv);
+    amsi::initAnalysis(argc,argv,MPI_COMM_WORLD);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
     if(rnk > 0)

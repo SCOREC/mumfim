@@ -74,17 +74,35 @@ namespace bio
   {}
   void FiberRVEIteration::iterate()
   {
+    /*
+    PCU_Switch_Comm(MPI_COMM_SELF);
+    if(!PCU_Comm_Self())
+      apf::writeVtkFiles("rve",an->rve->getMesh());
+    PCU_Switch_Comm(AMSI_COMM_SCALE);
+    */
     an->ops->zero(an->k);
     an->ops->zero(an->u);
     an->ops->zero(an->f);
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
+    //int ii = 0;
+    std::stringstream sout;
     while((me = fn->iterate(itr)))
     {
       apf::MeshElement * mlm = apf::createMeshElement(fn,me);
       an->es->process(mlm);
+      /*
+      if(!PCU_Comm_Self())
+      {
+        sout << "f_" << ii;
+        std::ofstream fout(sout.str().c_str());
+        sout.str("");
+        las::printSparskitVec(fout,an->f);
+      }
       apf::destroyMeshElement(mlm);
+      ++ii;
+      */
     }
     fn->end(itr);
     applyRVEBC(an->bnd_nds[RVE::all].begin(),

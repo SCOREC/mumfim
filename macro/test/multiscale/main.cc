@@ -132,7 +132,7 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::initMultiscale(argc,argv);
+    amsi::initMultiscale(argc,argv,MPI_COMM_WORLD);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif
