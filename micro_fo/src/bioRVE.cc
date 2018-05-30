@@ -111,10 +111,12 @@ namespace bio
     int nen = rve->numNodes();
     double hd = 0.5 * rve_dim;
     rve_crds.setSize(nen);
+    /*
     apf::NewArray<int> dofs;
     apf::getElementNumbers(rve->getNumbering(),
                            rve->getMeshEnt(),
                            dofs);
+    */
     apf::NewArray<apf::Vector3> crds;
     apf::MeshElement * rve_mlmt = apf::createMeshElement(rve->getMesh(),
                                                         rve->getMeshEnt());
@@ -128,11 +130,11 @@ namespace bio
     {
       for(int dd = 0 ; dd < dim; ++dd)
       {
-        double & crd = crds[nd][dd];
+        double crd = crds[nd][dd];
         // sign function
         crd = (0.0 < crd) - (crd < 0.0);
-        int nd_dof = dofs[nd*dim] / dim;
-        rve_crds[nd_dof][dd] = gbl_gss[dd] + (crd * hd);
+        //int nd_dof = dofs[nd*dim] / dim;
+        rve_crds[nd][dd] = gbl_gss[dd] + (crd * hd);
       }
     }
   }
