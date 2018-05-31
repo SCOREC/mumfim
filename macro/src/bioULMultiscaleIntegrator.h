@@ -27,6 +27,7 @@ namespace bio
       , strain_field(strn)
       , stress_field(strs)
       , dfm_grd_fld(dfm_grd)
+      , ent_cnt(0)
     {
       matrixShearModulus  = 0.0;
       matrixPoissonsRatio = 0.45;
@@ -44,6 +45,7 @@ namespace bio
     void outElement()
     {
       current_integration_point = 0;
+      ent_cnt++;
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
@@ -158,6 +160,19 @@ namespace bio
         fe[ii] += (NTxQ(ii,0) - BLTxSV(ii,0)) * wxdV; // P - F
         for(int jj = 0; jj < nedof; jj++)
           Ke(ii,jj) += (K0(ii,jj) + K1(ii,jj)) * wxdV;
+      }
+      std::stringstream sout;
+      sout << "nke_" << ent_cnt;
+      std::ofstream kout(sout.str().c_str());
+      sout .str("");
+      sout << "nfe_" << ent_cnt;
+      std::ofstream fout(sout.str().c_str());
+      for(int ii = 0; ii < nedof; ++ii)
+      {
+        fout << fe[ii] << " ";
+        for(int jj = 0; jj < nedof; ++jj)
+          kout << Ke(ii,jj) << " ";
+        fout << std::endl;
       }
       // E_G = 1/2(C-I), C=F^T.F, Green-Lagrange Strain.
       apf::Matrix3x3 greenStrain(
@@ -385,6 +400,7 @@ namespace bio
     double matrixShearModulus;
     double matrixPoissonsRatio;
     double matrixBulkModulus;
+    int ent_cnt;
   };
 }
 #endif

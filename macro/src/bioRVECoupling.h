@@ -37,6 +37,17 @@ namespace bio
       , mtd()
     {
       rst_fst = apf::createIPField(msh,"micro_fo_rve_offset",apf::SCALAR,1);
+      int ip_id = 0;
+      apf::MeshIterator * it = m->begin(m->getDimension());
+      // assuming 1 integration point per element
+      for(apf::MeshEntity * me = NULL; (me = m->iterate(it));)
+      {
+        apf::MeshElement * mlmt = apf::createMeshElement(m,me);
+        int nip = apf::countIntPoints(mlmt,0);
+        apf::destroyMeshElement(mlmt);
+        for(int ip = 0; ip < nip; ++ip)
+          apf::setScalar(rst_fst,me,ip,ip_id++);
+      }
     }
     ~RVECoupling()
     {
