@@ -55,8 +55,9 @@ namespace bio
       b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
     an->ops = las::initSparskitOps();
     an->ops->zero(an->f0);
-    an->slv = las::createSparskitLUSolve(b);
+    an->slv = las::createSparskitLUSolve(b,1e-6);
     an->es = createMicroElementalSystem(fn,an->ops,an->k,an->f);
+    an->dx_fn_dx_rve_set = false;
     return an;
   }
   void destroyAnalysis(FiberRVEAnalysis * fa)
@@ -86,7 +87,7 @@ namespace bio
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
-    //int ii = 0;
+    int ii = 0;
     std::stringstream sout;
     while((me = fn->iterate(itr)))
     {
@@ -100,9 +101,9 @@ namespace bio
         sout.str("");
         las::printSparskitVec(fout,an->f);
       }
+      */
       apf::destroyMeshElement(mlm);
       ++ii;
-      */
     }
     fn->end(itr);
     applyRVEBC(an->bnd_nds[RVE::all].begin(),

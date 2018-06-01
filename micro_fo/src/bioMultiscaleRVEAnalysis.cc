@@ -79,14 +79,58 @@ namespace bio
     apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
     apf::Field * fn_du = ans->fn->getdUField();
     apf::Field * fn_u = ans->fn->getUField();
-    ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
+    if(ans->dx_fn_dx_rve_set == true)
+    {
+      int dim = ans->rve->getDim();
+      int nnd = ans->rve->numNodes();
+      apf::DynamicVector rve_uv(nnd*dim);
+      apf::NewArray<apf::Vector3> rve_us;
+      apf::getVectorNodes(ans->rve->getElement(),rve_us);
+      apf::NewArray<int> rve_dofs;
+      apf::getElementNumbers(ans->rve->getNumbering(),ans->rve->getMeshEnt(),rve_dofs);
+      // reorder the rve dofs using dofids because
+      // dx_fn_dx_rve uses them
+      for(int nd = 0; nd < nnd; ++nd)
+        for(int dm = 0; dm < dim; ++dm)
+          rve_uv[rve_dofs[nd*dim+dm]] = rve_us[nd][dm];
+      int fn_dofs = ans->fn->getDofCount();
+      apf::DynamicVector u_fn(fn_dofs);
+      apf::multiply(ans->dx_fn_dx_rve,rve_uv,u_fn);
+      ApplyDeformationGradient app_F(F,fn_msh,fn_du,fn_u);
+      for(auto vrt = ans->bnd_nds[RVE::side::all].begin(); vrt != ans->bnd_nds[RVE::side::all].end(); ++vrt)
+      {
+        for(int dm = 0; dm < dim; ++dm)
+        {
+          int dof = apf::getNumber(ans->fn->getUNumbering(),
+                                   *vrt,0,dm);
+          u_fn(dof) = 0.0;
+        }
+        app_F.inEntity(*vrt);
+        app_F.atNode(0);
+        app_F.outEntity();
+      }
+      // only changes 'u', 'du' is changed for boundary nodes but not internal nodes, will this cause
+      // any issues?
+      //
+      ApplySolution(ans->fn->getUNumbering(),&u_fn[0],0,true).apply(ans->fn->getUField());
+      apf::zeroField(ans->fn->getdUField());
+      /*
+      if(!PCU_Comm_Self())
+      {
+        std::ofstream fout("u_fld");
+        amsi::PrintField(ans->fn->getXpUField(),fout).run();
+      }
+      */
+    }
+    else
+      ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
   }
   // might be duplicated from bioFiberRVEAnalysis.cc ?
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
     int dim = ans->fn->getNetworkMesh()->getDimension();
-    apf::Field * xyz = ans->fn->getNetworkMesh()->getCoordinateField();
-    apf::Vector3 xyz_val;
+    apf::Field * xpu = ans->fn->getXpUField();
+    apf::Vector3 xpu_val;
     apf::Vector3 f_val;
     apf::Numbering * num = ans->fn->getUNumbering();
     int dofs[3] {};
@@ -97,18 +141,18 @@ namespace bio
                         0.0,0.0,0.0);
     for(auto nd = ans->bnd_nds[RVE::all].begin(); nd != ans->bnd_nds[RVE::all].end(); ++nd)
     {
-      apf::getVector(xyz,*nd,0,xyz_val);
+      apf::getVector(xpu,*nd,0,xpu_val);
       for(int ii = 0; ii < ans->fn->getDim(); ++ii)
         dofs[ii] = apf::getNumber(num,*nd,0,ii);
-      strs[0][0] += xyz_val[0] * f[dofs[0]];
-      strs[0][1] += xyz_val[1] * f[dofs[0]];
-      strs[0][2] += xyz_val[2] * f[dofs[0]];
-      strs[1][0] += xyz_val[0] * f[dofs[1]];
-      strs[1][1] += xyz_val[1] * f[dofs[1]];
-      strs[1][2] += xyz_val[2] * f[dofs[1]];
-      strs[2][0] += xyz_val[0] * f[dofs[2]];
-      strs[2][1] += xyz_val[1] * f[dofs[2]];
-      strs[2][2] += xyz_val[2] * f[dofs[2]];
+      strs[0][0] += xpu_val[0] * f[dofs[0]];
+      strs[0][1] += xpu_val[1] * f[dofs[0]];
+      strs[0][2] += xpu_val[2] * f[dofs[0]];
+      strs[1][0] += xpu_val[0] * f[dofs[1]];
+      strs[1][1] += xpu_val[1] * f[dofs[1]];
+      strs[1][2] += xpu_val[2] * f[dofs[1]];
+      strs[2][0] += xpu_val[0] * f[dofs[2]];
+      strs[2][1] += xpu_val[1] * f[dofs[2]];
+      strs[2][2] += xpu_val[2] * f[dofs[2]];
     }
     // take the symmetric part of the current stress matrix
     apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
@@ -234,7 +278,7 @@ namespace bio
     apf::DynamicVector u(fn_dof_cnt);
     las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
     las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
-    las::LasSolve * slv = ans->slv;
+    las::LasSolve * slv = las::createSparskitLUSolve(las::getSparskitBuffers(ans->slv),0.0);
     dx_fn_dx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     double * fptr = NULL;
     double * uptr = NULL;
@@ -324,10 +368,10 @@ namespace bio
     applyRVEBC(ans->bnd_nds[RVE::all].begin(),ans->bnd_nds[RVE::all].end(),
                ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
     // calculate dx_fn_dx_rve;
-    apf::DynamicMatrix dx_fn_dx_rve;
-    calcdx_fn_dx_rve(dx_fn_dx_rve,ans,dR_dx_rve);
+    calcdx_fn_dx_rve(ans->dx_fn_dx_rve,ans,dR_dx_rve);
     apf::DynamicMatrix ds_dx_rve;
-    apf::multiply(ds_dx_fn,dx_fn_dx_rve,ds_dx_rve);
+    apf::multiply(ds_dx_fn,ans->dx_fn_dx_rve,ds_dx_rve);
+    ans->dx_fn_dx_rve_set = true;
     // calculate volume derivative
     apf::DynamicVector dV_dx_rve;
     CalcdV_dx_rve calcdv_dx_rve(2,
@@ -454,6 +498,7 @@ namespace bio
       sprs.push_back(new las::CSR* [rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
+    PCU_Switch_Comm(MPI_COMM_SELF);
     for(int ii = 0; ii < num_rve_tps; ii++)
     {
       for(int jj = 0; jj < rve_tp_cnt[ii]; ++jj)
@@ -476,6 +521,7 @@ namespace bio
         dof_max = dofs > dof_max ? dofs : dof_max;
       }
     }
+    PCU_Switch_Comm(AMSI_COMM_SCALE);
     bfrs = new las::SparskitBuffers(dof_max);
   }
   void MultiscaleRVEAnalysis::updateCoupling()
@@ -503,9 +549,7 @@ namespace bio
                     inis,
                     amsi::mpi_type<bio::micro_fo_init_data>());
     gmi_model * nl_mdl = gmi_load(".null");
-    MPI_Comm slf;
-    MPI_Comm_dup(MPI_COMM_SELF,&slf);
-    PCU_Switch_Comm(slf);
+    PCU_Switch_Comm(MPI_COMM_SELF);
     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       if(*rve == NULL)
@@ -548,6 +592,7 @@ namespace bio
         std::vector<micro_fo_data> data;
         cs->Communicate(recv_ptrn,data,amsi::mpi_type<micro_fo_data>());
         std::vector<micro_fo_result> results(data.size());
+        PCU_Switch_Comm(MPI_COMM_SELF);
         int ii = 0;
         for(auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
@@ -561,7 +606,7 @@ namespace bio
               prv_nrm = nrm;
               return val;
             };
-          auto eps_gen = [ ](int) -> double { return 1e-8; };
+          auto eps_gen = [ ](int) -> double { return 1e-6; };
           auto ref_gen = [&]() -> double
             {
               return 1.0;
@@ -581,8 +626,9 @@ namespace bio
           // we've converged and have not reset the state of the vectors, matrices, and buffers
           // the inversion of the tangent stiffness matrix should be available in the buffers?
           recoverMultiscaleResults(*rve,&results[ii]);
-          ++ii;
+          ii++;
         }
+        PCU_Switch_Comm(AMSI_COMM_SCALE);
         cs->Communicate(send_ptrn,results,amsi::mpi_type<micro_fo_result>());
         macro_iter++;
         cs->scaleBroadcast(M2m_id,&step_complete);

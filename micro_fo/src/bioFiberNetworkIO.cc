@@ -3,6 +3,7 @@
 #include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
 #include <apfMeshUtil.h>
+#include <PCU.h>
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -36,12 +37,20 @@ namespace bio
   };
   apf::Mesh2 * loadFromStream(std::istream & strm)
   {
-    return NetworkLoader().fromStream(strm);
+    MPI_Comm cm = PCU_Get_Comm();
+    PCU_Switch_Comm(MPI_COMM_SELF);
+    apf::Mesh2 * msh = NetworkLoader().fromStream(strm);
+    PCU_Switch_Comm(cm);
+    return msh;
   }
   apf::Mesh2 * loadFromFile(const std::string & fnm)
   {
+    MPI_Comm cm = PCU_Get_Comm();
+    PCU_Switch_Comm(MPI_COMM_SELF);
     std::fstream strm(fnm);
-    return NetworkLoader().fromStream(strm);
+    apf::Mesh2 * msh = NetworkLoader().fromStream(strm);
+    PCU_Switch_Comm(cm);
+    return msh;
   }
   apf::Mesh2 * NetworkLoader::fromStream(std::istream & is)
   {

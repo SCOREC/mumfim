@@ -161,6 +161,7 @@ namespace bio
         for(int jj = 0; jj < nedof; jj++)
           Ke(ii,jj) += (K0(ii,jj) + K1(ii,jj)) * wxdV;
       }
+      /*
       std::stringstream sout;
       sout << "nke_" << ent_cnt;
       std::ofstream kout(sout.str().c_str());
@@ -174,6 +175,7 @@ namespace bio
           kout << Ke(ii,jj) << " ";
         fout << std::endl;
       }
+      */
       // E_G = 1/2(C-I), C=F^T.F, Green-Lagrange Strain.
       apf::Matrix3x3 greenStrain(
         0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),

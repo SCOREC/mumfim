@@ -120,7 +120,13 @@ namespace bio
      }
     apf::Mesh * getMesh() const { return cbe; }
     apf::MeshEntity * getMeshEnt() const { return cbe_e; }
-    apf::Element * getElement() const { return cbe_u_e; }
+    apf::Element * getElement()
+    {
+      if(cbe_u_e)
+        apf::destroyElement(cbe_u_e);
+      cbe_u_e = apf::createElement(cbe_u,cbe_e);
+      return cbe_u_e;
+    }
     apf::Numbering * getNumbering() const { return cbe_dof; }
     apf::Field * getUField() const { return cbe_u; }
     apf::Field * getdUField() const { return cbe_du; }

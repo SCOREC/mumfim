@@ -14,7 +14,7 @@ namespace las
    * @note Sparskit is a single-precision solver, so don't use this for anything where you're
    *  trying to converge past 10e-8
    */
-  LasSolve * createSparskitLUSolve(SparskitBuffers * b);
+  LasSolve * createSparskitLUSolve(SparskitBuffers * b, double eps = 0.0);
   LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b);
   LasSolve * createSparskitQuickLUSolve(LasSolve * slvr);
   /*
@@ -25,5 +25,6 @@ namespace las
   double getSparskitMatValue(Mat *, int rr, int cc);
   void setSparskitMatValue(Mat *, int rr, int cc, double vl);
   double * getskMatNNZArray(Mat * m);
+  SparskitBuffers * getSparskitBuffers(LasSolve * slv);
 }
 #endif

@@ -23,6 +23,8 @@ namespace bio
     las::Vec * f0;
     las::LasOps * ops;
     las::LasSolve * slv;
+    apf::DynamicMatrix dx_fn_dx_rve;
+    bool dx_fn_dx_rve_set;
   };
   FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::CSR *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);

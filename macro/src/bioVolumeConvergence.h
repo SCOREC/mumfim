@@ -13,7 +13,7 @@ namespace bio
   public:
     template <typename I>
       MultiscaleConvergence(I bgn, I end, size_t c)
-      : amsi::MultiConvergence(bgn,end)
+        : amsi::MultiConvergence(bgn,end)
       , cs(amsi::ControlService::Instance())
       , cplg(c)
     { }

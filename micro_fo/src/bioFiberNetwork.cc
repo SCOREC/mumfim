@@ -26,7 +26,7 @@ namespace bio
     xpu = apf::createUserField(fn,"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
     apf::zeroField(du);
     apf::zeroField(u);
-    udof = apf::createNumbering(du);
+    udof = apf::createNumbering(u);
     //wdof = apf::createNumbering(dw);
     ucnt = apf::NaiveOrder(udof);
     //wcnt = apf::AdjReorder(wdof);

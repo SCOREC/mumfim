@@ -10,17 +10,19 @@ namespace las
   {
   protected:
     SparskitBuffers * bfrs;
+    double eps;
     friend class SparskitQuickLU;
   public:
-    SparskitLU(SparskitBuffers * b) : bfrs(b) {}
+    SparskitLU(SparskitBuffers * b, double e) : bfrs(b), eps(e) {}
     virtual void solve(Mat * k, Vec * u, Vec * f);
+    SparskitBuffers * getBuffers() { return bfrs; }
   };
   // only perform the solve, do not decompose the matrix
   class SparskitQuickLU : public SparskitLU
   {
   public:
-    SparskitQuickLU(SparskitBuffers * b) : SparskitLU(b) {}
-    SparskitQuickLU(SparskitLU * lu) : SparskitLU(lu->bfrs) {}
+    SparskitQuickLU(SparskitBuffers * b, double e) : SparskitLU(b,e) {}
+    SparskitQuickLU(SparskitLU * lu) : SparskitLU(lu->bfrs,lu->eps) {}
     // the matrix k must have a csr format identical to that used previously in a normal SparskitLU solve
     virtual void solve(Mat * k, Vec * u, Vec * f);
   };
@@ -135,13 +137,17 @@ namespace las
       ops = new SparskitOps;
     return ops;
   }
-  LasSolve * createSparskitLUSolve(SparskitBuffers * b)
+  LasSolve * createSparskitLUSolve(SparskitBuffers * b, double eps)
   {
-    return new SparskitLU(b);
+    return new SparskitLU(b,eps);
   }
-  LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b)
+  SparskitBuffers * getSparskitBuffers(LasSolve * slv)
   {
-    return new SparskitQuickLU(b);
+    return reinterpret_cast<SparskitLU*>(slv)->getBuffers();
+  }
+  LasSolve * createSparskitQuickLUSolve(SparskitBuffers * b, double eps)
+  {
+    return new SparskitQuickLU(b,eps);
   }
   LasSolve * createSparskitQuickLUSolve(LasSolve * slv)
   {
@@ -207,7 +213,6 @@ namespace las
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
   {
     bfrs->zero();
-    double tol = 0.0;//1e-6;
     skMat * mat = getSparskitMatrix(k);
     skVec * uv = getSparskitVector(u);
     skVec * fv = getSparskitVector(f);
@@ -220,7 +225,7 @@ namespace las
           csr->getCols(),
           csr->getRows(),
           &ndofs,
-          &tol,
+          &eps,
           bfrs->matrixBuffer(),
           bfrs->colsBuffer(),
           bfrs->rowsBuffer(),
