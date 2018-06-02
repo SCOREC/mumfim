@@ -100,7 +100,11 @@ namespace bio
           BNL(6+ii,jj+2) = Bp[ii][jj];
         }
       // Fill S matrix - in block notation contains stress tensor along diagonal, zero elsewhere
+      // S is a utility matrix with 3x3 blocks on the diagonal containing the stress values from micro-scale
+      // the order here is correct.
       double S[9][9] = {{0.0}};
+      // SV is the 'voigt-like' vector of stress values sent from micro-scale
+      //  the ordering is not currently correct and should be fixed
       double SV[6] = {0.0};
       for(int ii = 0; ii < 6; ++ii)
         SV[prmt[ii]] = (rslt->data[ii]);
