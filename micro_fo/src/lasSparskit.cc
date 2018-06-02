@@ -212,7 +212,7 @@ namespace las
   // CLASS MEMBER FUNCTION DEFINITIONS
   void SparskitLU::solve(Mat * k, Vec * u, Vec * f)
   {
-    bfrs->zero();
+    //DBG(bfrs->zero());
     skMat * mat = getSparskitMatrix(k);
     skVec * uv = getSparskitVector(u);
     skVec * fv = getSparskitVector(f);
