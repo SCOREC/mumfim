@@ -79,6 +79,12 @@ namespace bio
     apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
     apf::Field * fn_du = ans->fn->getdUField();
     apf::Field * fn_u = ans->fn->getUField();
+    ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
+    // the below method is similar to the old code
+    // but doesn't currently converge. if we run into
+    // issues down the line consider looking back at
+    // this, but it is more computationaly costly
+    // than the above simple method.
     /*
     if(ans->dx_fn_dx_rve_set == true)
     {
@@ -114,16 +120,8 @@ namespace bio
       // any issues?
       //
       ApplySolution(ans->fn->getUNumbering(),&u_fn[0],0,true).apply(ans->fn->getUField());
-      apf::zeroField(ans->fn->getdUField());
-      //if(!PCU_Comm_Self())
-      //{
-      //std::ofstream fout("u_fld");
-      //amsi::PrintField(ans->fn->getXpUField(),fout).run();
-      //}
     }
-    else
     */
-      ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
   }
   // might be duplicated from bioFiberRVEAnalysis.cc ?
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)

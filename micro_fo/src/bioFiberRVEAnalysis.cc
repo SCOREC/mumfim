@@ -93,15 +93,6 @@ namespace bio
     {
       apf::MeshElement * mlm = apf::createMeshElement(fn,me);
       an->es->process(mlm);
-      /*
-      if(!PCU_Comm_Self())
-      {
-        sout << "f_" << ii;
-        std::ofstream fout(sout.str().c_str());
-        sout.str("");
-        las::printSparskitVec(fout,an->f);
-      }
-      */
       apf::destroyMeshElement(mlm);
       ++ii;
     }

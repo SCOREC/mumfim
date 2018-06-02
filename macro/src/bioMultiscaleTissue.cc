@@ -54,8 +54,6 @@ namespace bio
       apf::destroyMeshElement(mlm);
     }
     apf_mesh->end(it);
-    las->PrintMatrix(std::cout);
-    las->PrintVector(std::cout);
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
   }
