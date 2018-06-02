@@ -5,6 +5,7 @@ set(biotissue_public_headers
   bioMultiscaleTissue.h
   bioTissueAnalysis.h
   bioMultiscaleIntegrator.h
+  bioMultiscaleConvergence.h
   bioULMultiscaleIntegrator.h
   bioULMultiscaleHydrostaticPressureIntegrator.h
   bioNeoHookeanIntegrator.h

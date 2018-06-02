@@ -38,7 +38,6 @@ namespace bio
   public:
     MultiscaleTissueAnalysis(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm);
     virtual void init();
-    virtual void checkpoint();
   private:
     size_t cplng;
   };

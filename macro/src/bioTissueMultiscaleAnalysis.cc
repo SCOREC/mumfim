@@ -1,6 +1,7 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioAnalysisIO.h"
 #include "bioMultiscaleTissue.h"
+#include "bioMultiscaleConvergence.h"
 #include "bioVolumeConvergence.h"
 #include <Solvers.h>
 #include <ConvenienceFunctions.h>
@@ -87,11 +88,5 @@ namespace bio
     }
     amsi::log(state) << "STEP, ITER,   T, STATUS, DESC" << std::endl
                      << "   0,    0, 0.0, ACTIVE, Initializing" << std::endl;
-  }
-  void MultiscaleTissueAnalysis::checkpoint()
-  {
-    TissueAnalysis::checkpoint();
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    cs->scaleBroadcast(cplng,&completed);
   }
 }
