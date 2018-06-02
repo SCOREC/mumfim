@@ -9,18 +9,6 @@ namespace las
     , rws(rs,rs+ne+1)
     , cls(cs,cs+nz)
   { }
-  int CSR::operator()(int rw, int cl) const
-  {
-    int result = -1;
-    int fst = rws[rw] - 1; // 1-indexing    v also here
-    while((fst < rws[rw+1] - 2) && (cls[fst] - 1 < cl))
-      ++fst;
-    if(cls[fst] - 1 == cl) // 1-indexing
-      result = fst;
-    else
-      result = -1;
-    return result;
-  }
   void constructFullMatrix(CSR * csr,double * sprs_mat,double * fll_mat)
   {
     int neq = csr->getNumEqs();

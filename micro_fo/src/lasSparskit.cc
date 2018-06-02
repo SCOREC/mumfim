@@ -277,11 +277,7 @@ namespace las
     skMat * mat = getSparskitMatrix(m);
     for(int ii = 0; ii < cntr; ++ii)
       for(int jj = 0; jj < cntc; ++jj)
-      {
-        double vl = vls[ii * cntc + jj];
-        //if(vl != 0.0) // don't want to attempt to access zero locations in a CSR matrix
-        (*mat)(rws[ii],cols[jj]) += vl;
-      }
+        (*mat)(rws[ii],cols[jj]) += vls[ii * cntc + jj];
   }
   void SparskitOps::set(Vec * v, int cnt, int * rws, double * vls)
   {
