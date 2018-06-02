@@ -26,6 +26,11 @@ namespace bio
     xpu = apf::createUserField(fn,"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
     apf::zeroField(du);
     apf::zeroField(u);
+    // USING 'u' HERE IS VERY IMPORTANT,
+    // APPLYDEFORMATIONGRADIENT USES THE
+    // FIELD RETRIEVED FROM THIS NUMBERING TO
+    // MODIFY, THIS SHOULD BE FIXED BECAUSE
+    // IT IS TOO FRAGILE
     udof = apf::createNumbering(u);
     //wdof = apf::createNumbering(dw);
     ucnt = apf::NaiveOrder(udof);
