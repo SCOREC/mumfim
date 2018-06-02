@@ -279,8 +279,8 @@ namespace las
       for(int jj = 0; jj < cntc; ++jj)
       {
         double vl = vls[ii * cntc + jj];
-        if(vl != 0.0) // don't want to attempt to access zero locations in a CSR matrix
-          (*mat)(rws[ii],cols[jj]) += vls[ii * cntc + jj];
+        //if(vl != 0.0) // don't want to attempt to access zero locations in a CSR matrix
+        (*mat)(rws[ii],cols[jj]) += vl;
       }
   }
   void SparskitOps::set(Vec * v, int cnt, int * rws, double * vls)
