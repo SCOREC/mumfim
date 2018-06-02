@@ -276,12 +276,14 @@ namespace bio
     apf::DynamicVector u(fn_dof_cnt);
     las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
     las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
-    las::LasSolve * slv = las::createSparskitLUSolve(las::getSparskitBuffers(ans->slv),0.0);
+    las::LasSolve * iluslv = las::createSparskitLUSolve(las::getSparskitBuffers(ans->slv),0.0);
+    las::LasSolve * qslv = las::createSparskitQuickLUSolve(iluslv);
     dx_fn_dx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     double * fptr = NULL;
     double * uptr = NULL;
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
+      las::LasSolve * slv = ii == 0 ? iluslv : qslv;
       dR_dx_rve.getColumn(ii,f);
       ans->ops->get(skt_f,fptr);
       std::copy(f.begin(),f.end(),fptr);
