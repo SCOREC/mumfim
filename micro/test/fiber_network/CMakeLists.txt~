@@ -1,2 +1,0 @@
-add_executable(converter converter.cc)
-target_link_library(converter micro_fo)

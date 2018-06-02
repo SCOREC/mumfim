@@ -34,7 +34,6 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
     -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
     -DSPARSKIT_DIR=$DEVROOT/install/sparskit \
-    -DSCORECUTIL_DIR=$DEVROOT/install/scorecutil/xl/ \
     ..
   chmod g+rw $BUILD_DIR
 else

@@ -37,12 +37,10 @@ set_property(TARGET micro_fo PROPERTY VERSION ${BIOTISSUE_VERSION})
 
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                    $<INSTALL_INTERFACE:include/biotissue>
-                                    ${SCORECUTIL_INCLUDE_DIR})
+                                    $<INSTALL_INTERFACE:include/biotissue>)
 
 target_link_libraries(micro_fo PUBLIC
                       ${SPARSKIT_LIBRARY}
-                      ${SCORECUTIL_LIBRARIES}
                       amsi::util amsi::analysis amsi::multiscale)
 
 install(TARGETS micro_fo
