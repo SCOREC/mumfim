@@ -13,14 +13,14 @@ This chapter describes the formulation of the boundary value problem (BVP) at th
 We are interested in solving the Cauchy Momentum Balance Equation for a body in static equilibrium and in absence of body forces:
 %
 \begin{align}
-\nabla \cdot \pmb{\sigma} =& \; 0 \text{ in } \Omega \label{momentum_balance} \\
-\pmb{\sigma} \cdot \pmb{n} =& \; \pmb{t} \text{ on } \partial \Omega \nonumber
+\nabla \cdot \mat{\sigma} =& \; 0 \text{ in } \Omega \label{momentum_balance} \\
+\mat{\sigma} \cdot \vec{n} =& \; \vec{t} \text{ on } \partial \Omega \nonumber
 \end{align}
 %
-where $\pmb{\Omega}$ is the problem domain, $\partial \pmb{\Omega}$ is the domain boundary, $\pmb{\sigma}$ is the Cauchy stress tensor, $\pmb{n}$ is the outward-facing unit normal along the domain boundary, and $\pmb{t}$ is the surface traction along the domain boundary.
+where $\vec{\Omega}$ is the problem domain, $\partial \vec{\Omega}$ is the domain boundary, $\mat{\sigma}$ is the Cauchy stress tensor, $\vec{n}$ is the outward-facing unit normal along the domain boundary, and $\vec{t}$ is the surface traction along the domain boundary.
 %
 \begin{eqnarray}
-\pmb{\sigma} \equiv
+\vec{\sigma} \equiv
 \begin{bmatrix}
 \sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
 \sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
@@ -30,11 +30,11 @@ where $\pmb{\Omega}$ is the problem domain, $\partial \pmb{\Omega}$ is the domai
 \end{eqnarray}
 %
 
-Since we intend to use the Galerkin Finite Element Method (FEM), we will need to consider the Galerkin weak form of Eq.\ \eqref{momentum_balance}. We obtain the weak or variational form of the equation by multiplying using an appropriate weighting function $\phi \in \pmb{V}$ where $\pmb{V}$ is an infinite-dimensional trial space and then integrating over the domain:
+Since we intend to use the Galerkin Finite Element Method (FEM), we will need to consider the Galerkin weak form of Eq.\ \eqref{momentum_balance}. We obtain the weak or variational form of the equation by multiplying using an appropriate weighting function $\phi \in \vec{V}$ where $\vec{V}$ is an infinite-dimensional trial space and then integrating over the domain:
 
 %
 \begin{equation}
-\int_\Omega \phi(\nabla \cdot \pmb{\sigma}) \diff \Omega = 0
+\int_\Omega \phi(\nabla \cdot \mat{\sigma}) \diff \Omega = 0
 \label{weak_form1}
 \end{equation}
 %
@@ -43,7 +43,7 @@ Using the divergence identity \todo{correct terminology?}
 
 %
 \begin{equation}
-\nabla \cdot (\phi \pmb{\sigma}) = \pmb{\sigma} (\nabla \phi) + \phi (\nabla \cdot \pmb{\sigma}) \nonumber
+\nabla \cdot (\phi \mat{\sigma}) = \mat{\sigma} (\nabla \phi) + \phi (\nabla \cdot \mat{\sigma}) \nonumber
 \end{equation}
 %
 
@@ -51,7 +51,7 @@ to arrive at
 
 %
 \begin{equation}
-\int_\Omega \nabla \cdot (\phi \pmb{\sigma}) - \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\int_\Omega \nabla \cdot (\phi \mat{\sigma}) - \mat{\sigma} (\nabla \phi) \diff \Omega = 0
 \label{weak_form2}
 \end{equation}
 %
@@ -60,28 +60,28 @@ separating the integrand terms and applying the Divergence Theorem to the first 
 
 %
 \begin{equation}
-\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n} \; \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\int_{\partial \Omega} (\phi \mat{\sigma}) \cdot \vec{n} \; \diff \partial \Omega - \int_\Omega \mat{\sigma} (\nabla \phi) \diff \Omega = 0
 \label{weak_form3}
 \end{equation}
 %
 
-where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\textbf{n}$ is the unit normal to the surface.
+where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\vec{n}$ is the unit normal to the surface.
 
 \todo[prepend, caption={Complete BVP derivation}]{I don't think we make this assumption in code formulation. E.G. we should show the formulation in terms of the full, BVP with no assumption.}
 If we consider a surface-traction free problem, the first term in Eq.\ \eqref{weak_form3} goes to zero and we have
 
 %
 \begin{equation}
-\int_\Omega \pmb{\sigma} \nabla \phi \diff \Omega = 0
+\int_\Omega \mat{\sigma} \nabla \phi \diff \Omega = 0
 \label{weak_form}
 \end{equation}
 %
 
-Finally, we cast the problem in a Galerkin form by selecting a finite subspace of the trial space $\pmb{V}_h \subseteq \pmb{V}$ and selecting our trial functions from this finite subspace $\phi_i \in \pmb{V}_h$
+Finally, we cast the problem in a Galerkin form by selecting a finite subspace of the trial space $\vec{V}_h \subseteq \vec{V}$ and selecting our trial functions from this finite subspace $\phi_i \in \vec{V}_h$
 
 %
 \begin{equation}
-\int_\Omega \pmb{\sigma} \nabla \phi_i \diff \Omega = 0
+\int_\Omega \mat{\sigma} \nabla \phi_i \diff \Omega = 0
 \label{galerkin_weak_form}
 \end{equation}
 %
@@ -92,7 +92,7 @@ which is the problem we will set out to solve in this note.
 To clearly see the problem, the terms within the integral of Eq.\ \eqref{galerkin_weak_form} can be explicitly written out as
 %
 \begin{eqnarray}
-\pmb{\sigma} \nabla \phi_i &=&
+\mat{\sigma} \nabla \phi_i &=&
 \begin{bmatrix}
 \sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
 \sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
@@ -134,14 +134,14 @@ where the $x$, $y$, and $z$ in the subscript indicate the $x$, $y$, and $z$ cont
 To minimize the residual in Eq.\ \eqref{galerkin_weak_form}, and hence solve the problem, the Newton-Raphson Procedure is used
 %
 \begin{equation}
-\pmb{K}_T \delta u = -\vec{R}, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
+\mat{K}_T \delta u = -\vec{R}, \ \ \text{where} \ \ \vec{u}^{n+1} = \vec{u}^{n} + \delta \vec{u},
 \end{equation}
 %
 
 \todo[prepend,caption={incorrect residual}]{I think the residual should be in terms of the displacements, since the NR proceedure was written out in terms of displacements, granted you can make comment that taking derivative w.r.t. the current coord is same as taking the derivative w.r.t. the displacements.} and
 %
 \begin{eqnarray}
-\pmb{K}_T \equiv
+\mat{K}_T \equiv
 \begin{bmatrix}
 \frac{\partial R_x}{\partial x_n} & \frac{\partial R_x}{\partial y_n} & \frac{\partial R_x}{\partial z_n} \\
 \frac{\partial R_y}{\partial x_n} & \frac{\partial R_y}{\partial y_n} & \frac{\partial R_y}{\partial z_n} \\
@@ -835,7 +835,7 @@ where
 %In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero and solution to the problem is obtained when 
 %%
 %\begin{equation}
-%\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n}  \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega =  0
+%\int_{\partial \Omega} (\phi \mat{\sigma}) \cdot \vec{n}  \diff \partial \Omega - \int_\Omega \mat{\sigma} (\nabla \phi) \diff \Omega =  0
 %\label{weak_form_neumann}
 %\end{equation}
 %%
@@ -844,20 +844,20 @@ where
 %In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero. Since it is unclear how to deal with the surface integral in Eq.\ \eqref{weak_form3}, we will instead consider Eq.\ \eqref{weak_form2}, weak form prior to applying the divergence theorem:
 %%
 %\begin{eqnarray}
-%R_i &=& \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV - \int_V \pmb{\sigma} \nabla \phi_i dV \nonumber\\
+%R_i &=& \int_V \nabla \cdot (\phi_i \mat{\sigma}) dV - \int_V \mat{\sigma} \nabla \phi_i dV \nonumber\\
 %&=& A_i + B_i.
 %\end{eqnarray}
 %%
 %The term of interest is 
 %%
 %\begin{equation}
-%A_i = \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV,
+%A_i = \int_V \nabla \cdot (\phi_i \mat{\sigma}) dV,
 %\end{equation}
 %%
 %where 
 %%
 %\begin{eqnarray}
-%\nabla \cdot (\phi_i \pmb{\sigma}) &=& 
+%\nabla \cdot (\phi_i \mat{\sigma}) &=& 
 %\begin{bmatrix}
 %\frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z}
 %\end{bmatrix}

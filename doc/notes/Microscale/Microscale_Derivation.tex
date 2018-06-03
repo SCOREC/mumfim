@@ -39,38 +39,38 @@ Rotating the green strain along the principal axis of the truss, we see that the
 % 
 where $\lambda$ is the fiber stretch ratio \cite{Chandran:2007hy}. \todo{Should we bother with a discussion on how the force is not the "real force" here? e.g. GL strain gives PK2 Stress}
 
-The force on fiber node $b$, $\textbf{T}^b$, is defined in terms of the scalar $F$ as
+The force on fiber node $b$, $\vec{T}^b$, is defined in terms of the scalar $F$ as
 %
 \begin{equation}
-\textbf{T}^b = F \textbf{n},
+\vec{T}^b = F \vec{n},
 \label{fiber_node_force}
 \end{equation}
 %
-where $\textbf{T}^b = T^b_i \textbf{e}_i$ and the unit vector $\textbf{n}$ is determined from the current end coordinates, $\textbf{x}^a$ and $\textbf{x}^b$ at nodes $a$ and $b$ of a fiber, respectively, by
+where $\vec{T}^b = T^b_i \vec{e}_i$ and the unit vector $\vec{n}$ is determined from the current end coordinates, $\vec{x}^a$ and $\vec{x}^b$ at nodes $a$ and $b$ of a fiber, respectively, by
 %
 \begin{equation}
-\textbf{n} = \frac{1}{l(\textbf{x})}(\textbf{x}^b - \textbf{x}^a),
+\vec{n} = \frac{1}{l(\vec{x})}(\vec{x}^b - \vec{x}^a),
 \end{equation}
 %
-where $\textbf{x} = x_i \textbf{e}_i$, the superscript indicates the node of which the position describes, and $l(\textbf{x})$ is the current length of the fiber given by
+where $\vec{x} = x_i \vec{e}_i$, the superscript indicates the node of which the position describes, and $l(\vec{x})$ is the current length of the fiber given by
 %
 \begin{equation}
-l(\textbf{x}) = \sqrt{(\textbf{x}^b - \textbf{x}^a) \cdot (\textbf{x}^b - \textbf{x}^a)}.
+l(\vec{x}) = \sqrt{(\vec{x}^b - \vec{x}^a) \cdot (\vec{x}^b - \vec{x}^a)}.
 \label{fiber_length}
 \end{equation}
 %
 Note that the definitions in Eqs.\ \eqref{fiber_node_force} through \eqref{fiber_length} are based on the convention that the force acting on nodes $b$ and $a$ are positive and negative, respectively, when the corresponding fiber element is loaded in tension.
 
-Consequently, $\textbf{T}^a = - \textbf{T}^b$. The equilibrium fiber node positions in a RVE ($\textbf{x}^b$ and $\textbf{x}^a$ of each fiber) are determined via a Newton-Raphson method.
+Consequently, $\vec{T}^a = - \vec{T}^b$. The equilibrium fiber node positions in a RVE ($\vec{x}^b$ and $\vec{x}^a$ of each fiber) are determined via a Newton-Raphson method.
 
 \subsection{Microscale Tangent Stiffness Tensor}
 \label{subsec:tangent_stiffness_tensor}
 
 \todo{Need to add the linear constitutive as well}
-In order to find the equilibrium fiber-node positions in the RVEs via the Newton-Raphson procedure, we need to define the tangent stiffness tensor. The tangent stiffness tensor is determined by taking the directional derivative of $\textbf{T}^b$ (we can equivalently take the directional derivative of $\textbf{T}^a$, in which case the result will be equal and opposite) in the direction of the displacement of the fiber, $\textbf{u} \equiv \textbf{u}^b - \textbf{u}^a$:
+In order to find the equilibrium fiber-node positions in the RVEs via the Newton-Raphson procedure, we need to define the tangent stiffness tensor. The tangent stiffness tensor is determined by taking the directional derivative of $\vec{T}^b$ (we can equivalently take the directional derivative of $\vec{T}^a$, in which case the result will be equal and opposite) in the direction of the displacement of the fiber, $\vec{u} \equiv \vec{u}^b - \vec{u}^a$:
 %
 \begin{eqnarray}
-D\textbf{T}^b [\textbf{u}] &=& D F \textbf{n} [\textbf{u}] \nonumber\\
+D\vec{T}^b [\vec{u}] &=& D F \vec{n} [\vec{u}] \nonumber\\
 &=& \frac{E A}{B} \bigg(D \{ \exp(B \varepsilon) - 1\} [\vec{u}] \vec{n}+ D \vec{n} [\vec{u}] \{ \exp(B \varepsilon) - 1\} \bigg) \nonumber\\
 &=& \frac{E A}{B} \bigg( R \vec{n} + \vec{S}\{\exp(B \mat{\varepsilon}) - 1\} \bigg),
 \label{DT_i}
@@ -97,10 +97,10 @@ D \{ \exp(B \varepsilon) - 1\} [\vec{u}] &=& B \exp(B \varepsilon) D \varepsilon
 We also have:
 %
 \begin{eqnarray}
-D \textbf{n} [\textbf{u}]  &=& D \frac{1}{l(\textbf{x})}(\textbf{x}^b - \textbf{x}^a) [\textbf{u}] \nonumber\\
-&=& D \frac{1}{l(\textbf{x})} [\textbf{u}](\textbf{x}^b - \textbf{x}^a) + D (\textbf{x}^b - \textbf{x}^a) [\textbf{u}] \frac{1}{l(\textbf{x})} \nonumber\\
-&=& -\frac{1}{l^{2}(\textbf{x})}\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)(\textbf{x}^b - \textbf{x}^a) + (\textbf{u}^b - \textbf{u}^a)  \frac{1}{l(\textbf{x})} \nonumber\\
-&=& \frac{(\textbf{u}^b - \textbf{u}^a)-\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}}{l(\textbf{x})} \nonumber\\
+D \vec{n} [\vec{u}]  &=& D \frac{1}{l(\vec{x})}(\vec{x}^b - \vec{x}^a) [\vec{u}] \nonumber\\
+&=& D \frac{1}{l(\vec{x})} [\vec{u}](\vec{x}^b - \vec{x}^a) + D (\vec{x}^b - \vec{x}^a) [\vec{u}] \frac{1}{l(\vec{x})} \nonumber\\
+&=& -\frac{1}{l^{2}(\vec{x})}\vec{n} \cdot (\vec{u}^b - \vec{u}^a)(\vec{x}^b - \vec{x}^a) + (\vec{u}^b - \vec{u}^a)  \frac{1}{l(\vec{x})} \nonumber\\
+&=& \frac{(\vec{u}^b - \vec{u}^a)-\vec{n} \cdot (\vec{u}^b - \vec{u}^a)\vec{n}}{l(\vec{x})} \nonumber\\
 &=& \vec{S}.
 \label{S}
 \end{eqnarray}
@@ -108,35 +108,35 @@ D \textbf{n} [\textbf{u}]  &=& D \frac{1}{l(\textbf{x})}(\textbf{x}^b - \textbf{
 In Eqs.\ \eqref{R} and \eqref{S}, we have used the relationships listed in Appendix \ref{app:relationships}. Finally, substituting Eqs.\ \eqref{R} and \eqref{S} into Eq.\ \eqref{DT_i} we arrive at:
 %
 \begin{eqnarray}
-D\textbf{T}^b [\textbf{u}] &=& \frac{E A}{B} \bigg[ \left(\frac{B }{L^2} \exp(B \varepsilon) l(\textbf{x})\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\right)\textbf{n} \nonumber\\
-&+& \left( \frac{(\textbf{u}^b - \textbf{u}^a)-\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}}{l(\textbf{x})} \right) \{ \exp(B \varepsilon) - 1 \} \bigg] \nonumber\\
-&=& \bigg[ \frac{E A }{L^2} \exp(B \varepsilon)  l(\textbf{x})-\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \cdot (\textbf{u}^b - \textbf{u}^a)\textbf{n}) + \frac{F}{l(\textbf{x})}(\textbf{u}^b - \textbf{u}^a) \nonumber\\
-&=& \bigg[ \frac{E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})} \bigg] (\textbf{n} \otimes \textbf{n})_{3\times3}(\textbf{u}^b - \textbf{u}^a) + \frac{F}{l(\textbf{x})} \text{\textbf{I}}_{3\times3} \cdot (\textbf{u}^b - \textbf{u}^a) , \nonumber\\
+D\vec{T}^b [\vec{u}] &=& \frac{E A}{B} \bigg[ \left(\frac{B }{L^2} \exp(B \varepsilon) l(\vec{x})\vec{n} \cdot (\vec{u}^b - \vec{u}^a)\right)\vec{n} \nonumber\\
+&+& \left( \frac{(\vec{u}^b - \vec{u}^a)-\vec{n} \cdot (\vec{u}^b - \vec{u}^a)\vec{n}}{l(\vec{x})} \right) \{ \exp(B \varepsilon) - 1 \} \bigg] \nonumber\\
+&=& \bigg[ \frac{E A }{L^2} \exp(B \varepsilon)  l(\vec{x})-\frac{F}{l(\vec{x})} \bigg] (\vec{n} \cdot (\vec{u}^b - \vec{u}^a)\vec{n}) + \frac{F}{l(\vec{x})}(\vec{u}^b - \vec{u}^a) \nonumber\\
+&=& \bigg[ \frac{E A  l(\vec{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\vec{x})} \bigg] (\vec{n} \otimes \vec{n})_{3\times3}(\vec{u}^b - \vec{u}^a) + \frac{F}{l(\vec{x})} \mat{I}_{3\times3} \cdot (\vec{u}^b - \vec{u}^a) , \nonumber\\
 \label{DTi_final}
 \end{eqnarray}
 %
 where the property of the tensor product,
 %
 \begin{equation}
-(\textbf{u} \otimes \textbf{v})\textbf{w} = (\textbf{w} \cdot \textbf{v})\textbf{u}
+(\vec{u} \otimes \vec{v})\vec{w} = (\vec{w} \cdot \vec{v})\vec{u}
 \end{equation}
 %
 has been used.
 
 \subsubsection{Matrix Equations}
-Also note,  the directional derivative for node $a$ is $D \textbf{T}^a(\textbf{x})[\textbf{u}] = - D\textbf{T}^b(\textbf{x})[\textbf{u}]$ since \(\vec{T}^a(\vec{x})=-\vec{T}^b(\vec{x})\).
+Also note,  the directional derivative for node $a$ is $D \vec{T}^a(\vec{x})[\vec{u}] = - D\vec{T}^b(\vec{x})[\vec{u}]$ since \(\vec{T}^a(\vec{x})=-\vec{T}^b(\vec{x})\).
 
 Equation \eqref{DTi_final} can be rearranged into matrix form. For a single fiber element e, the directional derivative in matrix form is 
 %
 \begin{eqnarray}
-D\textbf{T}^{(\text{e})}(\textbf{x}^{(\text{e})})[\textbf{u}^{(\text{e})}] = \textbf{K}^{(\text{e})}\textbf{u}^{(\text{e})} = 
+D\vec{T}^{(\text{e})}(\vec{x}^{(\text{e})})[\vec{u}^{(\text{e})}] = \mat{K}^{(\text{e})}\vec{u}^{(\text{e})} = 
 \begin{bmatrix} 
-\textbf{K}^{(\text{e})}_{aa} & \textbf{K}^{(\text{e})}_{ab} \\ 
-\textbf{K}^{(\text{e})}_{ba}& \textbf{K}^{(\text{e})}_{bb} \\
+\mat{K}^{(\text{e})}_{aa} & \mat{K}^{(\text{e})}_{ab} \\ 
+\mat{K}^{(\text{e})}_{ba}& \mat{K}^{(\text{e})}_{bb} \\
 \end{bmatrix}
 \begin{bmatrix} 
-\textbf{u}^{a}  \\ 
-\textbf{u}^{b} \\ 
+\vec{u}^{a}  \\ 
+\vec{u}^{b} \\ 
 \end{bmatrix},
 \label{DT^e_matrix}
 \end{eqnarray}
@@ -144,28 +144,28 @@ D\textbf{T}^{(\text{e})}(\textbf{x}^{(\text{e})})[\textbf{u}^{(\text{e})}] = \te
 where
 %
 \begin{equation}
-\textbf{K}^{(\text{e})}_{aa} = \textbf{K}^{(\text{e})}_{bb} = k (\textbf{n} \otimes \textbf{n})_{3x3} + \frac{F}{l(\textbf{x})}\textbf{\text{I}}_{3x3}, \ \ \text{and} \ \ \textbf{K}^{(\text{e})}_{ab} = \textbf{K}^{(\text{e})}_{ba} = -\textbf{K}^{(\text{e})}_{bb},
+\mat{K}^{(\text{e})}_{aa} = \mat{K}^{(\text{e})}_{bb} = k (\vec{n} \otimes \vec{n})_{3x3} + \frac{F}{l(\vec{x})}\mat{I}_{3x3}, \ \ \text{and} \ \ \mat{K}^{(\text{e})}_{ab} = \mat{K}^{(\text{e})}_{ba} = -\mat{K}^{(\text{e})}_{bb},
 \label{K_aa}
 \end{equation}
 %
 and
 %
 \begin{equation}
-k \equiv \frac{E A  l(\textbf{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\textbf{x})}.
+k \equiv \frac{E A  l(\vec{x})}{L^2} \exp(B \varepsilon) -\frac{F}{l(\vec{x})}.
 \label{k}
 \end{equation}
 %
 Additionally, 
 %
 \begin{eqnarray}
-(\textbf{n} \otimes \textbf{n})_{3x3} = 
+(\vec{n} \otimes \vec{n})_{3x3} = 
 \begin{bmatrix}
 \cos(\alpha)\cos(\alpha) & \cos(\alpha) \cos(\beta) & \cos(\alpha) \cos(\gamma) \\
 \cos(\beta)\cos(\alpha) & \cos(\beta)\cos(\beta) & \cos(\beta)\cos(\gamma) \\
 \cos(\gamma)\cos(\alpha) & \cos(\gamma)\cos(\beta) & \cos(\gamma)\cos(\gamma) 
 \end{bmatrix} \ \ \text{and} \ \
 %
-\textbf{\text{I}}_{3x3} =
+\mat{\text{I}}_{3x3} =
 \begin{bmatrix}
 1 & 0 & 0 \\
 0 & 1 & 0 \\
@@ -176,23 +176,23 @@ Additionally,
 with
 %
 \begin{equation}
-\cos(\alpha) = \frac{x^b_1 - x^a_1}{l(\textbf{x})}, \ \ \cos(\beta) = \frac{x^b_2 - x^a_2}{l(\textbf{x})}, \ \ \text{and} \cos(\gamma) = \frac{x^b_3 - x^a_3}{l(\textbf{x})} 
+\cos(\alpha) = \frac{x^b_1 - x^a_1}{l(\vec{x})}, \ \ \cos(\beta) = \frac{x^b_2 - x^a_2}{l(\vec{x})}, \ \ \text{and} \cos(\gamma) = \frac{x^b_3 - x^a_3}{l(\vec{x})} 
 \end{equation}
 %
 and \todo{this should be made more clear what is $e_i$}
 %
 \begin{equation}
-\textbf{u}^a = (x^a_i - x^b_i) \textbf{e}_i \ \ \text{and} \ \ \textbf{u}^b = (x^b_i - x^a_i) \textbf{e}_i .
+\vec{u}^a = (x^a_i - x^b_i) \vec{e}_i \ \ \text{and} \ \ \vec{u}^b = (x^b_i - x^a_i) \vec{e}_i .
 \end{equation}
 %
-Therefore, $\textbf{u}_a = -\textbf{u}_b$. Using the above relationships, Eq.\ \eqref{K_aa} can be written in matrix form as
+Therefore, $\vec{u}_a = -\vec{u}_b$. Using the above relationships, Eq.\ \eqref{K_aa} can be written in matrix form as
 %
 \begin{eqnarray}
-\textbf{K}^{(\text{e})}_{aa} =
+\mat{K}^{(\text{e})}_{aa} =
 \begin{bmatrix}
-k \cos(\alpha)\cos(\alpha) + \frac{F}{l(\textbf{x})} & k \cos(\alpha)\cos(\beta) & k \cos(\alpha)\cos(\gamma) \\
-k \cos(\beta)\cos(\alpha) & k \cos(\beta)\cos(\beta)+ \frac{F}{l(\textbf{x})}  & k \cos(\beta)\cos(\gamma) \\
-k \cos(\gamma)\cos(\alpha) & k \cos(\gamma)\cos(\beta) & k \cos(\gamma)\cos(\gamma) + \frac{F}{l(\textbf{x})} 
+k \cos(\alpha)\cos(\alpha) + \frac{F}{l(\vec{x})} & k \cos(\alpha)\cos(\beta) & k \cos(\alpha)\cos(\gamma) \\
+k \cos(\beta)\cos(\alpha) & k \cos(\beta)\cos(\beta)+ \frac{F}{l(\vec{x})}  & k \cos(\beta)\cos(\gamma) \\
+k \cos(\gamma)\cos(\alpha) & k \cos(\gamma)\cos(\beta) & k \cos(\gamma)\cos(\gamma) + \frac{F}{l(\vec{x})} 
 \end{bmatrix}
 \label{K^e_aa_matrix}
 \end{eqnarray}
@@ -200,29 +200,29 @@ k \cos(\gamma)\cos(\alpha) & k \cos(\gamma)\cos(\beta) & k \cos(\gamma)\cos(\gam
 The Newton-Raphson method for a single fiber element is
 %
 \begin{equation}
-\textbf{K}^{(\text{e})} \delta \textbf{u}^{(\text{e})} = - \textbf{T}^{(\text{e})}, \ \text{where} \ \textbf{u}^{(\text{e}),t+1}  = \textbf{u}^{(\text{e}),t} + \delta \textbf{u}^{(\text{e})},
+\mat{K}^{(\text{e})} \delta \vec{u}^{(\text{e})} = - \vec{T}^{(\text{e})}, \ \text{where} \ \vec{u}^{(\text{e}),t+1}  = \vec{u}^{(\text{e}),t} + \delta \vec{u}^{(\text{e})},
 \label{Newton_Raphson}
 \end{equation}
 %
-and the superscripts $t+1$ and $t$ denote the current and next iterations, respectively. In matrix form, $\textbf{u}^{(\text{e})}$ and $\textbf{T}^{(\text{e})}$ are
+and the superscripts $t+1$ and $t$ denote the current and next iterations, respectively. In matrix form, $\vec{u}^{(\text{e})}$ and $\vec{T}^{(\text{e})}$ are
 %
 \begin{eqnarray}
-\textbf{u}^{(\text{e})} = 
+\vec{u}^{(\text{e})} = 
 \begin{bmatrix}
-\textbf{u}^a \\ \textbf{u}^b
+\vec{u}^a \\ \vec{u}^b
 \end{bmatrix}^{(\text{e})} =
 %
 \begin{bmatrix}
 x^a_1 \\ x^a_2 \\ x^a_3 \\ x^b_1 \\ x^b_2 \\ x^b_3
 \end{bmatrix}^{(\text{e})} \ \ \text{and} \ \
 %%%%%
-\textbf{T}^{(\text{e})} = 
+\vec{T}^{(\text{e})} = 
 \begin{bmatrix}
-\textbf{T}^a \\ \textbf{T}^b
+\vec{T}^a \\ \vec{T}^b
 \end{bmatrix}^{(\text{e})} =
 %
 F\begin{bmatrix}
-\frac{(x^a_1 - x^b_1)}{l(\textbf{x})} \\ \frac{(x^a_2 - x^b_2)}{l(\textbf{x})} \\ \frac{(x^a_3 - x^b_3)}{l(\textbf{x})} \\ \frac{(x^b_1 - x^a_1)}{l(\textbf{x})} \\ \frac{(x^b_2 - x^a_2)}{l(\textbf{x})} \\ \frac{(x^b_3 - x^a_3)}{l(\textbf{x})}
+\frac{(x^a_1 - x^b_1)}{l(\vec{x})} \\ \frac{(x^a_2 - x^b_2)}{l(\vec{x})} \\ \frac{(x^a_3 - x^b_3)}{l(\vec{x})} \\ \frac{(x^b_1 - x^a_1)}{l(\vec{x})} \\ \frac{(x^b_2 - x^a_2)}{l(\vec{x})} \\ \frac{(x^b_3 - x^a_3)}{l(\vec{x})}
 \end{bmatrix}^{(\text{e})} = 
 %
 F\begin{bmatrix}
@@ -272,18 +272,18 @@ As discussed in Section \ref{sec:macrostress}, the macroscale stresses are calcu
 The directional derivative of $S_{ij}$ is
 %
 \begin{eqnarray}
-DS_{ij}[\textbf{u}] &=& D\left( \frac{1}{V} \sum_{\text{bcl}} x_i^f T_j^f \right)[\textbf{u}] \nonumber\\
+DS_{ij}[\vec{u}] &=& D\left( \frac{1}{V} \sum_{\text{bcl}} x_i^f T_j^f \right)[\vec{u}] \nonumber\\
 %
-&=& D \left(\frac{1}{V}\right) [\textbf{u}]\sum_{\text{bcl}} x_i^f T_j^f + \frac{1}{V} \sum_{\text{bcl}} \left[ x_i^f D T_j^f[\textbf{u}] + D x_i^f  [\textbf{u}]  T_j^f \right]\nonumber\\
+&=& D \left(\frac{1}{V}\right) [\vec{u}]\sum_{\text{bcl}} x_i^f T_j^f + \frac{1}{V} \sum_{\text{bcl}} \left[ x_i^f D T_j^f[\vec{u}] + D x_i^f  [\vec{u}]  T_j^f \right]\nonumber\\
 %
-&=& D \left(\frac{1}{V}\right) [\textbf{u}] V S_{ij} + \frac{1}{V} \sum_{\text{bcl}}  C_{ij}^f,
+&=& D \left(\frac{1}{V}\right) [\vec{u}] V S_{ij} + \frac{1}{V} \sum_{\text{bcl}}  C_{ij}^f,
 \label{DS_ij}
 \end{eqnarray}
 %
 where 
 %
 \begin{eqnarray}
-C_{ij}^f &\equiv&   x_i^f D T_j^f[\textbf{u}] + D x_i^f  [\textbf{u}]  T_j^f \nonumber\\
+C_{ij}^f &\equiv&   x_i^f D T_j^f[\vec{u}] + D x_i^f  [\vec{u}]  T_j^f \nonumber\\
 &=& x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f ,
 \label{C_ij}
 \end{eqnarray}
@@ -384,18 +384,18 @@ Note that $\partial T_i^f/\partial x_j^f$ is the $i$, $j^{th}$ element of Eq.\ \
 
 \subsubsection{Directional Derivative of $1/V$}
 
-In order to determine the directional derivative of $S_{ij}$ in Eq.\ \eqref{DS_ij}, we need to also determine $D \left(1/V\right) [\textbf{u}]$:
+In order to determine the directional derivative of $S_{ij}$ in Eq.\ \eqref{DS_ij}, we need to also determine $D \left(1/V\right) [\vec{u}]$:
 %
 
 \begin{equation}
-D \frac{1}{V}[\textbf{u}] = \frac{\partial (1/V)}{\partial x_i^f} u_i^f = -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_i^f} u_i^f\right).
+D \frac{1}{V}[\vec{u}] = \frac{\partial (1/V)}{\partial x_i^f} u_i^f = -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_i^f} u_i^f\right).
 \label{D1/V}
 \end{equation}
 %
 Equation \eqref{D1/V} can be further written in matrix form as:
 %
 \begin{eqnarray}
-D\frac{1}{V}[\textbf{u}] = -\frac{1}{V^2}
+D\frac{1}{V}[\vec{u}] = -\frac{1}{V^2}
 \begin{bmatrix}
 \frac{\partial (V)}{\partial x_1^f} & \frac{\partial (V)}{\partial x_2^f} & \frac{\partial(V)}{\partial x_3^f}
 \end{bmatrix}
@@ -412,7 +412,7 @@ u_1^f \\ u_2^f \\ u_3^f
 Substituting Eq.\ \eqref{D1/V} in Eq.\ \eqref{DS_ij} we obtain
 %
 \begin{eqnarray}
-DS_{ij}[\textbf{u}] &=&  \frac{1}{V} \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f \right) -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_k^f} u_k^f\right) V S_{ij} \nonumber\\
+DS_{ij}[\vec{u}] &=&  \frac{1}{V} \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} u_k^f + \frac{\partial x_i^f}{\partial x_k^f}u_k^f T_j^f \right) -\frac{1}{V^2} \left( \frac{\partial V}{\partial x_k^f} u_k^f\right) V S_{ij} \nonumber\\
 %
 &=&  \frac{1}{V} \left[ \sum_{\text{bcl}} \left(x_i^f \frac{\partial T_j^f}{\partial x_k^f} + \frac{\partial x_i^f}{\partial x_k^f} T_j^f \right) -  \frac{\partial V}{\partial x_k^f} S_{ij} \right] u_k^f
 \end{eqnarray}
