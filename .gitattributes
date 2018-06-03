@@ -1,0 +1,3 @@
+*.smb linguist-vendored
+*.sms linguist-vendored
+micro_fm/test/EhsanCube/mesh_2_parts.sms/* linguist-vendored

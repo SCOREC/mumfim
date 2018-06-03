@@ -1,48 +1,7 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-
-\begin{document}
-\setstretch{1.5}
-\title{Volume Constraint (Global Incompressibility)}
-\author{V. W. L. Chan}
-\maketitle
+\chapter{Volume Constraint (Global Incompressibility)}
+\chapterauthor{V. W. L. Chan}
 
 \section{Governing Equation}
-
 Based on the work of Barocas group \cite{Chandran:2007hy,Stylianopoulos:2007dp} the macroscale momentum conservation equation is
 %
 \begin{eqnarray}
@@ -548,7 +507,8 @@ where the derivative of the total volume has been rewritten as the sum of the de
 \frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
 %
 \frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
-\end{bmatrix}\right) = W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+\end{bmatrix}\right) \\
+&=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
@@ -1015,9 +975,3 @@ x_3^{(s)} & 0 & -x_1^{(s)} \\
 -x_2^{(s)} & x_1^{(s)} & 0
 \end{bmatrix}.
 \end{eqnarray}
-%
-
-
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}

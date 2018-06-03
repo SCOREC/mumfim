@@ -1,0 +1,128 @@
+\documentclass[12pt]{book}
+%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
+\usepackage{graphicx, epsfig,cancel}
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{amssymb,amsmath,amsfonts} 
+\usepackage{setspace}
+\usepackage{hyperref}
+% add the bibliography to the table of contents
+\usepackage[nottoc,notlot,notlof]{tocbibind}
+% for writing code snippets in latex
+\usepackage{listings}
+% use option disable to turn off all notes
+\usepackage{todonotes}
+\usepackage{bm}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{[#1]}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+
+\usepackage{suffix}
+
+\newcommand\chapterauthor[1]{\authortoc{#1}\printchapterauthor{#1}}
+\WithSuffix\newcommand\chapterauthor*[1]{\printchapterauthor{#1}}
+
+\makeatletter
+\newcommand{\printchapterauthor}[1]{%
+  {\parindent0pt\vspace*{-25pt}%
+  \linespread{1.1}\large\scshape#1%
+  \par\nobreak\vspace*{35pt}}
+  \@afterheading%
+}
+\newcommand{\authortoc}[1]{%
+  \addtocontents{toc}{\vskip-10pt}%
+  \addtocontents{toc}{%
+    \protect\contentsline{chapter}%
+    {\hskip1.3em\mdseries\scshape\protect\scriptsize#1}{}{}}
+  \addtocontents{toc}{\vskip5pt}%
+}
+\makeatother
+
+\newcommand{\diff}{\mathop{}\!\mathrm{d}}
+%\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\renewcommand{\vec}[1]{\bm{#1}} % bolded regular vector
+\newcommand{\mat}[1]{\bm{#1}} % matrix 
+%\newcommand{\hvec}[1]{\ensuremath{\vec{\hat{#1}}}} % hat-vector
+%\newcommand{\bvec}[1]{\ensuremath{\vec{\bar{#1}}}} % bar-vector 
+%\newcommand{\sfnc}[1]{\ensuremath{\mathcal{#1}}} % scalar-valued function
+%\newcommand{\vfnc}[1]{\ensuremath{\vec{\mathcal{#1}}}} % vector-valued function
+%\newcommand{\rspc}[1]{\ensuremath{\mathbb{R}^{#1}}} % real vector space
+%\newcommand{\pjac}[2]{\ensuremath{\; \frac{\partial #1}{\partial #2}} \;} % partial jacobian
+
+
+%\includeonly{./Macroscale/Macroscale_Derivation,./Microscale/Microscale_Derivation,./Multiscale/MultiscaleNotes}
+%\includeonly{./ConstitutiveRelationships/Constitutive}
+%\includeonly{./VolumeConstrain/VolumeConstraint}
+
+%\includeonly{./Multiscale/MultiscaleNotes}
+
+\author{Victor Chan, Jacob Merson, Bill Tobin}
+\title{Biotissue Reference Manual}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\listoftodos
+
+\part{Multiscale FEM Derivation}
+\include{./Macroscale/Macroscale_Derivation}
+\include{./Microscale/Microscale_Derivation}
+\include{./Multiscale/MultiscaleNotes}
+
+\part{Constitutive Relationships}
+\include{./ConstitutiveRelationships/Constitutive}
+
+\part{Constraints}
+\include{./VolumeConstraint/VolumeConstraint}
+
+
+\part{Solution Techniques}
+\chapter{Newton Iteration}
+Basic information on how we do nonlinear analysis
+\chapter{Convergence Operators}
+What sort of convergence norms are available
+
+\part{Tutorial}
+\chapter{Building Biotissue Codebase}
+\chapter{Analysis}
+\section{Setup}
+give some information on how to set up analysis with simmodeler
+\section{Running Analysis}
+How do you run an analysis on SCOREC machines and on BGQ
+\chapter{Development}
+\section{Implementing a New Material}
+How to set up an integrator for a new material
+\section{Contributing to the Project}
+Point people to readme on github.
+
+\appendix
+\include{./Microscale/Microscale_Derivation_Appendix}
+\include{./Macroscale/Macroscale_Derivation_Appendix}
+
+%bibliography
+\clearpage
+\bibliographystyle{apsrev}
+\bibliography{./VolumeConstraint/References,./ConstitutiveRelationships/References,./Multiscale/References}
+\end{document}
