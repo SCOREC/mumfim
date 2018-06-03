@@ -4,8 +4,9 @@ namespace amsi
   template <typename T>
   struct static_init
   {
+    static_init() : val(), init(false) {}
     T val;
-    bool init {false};
+    bool init;
   };
   template <>
   MPI_Datatype mpi_type<bio::micro_fo_header>()

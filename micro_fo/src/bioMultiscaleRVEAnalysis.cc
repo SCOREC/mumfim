@@ -131,7 +131,7 @@ namespace bio
     apf::Vector3 xpu_val;
     apf::Vector3 f_val;
     apf::Numbering * num = ans->fn->getUNumbering();
-    int dofs[3] {};
+    int dofs[3];
     double * f = NULL;
     ans->ops->get(ans->f,f);
     apf::Matrix3x3 strs(0.0,0.0,0.0,
@@ -577,6 +577,33 @@ namespace bio
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
   }
+  struct val_gen
+  {
+    val_gen(FiberRVEAnalysis * a) : an(a), prv_nrm(1.0) {}
+    FiberRVEAnalysis * an;
+    double prv_nrm;
+    double operator()()
+    {
+      double nrm = an->ops->norm(an->f);
+      double val = fabs(prv_nrm - nrm);
+      prv_nrm = nrm;
+      return val;
+    }
+  };
+  struct eps_gen
+  {
+    double operator()(int)
+    {
+      return 1e-6;
+    }
+  };
+  struct ref_gen
+  {
+    double operator()()
+    {
+      return 1.0;
+    }
+  };
   void MultiscaleRVEAnalysis::run()
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
@@ -598,26 +625,10 @@ namespace bio
         {
           applyMultiscaleCoupling(*rve,&data[ii]);
           FiberRVEIteration itr(*rve);
-          double prv_nrm = 1.0;
-          auto val_gen = [&]() -> double
-            {
-              double nrm = (*rve)->ops->norm((*rve)->f);
-              double val = fabs(prv_nrm - nrm);
-              prv_nrm = nrm;
-              return val;
-            };
-          auto eps_gen = [ ](int) -> double { return 1e-6; };
-          auto ref_gen = [&]() -> double
-            {
-              return 1.0;
-              /*
-                static double nrm_f0 = 0.0;
-                if(itr.iteration() == 1)
-                nrm_f0 = (*rve)->ops->norm((*rve)->f0);
-                return nrm_f0;
-              */
-            };
-          amsi::UpdatingConvergence<decltype(&val_gen), decltype(&eps_gen), decltype(&ref_gen)> resid_cnvrg(&itr,&val_gen,&eps_gen,&ref_gen);
+	  val_gen vg(*rve);
+	  eps_gen eg;
+	  ref_gen rg;
+          amsi::UpdatingConvergence<decltype(&vg), decltype(&eg), decltype(&rg)> resid_cnvrg(&itr,&vg,&eg,&rg);
           amsi::Convergence * ptr[] = {&resid_cnvrg};
           amsi::MultiConvergence cnvrg(&ptr[0],&ptr[0]+1);
           // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END

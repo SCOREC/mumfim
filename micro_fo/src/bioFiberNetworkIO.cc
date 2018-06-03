@@ -47,7 +47,7 @@ namespace bio
   {
     MPI_Comm cm = PCU_Get_Comm();
     PCU_Switch_Comm(MPI_COMM_SELF);
-    std::fstream strm(fnm);
+    std::fstream strm(fnm.c_str());
     apf::Mesh2 * msh = NetworkLoader().fromStream(strm);
     PCU_Switch_Comm(cm);
     return msh;
