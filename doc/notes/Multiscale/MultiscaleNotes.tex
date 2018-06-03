@@ -131,26 +131,25 @@ R_1 \\ R_2 \\ R_3
 \end{eqnarray}
 %
 
-To apply the Newton-Raphson procedure to our problem, the virtual work in Eq.\ \eqref{eq:virtual_work} must be linearized by taking the directional derivative of $\delta W$ with respect to $\delta \pmb{v}$ in the direction of $\delta \pmb{u}$ at the configuration $\phi$
+To apply the Newton-Raphson procedure to our problem, the virtual work in Eq.\ \eqref{eq:virtual_work} must be linearized by taking the directional derivative of $\delta W$ with respect to $\delta \pmb{v}$ in the direction of $\delta \pmb{u}$ at the current coordinates $\vec{x}$
 %
 \begin{equation}
-D\delta W (\phi,\delta \pmb{v}) [\delta \pmb{u}] = D\delta W_{int} (\phi,\delta \pmb{v}) [\delta \pmb{u}] - D\delta W_{ext} (\phi,\delta \pmb{v}) [\delta \pmb{u}].
+D\delta W (\vec{x},\delta \pmb{v}) [\delta \pmb{u}] = D\delta W_{int} (\vec{x},\delta \pmb{v}) [\delta \pmb{u}] - D\delta W_{ext} (\vec{x},\delta \pmb{v}) [\delta \pmb{u}].
 \end{equation}
 %
 %Since the virtual work is expressed in the current configuration (c.f., Eq.\ \eqref{eq:virtual_work}), linearization is not straightforward because the integration bound changes with motion. Therefore, to move forward with the linearization procedure, we must first linearize the virtual work expressed in the reference configuration and then  employ a push-forward operation to obtain the linearization for the spatial description of Eq.\ \eqref{eq:virtual_work}.
 %
-\red{$\pmb{t}$ and $\pmb{Q}$ in Eq.\ \eqref{eq:virtual_work_final} are assumed to be constant. Therefore, from this point on, only the linearization of internal virtual work, $\delta W_{int}$, is considered.} 
+Note that $\pmb{t}$ and $\pmb{Q}$ in Eq.\ \eqref{eq:virtual_work_final} are assumed to be constant under a virtual displacement \(\delta \vec{u}\).
 
-Up to this point I have found that the linearization of Eq.\ \eqref{eq:virtual_work_final} does not yield what is currently implemented in the biotissue code. To move forward with the implementation of using the deformation gradient tensor at the microscale, I will simply present the equations that is currently implemented in the biotissue code.
-
-The linearized virtual work in the biotissue code is
+The linearized virtual work in the biotissue code is 
+\todo{this needs a derivation/verification}
 %% begin comment
 %
 \begin{eqnarray}
-D\delta W(\phi,\delta \pmb{v}^{(M)})[\delta \pmb{u}^{(M)}]  
+D\delta W(\vec{x},\delta \pmb{v}^{(M)})[\delta \pmb{u}^{(M)}]  
 %
-&=& \int_V^{(M)} \left(\delta d_{ij}^{(M)} c_{ijkl}^{(M)} \varepsilon_{kl}^{(M)} +  \sigma_{ij}^{(M)} \frac{\partial \delta u_j^{(M)}}{\partial x_i^{(M)}}\frac{\partial \delta v_i^{(M)}}{\partial x_j^{(M)}}\right) d V - \int_{\partial V^{(M)}} t_i^{(M)} \delta v_i^{(M)} dA^{(M)} \nonumber\\
-&-& Q_i^{(M)} \delta v_j^{(M)},
+&=& \int_{V^{(M)}} \left(\delta d_{ij}^{(M)} c_{ijkl}^{(M)} \varepsilon_{kl}^{(M)} +  \sigma_{ij}^{(M)} \frac{\partial \delta u_j^{(M)}}{\partial x_i^{(M)}}\frac{\partial \delta v_i^{(M)}}{\partial x_j^{(M)}}\right) d V \nonumber \\
+&-& \int_{\partial V^{(M)}} t_i^{(M)} \delta v_i^{(M)} dA^{(M)} - Q_i^{(M)} \delta v_j^{(M)},
 \label{eq:virtual_work_linearized}
 \end{eqnarray}
 %
@@ -180,10 +179,11 @@ The linearization in Eq.\ \eqref{eq:virtual_work_linearized} can be cast into th
 \label{eq:discretization}
 \end{align}
 %
-where $N_a$ is the $a^{th}$ node of the shape function and $n$ is the number of nodes contained in each shape function. The discretized form of Eq.\ \eqref{eq:virtual_work_linearized} is obtained by applying the approximations in Eq.\ \eqref{eq:discretization} \todo{stopping here for tonight}
+where $N_a$ is the $a^{th}$ node of the shape function and $n$ is the number of nodes contained in each shape function. The discretized form of Eq.\ \eqref{eq:virtual_work_linearized} is obtained by applying the approximations in Eq.\ \eqref{eq:discretization} \todo{come back to this...unverified}
 %
 \begin{eqnarray}
-D\delta W(\phi,N_a\delta \pmb{v}_a^{(M)})[N_b\delta \pmb{u}_b^{(M)}] &=& \delta v_i^{(M),a}\left(\int_{V^{(e)}}\frac{\partial N_a}{\partial x_j^{(M)}} c_{ijkl}^{(M)} \frac{\partial N_b}{\partial x_l^{(M)}} dV^{(e)} \right) \delta u_k^{(M),b} 
+D\delta W(\vec{x},N_a\delta \pmb{v}_a^{(M)})[N_b\delta \pmb{u}_b^{(M)}] &=&\delta v_i^{(M),a}\left(\int_{V^{(e)}}\frac{\partial N_a}{\partial x_j^{(M)}} \right.\nonumber\\
+&&\left.c_{ijkl}^{(M)} \frac{\partial N_b}{\partial x_l^{(M)}} dV^{(e)} \right) \delta u_k^{(M),b} 
 \end{eqnarray}
 %
 
@@ -194,7 +194,7 @@ In the multiscale formulation, the Cauchy stresses and their derivatives in Eq.\
 \label{eq:sigma_terms}
 \end{equation}
 %
-are evaluated from calculations at the microscale representative volume elements (RVEs). In order to write the stress derivative in matrix form, Voigt notation is used 
+are evaluated from calculations at the microscale representative volume elements (RVEs). In order to write the stress derivative in matrix form, Voigt notation is used \todo{swap ordering to match voigt notation}
 %
 \begin{eqnarray}
 [\sigma_{(i)}] \equiv 
@@ -336,7 +336,7 @@ The macroscopic stress tensor is obtained by applying Gauss's theorem to Eq.\ \e
 \label{eq:macro_stress_gauss_thm}
 \end{eqnarray}
 %
-where $n_k s_{kj}^{(m)} = t_j^{(m)}$ is the the traction exerted on the boundaries of the RVE. In discrete form, the macroscopic stress becomes
+where $n_k s_{kj}^{(m)} = t_j^{(m)}$ is the the traction exerted on the boundaries of the RVE. The second line comes from noticing \(s_{ij}^{(m)}=s_{kj}^{(m)}\delta_{ki}\), and \(x_{k,i}=\delta_{ki}\). The simplification in the fourth line makes use of the microscale momentum balance (e.g. \(s_{ij,i}=0\)). In discrete form, the macroscopic stress becomes
 %
 \begin{equation}
 \sigma_{ij}^{(M)} = \frac{1}{V^{(m)}} \sum_{n \in bcl} {}^n x_i^{(m)} {}^n T_j^{(m)} 
@@ -347,7 +347,7 @@ where ${}^nx_i^{(m)}$ is the $i^{th}$ coordinate of the cross-link on the bounda
 %
 \subsection{Cauchy-Stress Derivative}
 %
-The derivative of the Cauchy stress is evaluated by using Eq.\ \eqref{eq:macro_stress_discrete} and applying the chain rule
+The derivative of the Cauchy stress is evaluated by using Eq.\ \eqref{eq:macro_stress_discrete} and applying the chain rule \todo{use of $s^{(m)}_{ij}$ not consistent with previous defn.}
 %
 \begin{eqnarray}
 \frac{\partial \sigma_{ij}^{(M)}}{\partial  u^{(M)}_k}  &=& \frac{\partial \sigma_{ij}^{(M)}}{\partial {}^c u_l^{(m)}} \frac{\partial {}^c u_l^{(m)}}{\partial u^{(M)}_k} \nonumber\\
@@ -370,12 +370,13 @@ where ${}^c u_l^{{(m)}}$ is the $l^{th}$ corner (left superscript $c$) displacem
 %
 where the first two involve only microscale quantities and the third links the micro and macro scales.
 
-To come up with these derivatives we had to note the equivalence of taking the derivative with respect to the current coordinate \(x\), and the displacement \(u\). This is show in the following chain rule:
+To come up with these derivatives we had to note the equivalence of taking the derivative with respect to the current coordinate \(\vec{x}\), and the displacement \(\vec{u}\). This is show in the following chain rule:
 \begin{equation}
 \frac{\partial f(\vec{x})}{\partial\vec{x}} = \frac{\partial f(\vec{x})}{\partial\vec{u}}\frac{\partial \vec{u}}{\partial\vec{x}} = \frac{\partial f(\vec{x})}{\partial \vec{u}}\frac{\partial (\vec{x}-\vec{X})}{\partial\vec{x}}=\frac{\partial f(\vec{x})}{\partial \vec{u}}
 \end{equation}
 
 \subsubsection{Derivative of $s_{ij}$ with respect to RVE corner coordinates}
+\todo{inconsistent...previous part used C and this part uses RVE as superscript}
 %
 Applying the chain rule, the derivative of $s_{ij}$ can be written as
 %
@@ -393,6 +394,7 @@ Applying the chain rule, the derivative of $s_{ij}$ can be written as
 where $x_k$ is the $k^{th}$ coordinate of the fiber nodes in the RVE; the subscript $k$ ranges from 1 to $N_{dof}^{fn} \equiv 3 \ dofs \ \times$ number of fiber nodes. Since $\frac{\partial T_j^n}{\partial x_k}$ is the $(j,k)^{th}$ element of the tangent-stiffness matrix for cross-links on the boundary, the terms within the parenthesis in Eq.\ \eqref{eq:dsdxRVE} are available from the force balance of the fiber network in the RVE. 
 
 At this point, we still need to determine the derivative of fiber-node coordinates of the RVE $(x_k)$ with respect to the corner-node coordinates of the RVE $(x_l^{RVE})$. A relationship between $x_k$ and $x_l^{RVE}$ is obtained by considering how the internal fiber forces (i.e., the residual on fiber network) changes with respect to $x_l^{RVE}$ (i.e., the displacements at the RVE corner nodes):
+\todo{Why is the residual the vector of fiber forces?}
 %
 \begin{equation}
 \frac{\partial \pmb{R}}{\partial \pmb{x}^{RVE}} = \frac{\partial \pmb{R}}{\partial \pmb{x}^{RVE}} \bigg |_{\pmb{x}} + \frac{\partial \pmb{R}}{\partial \pmb{x}} \bigg |_{\pmb{x}^{RVE}} \frac{\partial \pmb{x}}{\partial \pmb{x}^{RVE}},
@@ -424,7 +426,7 @@ x_{N_{dof}^{fn}}
 \end{bmatrix} .
 \end{eqnarray}
 %
-In Eq.\ \eqref{eq:dRdxRVE} the change in residual with respect to $\pmb{x}^{RVE}$ has 2 contributions: change due to (1) RVE corner-node displacements when interior-nodes are fixed and (2) interior-node displacements when RVE corner-nodes  are fixed. When the forces in the fiber network are balanced, $\partial \pmb{R}/\partial \pmb{x}^{RVE} = 0$, and the derivative $\partial \pmb{x}/\partial \pmb{x}^{RVE}$ needed to evaluate Eq.\ \eqref{eq:dsdxRVE} can be determined by
+In Eq.\ \eqref{eq:dRdxRVE} the change in residual with respect to $\pmb{x}^{RVE}$ has 2 contributions: change due to (1) RVE corner-node displacements when interior-nodes are fixed and (2) interior-node displacements when RVE corner-nodes  are fixed. When the forces in the fiber network are balanced, $\partial \pmb{R}/\partial \pmb{x}^{RVE} = 0$, and the derivative $\partial \pmb{x}/\partial \pmb{x}^{RVE}$ needed to evaluate Eq.\ \eqref{eq:dsdxRVE} can be determined by:
 %
 \begin{equation}
 \frac{\partial \pmb{x}}{\partial \pmb{x}^{RVE}} = -\left(\frac{\partial \pmb{R}}{\partial \pmb{x}} \bigg |_{\pmb{x}^{RVE}}\right)^{-1}\frac{\partial \pmb{R}}{\partial \pmb{x}^{RVE}}\bigg |_{\pmb{x}} .
@@ -432,7 +434,7 @@ In Eq.\ \eqref{eq:dRdxRVE} the change in residual with respect to $\pmb{x}^{RVE}
 %
 Since $\partial \pmb{R}/\partial \pmb{x} |_{\pmb{x}^{RVE}}$ is the tangent-stiffness matrix, $\partial \pmb{x}/\partial \pmb{x}^{RVE}$ can be determined once $\partial \pmb{R}/\partial \pmb{x}^{RVE} |_{\pmb{x}}$ is known. Note that the inverse of the tangent-stiffness matrix has already been evaluated when performing the Newton-Raphson procedure for balancing the force of the fiber network.
 
-The change of residual with respect to $\pmb{x}^{RVE}$ while the interior nodes are fixed is calculated by a geometric argument. To illustrate this calculation, consider a single fiber node that lies on the boundary of the RVE box 
+The change of residual with respect to $\pmb{x}^{RVE}$ while the interior nodes are fixed is calculated by a geometric argument. To illustrate this calculation, consider a single fiber node that lies on the boundary of the RVE box \todo{not sure if this matrix is correct}
 %
 \begin{align}
 &\left [\frac{\partial \pmb{R}}{\partial \pmb{x}^{RVE}}\bigg |_{\pmb{x}}\right] = \nonumber\\
@@ -443,10 +445,8 @@ The change of residual with respect to $\pmb{x}^{RVE}$ while the interior nodes 
 \frac{\partial T_2}{\partial x_1^{RVE}} & \frac{\partial T_2}{\partial x_2^{RVE}} & \frac{\partial T_2}{\partial x_3^{RVE}} & \cdots & \frac{\partial T_2}{\partial x_{22}^{RVE}} & \frac{\partial T_2}{\partial x_{23}^{RVE}} & \frac{\partial T_2}{\partial x_{24}^{RVE}} \\
 %
 \frac{\partial T_3}{\partial x_1^{RVE}} & \frac{\partial T_3}{\partial x_2^{RVE}} & \frac{\partial T_3}{\partial x_3^{RVE}} & \cdots & \frac{\partial T_3}{\partial x_{22}^{RVE}} & \frac{\partial T_3}{\partial x_{23}^{RVE}} & \frac{\partial T_3}{\partial x_{24}^{RVE}} \\
-\end{bmatrix} \nonumber\\
-%
-& \begin{bmatrix}
-\frac{A_1}{A}\pmb{I}_{3\times3} & \cdots & \frac{A_8}{A}\pmb{I}_{3\times3}
+\end{bmatrix} \begin{bmatrix}
+\frac{A_1}{A}\pmb{I}_{3\times3} \\ \vdots \\ \frac{A_8}{A}\pmb{I}_{3\times3}
 \end{bmatrix},
 \label{eq:dRdxRVE_1node}
 \end{align}
@@ -492,18 +492,19 @@ The derivative of the Volume with respect to the RVE corner coordinates can be w
 %
 where we have applied the Gauss integration formula (c.f., Eq.\ \eqref{eq:gauss_integration}). The derivative of det$\pmb{J}^e(\xi_1^{(i)},\xi_2^{(j)},\xi_3^{(k)})$ is 
 %
-\begin{eqnarray}
-&&\frac{\partial}{\partial x_l^{RVE}}\left(\text{det}\pmb{J}^e(\xi_1^{(i)},\xi_2^{(j)},\xi_3^{(k)})\right) \nonumber\\
-%
-&&= \frac{\partial}{\partial x_l^{RVE}}\bigg[x_{,\xi_1}\left(y_{,\xi_2}z_{,\xi_3} - z_{,\xi_2}y_{,\xi_3} \right) - y_{,\xi_1}\left(x_{,\xi_2}z_{,\xi_3}-z_{,\xi_2}x_{,\xi_3} \right) + z_{,\xi_1}\left(x_{,\xi_2}y_{,\xi_3}-y_{,\xi_2}x_{,\xi_3} \right)\bigg] \bigg |_{\xi_1 = \xi_1^{(i)}, \xi_2 = \xi_2^{(j)}, \xi_3 = \xi_3^{(k)}}.  \nonumber\\
-\end{eqnarray}
+\begin{multline}
+\frac{\partial}{\partial x_l^{RVE}}\left(\text{det}\pmb{J}^e(\xi_1^{(i)},\xi_2^{(j)},\xi_3^{(k)})\right) =\\
+= \frac{\partial}{\partial x_l^{RVE}}\left[x_{,\xi_1}\left(y_{,\xi_2}z_{,\xi_3} - z_{,\xi_2}y_{,\xi_3} \right) - y_{,\xi_1}\left(x_{,\xi_2}z_{,\xi_3}-z_{,\xi_2}x_{,\xi_3} \right) \right. \\
+\left. + z_{,\xi_1}\left(x_{,\xi_2}y_{,\xi_3}-y_{,\xi_2}x_{,\xi_3} \right)\right] \bigg |_{\xi_1 = \xi_1^{(i)}, \xi_2 = \xi_2^{(j)}, \xi_3 = \xi_3^{(k)}}.
+\end{multline}
 %
 To illustrate, the $x, y, z$ components of the derivative for the ``first" node of the hexahedron $(x_1^{RVE},x_2^{RVE}, x_3^{RVE})$ are explicitly written out:
 %
-\begin{eqnarray}
-\frac{\partial \text{det}\pmb{J}^e}{\partial x_1^{RVE}} &=& \frac{\partial x_{,\xi_1}}{\partial x_1^{RVE}}\left(y_{,\xi_2}z_{,\xi_3} - z_{,\xi_2}y_{,\xi_3} \right) - y_{,\xi_1}\left(\frac{\partial x_{,\xi_2}}{\partial x_1^{RVE}}z_{,\xi_3}-z_{,\xi_2}\frac{\partial x_{,\xi_3}}{\partial x_1^{RVE}} \right) + z_{,\xi_1}\left(x_{,\xi_2}y_{,\xi_3}-y_{,\xi_2}x_{,\xi_3} \right) \nonumber\\
+\begin{align}
+\frac{\partial \text{det}\pmb{J}^e}{\partial x_1^{RVE}} &= \frac{\partial x_{,\xi_1}}{\partial x_1^{RVE}}\left(y_{,\xi_2}z_{,\xi_3} - z_{,\xi_2}y_{,\xi_3} \right) - y_{,\xi_1}\left(\frac{\partial x_{,\xi_2}}{\partial x_1^{RVE}}z_{,\xi_3}-z_{,\xi_2}\frac{\partial x_{,\xi_3}}{\partial x_1^{RVE}} \right) \nonumber \\ 
+&+ z_{,\xi_1}\left(\frac{\partial x_{,\xi_2}}{\partial x_1^{RVE}}y_{,\xi_3}-y_{,\xi_2}\frac{\partial x_{,\xi_3}}{x_1^{RVE}} \right) \nonumber\\
 %
-&=& \text{det} \begin{bmatrix}
+&= \text{det} \begin{bmatrix}
 \frac{\partial x_{,\xi_1}}{\partial x_1^{RVE}} & y_{,\xi_1} & z_{,\xi_1} \\
 \frac{\partial x_{,\xi_2}}{\partial x_1^{RVE}} & y_{,\xi_2} & z_{,\xi_2} \\
 \frac{\partial x_{,\xi_3}}{\partial x_1^{RVE}} & y_{,\xi_3} & z_{,\xi_3}
@@ -515,35 +516,38 @@ To illustrate, the $x, y, z$ components of the derivative for the ``first" node 
 \frac{\partial N_1^{6\text{hex}}}{\partial \xi_3} & y_{,\xi_3} & z_{,\xi_3}
 \end{bmatrix} \nonumber\\
 %%
-\frac{\partial \text{det}\pmb{J}^e}{\partial x_2^{RVE}} &=& x_{,\xi_1}\left(\frac{\partial y_{,\xi_2}}{\partial x_2^{RVE}}z_{,\xi_3} - z_{,\xi_2}\frac{\partial y_{,\xi_3}}{\partial x_2^{RVE}} \right) - \frac{\partial y_{,\xi_1}}{\partial x_2^{RVE}}\left(x_{,\xi_2}z_{,\xi_3}-z_{,\xi_2}x_{,\xi_3} \right) + z_{,\xi_1}\left(x_{,\xi_2}\frac{\partial y_{,\xi_3}}{\partial x_2^{RVE}}-\frac{\partial y_{,\xi_2}}{\partial x_2^{RVE}}x_{,\xi_3} \right) \nonumber\\
-%
-&=& \text{det} \begin{bmatrix}
+\frac{\partial \text{det}\pmb{J}^e}{\partial x_2^{RVE}} &= x_{,\xi_1}\left(\frac{\partial y_{,\xi_2}}{\partial x_2^{RVE}}z_{,\xi_3} - z_{,\xi_2}\frac{\partial y_{,\xi_3}}{\partial x_2^{RVE}} \right) - \frac{\partial y_{,\xi_1}}{\partial x_2^{RVE}}\left(x_{,\xi_2}z_{,\xi_3}-z_{,\xi_2}x_{,\xi_3} \right) \nonumber \\
+&+ z_{,\xi_1}\left(x_{,\xi_2}\frac{\partial y_{,\xi_3}}{\partial x_2^{RVE}}-\frac{\partial y_{,\xi_2}}{\partial x_2^{RVE}}x_{,\xi_3} \right) \nonumber\\
+%%
+&= \text{det} \begin{bmatrix}
 x_{,\xi_1} & \frac{\partial y_{,\xi_1}}{\partial x_2^{RVE}} & z_{,\xi_1} \\
 x_{,\xi_2} & \frac{\partial y_{,\xi_2}}{\partial x_2^{RVE}} & z_{,\xi_2} \\
 x_{,\xi_3} & \frac{\partial y_{,\xi_3}}{\partial x_2^{RVE}} & z_{,\xi_3}
 \end{bmatrix} 
-%
+%%
 = \text{det} \begin{bmatrix}
 x_{,\xi_1} & \frac{\partial N_2^{6\text{hex}}}{\partial \xi_1} & z_{,\xi_1} \\
 x_{,\xi_2} & \frac{\partial N_2^{6\text{hex}}}{\partial \xi_2} & z_{,\xi_2} \\
 x_{,\xi_3} & \frac{\partial N_2^{6\text{hex}}}{\partial \xi_3} &  z_{,\xi_3}
 \end{bmatrix} \nonumber\\
+%%%
+\frac{\partial \text{det}\pmb{J}^e}{\partial x_3^{RVE}} &= x_{,\xi_1}\left(y_{,\xi_2} \frac{\partial z_{,\xi_3}}{\partial x_3^{RVE}} - \frac{\partial z_{,\xi_2}}{\partial x_3^{RVE}} y_{,\xi_3} \right) - y_{,\xi_1}\left(x_{,\xi_2}\frac{\partial z_{,\xi_3}}{\partial x_3^{RVE}} - \frac{\partial z_{,\xi_2}}{\partial x_3^{RVE}} x_{,\xi_3} \right) \nonumber \\
+& + \frac{\partial z_{,\xi_1}}{\partial x_3^{RVE}}\left(x_{,\xi_2}y_{,\xi_3}-y_{,\xi_2}x_{,\xi_3} \right) \nonumber\\
 %%
-\frac{\partial \text{det}\pmb{J}^e}{\partial x_3^{RVE}} &=& x_{,\xi_1}\left(y_{,\xi_2} \frac{\partial z_{,\xi_3}}{\partial x_3^{RVE}} - \frac{\partial z_{,\xi_2}}{\partial x_3^{RVE}} y_{,\xi_3} \right) - y_{,\xi_1}\left(x_{,\xi_2}\frac{\partial z_{,\xi_3}}{\partial x_3^{RVE}} - \frac{\partial z_{,\xi_2}}{\partial x_3^{RVE}} x_{,\xi_3} \right) + \frac{\partial z_{,\xi_1}}{\partial x_3^{RVE}}\left(x_{,\xi_2}y_{,\xi_3}-y_{,\xi_2}x_{,\xi_3} \right) \nonumber\\
-%
-&=& \text{det} \begin{bmatrix}
+&= \text{det} \begin{bmatrix}
 x_{,\xi_1} & y_{,\xi_1} & \frac{\partial z_{,\xi_1}}{\partial x_2^{RVE}}  \\
 x_{,\xi_2} & y_{,\xi_2} & \frac{\partial z_{,\xi_2}}{\partial x_2^{RVE}}  \\
 x_{,\xi_3} & y_{,\xi_3} & \frac{\partial z_{,\xi_3}}{\partial x_2^{RVE}} 
 \end{bmatrix} 
-%
+%%
 = \text{det} \begin{bmatrix}
 x_{,\xi_1} & z_{,\xi_1} & \frac{\partial N_3^{6\text{hex}}}{\partial \xi_1}  \\
 x_{,\xi_2} & z_{,\xi_2} & \frac{\partial N_3^{6\text{hex}}}{\partial \xi_2}  \\
 x_{,\xi_3} & z_{,\xi_3}& \frac{\partial N_3^{6\text{hex}}}{\partial \xi_3} 
 \end{bmatrix} .
 \label{eq:ddetJdvl}
-\end{eqnarray}
+\end{align}
+
 %
 Note that the formula for the derivatives for each component of the ``second" to ``eighth" nodes of the hexahedron are essentially the same, with the only difference being the shape function: $N_{l}^{6\text{hex}}$ with $l=4$ to $24$ for components corresponding to the second to eighth nodes. The relationship $\partial x_{,\xi_i}/\partial x_j^{RVE} = \partial N_j^{6\text{hex}}/\partial \xi_i$ was used in Eq.\ \eqref{eq:ddetJdvl}.
 
@@ -616,4 +620,4 @@ where
 \label{eq:DeltaN_j^k}
 \end{eqnarray}
 %
-In the matrix of Eq.\ \eqref{eq:dRVEdFE_matrix}, each 3 $\times$ 3 submatrix describes the relationship between the degrees of freedom of an RVE corner node and a FE tetrahedron node. These relationships are approximated as 3 $\times$ 3 diagonal matrices where the diagonal terms are calculated as the difference between the $j^{th}$ ($j$ ranges from 1 to 4 for tetrahedron) shape function at the barycentric coordinate of the $k^{th}$ RVE corner-node and that at the barycentric coordinate of the Gauss integration point (c.f., Eq.\ \eqref{eq:DeltaN_j^k}). 
+In the matrix of Eq.\ \eqref{eq:dRVEdFE_matrix}, each 3 $\times$ 3 submatrix describes the relationship between the degrees of freedom of an RVE corner node and a FE tetrahedron node. These relationships are approximated as 3 $\times$ 3 diagonal matrices where the diagonal terms are calculated as the difference between the $j^{th}$ ($j$ ranges from 1 to 4 for tetrahedron) shape function at the barycentric coordinate of the $k^{th}$ RVE corner-node and that at the barycentric coordinate of the Gauss integration point (c.f., Eq.\ \eqref{eq:DeltaN_j^k}). \todo{this assumes that the RVE is much smaller than the element}

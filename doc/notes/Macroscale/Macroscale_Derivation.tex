@@ -134,7 +134,7 @@ where the $x$, $y$, and $z$ in the subscript indicate the $x$, $y$, and $z$ cont
 To minimize the residual in Eq.\ \eqref{galerkin_weak_form}, and hence solve the problem, the Newton-Raphson Procedure is used
 %
 \begin{equation}
-\pmb{K}_T \delta u = -R, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
+\pmb{K}_T \delta u = -\vec{R}, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
 \end{equation}
 %
 
@@ -176,7 +176,7 @@ As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each no
  \todo{write in indicial form, not sure if needed at all here, move to multiscale formulation section?}
 %
 
-Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account \red{this is essentially the 3D Leibniz integration rule. Discuss Eq.\ \eqref{dRx} in terms of Leibniz integration rule}. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
+Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account this is essentially the 3D Leibniz integration rule. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
 
 The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.\todo{We need to state that we can pull out the stresses due to the fact that they are just nodal constants.}
 
