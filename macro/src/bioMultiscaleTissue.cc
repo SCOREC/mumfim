@@ -32,6 +32,14 @@ namespace bio
   void MultiscaleTissue::Assemble(amsi::LAS * las)
   {
     computeRVEs();
+#ifdef LOGRUN
+    amsi::Log state = amsi::activateLog("tissue_efficiency");
+    amsi::log(state) << load_step << ", "
+                     << iteration << ", "
+                     << MPI_Wtime() << ", "
+                     << "start_fea"
+                     << std::endl;
+#endif
     apfSimFEA::ApplyBC_Neumann(las);
     apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
     for(apf::MeshEntity * me = NULL; (me = apf_mesh->iterate(it));)
@@ -56,13 +64,41 @@ namespace bio
     apf_mesh->end(it);
     for(auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
+#ifdef LOGRUN
+    amsi::log(state) << load_step << ", "
+                     << iteration << ", "
+                     << MPI_Wtime() << ", "
+                     << "end_fea"
+                     << std::endl;
+    amsi::log(state) << load_step << ", "
+                     << iteration << ", "
+                     << MPI_Wtime() << ", "
+                     << "start_solve"
+                     << std::endl;
+#endif
   }
   void MultiscaleTissue::computeRVEs()
   {
+#ifdef LOGRUN
+    amsi::Log state = amsi::activateLog("tissue_efficiency");
+    amsi::log(state) << load_step << ", "
+                     << iteration << ", "
+                     << MPI_Wtime() << ", "
+                     << "start_rves"
+                     << std::endl;
+#endif
+
     std::vector<micro_fo_data> fo_data;
     serializeRVEData(std::back_inserter(fo_data)); // serialize data for fiber_only
     fo_cplg.sendRVEData(fo_data);
     fo_cplg.recvRVEData();
+#ifdef LOGRUN
+    amsi::log(state) << load_step << ", "
+                     << iteration << ", "
+                     << MPI_Wtime() << ", "
+                     << "end_rves"
+                     << std::endl;
+#endif
   }
   void MultiscaleTissue::initMicro()
   {
@@ -180,12 +216,12 @@ namespace bio
     int tp = apf::getScalar(crt_rve,me,ip);
     switch(tp)
     {
-    case NONE:
-      return constitutives[R_whatIn((pRegion)me)];
-    case FIBER_ONLY:
-      return mltscl;
-    default:
-      return NULL;
+     case NONE:
+       return constitutives[R_whatIn((pRegion)me)];
+     case FIBER_ONLY:
+       return mltscl;
+     default:
+       return NULL;
     }
   }
   void MultiscaleTissue::loadRVELibraryInfo()

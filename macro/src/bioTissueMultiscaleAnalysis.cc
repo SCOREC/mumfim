@@ -65,6 +65,7 @@ namespace bio
     cvg = new MultiscaleConvergence(cvg_stps.begin(),cvg_stps.end(),cplng);
     static_cast<MultiscaleTissue*>(tssu)->initMicro();
     // output params
+#ifdef LOGRUN
     std::ostringstream cnvrt;
     cnvrt << rnk;
     state_fn = amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
@@ -86,7 +87,7 @@ namespace bio
       amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
       amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
     }
-    amsi::log(state) << "STEP, ITER,   T, STATUS, DESC" << std::endl
-                     << "   0,    0, 0.0, ACTIVE, Initializing" << std::endl;
+    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
   }
+#endif
 }

@@ -75,6 +75,7 @@ namespace bio
     cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
+#ifdef LOGRUN
     std::stringstream cnvrt;
     cnvrt << rnk;
     state_fn = amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
@@ -96,8 +97,9 @@ namespace bio
       amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
       amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
     }
-    amsi::log(state) << "STEP, ITER,   T, STATUS, DESC" << std::endl
-                     << "   0,    0, 0.0, ACTIVE, Initializing" << std::endl;
+    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl
+                     << "   0,    0, 0.0, init" << std::endl;
+#endif
   }
   void TissueAnalysis::run()
   {
@@ -108,9 +110,23 @@ namespace bio
     completed = false;
     while(!completed)
     {
+#ifdef LOGRUN
+      amsi::log(state) << stp << ", "
+                       << itr->iteration() << ", "
+                       << MPI_Wtime() << ", "
+                       << "start_step"
+                       << std::endl;
+#endif
       std::cout << "Load step = " << stp << std::endl;
       if(amsi::numericalSolve(itr,cvg))
       {
+#ifdef LOGRUN
+        amsi::log(state) << stp << ", "
+                         << itr->iteration() << ", "
+                         << MPI_Wtime() << ", "
+                         << "end_solve"
+                         << std::endl;
+#endif
         if(stp == mx_stp)
         {
           completed = true;
@@ -123,6 +139,13 @@ namespace bio
           las->step();
           tssu->step();
         }
+#ifdef LOGRUN
+      amsi::log(state) << stp << ", "
+                       << itr->iteration() << ", "
+                       << MPI_Wtime() << ", "
+                       << "end_step"
+                       << std::endl;
+#endif
       }
       else
       {

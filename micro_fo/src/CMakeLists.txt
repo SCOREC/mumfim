@@ -32,8 +32,19 @@ set(micro_fo_src_files
 find_package(sparskit REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
+if(WRITE_MICRO_ITER)
+  set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_ITER")
+endif()
+
+if(WRITE_MICRO_STEP)
+  set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_STEP")
+endif()
+
 add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})
 set_property(TARGET micro_fo PROPERTY VERSION ${BIOTISSUE_VERSION})
+if(VERBOSITY_FLAGS)
+    set_target_properties(micro_fo PROPERTIES COMPILE_FLAGS ${VERBOSITY_FLAGS})
+endif()
 
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

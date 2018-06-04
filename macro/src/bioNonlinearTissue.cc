@@ -187,15 +187,6 @@ namespace bio
   }
   void NonlinearTissue::Assemble(amsi::LAS* las)
   {
-#ifdef LOGRUN
-    int rnk = -1;
-    MPI_Comm_rank(AMSI_COMM_SCALE, &rnk);
-    amsi::Log macro_efficiency = amsi::activateLog("macro_efficiency");
-    double pre_assmbl = amsi::getElapsedTime(macro_efficiency);
-    amsi::log(macro_efficiency) << load_step << ", " << iteration << ", "
-                                << pre_assmbl << ", ACTIVE, PRE_ASSEMBLE"
-                                << std::endl;
-#endif
     ApplyBC_Neumann(las);
     apf::MeshEntity* me = NULL;
     // custom iterator would be perfect for switching for multiscale version
@@ -224,27 +215,10 @@ namespace bio
     // process constraints
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
-    las->GetVectorNorm(nrm);
-#ifdef LOGRUN
-    double post_assmbl = amsi::getElapsedTime(macro_efficiency);
-    amsi::log(macro_efficiency) << load_step << ", " << iteration << ", "
-                                << post_assmbl << ", IDLE, POST_ASSEMBLE"
-                                << std::endl;
-    double pre_slv = amsi::getElapsedTime(macro_efficiency);
-    amsi::log(macro_efficiency) << load_step << ", " << iteration << ", "
-                                << pre_slv << ", ACTIVE, PRE_SOLVE"
-                                << std::endl;
-#endif
+    //las->GetVectorNorm(nrm);
   }
   void NonlinearTissue::UpdateDOFs(const double* sol)
   {
-#ifdef LOGRUN
-    amsi::Log macro_efficiency = amsi::activateLog("macro_efficiency");
-    double post_slv = amsi::getElapsedTime(macro_efficiency);
-    amsi::log(macro_efficiency) << load_step << ", " << iteration << ", "
-                                << post_slv << ", ACTIVE, POST_SOLVE"
-                                << std::endl;
-#endif
     // accumulate displacement deltas into primary field
     // apfSimFEA::UpdateDOFs(sol);
     amsi::AccumOp ac_op;

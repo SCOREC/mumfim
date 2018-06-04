@@ -45,7 +45,9 @@ else
       -DBUILD_TESTS=ON \
       -DCMAKE_C_COMPILER=$CC \
       -DCMAKE_CXX_COMPILER=$CXX \
-      -DLOGRUN=TRUE \
+      -DLOGRUN=1 \
+      -DWRITE_MICRO_ITER=0 \
+      -DWRITE_MICRO_STEP=0 \
       -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
       -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
       -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \

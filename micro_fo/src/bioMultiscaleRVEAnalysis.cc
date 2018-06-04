@@ -80,50 +80,7 @@ namespace bio
     apf::Field * fn_du = ans->fn->getdUField();
     apf::Field * fn_u = ans->fn->getUField();
     ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
-    // the below method is similar to the old code
-    // but doesn't currently converge. if we run into
-    // issues down the line consider looking back at
-    // this, but it is more computationaly costly
-    // than the above simple method.
-    /*
-    if(ans->dx_fn_dx_rve_set == true)
-    {
-      int dim = ans->rve->getDim();
-      int nnd = ans->rve->numNodes();
-      apf::DynamicVector rve_uv(nnd*dim);
-      apf::NewArray<apf::Vector3> rve_us;
-      apf::getVectorNodes(ans->rve->getElement(),rve_us);
-      apf::NewArray<int> rve_dofs;
-      apf::getElementNumbers(ans->rve->getNumbering(),ans->rve->getMeshEnt(),rve_dofs);
-      // reorder the rve dofs using dofids because
-      // dx_fn_dx_rve uses them
-      for(int nd = 0; nd < nnd; ++nd)
-        for(int dm = 0; dm < dim; ++dm)
-          rve_uv[rve_dofs[nd*dim+dm]] = rve_us[nd][dm];
-      int fn_dofs = ans->fn->getDofCount();
-      apf::DynamicVector u_fn(fn_dofs);
-      apf::multiply(ans->dx_fn_dx_rve,rve_uv,u_fn);
-      ApplyDeformationGradient app_F(F,fn_msh,fn_du,fn_u);
-      for(auto vrt = ans->bnd_nds[RVE::side::all].begin(); vrt != ans->bnd_nds[RVE::side::all].end(); ++vrt)
-      {
-        for(int dm = 0; dm < dim; ++dm)
-        {
-          int dof = apf::getNumber(ans->fn->getUNumbering(),
-                                   *vrt,0,dm);
-          u_fn(dof) = 0.0;
-        }
-        app_F.inEntity(*vrt);
-        app_F.atNode(0);
-        app_F.outEntity();
-      }
-      // only changes 'u', 'du' is changed for boundary nodes but not internal nodes, will this cause
-      // any issues?
-      //
-      ApplySolution(ans->fn->getUNumbering(),&u_fn[0],0,true).apply(ans->fn->getUField());
-    }
-    */
   }
-  // might be duplicated from bioFiberRVEAnalysis.cc ?
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
     int dim = ans->fn->getNetworkMesh()->getDimension();
@@ -242,7 +199,7 @@ namespace bio
   // wierd area term matrix
   // this is calculated on the reference domain and makes assumptions based on that fact
   void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve,
-                    FiberRVEAnalysis * ans)
+                     FiberRVEAnalysis * ans)
   {
     int dim = ans->rve->getDim();
     int fn_dof_cnt = ans->fn->getDofCount();
@@ -625,25 +582,49 @@ namespace bio
         {
           applyMultiscaleCoupling(*rve,&data[ii]);
           FiberRVEIteration itr(*rve);
-	  val_gen vg(*rve);
-	  eps_gen eg;
-	  ref_gen rg;
+          val_gen vg(*rve);
+          eps_gen eg;
+          ref_gen rg;
           amsi::UpdatingConvergence<decltype(&vg), decltype(&eg), decltype(&rg)> resid_cnvrg(&itr,&vg,&eg,&rg);
           amsi::Convergence * ptr[] = {&resid_cnvrg};
           amsi::MultiConvergence cnvrg(&ptr[0],&ptr[0]+1);
-          // not a huge fan of this way vs adding it at the end of the multiconvergence, though this necessitates that the iteration reset happes at the END
+          // not a huge fan of this way vs adding it at the end of
+          // the multiconvergence, though this necessitates that the iteration
+          // reset happes at the END
           amsi::ResetIteration rst_iter(&cnvrg,&itr);
           amsi::numericalSolve(&itr,&cnvrg);
           // we've converged and have not reset the state of the vectors, matrices, and buffers
           // the inversion of the tangent stiffness matrix should be available in the buffers?
           recoverMultiscaleResults(*rve,&results[ii]);
           ii++;
+#ifdef WRITE_MICRO_PER_ITER
+          std::stringstream sout;
+          int rnk = -1;
+          MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
+          sout << "rnk_" << rnk << "_fn_" << ii
+               << "_step_" << macro_step << "_iter_" << macro_iter;
+          apf::writeVtkFiles(sout.str().c_str(),(*rve)->fn->getNetworkMesh(),1);
+#endif
         }
         PCU_Switch_Comm(AMSI_COMM_SCALE);
         cs->Communicate(send_ptrn,results,amsi::mpi_type<micro_fo_result>());
         macro_iter++;
         cs->scaleBroadcast(M2m_id,&step_complete);
       }
+#ifdef WRITE_MICRO_PER_STEP
+      std::stringstream sout;
+      int rnk = -1;
+      MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
+      int ii = 0;
+      for(auto rve = ans.begin(); rve != ans.end(); ++rve)
+      {
+        sout << "rnk_" << rnk << "_fn_" << ii
+             << "_step_" << macro_step;
+        apf::writeVtkFiles(sout.str().c_str(),(*rve)->fn->getNetworkMesh(),1);
+        sout.str("");
+        ii++;
+      }
+#endif
       macro_iter = 0;
       macro_step++;
     }
