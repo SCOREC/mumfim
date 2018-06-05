@@ -3,6 +3,7 @@
 #include "bioFiberNetworkIO.h"
 #include "bioMicroFOMultiscale.h"
 #include "bioRVEVolumeTerms.h"
+#include <lasCSRCore.h>
 #include <apfFEA.h> // amsi
 #include <apfMatrixUtil.h> //amsi
 #include <apfMeshIterator.h> // amsi
@@ -12,7 +13,7 @@
 namespace bio
 {
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
-                                        las::CSR * csr,
+                                        las::Sparsity * csr,
                                         las::SparskitBuffers * bfrs,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
@@ -83,6 +84,7 @@ namespace bio
   }
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
+    auto ops = las::getLASOps<las::sparskit>();
     int dim = ans->fn->getNetworkMesh()->getDimension();
     apf::Field * xpu = ans->fn->getXpUField();
     apf::Vector3 xpu_val;
@@ -90,7 +92,7 @@ namespace bio
     apf::Numbering * num = ans->fn->getUNumbering();
     int dofs[3];
     double * f = NULL;
-    ans->ops->get(ans->f,f);
+    ops->get(ans->f,f);
     apf::Matrix3x3 strs(0.0,0.0,0.0,
                         0.0,0.0,0.0,
                         0.0,0.0,0.0);
@@ -226,26 +228,28 @@ namespace bio
                         FiberRVEAnalysis * ans,
                         apf::DynamicMatrix & dR_dx_rve)
   {
+    auto ops = las::getLASOps<las::sparskit>();
     int dim = ans->rve->getDim();
     int fn_dof_cnt = ans->fn->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes()*dim;
     apf::DynamicVector f(fn_dof_cnt);
     apf::DynamicVector u(fn_dof_cnt);
-    las::Vec * skt_f = las::createSparskitVector(fn_dof_cnt);
-    las::Vec * skt_u = las::createSparskitVector(fn_dof_cnt);
-    las::LasSolve * iluslv = las::createSparskitLUSolve(las::getSparskitBuffers(ans->slv),0.0);
-    las::LasSolve * qslv = las::createSparskitQuickLUSolve(iluslv);
+    auto vb = las::getVecBuilder<las::sparskit>(0);
+    las::Vec * skt_f = vb->create(fn_dof_cnt,LAS_IGNORE,MPI_COMM_SELF);
+    las::Vec * skt_u = vb->create(fn_dof_cnt,LAS_IGNORE,MPI_COMM_SELF);
+    las::Solve * iluslv = las::createSparskitLUSolve(ans->slv,0.0);
+    las::Solve * qslv = las::createSparskitQuickLUSolve(iluslv,0.0);
     dx_fn_dx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     double * fptr = NULL;
     double * uptr = NULL;
     for(int ii = 0; ii < rve_dof_cnt; ++ii)
     {
-      las::LasSolve * slv = ii == 0 ? iluslv : qslv;
+      las::Solve * slv = ii == 0 ? iluslv : qslv;
       dR_dx_rve.getColumn(ii,f);
-      ans->ops->get(skt_f,fptr);
+      ops->get(skt_f,fptr);
       std::copy(f.begin(),f.end(),fptr);
       slv->solve(ans->k,skt_u,skt_f);
-      ans->ops->get(skt_u,uptr);
+      ops->get(skt_u,uptr);
       std::copy(uptr,uptr+fn_dof_cnt,u.begin());
       dx_fn_dx_rve.setColumn(ii,u);
     }
@@ -255,6 +259,7 @@ namespace bio
   void calcds_dx_fn(apf::DynamicMatrix & ds_dx_fn,
                     FiberRVEAnalysis * ans)
   {
+    auto ops = las::getLASOps<las::sparskit>();
     int dim = ans->rve->getDim();
     int sigma_length = dim == 3 ? 6 : 3;
     int fn_dof_cnt = ans->fn->getDofCount();
@@ -262,7 +267,7 @@ namespace bio
     ds_dx_fn.zero();
     apf::Numbering * dofs = ans->fn->getUNumbering();
     double * F = NULL;
-    ans->ops->get(ans->f,F);
+    ops->get(ans->f,F);
     // iterate over all fibers with a node on the boundary
     for(auto vrt = ans->bnd_nds[RVE::all].begin(); vrt != ans->bnd_nds[RVE::all].end(); ++vrt)
     {
@@ -323,7 +328,7 @@ namespace bio
     // this effects the force vector which is used in the calculation of
     // dS_dx_fn above so we must do it after.
     applyRVEBC(ans->bnd_nds[RVE::all].begin(),ans->bnd_nds[RVE::all].end(),
-               ans->fn->getUNumbering(),ans->ops,ans->k,ans->f);
+               ans->fn->getUNumbering(),ans->k,ans->f);
     // calculate dx_fn_dx_rve;
     calcdx_fn_dx_rve(ans->dx_fn_dx_rve,ans,dR_dx_rve);
     apf::DynamicMatrix ds_dx_rve;
@@ -355,10 +360,11 @@ namespace bio
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
+    auto ops = las::getLASOps<las::sparskit>();
     // rebuild everything since we want the force vector without
     // boundary conditions anyway
-    ans->ops->zero(ans->k);
-    ans->ops->zero(ans->f);
+    ops->zero(ans->k);
+    ops->zero(ans->f);
     apf::Mesh * fn  = ans->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * it = fn->begin(1);
@@ -452,7 +458,7 @@ namespace bio
     for(int ii = 0; ii < num_rve_tps; ++ii)
     {
       fns.push_back(new FiberNetworkReactions* [rve_tp_cnt[ii]]);
-      sprs.push_back(new las::CSR* [rve_tp_cnt[ii]]);
+      sprs.push_back(new las::Sparsity * [rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
     PCU_Switch_Comm(MPI_COMM_SELF);
@@ -541,7 +547,8 @@ namespace bio
     double prv_nrm;
     double operator()()
     {
-      double nrm = an->ops->norm(an->f);
+      auto ops = las::getLASOps<las::sparskit>();
+      double nrm = ops->norm(an->f);
       double val = fabs(prv_nrm - nrm);
       prv_nrm = nrm;
       return val;

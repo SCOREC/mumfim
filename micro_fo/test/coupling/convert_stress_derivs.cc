@@ -1,4 +1,4 @@
-#include "bioMultiscaleRVEAnalysis_impl.h"
+#include <bioMultiscaleRVEAnalysis_impl.h>
 #include "io.h"
 #include <mpi.h>
 #include <fstream>
@@ -56,8 +56,7 @@ int main(int ac, char * av[])
   fin_dS_dx_rve.close();
   bool eq = (dS_dx_rve_in == dS_dx_rve);
   if(eq)
-    std::cout << "Stress derivative conversion successful!" << std::endl;
-  else
+    std::cout << "Stress derivative conversion successful!" << std::endl;  else
     std::cout << "Stress derivative conversion failed!" << std::endl;
   MPI_Finalize();
   return !eq;

@@ -9,10 +9,7 @@ set(micro_fo_public_headers
   bioRVEVolumeTerms.h
   bioTrussIntegrator.h
   bioUtil.h
-  bioUtil_impl.h
-  lasCSR.h
-  lasSparskit.h
-  lasSparskitExterns.h)
+  bioUtil_impl.h)
 
 set(micro_fo_src_files
   bioRVE.cc
@@ -23,13 +20,11 @@ set(micro_fo_src_files
   bioMicroFOMultiscale.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc
-  bioUtil.cc
-  lasCSR.cc
-  lasCSRBuilder.cc
-  lasSparskit.cc
-  lasSparskitExterns.cc)
+  bioUtil.cc)
 
-find_package(sparskit REQUIRED)
+#find_package(sparskit REQUIRED)
+find_package(las) #COMPONENTS sparskit core)
+find_package(las_core)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
 if(WRITE_MICRO_ITER)
@@ -50,9 +45,7 @@ target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                     $<INSTALL_INTERFACE:include/biotissue>)
 
-target_link_libraries(micro_fo PUBLIC
-                      ${SPARSKIT_LIBRARY}
-                      amsi::util amsi::analysis amsi::multiscale)
+target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale las_core)
 
 install(TARGETS micro_fo
         EXPORT biotissueTargets

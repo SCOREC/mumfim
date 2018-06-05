@@ -1,4 +1,5 @@
 #include "bioFiberRVEAnalysis.cc"
+#include <lasCSRCore.h>
 #include <iostream>
 #include <list>
 #include <sstream>
@@ -17,7 +18,7 @@ int main(int, char * argv[])
   int num_fns = atoi(argv[1]);
   std::string fn_prfx(argv[2]);
   std::vector<FiberNetwork*> fns;
-  std::vector<las::CSR*> csrs;
+  std::vector<las::Sparsity*> csrs;
   int dof_max = -1;
   for(int ii = 0; ii < num_fns; ++ii)
   {
@@ -27,7 +28,7 @@ int main(int, char * argv[])
     FiberNetwork * fn = new FiberNetwork(loadFromFile(fl.str()));
     int dofs = fn->getDofCount();
     fns.push_back(fn);
-    csrs.push_back(las::createCSR(fn->getUNumbering(),dofs));
+    csrs.push_back((las::Sparsity*)las::createCSR(fn->getUNumbering(),dofs));
     dof_max = dofs > dof_max ? dofs : dof_max;
   }
   las::SparskitBuffers bfrs(dof_max);

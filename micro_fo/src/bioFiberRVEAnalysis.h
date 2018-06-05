@@ -4,8 +4,8 @@
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
 #include "bioMultiscaleRVE.h"
-#include "lasSparskit.h"
-#include <amsiAnalysis.h>
+#include <lasSparskit.h>
+#include <amsiNonlinearAnalysis.h>
 #include <string>
 namespace bio
 {
@@ -21,12 +21,11 @@ namespace bio
     las::Vec * u;
     las::Vec * f;
     las::Vec * f0;
-    las::LasOps * ops;
-    las::LasSolve * slv;
+    las::Solve * slv;
     apf::DynamicMatrix dx_fn_dx_rve;
     bool dx_fn_dx_rve_set;
   };
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::CSR *, las::SparskitBuffers * b = NULL);
+  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork *, las::Sparsity *, las::SparskitBuffers * b = NULL);
   void destroyAnalysis(FiberRVEAnalysis *);
   class FiberRVEIteration : public amsi::Iteration
   {
@@ -45,7 +44,6 @@ namespace bio
   void applyRVEBC(I bnd_bgn,
                   I bnd_end,
                   apf::Numbering * nm,
-                  las::LasOps * ops,
                   las::Mat * k,
                   las::Vec * f);
   /**

@@ -2,6 +2,7 @@
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
 #include "bioRVE.h"
+#include <lasCSRCore.h>
 #include <amsiAnalysis.h>
 #include <apfMeshIterator.h>
 #include <mpi.h>
@@ -13,11 +14,15 @@ int main(int argc, char * argv[])
   double eye[] = { 1.0 , 0.0 , 0.0 ,
                    0.0 , 1.0 , 0.0 ,
                    0.0 , 0.0 , 1.0 };
-  las::CSR * eye_csr = las::csrFromFull(&eye[0],3,3);
+  las::Sparsity * eye_csr = las::csrFromFull(&eye[0],3,3);
   assert(eye_csr);
-  las::Mat * mat_csr = las::createSparskitMatrix(eye_csr);
+  auto mb = las::getMatBuilder<las::sparskit>(0);
+  las::Mat * mat_csr = mb->create(LAS_IGNORE,
+                                  LAS_IGNORE,
+                                  eye_csr,
+                                  MPI_COMM_SELF);
   assert(mat_csr);
-  las::LasOps * ops = las::initSparskitOps();
+  auto ops = las::getLASOps<las::sparskit>();
   assert(ops);
   int rwcls[] = {0, 1, 2};
   double vl = 1.0;
@@ -37,8 +42,11 @@ int main(int argc, char * argv[])
   //bio::applyRVEBC(bnds.begin(),bnds.end(),nm,ops,k,f);
   int ndofs = apf::NaiveOrder(nm);
   //las::Vec * f = las::createSparskitVector(ndofs);
-  las::CSR * fn_csr = las::createCSR(nm,ndofs);
-  las::Mat * k = las::createSparskitMatrix(fn_csr);
+  las::Sparsity * fn_csr = las::createCSR(nm,ndofs);
+  las::Mat * k = mb->create(LAS_IGNORE,
+                            LAS_IGNORE,
+                            fn_csr,
+                            MPI_COMM_SELF);
   apf::MeshEntity * vrt = NULL;
   apf::MeshIterator * it = NULL;
   double vls[9] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
@@ -63,8 +71,11 @@ int main(int argc, char * argv[])
   bio::getBoundaryVerts(&rve2,fn_msh2,bgn2,end2,bio::RVE::side::all,std::back_inserter(bnds2));
   //bio::applyRVEBC(bnds2.begin(),bnds2.end(),nm2,ops,k,f);
   int ndofs2 = apf::NaiveOrder(nm2);
-  las::CSR * fn_csr2 = las::createCSR(nm2,ndofs2);
-  las::Mat * k2 = las::createSparskitMatrix(fn_csr2);
+  las::Sparsity * fn_csr2 = las::createCSR(nm2,ndofs2);
+  las::Mat * k2 = mb->create(LAS_IGNORE,
+                             LAS_IGNORE,
+                             fn_csr2,
+                             MPI_COMM_SELF);
   apf::MeshEntity * edg = NULL;
   apf::MeshIterator * it2 = NULL;
   double vls2[36] { };
@@ -81,32 +92,32 @@ int main(int argc, char * argv[])
   // todo : refactor this because it is terrible
   // hacky way to get the matrix out, but it works!
   /*
-  las::printSparskitMat(k2_strm,k2);
-  double k2_bare[21][21] {};
-  std::string ln;
-  int ln_cnt = 0;
-  while(ln_cnt < 21 && std::getline(k2_strm,ln))
-  {
+    las::printSparskitMat(k2_strm,k2);
+    double k2_bare[21][21] {};
+    std::string ln;
+    int ln_cnt = 0;
+    while(ln_cnt < 21 && std::getline(k2_strm,ln))
+    {
     std::stringstream ln_strm(ln);
     std::copy(std::istream_iterator<double>(ln_strm),
-              std::istream_iterator<double>(),
-              &k2_bare[ln_cnt][0]);
+    std::istream_iterator<double>(),
+    &k2_bare[ln_cnt][0]);
     ln_cnt++;
-  }
-  // compare against expected values
-  double insidence[49] = { 6, 1, 1, 1, 1, 1, 1,
-                           1, 2, 0, 0, 0, 0, 0,
-                           1, 0, 2, 0, 0, 0, 0,
-                           1, 0, 0, 2, 0, 0, 0,
-                           1, 0, 0, 0, 2, 0, 0,
-                           1, 0, 0, 0, 0, 2, 0,
-                           1, 0, 0, 0, 0, 0, 2 };
-  int idx = 0;
-  for(int rr = 1; rr < 20; rr+=3)
+    }
+    // compare against expected values
+    double insidence[49] = { 6, 1, 1, 1, 1, 1, 1,
+    1, 2, 0, 0, 0, 0, 0,
+    1, 0, 2, 0, 0, 0, 0,
+    1, 0, 0, 2, 0, 0, 0,
+    1, 0, 0, 0, 2, 0, 0,
+    1, 0, 0, 0, 0, 2, 0,
+    1, 0, 0, 0, 0, 0, 2 };
+    int idx = 0;
+    for(int rr = 1; rr < 20; rr+=3)
     for(int cc = 1; cc < 20; cc+=3)
     {
-      assert(insidence[idx] == k2_bare[rr][cc]);
-      idx++;
+    assert(insidence[idx] == k2_bare[rr][cc]);
+    idx++;
     }
   */
   amsi::freeAnalysis();

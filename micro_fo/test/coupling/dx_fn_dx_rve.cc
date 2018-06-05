@@ -1,7 +1,8 @@
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioFiberNetworkIO.h"
-#include "lasSparskit.h"
 #include "io.h"
+#include <lasConfig.h>
+#include <lasCSRCore.h>
 #include <PCU.h>
 #include <mpi.h>
 #include <fstream>
@@ -19,7 +20,7 @@ int main(int ac, char * av[])
   MPI_Init(&ac,&av);
   PCU_Comm_Init();
   bio::FiberNetwork fn(bio::loadFromFile(fn_fn));
-  las::CSR * csr = las::createCSR(fn.getUNumbering(),fn.getDofCount());
+  las::Sparsity * csr = las::createCSR(fn.getUNumbering(),fn.getDofCount());
   bio::FiberRVEAnalysis * ans = bio::makeFiberRVEAnalysis(&fn,csr);
   // load k and overwrite ans->k
   apf::DynamicVector kv;
@@ -27,7 +28,7 @@ int main(int ac, char * av[])
   std::ifstream fin_k(fn_k.c_str());
   fin_k >> kv;
   fin_k.close();
-  double * ka = las::getskMatNNZArray(ans->k);
+  double * ka = &(*reinterpret_cast<las::csrMat*>(ans->k))(0,0);
   memcpy(ka,&kv[0],sizeof(double)*kv.size());
   apf::DynamicMatrix dR_dx_rve;
   notify(std::cout,fn_dR_dx_rve);

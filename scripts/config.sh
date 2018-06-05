@@ -51,7 +51,8 @@ else
       -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/ \
       -DCMAKE_PREFIX_PATH=$DEVROOT/install/amsi/lib/cmake/amsi \
       -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
-      -DSPARSKIT_DIR=$DEVROOT/install/sparskit/ \
+      -Dlas_DIR=$DEVROOT/install/las/lib/cmake \
+      -Dlas_core_DIR=$DEVROOT/install/las/lib/cmake \
       -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp \
       ..
 fi

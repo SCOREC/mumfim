@@ -1,7 +1,6 @@
 #ifndef BIO_RVE_H_
 #define BIO_RVE_H_
 #include "bioUtil.h"
-#include <amsiLAS2.h>
 #include <apfFunctions.h> //amsi
 #include <apfFieldOp.h>
 #include <apf.h>

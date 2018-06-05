@@ -2,7 +2,7 @@
 #define BIO_MULTISCALE_RVE_ANALYSIS_H_
 #include "bioFiberRVEAnalysis.h"
 #include "bioMicroFOMultiscale.h"
-#include "lasSparskit.h"
+#include <lasSparskit.h>
 #include <amsiReporter.h>
 #include <amsiMultiscale.h>
 namespace bio
@@ -26,7 +26,7 @@ namespace bio
     // analysis
     std::vector<int> rve_tp_cnt;
     std::vector<FiberNetworkReactions **> fns;
-    std::vector<las::CSR **> sprs;
+    std::vector<las::Sparsity **> sprs;
     std::vector<FiberRVEAnalysis*> ans;
     las::SparskitBuffers * bfrs;
     int macro_iter;

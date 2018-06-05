@@ -4,7 +4,8 @@
 #include "bioFiberReactions.h"
 #include "bioUtil.h"
 #include <amsiElementalSystem.h>
-#include <amsiLASAssembly.h>
+#include <las.h>
+#include <lasConfig.h>
 #include <apf.h>
 #include <apfDynamicMatrix.h>
 #include <apfElementalSystem.h> //amsi
@@ -47,7 +48,6 @@ namespace bio
     FiberReaction ** frs;
     FiberReaction * fr;
     apf::MeshTag * rct_tg;
-    las::LasOps * ops;
     las::Mat * k;
     las::Vec * f;
   public:
@@ -55,7 +55,6 @@ namespace bio
                   apf::Field * u_,
                   apf::Field * xu_,
                   FiberReaction ** frs_,
-                  las::LasOps * op,
                   las::Mat * k_,
                   las::Vec * f_,
                   int o)
@@ -76,7 +75,6 @@ namespace bio
       , frs(frs_)
       , fr()
       , rct_tg(msh->findTag("fiber_reaction"))
-      , ops(op)
       , k(k_)
       , f(f_)
     { }
@@ -159,10 +157,9 @@ namespace bio
     }
     void outElement()
     {
-      // this could potentially cause issues
-      // since we are passing out a pointer to es
-      // which gets destroyed.
-      amsi::assemble(ops,k,f,es);
+      auto ops = las::getLASOps<las::sparskit>();
+      ops->assemble(k,es->nedof(),&es->dofs(0),es->nedof(),&es->dofs(0),&es->ke(0,0));
+      ops->assemble(f,es->nedof(),&es->dofs(0),&es->fe(0));
       amsi::destroyApfElementalSystem(es);
       apf::destroyElement(elmt);
     }
