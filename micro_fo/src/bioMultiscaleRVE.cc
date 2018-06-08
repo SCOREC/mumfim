@@ -69,6 +69,8 @@ namespace bio
     apf::NewArray<int> rw_ids;
     apf::getElementNumbers(rve->getNumbering(),rve->getMeshEnt(),rw_ids);
     apf::Vector3 gbl_gss;
+    // calculated from the reference element, 
+    //  not the displaced element
     apf::mapLocalToGlobal(macro_melmnt,lcl_gss,gbl_gss);
     apf::DynamicArray<apf::Vector3> gbl_rve_crds(num_rve_nds);
     calcGlobalRVECoords(rve,gbl_rve_crds,rve_dim,gbl_gss);
