@@ -201,6 +201,7 @@ namespace bio
       int dim = apf::getDimension(me);
       double wxdetjac = w * apf::getJacobianDeterminant(Jac,dim);
       apf::NewArray<apf::Vector3> grads;
+      // gradients w.r.t global coordinates
       apf::getShapeGrads(e,p,grads);
       // Get displacements at integration point
       apf::DynamicVector u(nedofs);
