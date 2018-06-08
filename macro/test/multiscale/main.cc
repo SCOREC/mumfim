@@ -72,7 +72,8 @@ bool parse_options(int & argc, char ** & argv)
 }
 int run_micro_fo(int & , char ** &, MPI_Comm comm)
 {
-  int rnk = MPI_Comm_rank(comm,&rnk);
+  int rnk = -1;
+  MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
   //bio::P_computeRVEs();
   bio::MultiscaleRVEAnalysis rves;
@@ -88,13 +89,20 @@ int run_micro_fm(int &, char ** &, MPI_Comm)
 int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
   amsi::initAnalysis(argc,argv,cm);
-  AMSI_DEBUG(Sim_logOn("simmetrix_log"));
+  int rnk = -1;
+  MPI_Comm_rank(cm,&rnk);
+  //Sim_logOn("simmetrix_log");
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
   pGModel mdl = NULL;
   pParMesh msh = NULL;
   try
   {
+    if(rnk == 0)
+    {
+      std::cout << "Model file: " << model_filename << std::endl;
+      std::cout << "Mesh file: " << mesh_filename << std::endl;
+    }
     mdl = GM_load(model_filename.c_str(),NULL,NULL);
     msh = PM_load(mesh_filename.c_str(),mdl,NULL);
     auto cs = amsi::getAnalysisCase(mdl, analysis_case);
@@ -103,7 +111,7 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     an.init();
     an.run();
     amsi::freeCase(cs);
-    // FIXME this is memory leak, should call M_release/GM_release if they are noexcept
+    // FIXME this is a memory leak, should call M_release/GM_release if they are noexcept
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl
