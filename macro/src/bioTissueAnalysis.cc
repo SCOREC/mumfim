@@ -168,22 +168,22 @@ namespace bio
     MPI_Comm_rank(cm,&rnk);
     if(rnk == 0)
     {
-      std::fstream frcs_fs(frcs_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream dsps_fs(dsps_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream vols_fs(vols_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream nrms_fs(nrms_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream cnst_fs(constraint_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream frcs_fs(frcs_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream dsps_fs(dsps_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream vols_fs(vols_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream nrms_fs(nrms_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream cnst_fs(constraint_fn.c_str(), std::ios::out | std::ios::app);
       amsi::flushToStream(frcs,frcs_fs);
       amsi::flushToStream(dsps,dsps_fs);
       amsi::flushToStream(vols,vols_fs);
       amsi::flushToStream(nrms,nrms_fs);
       amsi::flushToStream(constraints,cnst_fs);
     }
-    std::fstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
+    std::ofstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(state,st_fs);
     // write mesh to file
     std::string pvd("/out.pvd");
-    std::fstream pvdf;
+    std::ofstream pvdf;
     std::string msh_prfx("msh_stp_");
     std::stringstream cnvrt;
     cnvrt << stp;
