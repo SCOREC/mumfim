@@ -329,7 +329,6 @@ namespace bio
     // dS_dx_fn above so we must do it after.
     applyRVEBC(ans->bnd_nds[RVE::all].begin(),ans->bnd_nds[RVE::all].end(),
                ans->fn->getUNumbering(),ans->k,ans->f);
-    // calculate dx_fn_dx_rve;
     calcdx_fn_dx_rve(ans->dx_fn_dx_rve,ans,dR_dx_rve);
     apf::DynamicMatrix ds_dx_rve;
     apf::multiply(ds_dx_fn,ans->dx_fn_dx_rve,ds_dx_rve);
@@ -379,10 +378,10 @@ namespace bio
     recoverMicroscaleStress(ans,S);
     double * Q = &data->data[6];
     recoverAvgVolStress(ans,Q);
-    double * dS_dx_rve = &data->data[9];
+    double * dS_dx_fe = &data->data[9];
     // calculate macroscale stress derivs
     // requires microscale stress
-    recoverStressDerivs(ans,S,dS_dx_rve);
+    recoverStressDerivs(ans,S,dS_dx_fe);
     // convert microscale stress to macroscale
     convertStress(ans,S);
   }
@@ -527,8 +526,8 @@ namespace bio
         // copy fiber_reaction tag from origin mesh and set the reactions vector inside the fn
         amsi::copyIntTag(fbr_rct_str,fns[tp][rnd]->msh,msh_cpy,1,1);
         // copy ids for edges to make debugging easier
-        AMSI_DEBUG(std::string id_tg_str("id"));
-        AMSI_DEBUG(amsi::copyIntTag(id_tg_str,fns[tp][rnd]->msh,msh_cpy,1,1));
+        std::string id_tg_str("id");
+        amsi::copyIntTag(id_tg_str,fns[tp][rnd]->msh,msh_cpy,1,1);
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
         fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this, fix
         *rve = initFromMultiscale(fn,sprs[tp][rnd],bfrs,hdr,prm,dat);
