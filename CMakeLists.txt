@@ -14,7 +14,6 @@ if(LOGRUN)
   add_definitions(-DLOGRUN)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qflag=w -qlanglvl=extended0x")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
   set(HOST BGQ)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qflag=w -qlanglvl=extended0x")
