@@ -28,7 +28,7 @@ set(CTEST_BINARY_NAME build)
 find_program(CTEST_COMMAND NAMES ctest)
 find_program(CTEST_MEMORYCHECK_COMMAND NAMES valgrind)
 find_program(CTEST_COVERAGE_COMMAND NAMES gcov)
-set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "/fasttmp/mersoj/develop/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp")
+set(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "/fasttmp/mersoj/develop/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp")
 set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
 
 set(SOURCE_DIRECTORY "${CTEST_DASHBOARD_ROOT}/${CTEST_SOURCE_NAME}")
@@ -48,9 +48,7 @@ set(COMMON_OPTIONS
   "-DCMAKE_CXX_COMPILER:FILEPATH=mpicxx"
   "-DBUILD_TESTS=ON"
   "-DLOGRUN=TRUE"
-  "-DSIM_MPI=openmpi110"
   "-DSCOREC_DIR=/fasttmp/mersoj/develop/install/core/lib/cmake/SCOREC"
-  "-DSCORECUTIL_DIR=/fasttmp/mersoj/develop/install/scorecutil/"
   "-DCMAKE_CXX_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
   "-DCMAKE_C_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
   "-DCMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"

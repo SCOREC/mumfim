@@ -23,8 +23,8 @@ set(micro_fo_src_files
   bioUtil.cc)
 
 #find_package(sparskit REQUIRED)
-find_package(las) #COMPONENTS sparskit core)
-find_package(las_core)
+find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
+find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 
 if(WRITE_MICRO_ITER)

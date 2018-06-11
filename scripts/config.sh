@@ -52,7 +52,7 @@ else
       -DSCOREC_DIR=$DEVROOT/install/core/lib/cmake/SCOREC \
       -Dlas_DIR=$DEVROOT/install/las/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/lib/cmake \
-      -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.6/share/openmpi/openmpi-valgrind.supp \
+      -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
       ..
 fi
 
