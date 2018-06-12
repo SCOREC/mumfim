@@ -117,7 +117,8 @@ namespace bio
                        << "start_step"
                        << std::endl;
 #endif
-      std::cout << "Load step = " << stp << std::endl;
+      if(!PCU_Comm_Self())
+	std::cout << "Load step = " << stp << std::endl;
       if(amsi::numericalSolve(itr,cvg))
       {
 #ifdef LOGRUN

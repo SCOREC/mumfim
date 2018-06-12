@@ -22,7 +22,8 @@ namespace bio
 {
   void MultiscaleTissueIteration::iterate()
   {
-    std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
+    if(!PCU_Comm_Self())
+      std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
     if(iteration() == 0)
       tssu->updateMicro();
     las->iter();

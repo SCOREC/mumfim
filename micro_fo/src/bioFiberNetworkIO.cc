@@ -72,7 +72,7 @@ namespace bio
     for(int ii = 0; ii < np; ++ii)
       processPeriodicity(is);
     msh->acceptChanges();
-    apf::printStats(msh);
+    //apf::printStats(msh);
     assert(nn == vrt_cnt);
     assert(ne == edg_cnt);
     return msh;
