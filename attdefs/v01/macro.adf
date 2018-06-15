@@ -1,0 +1,5 @@
+atd 13
+addAtd "macro_pd.img"
+addAtd "macro_ss.img"
+addAtd "macro_o.img"
+addAtd "macro.atd"

@@ -1,0 +1,6 @@
+atd 13
+image "macro" : "analysis" root {
+  C "problem definition" : "macro" 0 1 1;
+  C "solution strategy" : "macro" 0 1 1;
+  C "output" : "macro" 0 1 1;
+};

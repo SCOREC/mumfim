@@ -1,0 +1,190 @@
+13
+##
+# Fields
+type "field name" : string un p "Field Name";
+
+type "field" : void e < n > {
+  R "field name";
+  R type "unit" : int r mapped <<0 "none"> <1 "displacement">>;
+  R type "type" : int r mapped <<0 "full"> <1 "delta">>;
+  R type "order" : int;
+  R type "value type" : int r mapped <<0 "scalar"> <1 "vector"> <2 "matrix">>;
+  R type "solution" : int r mapped <<0 "false"> <1 "true">>;
+};
+
+#####################################################
+# Boundary Conditions
+type "component constraints" : void A;
+
+image "scalar constraint" : "component constraints" {
+  R type "value" : tensor0 3 E 1 d <0.0>;
+};
+
+image "vector constraint" : "component constraints" {
+  O type "x":tensor0 3 E 1 d <0.0>;
+  O type "y":tensor0 3 E 1 d <0.0>;
+  O type "z":tensor0 3 E 1 d <0.0>;
+};
+
+image "matrix constraint" : "component constraints" {
+  O type "xx":tensor0 3 E 1 d <0.0>;
+  O type "xy":tensor0 3 E 1 d <0.0>;
+  O type "xz":tensor0 3 E 1 d <0.0>;
+  O type "yx":tensor0 3 E 1 d <0.0>;
+  O type "yy":tensor0 3 E 1 d <0.0>;
+  O type "yz":tensor0 3 E 1 d <0.0>;
+  O type "zx":tensor0 3 E 1 d <0.0>;
+  O type "zy":tensor0 3 E 1 d <0.0>;
+  O type "zz":tensor0 3 E 1 d <0.0>;
+};
+
+type "dirichlet" : void e < v e f r > {
+  R "field name";
+  R "component constraints";
+};
+
+type "neumann" : void e < v e f r > {
+  R type "type" : string;
+  R "component constraints";
+};
+
+# E (expression option) must appear prior to d (default) option
+type "displacement" : void e < v e f r > {
+   O type "x":tensor0 3 E 1 d <0.0>;
+   O type "y":tensor0 3 E 1 d <0.0>;
+   O type "z":tensor0 3 E 1 d <0.0>;
+};
+# tensor1 types with expressions cannot have default values
+ type "traction" : void e < f > {
+  R type "direction":tensor1 3 E 1;
+};
+type "pressure" : void e < f > {
+  R type "magnitude":tensor0 3 E 1 d <0.0>;
+};
+
+#####################################################
+# Material Model Conditions
+# force reaction, radius and volume fraction would be best specified
+# on the fiber network models, but those are not currently in a proper
+# model format, though a conversion tool exists
+
+type "continuum model" : void A e < r >;
+
+type "youngs modulus" : tensor0 1 E 1 d < 10000.0 >;
+type "shear modulus" : tensor0 1 E 1 d < 1000000.0 >;
+type "poisson ratio" : tensor0 1 E 1 d < 0.3 >;
+
+# types of continuum models which can be used
+image "isotropic_neohookian" : "continuum model" {
+  R "youngs modulus";
+  R "poisson ratio";
+};
+
+image "transverse_isotropic" : "continuum model" {
+  R "youngs modulus";
+  R "poisson ratio";
+  R type "axis" : tensor1 3 E 1;
+  R type "axial shear modulus" : tensor0 1 E 1 d < 10000.0 >;
+  R type "axial youngs modulus" : tensor0 1 E 1 d < 10000.0 >;
+};
+
+type "active" : int r mapped <<0 "false"> <1 "true">>;
+type "tag" : int;
+type "structural member" : int r mapped <<0 "truss"> <1 "beam">>;
+
+type "nonlinearity parameter" : tensor0 1 d < 1.2 >;
+type "linear transition" : tensor0 1 d < 1.6 > ;
+
+type "force reaction" : void A;
+image "linear" : "force reaction" D {
+  R "youngs modulus";
+};
+image "nonlinear" : "force reaction" {
+  R "youngs modulus";
+  R "nonlinearity parameter";
+  R "linear transition";
+};
+type "radius" : tensor0 3 d < 3.49911271e-8 >;
+type "volume fraction" : tensor0 1 d < 0.003 >;
+
+type "fiber orientation" : void
+{
+  R type "axis" : tensor1 3 E 1;
+  R type "alignment" : tensor0 3 E 1;
+};
+
+type "fiber type" : int r mapped <<0 "primary"> <1 "support">>;
+
+# types of multiscale models which can be used
+type "fiber specification" : void e < r > {
+  R "fiber type";
+  R "structural member";
+  R "force reaction";
+  R "radius";
+  R "volume fraction";
+  O "fiber orientation";
+};
+
+type "multiscale model" : void e < r > {
+#  R type "fiber specifications" : list reference "fiber specification";
+  R "active";
+  R type "directory" : string;
+  R type "prefix" : string;
+  R type "count" : int;
+  R "structural member";
+  R "force reaction";
+  R "radius";
+  R "volume fraction";
+  O "fiber orientation";
+  O "continuum model";
+};
+
+type "material model" : void e < r > {
+  R "continuum model";
+  O "multiscale model";
+};
+
+type "constraint type" : void A;
+
+image "lagrange multiplier" : "constraint type"
+{
+  R type "beta" : double;
+};
+
+image "penalty method" : "constraint type"
+{
+  R type "beta" : double;
+};
+
+type "incompressible" : void e < r >
+{
+  R type "version" : int r mapped <<0 "region"> <1 "surface">>;
+  R "constraint type";
+};
+
+type "stiffness source" : void e < r >;
+type "stiffness sink" : void e < r >;
+
+type "stiffness gradient" : void e < n >
+{
+  R type "sources" : reference "stiffness source";
+  R type "sinks" : reference "stiffness sink";
+  R type "function" : double E 1;
+};
+
+#####################################################
+#! \toplevel
+
+image "macro" : "problem definition" {
+  O "field";
+  O cat "constraint" "dirichlet";
+  O cat "constraint" "neumann";
+  O cat "constraint" "displacement";
+  O cat "constraint" "traction";
+  O cat "constraint" "pressure";
+  O cat "constraint" "incompressible";
+  O "stiffness source";
+  O "stiffness sink";
+  O "stiffness gradient";
+  O "material model";
+};
