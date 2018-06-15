@@ -17,11 +17,16 @@ namespace bio
     void updateRVETypes();
     int updateRVEType(apf::MeshEntity * me);
     void updateRVEExistence();
+    virtual void recoverSecondaryVariables(int step);
   private:
     amsi::ElementalSystem * mltscl;
     apf::Field * crt_rve;
     apf::Field * prv_rve;
-    apf::Field * fbr_ornt;
+    bool compute_ornt_3D;
+    bool compute_ornt_2D;
+    double ornt_2D_axis[3];
+    apf::Field * ornt_3D;
+    apf::Field * ornt_2D;
     RVECoupling fo_cplg;
     int nm_rves;
     //int nm_rve_rgns;

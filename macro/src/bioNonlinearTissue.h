@@ -59,7 +59,7 @@ namespace bio
     void setBeta(double);
     void setLambda(double);
     void computeDispL2Norm(double&);
-    void recoverSecondaryVariables(int);
+    virtual void recoverSecondaryVariables(int);
     void storeStress(apf::MeshElement* me, double* stress);
     void storeStress(apf::MeshElement* me, apf::Matrix3x3 eps);
     void storeStrain(apf::MeshElement* me, double* strain);

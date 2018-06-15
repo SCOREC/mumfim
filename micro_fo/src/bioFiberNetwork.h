@@ -59,5 +59,19 @@ namespace bio
     apf::Numbering * getdWNumbering() { return wdof; }
     std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
   };
+
+  /**
+   * get the mean orientation vector of the rve
+   * \param network pointer to the the fiber network
+   * \param \out omega the orientation tensor
+   */
+  void get3DOrientationTensor(bio::FiberNetwork * network, double omega[9]);
+  /**
+   * get the mean orientation vector of the rve projected into the plane defined by the normal
+   * \param network pointer to the the fiber network
+   * \param normal the normal vector to the plane to project the vectors into
+   * \param \out omega orientation tensor
+   */
+  void get2DOrientationTensor(bio::FiberNetwork* network, double const normal[3], double omega[9]);
 }
 #endif

@@ -20,6 +20,7 @@ namespace bio
     int fld_ord;
     int rve_cnt;
     std::vector<micro_fo_result> rsts;
+    std::vector<micro_fo_step_result> stp_rslt;
     size_t snd_ptrn;
     size_t rcv_ptrn;
     MicroFODatatypes mtd;
@@ -32,6 +33,7 @@ namespace bio
       , fld_ord(o)
       , rve_cnt(0)
       , rsts()
+      , stp_rslt()
       , snd_ptrn()
       , rcv_ptrn()
       , mtd()
@@ -108,6 +110,15 @@ namespace bio
     {
       int fst = apf::getScalar(rst_fst,me,ip);
       return &rsts[fst];
+    }
+    void recvRVEStepData()
+    {
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      cs->Communicate(rcv_ptrn,stp_rslt,mtd.step_rslt);
+    }
+    micro_fo_step_result * getRVEStepResult(apf::MeshEntity * me, int ip) {
+      int fst = apf::getScalar(rst_fst, me, ip);
+      return &stp_rslt[fst];
     }
     int countRVEsOn(apf::MeshEntity * me)
     {

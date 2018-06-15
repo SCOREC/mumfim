@@ -9,25 +9,47 @@ namespace bio
     , mltscl(NULL)
     , crt_rve(apf::createIPField(apf_mesh,"micro_rve_type",apf::SCALAR,1))
     , prv_rve(apf::createIPField(apf_mesh,"micro_old_type",apf::SCALAR,1))
-    , fbr_ornt(NULL)
+    , compute_ornt_3D(false)
+    , compute_ornt_2D(false)
+    , ornt_3D(NULL)
+    , ornt_2D(NULL)
     , fo_cplg(apf_mesh,crt_rve,prv_rve,apf::getShape(apf_primary_field)->getOrder())
     , nm_rves(0)
     , rve_dirs()
   {
-    fbr_ornt = apf::createIPField(apf_mesh,"P2",apf::SCALAR,1);
+    ornt_3D = apf::createIPField(apf_mesh, "ornt_tens_3D", apf::MATRIX,1);
+    ornt_2D = apf::createIPField(apf_mesh, "ornt_tens_2D", apf::MATRIX,1);
     mltscl = new ULMultiscaleIntegrator(&fo_cplg,strn,strs,apf_primary_field,dfm_grd,1);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"macro","micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),amsi::getScaleManager(),"micro_fo","macro");
-    apf::zeroField(fbr_ornt);
+    apf::zeroField(ornt_3D);
+    apf::zeroField(ornt_2D);
     apf::zeroField(crt_rve);
     apf::zeroField(prv_rve);
+    // get properties for output orienation tensor
+    pAttribute ornt_tens = GM_attrib(g, "output orientation tensor");
+    pAttribute ornt_tens_3D =
+        Attribute_childByType(ornt_tens, "3D Orientation Tensor");
+    pAttribute ornt_tens_2D =
+        Attribute_childByType(ornt_tens, "2D Orientation Tensor");
+    // set the class orientation status
+    compute_ornt_3D = ornt_tens_3D != NULL;
+    compute_ornt_2D = ornt_tens_2D != NULL;
+    pAttributeTensor1 axs = NULL;
+    if (compute_ornt_2D) {
+      axs = (pAttributeTensor1)Attribute_childByType(ornt_tens_2D, "axis");
+    }
+    ornt_2D_axis[0] = compute_ornt_2D ? AttributeTensor1_value(axs, 0) : 0.0;
+    ornt_2D_axis[1] = compute_ornt_2D ? AttributeTensor1_value(axs, 1) : 0.0;
+    ornt_2D_axis[2] = compute_ornt_2D ? AttributeTensor1_value(axs, 2) : 0.0;
   }
   MultiscaleTissue::~MultiscaleTissue()
   {
     delete mltscl;
     apf::destroyField(crt_rve);
     apf::destroyField(prv_rve);
-    apf::destroyField(fbr_ornt);
+    apf::destroyField(ornt_3D);
+    apf::destroyField(ornt_2D);
   }
   void MultiscaleTissue::Assemble(amsi::LAS * las)
   {
@@ -211,6 +233,53 @@ namespace bio
     fo_cplg.updateRecv();
     nm_rves += nw_hdrs.size();
   }
+  void MultiscaleTissue::recoverSecondaryVariables(int step)
+  {
+    NonlinearTissue::recoverSecondaryVariables(step);
+    fo_cplg.recvRVEStepData();
+    // loop over all mesh regions
+    apf::MeshIterator* it = apf_mesh->begin(analysis_dim);
+    while (apf::MeshEntity* meshEnt = apf_mesh->iterate(it)) {
+      apf::MeshElement* mlm = apf::createMeshElement(apf_mesh, meshEnt);
+      int numIP = apf::countIntPoints(mlm, 1);
+      for (int ip = 0; ip < numIP; ++ip) {
+        micro_fo_step_result* stp_rslt = fo_cplg.getRVEStepResult(meshEnt, 0);
+        // this is kindof ugly due to repetitions, but it takes out some
+        // logic from the tight loop
+        if (compute_ornt_2D && compute_ornt_3D) {
+          apf::Matrix3x3 orn_tens_3D;
+          apf::Matrix3x3 orn_tens_2D;
+          for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+              orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
+              orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+            }
+          }
+          apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
+          apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
+        }
+        else if (compute_ornt_3D) {
+          apf::Matrix3x3 orn_tens_3D;
+          for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+              orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
+            }
+          }
+          apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
+        }
+        else if (compute_ornt_2D) {
+          apf::Matrix3x3 orn_tens_2D;
+          for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+              orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+            }
+          }
+          apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
+        }
+      }
+    }
+    apf_mesh->end(it);
+  }
   amsi::ElementalSystem * MultiscaleTissue::getIntegrator(apf::MeshEntity * me, int ip)
   {
     int tp = apf::getScalar(crt_rve,me,ip);
@@ -250,40 +319,36 @@ namespace bio
       }
     }
   }
-  void MultiscaleTissue::getExternalRVEData(apf::MeshEntity * ent,
-                                            micro_fo_header & hdr,
-                                            micro_fo_params & prm)
+  void MultiscaleTissue::getExternalRVEData(apf::MeshEntity* ent,
+                                            micro_fo_header& hdr,
+                                            micro_fo_params& prm)
   {
     pGEntity smdl_ent = EN_whatIn(reinterpret_cast<pEntity>(ent));
     pAttribute mm = GEN_attrib(smdl_ent, "material model");
     pAttribute sm = Attribute_childByType(mm, "multiscale model");
     assert(sm);
-    pAttributeTensor0 fbr_rd = (pAttributeTensor0)Attribute_childByType(sm,"radius");
-    pAttributeTensor0 vl_frc = (pAttributeTensor0)Attribute_childByType(sm,"volume fraction");
+    pAttributeTensor0 fbr_rd =
+        (pAttributeTensor0)Attribute_childByType(sm, "radius");
+    pAttributeTensor0 vl_frc =
+        (pAttributeTensor0)Attribute_childByType(sm, "volume fraction");
     pAttribute prms = Attribute_childByType(sm, "force reaction");
-    pAttributeTensor0 yngs = (pAttributeTensor0)Attribute_childByType(prms,"youngs modulus");
-    pAttributeTensor0 nnlr = (pAttributeTensor0)Attribute_childByType(prms,"nonlinearity parameter");
-    pAttributeTensor0 lntr = (pAttributeTensor0)Attribute_childByType(prms,"linear transition");
-    pAttribute ornt = Attribute_childByType(sm, "fiber orientation");
-    bool orntd = ornt != NULL;
-    pAttributeTensor1 axs = NULL;
-    pAttributeTensor0 algn = NULL;
-    if(orntd)
-    {
-      axs = (pAttributeTensor1)Attribute_childByType(ornt,"axis");
-      algn = (pAttributeTensor0)Attribute_childByType(ornt,"alignment");
-    }
-    hdr.data[FIBER_REACTION]     = nnlr ? 1 : 0; // assumption about ordering of fiber reactions in micro
-    hdr.data[IS_ORIENTED]        = orntd;
-    prm.data[FIBER_RADIUS]       = AttributeTensor0_value(fbr_rd);
-    prm.data[VOLUME_FRACTION]    = AttributeTensor0_value(vl_frc);
-    prm.data[YOUNGS_MODULUS]     = AttributeTensor0_value(yngs);
-    prm.data[NONLINEAR_PARAM]    = nnlr ? AttributeTensor0_value(nnlr)   : 0.0;
-    prm.data[LINEAR_TRANSITION]  = lntr ? AttributeTensor0_value(lntr)   : 0.0;
-    prm.data[ORIENTATION_AXIS_X] = orntd ? AttributeTensor1_value(axs,0) : 0.0;
-    prm.data[ORIENTATION_AXIS_Y] = orntd ? AttributeTensor1_value(axs,1) : 0.0;
-    prm.data[ORIENTATION_AXIS_Z] = orntd ? AttributeTensor1_value(axs,2) : 0.0;
-    prm.data[ORIENTATION_ALIGN]  = orntd ? AttributeTensor0_value(algn)  : 0.0;
+    pAttributeTensor0 yngs =
+        (pAttributeTensor0)Attribute_childByType(prms, "youngs modulus");
+    pAttributeTensor0 nnlr = (pAttributeTensor0)Attribute_childByType(
+        prms, "nonlinearity parameter");
+    pAttributeTensor0 lntr =
+        (pAttributeTensor0)Attribute_childByType(prms, "linear transition");
+    // get properties for output orienation tensor
+    hdr.data[COMPUTE_ORIENTATION_3D] = compute_ornt_3D;
+    hdr.data[COMPUTE_ORIENTATION_2D] = compute_ornt_2D;
+    prm.data[ORIENTATION_AXIS_X] = ornt_2D_axis[0];
+    prm.data[ORIENTATION_AXIS_Y] = ornt_2D_axis[1];
+    prm.data[ORIENTATION_AXIS_Z] = ornt_2D_axis[2];
+    prm.data[FIBER_RADIUS] = AttributeTensor0_value(fbr_rd);
+    prm.data[VOLUME_FRACTION] = AttributeTensor0_value(vl_frc);
+    prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
+    prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
+    prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,

@@ -385,6 +385,29 @@ namespace bio
     // convert microscale stress to macroscale
     convertStress(ans,S);
   }
+  void recoverMultiscaleStepResults(FiberRVEAnalysis* ans, micro_fo_header& hdr,
+                                    micro_fo_params& prm,
+                                    micro_fo_step_result* data)
+  {
+    double* ornt_3d = &data->data[0];
+    double* ornt_2d = &data->data[9];
+    double n[3];
+    n[0] = prm.data[ORIENTATION_AXIS_X];
+    n[1] = prm.data[ORIENTATION_AXIS_Y];
+    n[2] = prm.data[ORIENTATION_AXIS_Z];
+    if(!PCU_Comm_Self())
+      std::cout << "N: " << n[0] << " " << n[1] << " " << n[2] << "\n";
+    if (hdr.data[COMPUTE_ORIENTATION_3D]) {
+      if(!PCU_Comm_Self())
+        std::cout << "compute 3d tensor\n";
+      get3DOrientationTensor(ans->fn, ornt_3d);
+    }
+    if (hdr.data[COMPUTE_ORIENTATION_2D]) {
+      if(!PCU_Comm_Self())
+        std::cout << "compute 2d tensor\n";
+      get2DOrientationTensor(ans->fn, n, ornt_2d);
+    }
+  }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()
     , wgt()
@@ -488,8 +511,8 @@ namespace bio
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {
-    std::vector<micro_fo_header> hdrs;
-    std::vector<micro_fo_params> prms;
+    //std::vector<micro_fo_header> hdrs;
+    //std::vector<micro_fo_params> prms;
     std::vector<micro_fo_init_data> inis;
     std::vector<int> to_delete;
     amsi::ControlService * cs = amsi::ControlService::Instance();
@@ -613,23 +636,38 @@ namespace bio
 #endif
         }
         PCU_Switch_Comm(AMSI_COMM_SCALE);
-        cs->Communicate(send_ptrn,results,amsi::mpi_type<micro_fo_result>());
+        cs->Communicate(send_ptrn, results, amsi::mpi_type<micro_fo_result>());
         macro_iter++;
         cs->scaleBroadcast(M2m_id,&step_complete);
       }
+      // get the size of the step results vector
+      std::vector<micro_fo_step_result> step_results(hdrs.size());
+      // recover step results and set the step results vector
+      int i =0;
+      PCU_Switch_Comm(MPI_COMM_SELF);
+      for(auto rve = ans.begin(); rve!=ans.end(); ++rve) {
+        micro_fo_header & hdr = hdrs[i];
+        micro_fo_params & prm = prms[i];
+        recoverMultiscaleStepResults(*rve, hdr, prm, &step_results[i]);
+        ++i;
+      }
+      PCU_Switch_Comm(AMSI_COMM_SCALE);
+      // communicate the step results back to the macro scale
+      amsi::ControlService* cs = amsi::ControlService::Instance();
+      cs->Communicate(send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
 #ifdef WRITE_MICRO_PER_STEP
+    for(auto rve = ans.begin(); rve != ans.end(); ++rve)
+    {
       std::stringstream sout;
       int rnk = -1;
       MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
       int ii = 0;
-      for(auto rve = ans.begin(); rve != ans.end(); ++rve)
-      {
         sout << "rnk_" << rnk << "_fn_" << ii
              << "_step_" << macro_step;
         apf::writeVtkFiles(sout.str().c_str(),(*rve)->fn->getNetworkMesh(),1);
         sout.str("");
         ii++;
-      }
+     }
 #endif
       macro_iter = 0;
       macro_step++;

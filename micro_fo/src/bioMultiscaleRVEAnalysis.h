@@ -2,6 +2,7 @@
 #define BIO_MULTISCALE_RVE_ANALYSIS_H_
 #include "bioFiberRVEAnalysis.h"
 #include "bioMicroFOMultiscale.h"
+#include "bioMicroFOMultiscale.h"
 #include <lasSparskit.h>
 #include <amsiReporter.h>
 #include <amsiMultiscale.h>
@@ -9,6 +10,7 @@ namespace bio
 {
   void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data);
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data);
+  void recoverMultiscaleStepResults(FiberRVEAnalysis * ans, micro_fo_header & hdr, micro_fo_params & prm, micro_fo_step_result * data);
   class MultiscaleRVEAnalysis
   {
   protected:
@@ -26,6 +28,8 @@ namespace bio
     // analysis
     std::vector<int> rve_tp_cnt;
     std::vector<FiberNetworkReactions **> fns;
+    std::vector<micro_fo_header> hdrs;
+    std::vector<micro_fo_params> prms;
     std::vector<las::Sparsity **> sprs;
     std::vector<FiberRVEAnalysis*> ans;
     las::SparskitBuffers * bfrs;

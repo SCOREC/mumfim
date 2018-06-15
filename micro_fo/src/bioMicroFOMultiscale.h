@@ -3,15 +3,18 @@
 #include <amsiMPI.h>
 namespace bio
 {
+  // TODO move orientation tensor fields to own structs
   // fiber_reaction is obsolete, remove it
+  // keep the 2d orientation as a separate param because we might want to compute
+  // multiple 2d orientations in the future
   enum header_fields
   {
     RVE_TYPE = 0,
     FIELD_ORDER = 1,
     ELEMENT_TYPE = 2,
     GAUSS_ID = 3,
-    FIBER_REACTION = 4,
-    IS_ORIENTED = 5,
+    COMPUTE_ORIENTATION_3D = 4,
+    COMPUTE_ORIENTATION_2D = 5,
     NUM_HEADER_FIELDS = 6
   };
   struct micro_fo_header
@@ -28,8 +31,7 @@ namespace bio
     ORIENTATION_AXIS_X = 5,
     ORIENTATION_AXIS_Y = 6,
     ORIENTATION_AXIS_Z = 7,
-    ORIENTATION_ALIGN = 8,
-    NUM_PARAM_FIELDS = 9
+    NUM_PARAM_FIELDS = 8
   };
   struct micro_fo_params
   {
@@ -49,6 +51,12 @@ namespace bio
     // +9 at end to store orientation tensor information.
     double data[4 * 3 * 6 + 9 + 9]; // 6 sigma values for each vertex 3 q values, assuming tets atm
   };
+  // data communicated at each step
+  struct micro_fo_step_result
+  {
+    // 9 for 3D orientation tensor, and 9 for the 2D orientation tensor
+    double data[9+9];
+  };
   struct MicroFODatatypes
   {
     MPI_Datatype hdr;
@@ -56,6 +64,7 @@ namespace bio
     MPI_Datatype ini;
     MPI_Datatype dat;
     MPI_Datatype rst;
+    MPI_Datatype step_rslt;
     MicroFODatatypes()
     {
       MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&hdr);
@@ -63,9 +72,13 @@ namespace bio
       MPI_Type_contiguous(4*3,MPI_DOUBLE,&ini);
       MPI_Type_contiguous(9,MPI_DOUBLE,&dat);
       MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&rst);
+      MPI_Type_contiguous(9+9, MPI_DOUBLE, &step_rslt);
+      MPI_Type_commit(&hdr);
+      MPI_Type_commit(&prm);
       MPI_Type_commit(&ini);
       MPI_Type_commit(&dat);
       MPI_Type_commit(&rst);
+      MPI_Type_commit(&step_rslt);
     }
   };
 }
@@ -81,5 +94,7 @@ namespace amsi
     MPI_Datatype mpi_type<bio::micro_fo_data>();
   template <>
     MPI_Datatype mpi_type<bio::micro_fo_result>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_step_result>();
 }
 #endif

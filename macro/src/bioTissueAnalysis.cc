@@ -165,6 +165,7 @@ namespace bio
   }
   void TissueAnalysis::checkpoint()
   {
+#ifdef LOGRUN
     int rnk = -1;
     MPI_Comm_rank(cm,&rnk);
     if(rnk == 0)
@@ -182,6 +183,8 @@ namespace bio
     }
     std::ofstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(state,st_fs);
+#endif
+    tssu->recoverSecondaryVariables(stp);
     // write mesh to file
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
@@ -190,7 +193,6 @@ namespace bio
     cnvrt << stp;
     apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + msh_prfx + cnvrt.str()).c_str(),tssu->getMesh());
     amsi::writePvdFile(pvd,msh_prfx,stp);
-    tssu->recoverSecondaryVariables(stp);
   }
   void TissueAnalysis::revert()
   {

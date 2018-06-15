@@ -68,4 +68,16 @@ namespace amsi
     }
     return tp.val;
   }
+  template <>
+  MPI_Datatype mpi_type<bio::micro_fo_step_result>()
+  {
+    static static_init<MPI_Datatype> tp;
+    if(!tp.init)
+    {
+      MPI_Type_contiguous(9+9,MPI_DOUBLE,&tp.val);
+      MPI_Type_commit(&tp.val);
+      tp.init = true;
+    }
+    return tp.val;
+  }
 }

@@ -16,8 +16,6 @@ bool test1()
   hdr.data[bio::FIELD_ORDER] = 1;
   hdr.data[bio::ELEMENT_TYPE] = 4;
   hdr.data[bio::GAUSS_ID] = 0;
-  hdr.data[bio::FIBER_REACTION] = 0;
-  hdr.data[bio::IS_ORIENTED] = 0;
   // many of these are obsolete now
   bio::micro_fo_params prm;
   prm.data[bio::FIBER_RADIUS] = 0.0025;
@@ -61,8 +59,6 @@ bool test2()
   hdr.data[bio::FIELD_ORDER] = 1;
   hdr.data[bio::ELEMENT_TYPE] = 4;
   hdr.data[bio::GAUSS_ID] = 0;
-  hdr.data[bio::FIBER_REACTION] = 0;
-  hdr.data[bio::IS_ORIENTED] = 0;
   // many of these are obsolete now
   bio::micro_fo_params prm;
   prm.data[bio::FIBER_RADIUS] = 0.0025;
