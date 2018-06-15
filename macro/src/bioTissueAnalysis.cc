@@ -37,7 +37,7 @@ namespace bio
   TissueAnalysis::~TissueAnalysis()
   {
     delete cvg;
-    for(auto c = cvg_stps.begin(); c != cvg_stps.begin(); ++c)
+    for(auto c = cvg_stps.begin(); c != cvg_stps.end(); ++c)
     {
       amsi::Convergence * cn = *c;
       delete cn;
@@ -56,8 +56,8 @@ namespace bio
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
     tssu = new NonlinearTissue(mdl,msh,pd,cm);
-    amsi::ModularIteration * mdlr = NULL;
-    itr = mdlr = new TissueIteration(tssu,las);
+    amsi::ModularIteration * mdl_itr = NULL;
+    itr = mdl_itr = new TissueIteration(tssu,las);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
     std::vector<pANode> trk_vols;
@@ -68,13 +68,14 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      mdlr->addOperation(trkd_vols[*trk_vol]);
+      mdl_itr->addOperation(trkd_vols[*trk_vol]);
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
+#ifdef LOGRUN
     std::stringstream cnvrt;
     cnvrt << rnk;
     state_fn = amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
@@ -96,8 +97,9 @@ namespace bio
       amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
       amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
     }
-    amsi::log(state) << "STEP, ITER,   T, STATUS, DESC" << std::endl
-                     << "   0,    0, 0.0, ACTIVE, Initializing" << std::endl;
+    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl
+                     << "   0,    0, 0.0, init" << std::endl;
+#endif
   }
   void TissueAnalysis::run()
   {
@@ -108,9 +110,24 @@ namespace bio
     completed = false;
     while(!completed)
     {
-      std::cout << "Load step = " << stp << std::endl;
+#ifdef LOGRUN
+      amsi::log(state) << stp << ", "
+                       << itr->iteration() << ", "
+                       << MPI_Wtime() << ", "
+                       << "start_step"
+                       << std::endl;
+#endif
+      if(!PCU_Comm_Self())
+	std::cout << "Load step = " << stp << std::endl;
       if(amsi::numericalSolve(itr,cvg))
       {
+#ifdef LOGRUN
+        amsi::log(state) << stp << ", "
+                         << itr->iteration() << ", "
+                         << MPI_Wtime() << ", "
+                         << "end_solve"
+                         << std::endl;
+#endif
         if(stp == mx_stp)
         {
           completed = true;
@@ -123,6 +140,13 @@ namespace bio
           las->step();
           tssu->step();
         }
+#ifdef LOGRUN
+      amsi::log(state) << stp << ", "
+                       << itr->iteration() << ", "
+                       << MPI_Wtime() << ", "
+                       << "end_step"
+                       << std::endl;
+#endif
       }
       else
       {
@@ -145,22 +169,22 @@ namespace bio
     MPI_Comm_rank(cm,&rnk);
     if(rnk == 0)
     {
-      std::fstream frcs_fs(frcs_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream dsps_fs(dsps_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream vols_fs(vols_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream nrms_fs(nrms_fn.c_str(), std::ios::out | std::ios::app);
-      std::fstream cnst_fs(constraint_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream frcs_fs(frcs_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream dsps_fs(dsps_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream vols_fs(vols_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream nrms_fs(nrms_fn.c_str(), std::ios::out | std::ios::app);
+      std::ofstream cnst_fs(constraint_fn.c_str(), std::ios::out | std::ios::app);
       amsi::flushToStream(frcs,frcs_fs);
       amsi::flushToStream(dsps,dsps_fs);
       amsi::flushToStream(vols,vols_fs);
       amsi::flushToStream(nrms,nrms_fs);
       amsi::flushToStream(constraints,cnst_fs);
     }
-    std::fstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
+    std::ofstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(state,st_fs);
     // write mesh to file
     std::string pvd("/out.pvd");
-    std::fstream pvdf;
+    std::ofstream pvdf;
     std::string msh_prfx("msh_stp_");
     std::stringstream cnvrt;
     cnvrt << stp;

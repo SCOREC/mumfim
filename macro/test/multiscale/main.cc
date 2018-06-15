@@ -1,7 +1,6 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioMultiscaleTissue.h"
-#include "NonLinFibMtx.h"
-#include "RVE_Util.h"
+#include <bioMultiscaleRVEAnalysis.h>
 #include <amsiMultiscale.h>
 #include <amsiAnalysis.h>
 #include <amsiUtil.h>
@@ -54,7 +53,7 @@ bool parse_options(int & argc, char ** & argv)
       mesh_filename = optarg;
       break;
     case 'b':
-      bio::rve_load_balancing = atoi(optarg);
+      //bio::rve_load_balancing = atoi(optarg);
       break;
     case 'c':
       analysis_case = optarg;
@@ -71,43 +70,54 @@ bool parse_options(int & argc, char ** & argv)
   opterr = 1;
   return result;
 }
-int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
+int run_micro_fo(int & , char ** &, MPI_Comm comm)
 {
-  int rnk = MPI_Comm_rank(comm,&rnk);
+  int rnk = -1;
+  MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
-  bio::P_computeRVEs();
+  //bio::P_computeRVEs();
+  bio::MultiscaleRVEAnalysis rves;
+  rves.init();
+  rves.run();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
-int run_micro_fm(int & argc, char ** & argv, MPI_Comm comm)
+int run_micro_fm(int &, char ** &, MPI_Comm)
 {
   return 0;
 }
 int run_macro(int & argc, char ** & argv, MPI_Comm cm)
 {
-  amsi::initAnalysis(argc,argv);
-  AMSI_DEBUG(Sim_logOn("simmetrix_log"));
+  amsi::initAnalysis(argc,argv,cm);
+  int rnk = -1;
+  MPI_Comm_rank(cm,&rnk);
+  //Sim_logOn("simmetrix_log");
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
+  pGModel mdl = NULL;
+  pParMesh msh = NULL;
   try
   {
-    pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL;
-        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
+    if(rnk == 0)
     {
-      amsi::initCase(mdl,cs);
-      bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
-      an.init();
-      an.run();
-      amsi::freeCase(cs);
+      std::cout << "Model file: " << model_filename << std::endl;
+      std::cout << "Mesh file: " << mesh_filename << std::endl;
     }
+    mdl = GM_load(model_filename.c_str(),NULL,NULL);
+    msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+    auto cs = amsi::getAnalysisCase(mdl, analysis_case);
+    amsi::initCase(mdl,cs);
+    bio::MultiscaleTissueAnalysis an(mdl,msh,cs,cm);
+    an.init();
+    an.run();
+    amsi::freeCase(cs);
+    // FIXME this is a memory leak, should call M_release/GM_release if they are noexcept
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl
               << "  String: " << SimError_toString(err) << std::endl;
     SimError_delete(err);
-    return -1;
+    MPI_Abort(AMSI_COMM_WORLD, -1);
   }
 # ifdef LOGRUN
   amsi::Log macro_stress = amsi::activateLog("macro_stresses");
@@ -130,7 +140,7 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::initMultiscale(argc,argv);
+    amsi::initMultiscale(argc,argv,MPI_COMM_WORLD);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");
 #   endif

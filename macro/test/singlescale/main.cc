@@ -24,7 +24,7 @@ void display_help_string()
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
-std::string vol_log("volume");
+//std::string vol_log("volume");
 bool parse_options(int & argc, char ** & argv)
 {
   bool result = true;
@@ -74,7 +74,7 @@ int main(int argc, char ** argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    amsi::initAnalysis(argc,argv);
+    amsi::initAnalysis(argc,argv,MPI_COMM_WORLD);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD,&rnk);
     if(rnk > 0)
@@ -82,16 +82,25 @@ int main(int argc, char ** argv)
     int sz = 0;
     MPI_Comm_size(AMSI_COMM_WORLD,&sz);
     AMSI_DEBUG(Sim_logOn("simmetrix_log"));
-    pGModel mdl = GM_load(model_filename.c_str(),NULL,NULL);
-    pParMesh msh = PM_load(mesh_filename.c_str(),mdl,NULL);
-    for(auto cs = amsi::getNextAnalysisCase(mdl,analysis_case); cs != NULL; 
-        cs = amsi::getNextAnalysisCase(mdl,analysis_case))
+    pGModel mdl = NULL;
+    pParMesh msh = NULL;
+    try
     {
+      mdl = GM_load(model_filename.c_str(),NULL,NULL);
+      msh = PM_load(mesh_filename.c_str(),mdl,NULL);
+      auto cs = amsi::getAnalysisCase(mdl, analysis_case);
       amsi::initCase(mdl,cs);
       bio::TissueAnalysis an(mdl,msh,cs,AMSI_COMM_WORLD);
       an.init();
       an.run();
       amsi::freeCase(cs);
+      // FIXME this is memory leak, should call M_release/GM_release if they are noexcept
+    } catch (pSimError err) {
+      std::cout << "Simmetrix error caught: " << std::endl
+                << "  Code  : " << SimError_code(err) << std::endl
+                << "  String: " << SimError_toString(err) << std::endl;
+      SimError_delete(err);
+      MPI_Abort(AMSI_COMM_WORLD, -1);
     }
     if(rnk > 0)
       amsi::expressOutput(std::cout);

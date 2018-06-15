@@ -1,257 +1,224 @@
 #ifndef BIO_NEOHOOKEAN_INTEGRATOR_H_
 #define BIO_NEOHOOKEAN_INTEGRATOR_H_
-#include "bioNonlinearTissue.h"
 #include <ElementalSystem.h>
-#include <apfShape.h>
 #include <apfSIM.h>
+#include <apfShape.h>
+#include <math.h>  //natural log
 #include <cstring>
-#include <math.h> //natural log
-namespace bio
-{
-  // Parameters from V. Lai et al. Journal of Biomechanical Engineering, Vol 135, 071007 (2013)
-  class NeoHookeanIntegrator : public amsi::ElementalSystem
-  {
-  public:
-  NeoHookeanIntegrator(NonlinearTissue * n,
-                       apf::Field * field,
-		       apf::Field * det_dfm_grd,
-                       double youngs_modulus,
-                       double poisson_ratio,
-                       int o)
-    : ElementalSystem(field,o)
-      , current_integration_point(0)
-      , analysis(n)
-      , dim(0)
-      , dfm_grd_fld(det_dfm_grd)
-      , ShearModulus(0.0)
-      , PoissonsRatio(poisson_ratio)
+#include "bioNonlinearTissue.h"
+namespace bio {
+  // Parameters from V. Lai et al. Journal of Biomechanical Engineering, Vol
+  // 135, 071007 (2013)
+  class NeoHookeanIntegrator : public amsi::ElementalSystem {
+    public:
+    NeoHookeanIntegrator(NonlinearTissue *n,
+			 apf::Field *displacements,
+                         apf::Field *dfm_grd,
+			 apf::Field *current_coords,
+                         double youngs_modulus,
+			 double poisson_ratio,
+			 int o)
+        : ElementalSystem(displacements, o)
+        , current_integration_point(0)
+        , analysis(n)
+        , dim(0)
+        , dfm_grd_fld(dfm_grd)
+        , current_coords(current_coords)
+        , ShearModulus(0.0)
+        , PoissonsRatio(poisson_ratio)
     {
-      ShearModulus = youngs_modulus / (2.0 * ( 1.0 + poisson_ratio ) );
+      ShearModulus = youngs_modulus / (2.0 * (1.0 + poisson_ratio));
     }
-    void inElement(apf::MeshElement * me)
+    // ce is the mesh element that corresponds to the current coordinates
+    void inElement(apf::MeshElement *me)
     {
       ElementalSystem::inElement(me);
-      fs = apf::getShape(f);
       msh = apf::getMesh(f);
-      es = fs->getEntityShape(msh->getType(apf::getMeshEntity(me)));
       dim = apf::getDimension(me);
-      ce = apf::createElement(msh->getCoordinateField(),me);
-      apf::getVectorNodes(ce,msh_xyz);
-      apf::getVectorNodes(e,fld_xyz);
       current_integration_point = 0;
+      // testing of new apf work
+      // create a mesh element that tracks with current coords
+      ccme = apf::createMeshElement(current_coords, apf::getMeshEntity(me));
+      // current coordinate field w.r.t. current coordinate mesh elements
+      // elements
+      cccce = apf::createElement(current_coords, ccme);
+      // element of current coordinate field w.r.t. reference coordinate mesh
+      // elements
+      ccrce = apf::createElement(current_coords, me);
     }
     void outElement()
     {
-      apf::destroyElement(ce);
+      apf::destroyElement(cccce);
+      apf::destroyElement(ccrce);
+      apf::destroyMeshElement(ccme);
       ElementalSystem::outElement();
     }
     bool includesBodyForces() { return true; }
-    void atPoint(apf::Vector3 const &p, double w, double dV)
+    void atPoint(apf::Vector3 const &p, double w, double)
     {
-      int & nen = nenodes; // = 4 (tets)
-      int & nedof = nedofs; // = 12 (tets)
-      // 3. Calculate current coordinates
-      apf::DynamicMatrix xyz(nen,dim); xyz.zero();
-      for (int ii = 0; ii < nen; ii++)
-        for (int jj = 0; jj < dim; jj++)
-          xyz(ii,jj) = msh_xyz[ii][jj] + fld_xyz[ii][jj];
-      // For Updated Lagrangian, the Jacobian of the current coordinate is used
-      // Note: that entires of Jacobian is hard coded for Linear tetrahedra elements.
-      // TO DO: Generalize Jacobian for current configuration.
-      // Note: Form of Jacobian is
-      // [dx/dr dx/ds dx/dt]    (x,y,z): physical domain coordinates.
-      // [dy/dr dy/ds dy/dt]    (r,s,t): parent domain coordiantes.
-      // [dz/dr dz/ds dz/dt]
-      // This is equivalent to how Jacobian is calculated in apf.
-      apf::Matrix<3,3> J, Jinv;
-      J[0][0] = xyz(1,0) - xyz(0,0); // x2-x1
-      J[1][0] = xyz(2,0) - xyz(0,0); // x3-x1
-      J[2][0] = xyz(3,0) - xyz(0,0); // x4-x1
-      J[0][1] = xyz(1,1) - xyz(0,1); // y2-y1
-      J[1][1] = xyz(2,1) - xyz(0,1); // y3-y1
-      J[2][1] = xyz(3,1) - xyz(0,1); // y4-y1
-      J[0][2] = xyz(1,2) - xyz(0,2); // z2-z1
-      J[1][2] = xyz(2,2) - xyz(0,2); // z3-z1
-      J[2][2] = xyz(3,2) - xyz(0,2); // z4-z1
-      double detJ = getDeterminant(J); // For Gauss-Quadrature Integration.
-      Jinv = apf::invert(J);
+      int &nen = nenodes;   // = 4 (tets)
+      int &nedof = nedofs;  // = 12 (tets)
+      apf::Matrix3x3 J, Jinv;
+      // note that the jacobian is w.r.t the current coordinates!
+      apf::getJacobian(ccme, p, J);
+      apf::getJacobianInv(ccme, p, Jinv);
+      double detJ = apf::getJacobianDeterminant(J, dim);
+      apf::Matrix3x3 F;
+      apf::getVectorGrad(ccrce, p, F);  // F=dx/dX
+      double detF = getDeterminant(F);
+      if (detF < 0.0) {
+        std::cout << "error: detF < 0" << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      apf::NewArray<apf::Vector3> grads;
+      apf::getShapeGrads(cccce, p, grads);
       // Calculate derivative of shape fxns wrt current coordinates.
-      apf::DynamicMatrix grads(nen,dim);
-      grads.zero();
-      apf::NewArray<apf::Vector3> local_grads;
-      es->getLocalGradients(msh, apf::getMeshEntity(me), p, local_grads);
-      for (int ii = 0; ii < nen; ii++)
-        for (int jj = 0; jj < dim; jj++)
-          for (int kk = 0; kk < dim; kk++)
-            grads(ii,jj) += Jinv[jj][kk] * local_grads[ii][kk];
       /*=======================================================
         Constitutive Component of Tangent Stiffness Matrix: K0
         - See Bathe PP.557, Table 6.6 (Updated Lagrangian)
         =======================================================
       */
       // hard-coded for 3d, make a general function... to produce this
-      apf::DynamicMatrix BL(6,nedof); // linear strain disp
+      apf::DynamicMatrix BL(6, nedof);  // linear strain disp
       BL.zero();
-      for(int ii = 0; ii < nen; ii++)
-      {
-        BL(0,dim*ii  ) = grads(ii,0); // N_(ii,1)
-        BL(1,dim*ii+1) = grads(ii,1); // N_(ii,2)
-        BL(2,dim*ii+2) = grads(ii,2); // N_(ii,3)
-        BL(3,dim*ii  ) = grads(ii,1); // N_(ii,2)
-        BL(3,dim*ii+1) = grads(ii,0); // N_(ii,1)
-        BL(4,dim*ii+1) = grads(ii,2); // N_(ii,3)
-        BL(4,dim*ii+2) = grads(ii,1); // N_(ii,2)
-        BL(5,dim*ii  ) = grads(ii,2); // N_(ii,3)
-        BL(5,dim*ii+2) = grads(ii,0); // N_(ii,1)
+      for (int ii = 0; ii < nen; ii++) {
+        BL(0, dim * ii) = grads[ii][0];      // N_(ii,1)
+        BL(1, dim * ii + 1) = grads[ii][1];  // N_(ii,2)
+        BL(2, dim * ii + 2) = grads[ii][2];  // N_(ii,3)
+        BL(3, dim * ii) = grads[ii][1];      // N_(ii,2)
+        BL(3, dim * ii + 1) = grads[ii][0];  // N_(ii,1)
+        BL(4, dim * ii + 1) = grads[ii][2];  // N_(ii,3)
+        BL(4, dim * ii + 2) = grads[ii][1];  // N_(ii,2)
+        BL(5, dim * ii) = grads[ii][2];      // N_(ii,3)
+        BL(5, dim * ii + 2) = grads[ii][0];  // N_(ii,1)
       }
       /*
         Determine stress-strain matrix, D, for NeoHookean material.
         See Bonet and Wood 2nd Edition, PP.250.
         - lambda and mu are effective lame parameters.
-        - lambda = ShearModulus/detJ, mu = ( PoissonsRatio - ShearModulus * ln(detJ) )/detJ
+        - lambda = ShearModulus/detJ, mu = ( PoissonsRatio - ShearModulus *
+        ln(detJ) )/detJ
       */
-      // Calculate Cauchy stress from compressible NeoHookean equation. See Bonet and Wood 2nd Ed. PP.163.
-      apf::NewArray<apf::Vector3> grads0;
-      apf::getShapeGrads(e,p,grads0); // derivative of shape function with respect to initial configuration.
-      apf::Matrix<3,3> F; // Deformation gradient tensor
-      apf::DynamicVector u(nedofs);
-      getDisplacements(u);
-      for (int ii = 0; ii < 3; ii++)
-        for(int jj = 0; jj < 3; jj++)
-        {
-          F[ii][jj] = (ii == jj);
-          for (int kk = 0; kk < nen; kk++)
-            F[ii][jj] += grads0[kk][jj] * u(kk*3+ii);
-//          F[ii][jj] += xyz(kk,ii) * grads0[kk][jj];
-        }
-      double detF = getDeterminant(F);
-      apf::setScalar(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, detF);
-      apf::DynamicMatrix leftCauchyGreen(3,3); leftCauchyGreen.zero();
-      apf::DynamicMatrix FT(3,3); FT.zero();
-      apf::transpose(fromMatrix(F),FT);
-      apf::multiply(fromMatrix(F),FT,leftCauchyGreen);
-      apf::DynamicMatrix Cauchy(3,3);
+      // Calculate Cauchy stress from compressible NeoHookean equation. See
+      // Bonet and Wood 2nd Ed. PP.163.
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me),
+                     current_integration_point, F);
+      apf::DynamicMatrix leftCauchyGreen(3, 3);   // leftCauchyGreen.zero();
+      apf::DynamicMatrix rightCauchyGreen(3, 3);  // rightCauchyGreen.zero();
+      apf::DynamicMatrix FT(3, 3);
+      FT.zero();
+      apf::transpose(fromMatrix(F), FT);
+      apf::multiply(fromMatrix(F), FT, leftCauchyGreen);
+      apf::multiply(FT, fromMatrix(F), rightCauchyGreen);
+      // apf::DynamicMatrix Cauchy(3,3);
+      apf::Matrix3x3 Cauchy;
       double mu = ShearModulus;
-      double lambda = ( 2.0 * mu * PoissonsRatio )/( 1.0 - 2.0 * PoissonsRatio );
-      if (detF < 0.0){
-        std::cout<<"error: detF < 0"<<std::endl;
-        exit (EXIT_FAILURE);
-      }
-      for (int ii = 0; ii < 3; ii++)
-        for (int jj = 0; jj < 3; jj++)
-        {
-          if (ii == jj)
-            Cauchy(ii,jj) = 1.0/detF * ( mu * (leftCauchyGreen(ii,jj) - 1.0) + lambda  * log(detF) );
-          else
-            Cauchy(ii,jj) = mu/detF * leftCauchyGreen(ii,jj);
+      double lambda = (2.0 * mu * PoissonsRatio) / (1.0 - 2.0 * PoissonsRatio);
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          Cauchy[i][j] = mu / detF * (leftCauchyGreen(i, j) - (i == j)) +
+                         lambda / detF * log(detF) * (i == j);
         }
-      double lambda_prime = lambda/detF;
-      double mu_prime = ( mu - lambda * log(detF) )/detF;
-      apf::DynamicMatrix D(6,6);
+      }
+      double lambda_prime = lambda / detF;
+      double mu_prime = (mu - lambda * log(detF)) / detF;
+      apf::DynamicMatrix D(6, 6);
       D.zero();
-      D(0,0) = lambda_prime + (2.0 * mu_prime);
-      D(0,1) = lambda_prime;
-      D(0,2) = lambda_prime;
-      D(1,0) = lambda_prime;
-      D(1,1) = lambda_prime + (2.0 * mu_prime);
-      D(1,2) = lambda_prime;
-      D(2,0) = lambda_prime;
-      D(2,1) = lambda_prime;
-      D(2,2) = lambda_prime + (2.0 * mu_prime);
-      D(3,3) = mu_prime;
-      D(4,4) = mu_prime;
-      D(5,5) = mu_prime;
-      apf::DynamicMatrix K0(nedof,nedof);
-      apf::DynamicMatrix BLT(nedof,6);
-      apf::DynamicMatrix DBL(6,nedof);
-      apf::transpose(BL,BLT);
-      apf::multiply(D,BL,DBL);
-      apf::multiply(BLT,DBL,K0);
+      D(0, 0) = lambda_prime + (2.0 * mu_prime);
+      D(0, 1) = lambda_prime;
+      D(0, 2) = lambda_prime;
+      D(1, 0) = lambda_prime;
+      D(1, 1) = lambda_prime + (2.0 * mu_prime);
+      D(1, 2) = lambda_prime;
+      D(2, 0) = lambda_prime;
+      D(2, 1) = lambda_prime;
+      D(2, 2) = lambda_prime + (2.0 * mu_prime);
+      D(3, 3) = mu_prime;
+      D(4, 4) = mu_prime;
+      D(5, 5) = mu_prime;
+      apf::DynamicMatrix K0(nedof, nedof);
+      apf::DynamicMatrix BLT(nedof, 6);
+      apf::DynamicMatrix DBL(6, nedof);
+      apf::transpose(BL, BLT);
+      apf::multiply(D, BL, DBL);
+      apf::multiply(BLT, DBL, K0);
       /*=======================================================================
         Initial Stress (or Geometric) component of Tangent Stiffness Matrix: K1
         - See Bathe PP.557, Table 6.6 (Updated Lagrangian)
         ========================================================================*/
-      apf::DynamicMatrix BNL(9,nedof); //nonlinear strain disp
+      apf::DynamicMatrix BNL(9, nedof);  // nonlinear strain disp
       BNL.zero();
-      double Bp[3][10] = {};
-      for(int ii = 0; ii < 3; ii++)
-        for(int jj = 0; jj < 4; jj++)
-          Bp[ii][jj*3] = grads(jj,ii);
-      for(int ii = 0; ii < 3; ii++)
-        for(int jj = 0; jj < 10; jj++)
-        {
-          BNL(ii,jj) = Bp[ii][jj];
-          BNL(3+ii,jj+1) = Bp[ii][jj];
-          BNL(6+ii,jj+2) = Bp[ii][jj];
-        }
-      apf::DynamicMatrix tau(9,9);
+      for (int i = 0; i < nenodes; ++i) {
+        BNL(0, i * dim) = grads[i][0];
+        BNL(1, i * dim) = grads[i][1];
+        BNL(2, i * dim) = grads[i][2];
+        BNL(3, i * dim + 1) = grads[i][0];
+        BNL(4, i * dim + 1) = grads[i][1];
+        BNL(5, i * dim + 1) = grads[i][2];
+        BNL(6, i * dim + 2) = grads[i][0];
+        BNL(7, i * dim + 2) = grads[i][1];
+        BNL(8, i * dim + 2) = grads[i][2];
+      }
+      apf::DynamicMatrix tau(9, 9);
       tau.zero();
-      for (int ii = 0; ii < 3; ii++)
-        for (int jj = 0; jj < 3; jj++)
-          for (int kk = 0; kk < 3; kk++)
-            tau(jj+ii*3,kk+ii*3) = Cauchy(jj,kk);
-      apf::DynamicMatrix K1(nedof,nedof); K1.zero();
-      apf::DynamicMatrix BNLT(nedof,9); BNLT.zero();
-      apf::DynamicMatrix BNLTxtau(9,nedof); BNLTxtau.zero();
-      apf::transpose(BNL,BNLT);
-      apf::multiply(BNLT,tau,BNLTxtau);
-      apf::multiply(BNLTxtau,BNL,K1);
+      for (int i = 0; i < dim; ++i) {
+        for (int j = 0; j < dim; ++j) {
+          tau(i, j) = Cauchy[i][j];
+          tau(i + dim, j + dim) = Cauchy[i][j];
+          tau(i + 2 * dim, j + 2 * dim) = Cauchy[i][j];
+        }
+      }
+      apf::DynamicMatrix K1(nedof, nedof);
+      K1.zero();
+      apf::DynamicMatrix BNLT(nedof, 9);
+      BNLT.zero();
+      apf::DynamicMatrix BNLTxtau(9, nedof);
+      BNLTxtau.zero();
+      apf::transpose(BNL, BNLT);
+      apf::multiply(BNLT, tau, BNLTxtau);
+      apf::multiply(BNLTxtau, BNL, K1);
       /*=======================================================================
         Terms for force vector (RHS)
         - See Bathe PP.557, Table 6.6 (Updated Lagrangian)
         ========================================================================*/
-      double CauchyVoigt[6] = {};
-      CauchyVoigt[0] = Cauchy(0,0);
-      CauchyVoigt[1] = Cauchy(1,1);
-      CauchyVoigt[2] = Cauchy(2,2);
-      CauchyVoigt[3] = Cauchy(0,1);
-      CauchyVoigt[4] = Cauchy(1,2);
-      CauchyVoigt[5] = Cauchy(0,2);
-      apf::DynamicMatrix BLTxCauchyVoigt(nedof,1); BLTxCauchyVoigt.zero();
-      for (int ii = 0; ii < nedof; ii++)
-        for (int jj = 0; jj < 6; jj++)
-          BLTxCauchyVoigt(ii,0) += BLT(ii,jj) * CauchyVoigt[jj];
-      for (int ii = 0; ii < nedof; ii++)
-      {
-        fe[ii] -= w * detJ * BLTxCauchyVoigt(ii,0);
+      apf::DynamicVector cauchyVoigt(6);
+      cauchyVoigt(0) = Cauchy[0][0];
+      cauchyVoigt(1) = Cauchy[1][1];
+      cauchyVoigt(2) = Cauchy[2][2];
+      cauchyVoigt(3) = Cauchy[0][1];
+      cauchyVoigt(4) = Cauchy[1][2];
+      cauchyVoigt(5) = Cauchy[0][2];
+      apf::DynamicVector BLTxCauchyVoigt(nedof);
+      apf::multiply(BLT, cauchyVoigt, BLTxCauchyVoigt);
+      for (int ii = 0; ii < nedof; ii++) {
+        fe[ii] -= w * detJ * BLTxCauchyVoigt(ii);
         for (int jj = 0; jj < nedof; jj++)
-          Ke(ii,jj) += w * detJ * (K0(ii,jj) + K1(ii,jj));
+          Ke(ii, jj) += w * detJ * (K0(ii, jj) + K1(ii, jj));
       }
-      // store stress and strain values for post processing.
-//      apf::DynamicVector u(nedofs);
-//      getDisplacements(u);
-/*
-      std::cout<<"Ke:"<<std::endl;
-      std::cout<<Ke<<std::endl;
-      std::cout<<"fe:"<<std::endl;
-      std::cout<<fe<<std::endl;
-*/
-      apf::DynamicVector strain(6);
-      apf::multiply(BL,u,strain);
-      analysis->storeStrain(me,strain.begin());
-      analysis->storeStress(me,CauchyVoigt);
+      // E_G = 1/2(C-I), C=F^T.F
+      apf::Matrix3x3 greenStrain(
+          0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),
+          0.5 * rightCauchyGreen(0, 2), 0.5 * rightCauchyGreen(1, 0),
+          0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
+          0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
+          0.5 * (rightCauchyGreen(2, 2) - 1));
+      analysis->storeStrain(me, greenStrain);
+      analysis->storeStress(me, Cauchy);
       current_integration_point++;
     }
-    void getDisplacements(apf::DynamicVector & u)
-    {
-      apf::Element * e_disp = apf::createElement(f,me);
-      apf::NewArray<apf::Vector3> disp;
-      apf::getVectorNodes(e_disp,disp);
-      for (int ii=0;ii<nedofs;ii++)
-        u(ii) = disp[ii/3][ii%3];
-      apf::destroyElement(e_disp);
-    }
     int current_integration_point;
-  private:
-    NonlinearTissue * analysis;
+
+    private:
+    NonlinearTissue *analysis;
     int dim;
-    apf::FieldShape * fs;
-    apf::EntityShape * es;
-    apf::Element * ce;
-    apf::Mesh * msh;
-    apf::NewArray<apf::Vector3> msh_xyz;
-    apf::NewArray<apf::Vector3> fld_xyz;
-    apf::Field * dfm_grd_fld;
+    apf::Mesh *msh;
+    apf::Field *dfm_grd_fld;
+    // new stuff to try out new apf functions
+    apf::Field *current_coords;
+    apf::Element *cccce;
+    apf::Element *ccrce;
+    apf::MeshElement *ccme;
+    //
     double ShearModulus;
     double PoissonsRatio;
   };

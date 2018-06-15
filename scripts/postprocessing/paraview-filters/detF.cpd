@@ -1,0 +1,36 @@
+<CustomFilterDefinitions>
+  <CustomProxyDefinition name="detF" group="filters">
+    <CompoundSourceProxy id="12161" servers="1">
+      <Proxy group="filters" type="PythonCalculator" id="11668" servers="1" compound_name="detF">
+        <Property name="ArrayAssociation" id="11668.ArrayAssociation" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="enum" id="11668.ArrayAssociation.enum">
+            <Entry value="0" text="Point Data"/>
+            <Entry value="1" text="Cell Data"/>
+          </Domain>
+        </Property>
+        <Property name="ArrayName" id="11668.ArrayName" number_of_elements="1">
+          <Element index="0" value="detF"/>
+        </Property>
+        <Property name="CopyArrays" id="11668.CopyArrays" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="bool" id="11668.CopyArrays.bool"/>
+        </Property>
+        <Property name="Expression" id="11668.Expression" number_of_elements="1">
+          <Element index="0" value="determinant(F_1)"/>
+        </Property>
+        <Property name="Input" id="11668.Input" number_of_elements="1">
+          <Domain name="groups" id="11668.Input.groups"/>
+          <Domain name="input_type" id="11668.Input.input_type"/>
+        </Property>
+      </Proxy>
+      <ExposedProperties>
+        <Property name="Input" proxy_name="detF" exposed_name="Input"/>
+      </ExposedProperties>
+      <OutputPort name="Output" proxy="detF" port_index="0"/>
+      <Hints>
+        <ShowInMenu/>
+      </Hints>
+    </CompoundSourceProxy>
+  </CustomProxyDefinition>
+</CustomFilterDefinitions>

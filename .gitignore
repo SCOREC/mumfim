@@ -6,6 +6,9 @@ dep/sparskit/dep/build/
 build_debug/
 build_release/
 simmetrix_log
+tags
+compile_commands.json
+
 # Prerequisites
 *.d
 
@@ -259,3 +262,47 @@ TSWLatexianTemp*
 
 # expex forward references with \gathertags
 *-tags.tex
+# EMACS
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+
+# directory configuration
+.dir-locals.el
+
+#VIM
+*.swp

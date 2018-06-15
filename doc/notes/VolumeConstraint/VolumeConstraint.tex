@@ -1,48 +1,7 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-
-\begin{document}
-\setstretch{1.5}
-\title{Volume Constraint (Global Incompressibility)}
-\author{V. W. L. Chan}
-\maketitle
+\chapter{Volume Constraint (Global Incompressibility)}
+\chapterauthor{V. W. L. Chan}
 
 \section{Governing Equation}
-
 Based on the work of Barocas group \cite{Chandran:2007hy,Stylianopoulos:2007dp} the macroscale momentum conservation equation is
 %
 \begin{eqnarray}
@@ -67,7 +26,7 @@ The virtual work from Eq.\ \eqref{eq:governing_eq} is \cite{JavierBonet:2008uxa}
 \label{eq:weak_form}
 \end{equation}
 %
-where $\delta \pmb{d}$ is the virtual displacement rate tensor and $\delta \pmb{v}$ is the virtual velocity.
+where $\delta \pmb{d}$ is the virtual rate of deformation tensor and $\delta \pmb{v}$ is the virtual velocity.
 
 \section{Finite-Element Discretization}
 
@@ -129,7 +88,7 @@ where the nodal residual force is zero when the internal nodal forces are in equ
 \end{eqnarray}
 %
 
-\section{Global Incompressibility (Volume Preservation) Constraint}
+\section{Volume Preservation Constraint Via Lagrangian Multiplier Method}
 
 Following the procedure of Hirota et al.\ \cite{Hirota:2000jw} volume preservation can be posed as a constrained minimization problem of the virtual work
 %
@@ -145,12 +104,14 @@ where $\pmb{u}$ is the displacement. The constrained minimization problem can be
 \begin{aligned}
 \underset{\lambda}{\text{max}} \ \underset{\pmb{u}}{\text{min}} \ L,
 \end{aligned}
+\label{eq:saddlept}
 \end{equation}
 %
 where $L$ is the Lagrangian
 %
 \begin{equation}
 L \equiv \delta W + \lambda \Delta V
+\label{eq:Lagrangian}
 \end{equation}
 %
 and $\lambda$ is the Lagrangian multiplier. The solution to the saddle point problem satisfies two conditions
@@ -158,7 +119,7 @@ and $\lambda$ is the Lagrangian multiplier. The solution to the saddle point pro
 \begin{equation}
 \begin{aligned}
 &\frac{\partial L}{\partial \lambda} = \Delta V = 0 \\
-&\frac{\partial L}{\partial \pmb{u}} = \frac{\partial \delta W}{\partial \pmb{u}} + \lambda \frac{\partial V}{\partial \pmb{u}},
+&\frac{\partial L}{\partial \pmb{u}} = \frac{\partial \delta W}{\partial \pmb{u}} + \lambda \frac{\partial V}{\partial \pmb{u}} = 0,
 \end{aligned}
 \label{eq:conditions}
 \end{equation}
@@ -202,6 +163,7 @@ where the subscripts $a,b=1$ to $N$ indicate the nodes of the finite-element mes
 %
 \frac{\partial \pmb{R}_N}{\partial \pmb{u}_1} & \cdots & \frac{\partial \pmb{R}_N}{\partial \pmb{u}_N} 
 \end{bmatrix}
+\label{eq:matrix_def}
 \end{eqnarray}
 %
 the system of equations in Eq.\ \eqref{eq:taylor-expand} can be written in matrix form as
@@ -248,9 +210,192 @@ Note that the matrix \textbf{K} is the tangent-stiffness matrix and the system o
 %
 until the appropriate norms of $\textbf{u}_{k+1} - \textbf{u}_k$ and $\lambda_{k+1} - \lambda_k$ are below some tolerance. The subscript $k$ in Eq.\ \eqref{eq:taylor-expand_iterate} denote the iteration step.
 
-\section{Volume Calculation}
+\section{Volume Preservation Constraint via Augmented Lagrangian Method}
 
-The volume of each tetrahedra element in the finite element mesh can be determined from the Gauss quadrature rule
+To implement the augmented Lagrangian method, the Lagrangian in Eq.\ \eqref{eq:Lagrangian} is re-expressed as an augmented Lagrangian
+%
+\begin{equation}
+AL = \delta W + \lambda \Delta V + \frac{1}{2}\beta(\Delta V)^2,
+\label{eq:AugmentedLagrangian}
+\end{equation}
+%
+where $\beta$ is a penalty parameter which improves upon the conditioning of the matrix of $L$. The solution to the saddle point problem of Eq.\ \eqref{eq:saddlept} now satisfies
+%
+\begin{equation}
+\begin{aligned}
+&\frac{\partial AL}{\partial \lambda} = \Delta V = 0 \\
+&\frac{\partial AL}{\partial \pmb{u}} = \frac{\partial \delta W}{\partial \pmb{u}} + \lambda \frac{\partial V}{\partial \pmb{u}} + \beta \Delta V \frac{\partial V}{\partial \pmb{u}} = 0,
+\end{aligned}
+\label{eq:ALconditions}
+\end{equation}
+%
+where as before the first condition explicitly preserves the volume.
+
+To obtain a linear model, Eq.\ \eqref{eq:ALconditions} is linearized via a Taylor expansion
+%
+\begin{equation}
+\begin{aligned}
+&\Delta V + \frac{\partial V}{\partial  \pmb{u}_a} \Delta \pmb{u}_a = 0 \\
+%
+&\pmb{R}_a + \lambda \frac{\partial V}{\partial \pmb{u}_a} + \beta \Delta V \frac{\partial V}{\partial \pmb{u}_a}
+%
++ \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} + \beta \frac{\partial V}{\partial \pmb{u}_b} \frac{\partial V}{\partial \pmb{u}_a} + \beta \Delta V \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} \right) \Delta \pmb{u}_b 
+%
++ \frac{\partial V}{\partial \pmb{u}_a} \Delta \lambda =0.
+\end{aligned}
+\label{eq:ALtaylor-expand}
+\end{equation}
+%
+Using the matrices introduced in Eq.\ \eqref{eq:matrix_def}, Eq.\ \eqref{eq:ALtaylor-expand} can be expressed in matrix form as
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \textbf{H} + \beta \left(\textbf{G} \textbf{G}^T + \Delta V \textbf{H} \right)& \textbf{G} \\
+\textbf{G}^T & 0 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\ \Delta \lambda
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda \textbf{G} - \beta \Delta V \textbf{G} \\
+- \Delta V 
+\end{bmatrix}.
+\label{eq:ALtaylor-expand_matrix}
+\end{eqnarray}
+%
+
+\section{Iterative Implementation of Augmented Lagrangian Method}
+
+Here Eqs.\ \eqref{eq:AugmentedLagrangian} and the second condition of \eqref{eq:ALconditions} are considered. This time a linear model is obtained only with respect to the displacement
+%
+\begin{equation}
+\pmb{R}_a + \lambda \frac{\partial V}{\partial \pmb{u}_a} + \beta \Delta V \frac{\partial V}{\partial \pmb{u}_a}
+%
++ \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} + \beta \frac{\partial V}{\partial \pmb{u}_b} \frac{\partial V}{\partial \pmb{u}_a} + \beta \Delta V \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} \right) \Delta \pmb{u}_b  =0.
+\label{eq:ALtaylor-expand_feedback}
+\end{equation}
+%
+Once again using the matrices introduced in Eq.\ \eqref{eq:matrix_def}, Eq.\ \eqref{eq:ALtaylor-expand_feedback} can be expressed in matrix form as
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \textbf{H} + \beta \left(\textbf{G} \textbf{G}^T + \Delta V \textbf{H} \right) 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda \textbf{G} - \beta \Delta V \textbf{G}
+\end{bmatrix},
+\label{eq:ALtaylor-expand_matrix_feedback}
+\end{eqnarray}
+%
+where $\lambda$ and $\beta$ are determined iteratively.
+
+\section{Iterative Implementation of Lagrangian Method}
+
+\subsection{Standard}
+Here Eqs.\ \eqref{eq:Lagrangian} and the second condition of \eqref{eq:conditions} are considered. This time a linear model is obtained only with respect to the displacement
+%
+\begin{equation}
+\pmb{R}_a + \lambda \frac{\partial V}{\partial \pmb{u}_a} 
+%
++ \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b}  \right) \Delta \pmb{u}_b  =0.
+\label{eq:taylor-expand_feedback}
+\end{equation}
+%
+Once again using the matrices introduced in Eq.\ \eqref{eq:matrix_def}, Eq.\ \eqref{eq:taylor-expand_feedback} can be expressed in matrix form as
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \textbf{H} 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda \textbf{G} 
+\end{bmatrix},
+\label{eq:taylor-expand_matrix_feedback}
+\end{eqnarray}
+%
+where $\lambda$ is determined iteratively.
+
+\subsection{$|\Delta V|^2$ }
+%
+\begin{equation}
+L \equiv \delta W + \frac{1}{2}\lambda |\Delta V|^2
+\label{eq:squared_Lagrangian}
+\end{equation}
+%
+%
+\begin{equation}
+\pmb{R}_a + \lambda  |\Delta V| \frac{\partial V}{\partial \pmb{u}_a}
+%
++ \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda \frac{\partial V}{\partial \pmb{u}_b} \frac{\partial V}{\partial \pmb{u}_a} + \lambda |\Delta V| \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} \right) \Delta \pmb{u}_b  =0.
+\label{eq:squared_taylor-expand_feedback}
+\end{equation}
+%
+
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \left(\textbf{G} \textbf{G}^T + |\Delta V| \textbf{H} \right) 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda|\Delta V| \textbf{G}
+\end{bmatrix},
+\label{eq:squared_taylor-expand_matrix_feedback}
+\end{eqnarray}
+%
+
+\subsection{General Case}
+%
+\begin{equation}
+L \equiv \delta W + \frac{1}{p}\lambda |\Delta V|^p
+\label{eq:general_Lagrangian}
+\end{equation}
+%
+%
+\begin{equation}
+\pmb{R}_a + \lambda  |\Delta V|^{p-1} \frac{\partial V}{\partial \pmb{u}_a}
+%
++ \left(\frac{\partial R_a}{\partial \pmb{u}_b} + \lambda(p-1)|\Delta V|^{p-1} \frac{\partial V}{\partial \pmb{u}_b} \frac{\partial V}{\partial \pmb{u}_a} + \lambda |\Delta V|^{p-1} \frac{\partial^2 V}{\partial \pmb{u}_a \partial \pmb{u}_b} \right) \Delta \pmb{u}_b  =0.
+\label{eq:general_taylor-expand_feedback}
+\end{equation}
+%
+
+%
+\begin{eqnarray}
+\begin{bmatrix}
+\textbf{K} + \lambda \left((p-1)|\Delta V|^{p-2}\textbf{G} \textbf{G}^T + |\Delta V|^{p-1} \textbf{H} \right) 
+\end{bmatrix}
+%
+\begin{bmatrix}
+\Delta \textbf{u} \\
+\end{bmatrix}
+%
+= \begin{bmatrix}
+-\textbf{R}-\lambda|\Delta V|^{p-1} \textbf{G}
+\end{bmatrix},
+\label{eq:general_taylor-expand_matrix_feedback}
+\end{eqnarray}
+%
+
+\section{Volume Calculations (Element Wise)}
+
+The volume (in physical space) of each tetrahedra element in the finite element mesh can be determined from the Gauss quadrature rule
 %
 \begin{equation}
 V^{(e)} = \sum_{i=1}^{n_{gp}} W_i \text{det}(\pmb{J}^e(\xi_1,\xi_2,\xi_3)),
@@ -279,7 +424,7 @@ where $W_i$ the Gauss quadrature weight, $n_{gp}$ is the number of Gauss points,
 %
 where $n_{en}$ is the number of element nodes and $x_i^e, y_i^e, z_i^e$ are the $x,y,z$ coordinates of the $i^{th}$ node of the tetrahedra element.
 
-For a linear tetrahedra element, $n_{gp}=1$, $W_1=1$, and $n_{en}=4$. The shape functions and its derivatives are therefore
+For a linear tetrahedra element, $n_{gp}=1$, $W_1=1/6$, and $n_{en}=4$. The shape functions and its derivatives are therefore
 %
 \begin{equation}
 N_1 = 1- \xi_1 - \xi_2 - \xi_3, \ \ 
@@ -325,7 +470,7 @@ Therefore, the volume of each linear tetrahedra element can be calculated from t
 The total volume is calculated by summing over the volume of each element
 %
 \begin{equation}
-V = \sum_{e=1}^{N_{el}} V^{(e)} = \sum_{e=1}^{N_{el}}\text{det}\left( \begin{bmatrix}
+V = \sum_{e=1}^{N_{el}} V^{(e)} = \frac{1}{6}\sum_{e=1}^{N_{el}}\text{det}\left( \begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
@@ -337,7 +482,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 %
 where $N_{el}$ is the number of linear tetrahedra elements in the finite-element mesh. Both the current and initial volumes can be calculated by Eq.\ \eqref{eq:total_volume}.
 
-\section{First Derivative of Total Volume}
+\subsection{First Derivative of Total Volume}
 
 The change of total volume from the change of a single nodal displacement $\pmb{u}_a$ at a node $a$ (=1 to 4 for linear tetrahedra element) of element $e$ is
 %
@@ -346,7 +491,7 @@ The change of total volume from the change of a single nodal displacement $\pmb{
 %%
 &=& \frac{\partial}{\partial \pmb{x}_a^e} \sum_{e=1}^{N_{el}}V^{(e)} = \sum_{e=1}^{N_{el}}\frac{\partial V^{(e)}}{\partial \pmb{x}_a^e}
 %%
-= \begin{bmatrix}
+= W_1\begin{bmatrix}
 \frac{\partial V}{\partial x_a^e} \\ \frac{\partial V}{\partial y_a^e} \\ \frac{\partial V}{\partial z_a^e}
 \end{bmatrix},
 \label{eq:dVdu}
@@ -355,14 +500,15 @@ The change of total volume from the change of a single nodal displacement $\pmb{
 where the derivative of the total volume has been rewritten as the sum of the derivatives of element volumes. To understand how to compute Eq.\ \eqref{eq:dVdu}, the x-component is written out explicitly
 %
 \begin{eqnarray}
-\frac{\partial V}{\partial x_a^e} &=& \sum_{e=1}^{N_{el}} \frac{\partial}{\partial x_a^e}\text{det}\left(\sum_{i=1}^{n_{en}}
+\frac{\partial V}{\partial x_a^e} &=& W_1\sum_{e=1}^{N_{el}} \frac{\partial}{\partial x_a^e}\text{det}\left(\sum_{i=1}^{n_{en}}
 \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1} x_i^e & \frac{\partial N_i}{\partial \xi_2} x_i^e & \frac{\partial N_i}{\partial \xi_3} x_i^e \\
 %
 \frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
 %
 \frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
-\end{bmatrix}\right) = \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+\end{bmatrix}\right) \\
+&=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
@@ -372,7 +518,7 @@ where the derivative of the total volume has been rewritten as the sum of the de
 \frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}} \text{det}\left(
+&=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
@@ -381,7 +527,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 %
 z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
 \end{bmatrix}\right)\nonumber\\
-&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
+&=& W_1\sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
 %
 &&-\frac{\partial N_a}{\partial \xi_2}\left[(y_2^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_2^e - z_1^e)\right] \nonumber\\
 %
@@ -392,7 +538,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 Similarly, the $y$ and $z$ components are
 %
 \begin{eqnarray}
-\frac{\partial V}{\partial y_a^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial V}{\partial y_a^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
 %
 \frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
@@ -400,7 +546,7 @@ Similarly, the $y$ and $z$ components are
 \frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
 \end{bmatrix}\right) 
 %%
-= \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+=W_1 \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 \frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} \\
@@ -409,13 +555,13 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 \end{bmatrix}\right)
 \nonumber\\
 %
-&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_a}{\partial \xi_3}(z_3^e - z_1^e)\right] \nonumber\\
+&=&W_1\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_a}{\partial \xi_3}(z_3^e - z_1^e)\right] \nonumber\\
 %
 &&-(x_3^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}(z_4^e - z_1^e)-\frac{\partial N_a}{\partial \xi_3}(z_2^e - z_1^e)\right] \nonumber\\
 %
 &&+(x_4^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}(z_3^e - z_1^e)-\frac{\partial N_a}{\partial \xi_2}(z_2^e - z_1^e)\right] \nonumber\\
 %%%%
-\frac{\partial V}{\partial z_a^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial V}{\partial z_a^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
 %
 \frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
@@ -423,7 +569,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} 
 \end{bmatrix}\right) 
 %%
-= \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+=W_1 \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
@@ -431,7 +577,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3} 
 \end{bmatrix}\right)  \nonumber\\
 %
-&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\frac{\partial N_a}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_a}{\partial \xi_2}\right] \nonumber\\
+&=&W_1\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\frac{\partial N_a}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_a}{\partial \xi_2}\right] \nonumber\\
 %
 &&-(x_3^e - x_1^e)\left[(y_2^e - y_1^e)\frac{\partial N_a}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_a}{\partial \xi_1}\right] \nonumber\\
 %
@@ -439,7 +585,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 \label{eq:dVdy-dVdz}
 \end{eqnarray}
 
-\section{Second Derivative of Total Volume}
+\subsection{Second Derivative of Total Volume}
 
 The second derivative of the total volume is determined by observing the change of Eq.\ \eqref{eq:dVdu} due to the change of a single nodal displacement $\pmb{u}_b$ at a node of $b$ (=1 to 4 for tetrahedra element) of element $e$
 %
@@ -448,7 +594,7 @@ The second derivative of the total volume is determined by observing the change 
 %
 =\sum_{e=1}^{N_{el}}\frac{\partial^2 V^{(e)}}{\partial \pmb{x}_a^e \partial \pmb{x}_b^e} = 
 %
-\begin{bmatrix}
+W_1\begin{bmatrix}
 \frac{\partial^2 V}{\partial x_a^e \partial x_b^e} & \frac{\partial^2 V}{\partial x_a^e \partial y_b^e} & \frac{\partial^2 V}{\partial x_a^e \partial z_b^e} \\
 %
 \frac{\partial^2 V}{\partial y_a^e \partial x_b^e} & \frac{\partial^2 V}{\partial y_a^e \partial y_b^e} & \frac{\partial^2 V}{\partial y_a^e \partial z_b^e} \\
@@ -463,7 +609,7 @@ where as before the second derivative of the total volume has been written as th
 The diagonal terms of Eq.\ \eqref{eq:dVduadub} are
 %
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial x_a^e \partial x_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+\frac{\partial^2 V}{\partial x_a^e \partial x_b^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
@@ -473,7 +619,7 @@ The diagonal terms of Eq.\ \eqref{eq:dVduadub} are
 \frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}} \text{det}\left(
+&=&W_1 \sum_{e=1}^{N_{el}} \text{det}\left(
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
@@ -483,7 +629,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}}\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
+&=& W_1\sum_{e=1}^{N_{el}}\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)[(y_3^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_3^e - z_1^e)] \nonumber\\
 %
 &&-\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)\left[(y_2^e - y_1^e)(z_4^e - z_1^e)-(y_4^e - y_1^e)(z_2^e - z_1^e)\right] \nonumber\\
 %
@@ -493,7 +639,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 %%%%%
 %%%%%
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial y_a^e \partial y_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial^2 V}{\partial y_a^e \partial y_b^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e  \\
 %
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}& \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
@@ -501,7 +647,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 \frac{\partial N_i}{\partial \xi_1}z_i^e & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+&=& W_1\sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}& \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} \\
@@ -509,7 +655,7 @@ x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
 \end{bmatrix}\right) \nonumber\\
 %
-&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)(z_4^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)(z_3^e - z_1^e)\right] \nonumber\\
+&=&W_1\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)(z_4^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)(z_3^e - z_1^e)\right] \nonumber\\
 %
 &&-(x_3^e - x_1^e)\left[\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)(z_4^e - z_1^e)-\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)(z_2^e - z_1^e)\right] \nonumber\\
 %
@@ -519,7 +665,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 %%%%%
 %%%%%
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial z_a^e \partial z_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial^2 V}{\partial z_a^e \partial z_b^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e  & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
 %
 \frac{\partial N_i}{\partial \xi_1}y_i^e & \frac{\partial N_i}{\partial \xi_2}y_i^e & \frac{\partial N_i}{\partial \xi_3}y_i^e \\
@@ -527,7 +673,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}  & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
+&=& W_1\sum_{e=1}^{N_{el}} \text{det}\left( \begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
@@ -535,7 +681,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 \frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}  & \frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3} 
 \end{bmatrix}\right) \nonumber\\
 %
-&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)-(y_4^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)\right] \nonumber\\
+&=&W_1\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[(y_3^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)-(y_4^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_2}+\frac{\partial N_b}{\partial \xi_2}\right)\right] \nonumber\\
 %
 &&-(x_3^e - x_1^e)\left[(y_2^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_3}+\frac{\partial N_b}{\partial \xi_3}\right)-(y_4^e - y_1^e)\left(\frac{\partial N_a}{\partial \xi_1}+\frac{\partial N_b}{\partial \xi_1}\right)\right] \nonumber\\
 %
@@ -546,7 +692,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 The off-diagonal terms of Eq.\ \eqref{eq:dVduadub} are
 %
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial x_a^e \partial y_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+\frac{\partial^2 V}{\partial x_a^e \partial y_b^e} &=&W_1 \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
@@ -556,7 +702,7 @@ The off-diagonal terms of Eq.\ \eqref{eq:dVduadub} are
 \frac{\partial N_i}{\partial \xi_1}z_i^e  & \frac{\partial N_i}{\partial \xi_2}z_i^e & \frac{\partial N_i}{\partial \xi_3}z_i^e 
 \end{bmatrix}\right) 
 %
-= \sum_{e=1}^{N_{el}} \text{det}\left(
+=W_1 \sum_{e=1}^{N_{el}} \text{det}\left(
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
@@ -566,7 +712,7 @@ The off-diagonal terms of Eq.\ \eqref{eq:dVduadub} are
 z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e 
 \end{bmatrix}\right)\nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[\frac{\partial N_b}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_b}{\partial \xi_3}(z_3^e - z_1^e)\right]
+&=& W_1\sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[\frac{\partial N_b}{\partial \xi_2}(z_4^e - z_1^e)-\frac{\partial N_b}{\partial \xi_3}(z_3^e - z_1^e)\right]
 %
 -\frac{\partial N_a}{\partial \xi_2}\left[\frac{\partial N_b}{\partial \xi_1}(z_4^e - z_1^e)-\frac{\partial N_b}{\partial \xi_3}(z_2^e - z_1^e)\right] \nonumber\\
 %
@@ -576,7 +722,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 %%%%%
 %%%%%
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial x_a^e \partial z_b^e} &=&  \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
+\frac{\partial^2 V}{\partial x_a^e \partial z_b^e} &=&  W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}}
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  &  \frac{\partial N_a}{\partial \xi_2} &  \frac{\partial N_a}{\partial \xi_3}\\
@@ -586,7 +732,7 @@ z_2^e - z_1^e & z_3^e - z_1^e & z_4^e - z_1^e
 \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3} 
 \end{bmatrix}\right) 
 %
-= \sum_{e=1}^{N_{el}} \text{det}\left(
+= W_1\sum_{e=1}^{N_{el}} \text{det}\left(
 %
 \begin{bmatrix}
 \frac{\partial N_a}{\partial \xi_1}  &  \frac{\partial N_a}{\partial \xi_2} &  \frac{\partial N_a}{\partial \xi_3}\\
@@ -596,7 +742,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3} 
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=& \sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[(y_3^e - y_1^e)\frac{\partial N_b}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_b}{\partial \xi_2}\right] 
+&=& W_1\sum_{e=1}^{N_{el}}\frac{\partial N_a}{\partial \xi_1}\left[(y_3^e - y_1^e)\frac{\partial N_b}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_b}{\partial \xi_2}\right] 
 %
 -\frac{\partial N_a}{\partial \xi_2}\left[(y_2^e - y_1^e)\frac{\partial N_b}{\partial \xi_3}-(y_4^e - y_1^e)\frac{\partial N_b}{\partial \xi_1}\right] \nonumber\\
 %
@@ -606,7 +752,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
 %%%%%
 %%%%%
 \begin{eqnarray}
-\frac{\partial^2 V}{\partial y_a^e \partial z_b^e} &=& \sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
+\frac{\partial^2 V}{\partial y_a^e \partial z_b^e} &=& W_1\sum_{e=1}^{N_{el}} \text{det}\left(\sum_{i=1}^{n_{en}} \begin{bmatrix}
 \frac{\partial N_i}{\partial \xi_1}x_i^e  & \frac{\partial N_i}{\partial \xi_2}x_i^e & \frac{\partial N_i}{\partial \xi_3}x_i^e \\
 %
 \frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
@@ -614,7 +760,7 @@ y_2^e - y_1^e & y_3^e - y_1^e & y_4^e - y_1^e \\
  \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}
 \end{bmatrix}\right) 
 %
-= \sum_{e=1}^{N_{el}} \text{det}\left(\begin{bmatrix}
+= W_1\sum_{e=1}^{N_{el}} \text{det}\left(\begin{bmatrix}
 x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
 %
 \frac{\partial N_a}{\partial \xi_1} & \frac{\partial N_a}{\partial \xi_2} & \frac{\partial N_a}{\partial \xi_3}  \\
@@ -622,7 +768,7 @@ x_2^e - x_1^e & x_3^e - x_1^e & x_4^e - x_1^e \\
  \frac{\partial N_b}{\partial \xi_1}  & \frac{\partial N_b}{\partial \xi_2} & \frac{\partial N_b}{\partial \xi_3}
 \end{bmatrix}\right) \nonumber\\
 %%%
-&=&\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}\frac{\partial N_b}{\partial \xi_3}-\frac{\partial N_a}{\partial \xi_3}\frac{\partial N_b}{\partial \xi_2}\right] 
+&=&W_1\sum_{e=1}^{N_{el}}(x_2^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_2}\frac{\partial N_b}{\partial \xi_3}-\frac{\partial N_a}{\partial \xi_3}\frac{\partial N_b}{\partial \xi_2}\right] 
 %
 -(x_3^e - x_1^e)\left[\frac{\partial N_a}{\partial \xi_1}\frac{\partial N_b}{\partial \xi_3}-\frac{\partial N_a}{\partial \xi_3}\frac{\partial N_b}{\partial \xi_1}\right] \nonumber\\
 %
@@ -639,6 +785,193 @@ where
 %
 \frac{\partial^2 V}{\partial z_a^e \partial y_b^e} = \frac{\partial^2 V}{\partial y_a^e \partial z_b^e}
 \end{equation}
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}
+
+\section{Volume Calculations Based on Surface Mesh}
+
+According to Hong et al.\ \cite{Hong:2006vz}, the total volume of an object can be determined from its surface mesh by
+%
+\begin{eqnarray}
+&&V = \frac{1}{3}\sum_{s=1}^{N_s} V^{(s)}, \text{ where } \nonumber\\
+&&V^{(s)} =  \frac{A^{(s)}}{3}\left[ N^{(s)}_x (x^{(s)}_1 + x^{(s)}_2 + x^{(s)}_3) + N^{(s)}_y (y^{(s)}_1 + y^{(s)}_2 + y^{(s)}_3) + N^{(s)}_z (z^{(s)}_1 + z^{(s)}_2 + z^{(s)}_3) \right]. \nonumber\\
+\label{eq:volume_from_surf}
+\end{eqnarray}
+% 
+In Eq.\ \eqref{eq:volume_from_surf} the superscript $s$ indicates values corresponding to the $s^{th}$ triangle on the surface mesh, $N_s$ is the total number of triangles on the surface mesh, and $V^{(s)}$ is the contribution of the $s^{th}$ triangle on the surface mesh to the total volume. The variables $x_i, y_i$, and $z_i$ are the $x, y$, and $z$ coordinates of the $i^{th}$ node of a single triangle on the surface mesh and $N_i$ corresponds to the $i^{th}$ component of the normal to a triangle on the surface mesh. Note that all coordinates are in terms of the physical domain and not the parent domain.
+
+\subsection{First Derivative of Volume}
+The change of total volume from the change of a single nodal displacement $\pmb{u}_a$ at a node $a$ (=1 to 3 for linear surface triangle element) of a triangular surface element $s$ is
+%
+\begin{eqnarray}
+\frac{\partial V}{\partial \pmb{u}_a^{(s)}} &=& \frac{\partial V}{\partial (\pmb{x}_a^{(s)}-\pmb{X}_a^{(s)})} = \frac{\partial V}{\partial \pmb{x}_a^{(se)}} \nonumber\\
+%%
+&=& \frac{\partial}{\partial \pmb{x}_a^{(s)}} \frac{1}{3} \sum_{s=1}^{N_s}V^{(s)} = \frac{1}{3} \sum_{s=1}^{N_s}\frac{\partial V^{(s)}}{\partial \pmb{x}_a^{(s)}}
+%%
+= \frac{1}{3} \begin{bmatrix}
+\frac{\partial V}{\partial x_a^{(s)}} \\ \frac{\partial V}{\partial y_a^{(s)}} \\ \frac{\partial V}{\partial z_a^{(s)}}
+\end{bmatrix}, \text { for } a = 1 \text{ to } 3.
+\label{eq:dVdu_surface}
+\end{eqnarray}
+%
+Note that in Eq.\ \eqref{eq:dVdu_surface} each $\partial V^{(s)}/\partial \pmb{x}_a^{(s)}$ term is calculated in the atPoint function of the constraint integrator. The summation is performed by accumulating into the tangent-stiffness matrix and residual vector via the amsi::assembleMatrix and amsi::assembleVector functions, respectively.
+
+According to Hong et al.\ \cite{Hong:2006vz}, the $\partial V^{(s)}/\partial \pmb{x}_a^{(s)}$ term can be determined from the nodal coordinates of the triangle of the surface mesh explicitly as
+%
+\begin{eqnarray}
+\frac{\partial V^{(s)}}{\partial x^{(s)}_1} = \frac{1}{2} \left(y^{(s)}_3 z^{(s)}_2 - y^{(s)}_2 z^{(s)}_3 \right) \ \
+\frac{\partial V^{(s)}}{\partial y^{(s)}_1} = \frac{1}{2} \left(-x^{(s)}_3 z^{(s)}_2 + x^{(s)}_2 z^{(s)}_3 \right) \ \
+\frac{\partial V^{(s)}}{\partial z^{(s)}_1} = \frac{1}{2} \left(x^{(s)}_3 y^{(s)}_2 - x^{(s)}_2 y^{(s)}_3 \right) \nonumber\\
+%%%
+\frac{\partial V^{(s)}}{\partial x^{(s)}_2} = \frac{1}{2} \left(-y^{(s)}_3 z^{(s)}_1 + y^{(s)}_1 z^{(s)}_3 \right) \ \
+\frac{\partial V^{(s)}}{\partial y^{(s)}_2} = \frac{1}{2} \left(x^{(s)}_3 z^{(s)}_1 - x^{(s)}_1 z^{(s)}_3 \right) \ \
+\frac{\partial V^{(s)}}{\partial z^{(s)}_2} = \frac{1}{2} \left(-x^{(s)}_3 y^{(s)}_1 + x^{(s)}_1 y^{(s)}_3 \right) \nonumber\\
+%%%
+\frac{\partial V^{(s)}}{\partial x^{(s)}_3} = \frac{1}{2} \left(y^{(s)}_2 z^{(s)}_1 - y^{(s)}_1 z^{(s)}_2 \right) \ \
+\frac{\partial V^{(s)}}{\partial y^{(s)}_3} = \frac{1}{2} \left(-x^{(s)}_2 z^{(s)}_1 + x^{(s)}_1 z^{(s)}_2 \right) \ \
+\frac{\partial V^{(s)}}{\partial z^{(s)}_3} = \frac{1}{2} \left(x^{(s)}_2 y^{(s)}_1 - x^{(s)}_1 y^{(s)}_2 \right). \nonumber\\
+\label{eq:dVdu_explicit}
+\end{eqnarray}
+%
+
+\subsection{Second Derivative of Volume}
+
+The second derivative of the total volume is determined by observing the change of Eq.\ \eqref{eq:dVdu_surface} due to the change of a single nodal displacement $\pmb{u}_b$ at a node of $b$ (=1 to 3 for linear triangle element) of surface element $s$
+%
+\begin{eqnarray}
+\frac{\partial}{\partial \pmb{u}_b^{(s)}}\frac{\partial V}{\partial \pmb{u}_a^{(s)}} &=& \frac{\partial}{\partial \pmb{x}_b^{(s)}}\frac{\partial V}{\partial \pmb{x}_a^{(s)}} 
+%
+=\sum_{s=1}^{N_{s}}\frac{\partial^2 V^{(s)}}{\partial \pmb{x}_a^{(s)} \partial \pmb{x}_b^{(s)}} = 
+%
+\frac{1}{3}\begin{bmatrix}
+\frac{\partial^2 V}{\partial x_a^{(s)} \partial x_b^{(s)}} & \frac{\partial^2 V}{\partial x_a^{(s)} \partial y_b^{(s)}} & \frac{\partial^2 V}{\partial x_a^{(s)} \partial z_b^{(s)}} \\
+%
+\frac{\partial^2 V}{\partial y_a^{(s)} \partial x_b^{(s)}} & \frac{\partial^2 V}{\partial y_a^{(s)} \partial y_b^{(s)}} & \frac{\partial^2 V}{\partial y_a^{(s)} \partial z_b^{(s)}} \\
+%
+\frac{\partial^2 V}{\partial z_a^{(s)} \partial x_b^{(s)}} & \frac{\partial^2 V}{\partial z_a^{(s)} \partial y_b^{(s)}} & \frac{\partial^2 V}{\partial z_a^{(s)} \partial z_b^{(s)}} 
+\end{bmatrix}, \text{ for } a,b = 1 \text{ to } 3. \nonumber\\
+\label{eq:dVduadub_surface}
+\end{eqnarray}
+%
+Similar to Eq.\ \eqref{eq:dVdu_surface}, the $\partial ^2 V^{(s)}/\partial x_a^{(s)}\partial x_b^{(s)}$ term in Eq.\ \eqref{eq:dVduadub_surface} is calculated within the atPoint function of the constraint integrator. Analogously, the summation is performed by accumulating into the tangent-stiffness matrix and residual vector via the amsi::assembleMatrix and amsi::assembleVector functions, respectively.
+
+The terms $\partial ^2 V^{(s)}/\partial x_a^{(s)}\partial x_b^{(s)}$ in Eq.\ \eqref{eq:dVduadub_surface} can also be written out explicitly by taking derivatives of the terms in Eq.\ \eqref{eq:dVdu_explicit}. 
+
+The $x-x$ terms are 
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial x_a^{(s)} \partial x_b^{(s)}} = 
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial x_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial x_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial x_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial x_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial x_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial x_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial x_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial x_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial x_3^{(s)}}
+\end{bmatrix} =
+%%%
+\begin{bmatrix}
+0 & 0 & 0 \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+The $y-y$ terms are
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial y_a^{(s)} \partial y_b^{(s)}} = 
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial y_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial y_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial y_3^{(s)}}
+\end{bmatrix} =
+%%%
+\begin{bmatrix}
+0 & 0 & 0 \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+The $z-z$ terms are
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial z_a^{(s)} \partial z_b^{(s)}} = 
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial z_1^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial z_1^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial z_1^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial z_2^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial z_2^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial z_2^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial z_3^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial z_3^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial z_3^{(s)} \partial z_3^{(s)}}
+\end{bmatrix} =
+%%%
+\begin{bmatrix}
+0 & 0 & 0 \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+The $x-y$ terms are
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial x_a^{(s)} \partial y_b^{(s)}} = \frac{\partial^2V^{(s)}}{\partial y_a^{(s)} \partial x_b^{(s)}}=
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial y_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial y_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial y_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial y_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial y_3^{(s)}}
+\end{bmatrix} =
+%%%
+\frac{1}{2}
+\begin{bmatrix}
+0 & -z_3^{(s)} & z_2^{(s)} \\
+z_3^{(s)} & 0 & -z_1^{(s)} \\
+-z_2^{(s)} & z_1^{(s)} & 0
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+The $x-z$ terms are
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial x_a^{(s)} \partial z_b^{(s)}} = \frac{\partial^2V^{(s)}}{\partial z_a^{(s)} \partial x_b^{(s)}} = 
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_1^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_2^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial x_3^{(s)} \partial z_3^{(s)}}
+\end{bmatrix} =
+%%%
+\frac{1}{2}
+\begin{bmatrix}
+0 & y_3^{(s)} & -y_2^{(s)} \\
+-y_3^{(s)} & 0 & y_1^{(s)} \\
+y_2^{(s)} & -y_1^{(s)} & 0
+\end{bmatrix}.
+\end{eqnarray}
+%
+
+The $y-z$ terms are
+%
+\begin{eqnarray}
+\frac{\partial^2V^{(s)}}{\partial y_a^{(s)} \partial z_b^{(s)}} = \frac{\partial^2V^{(s)}}{\partial z_a^{(s)} \partial y_b^{(s)}} = 
+\begin{bmatrix}
+\frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_1^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_2^{(s)} \partial z_3^{(s)}} \\
+%
+\frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial z_1^{(s)}} & \frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial z_2^{(s)}}  & \frac{\partial^2V^{(s)}}{\partial y_3^{(s)} \partial z_3^{(s)}}
+\end{bmatrix} =
+%%%
+\begin{bmatrix}
+0 & -x_3^{(s)} & x_2^{(s)} \\
+x_3^{(s)} & 0 & -x_1^{(s)} \\
+-x_2^{(s)} & x_1^{(s)} & 0
+\end{bmatrix}.
+\end{eqnarray}

@@ -1,4 +1,0 @@
-add_subdirectory(fiber_network)
-add_subdirectory(rve)
-add_subdirectory(macro_coupling)
-add_subdirectory(analysis)

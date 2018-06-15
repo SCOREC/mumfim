@@ -72,11 +72,10 @@ namespace bio
     prev_vol = vol = load_vol;
     _step();
   }
-  void VolumeConstraint::inElement(apf::MeshEntity * m)
+  void VolumeConstraint::inElement(apf::MeshElement * m)
   {
     apf::Field * fld = apf::getField(nm);
-    me = apf::createMeshElement(apf::getMesh(fld),m);
-    e = apf::createElement(fld,me);
+    e = apf::createElement(fld,m);
     nen = apf::countNodes(e);
     nedofs = nen * apf::countComponents(fld);
     _inElement(m);
@@ -88,9 +87,14 @@ namespace bio
   }
   void LagrangeConstraint_Volume::_iter()
   {
+    //lambda += beta * ((vol-prev_vol)/prev_vol);
+    //amsi::Log(lg) << "-1, -1," << lambda << ", " << beta << std::endl;
+  }
+  void LagrangeConstraint_Volume::_step()
+  {
     lambda += beta * ((vol-prev_vol)/prev_vol);
   }
-  void LagrangeConstraint_Volume::_inElement(apf::MeshEntity * me)
+  void LagrangeConstraint_Volume::_inElement(apf::MeshElement *)
   {
     d2Vdu2.setSize(nedofs,nedofs);
     dVdu.setSize(1,nedofs);
@@ -105,8 +109,8 @@ namespace bio
     {
       for(auto ent = amsi::beginClassified(msh,*mdl_ent,dim); ent != amsi::endClassified(ent); ++ent)
       {
-        inElement(*ent);
         apf::MeshElement * mlm = apf::createMeshElement(msh,*ent);
+        inElement(mlm);
         process(mlm);
         apf::NewArray<int> ids;
         apf::getElementNumbers(nm,*ent,ids);
@@ -124,7 +128,7 @@ namespace bio
       }
     }
   }
-  void LagrangeConstraint_Volume::atPoint(apf::Vector3 const & p, double w, double dV)
+  void LagrangeConstraint_Volume::atPoint(apf::Vector3 const & p, double w, double)
   {
     // Jacobian of underlying mesh. (Initial configuration).
     apf::Matrix3x3 Jac;
@@ -261,7 +265,7 @@ namespace bio
     dVdu(0,7) = 0.5 * (-pt1[0] * pt0[2] + pt0[0] * pt1[2]); ///<dVdy3
     dVdu(0,8) = 0.5 * (pt1[0] * pt0[1] - pt0[0] * pt1[1]);  ///<dVdz3
   }
-  void LagrangeConstraint_VolumeSurface::_inElement(apf::MeshEntity * me)
+  void LagrangeConstraint_VolumeSurface::_inElement(apf::MeshElement*)
   {
     dVdu.setSize(1,nedofs);
     dVdu.zero();
@@ -283,8 +287,8 @@ namespace bio
         crt_fc = reinterpret_cast<apf::ModelEntity*>(fcs->e[ii]);
         for(auto ent = amsi::beginClassified(msh,crt_fc,dm); ent != amsi::endClassified(ent); ++ent)
         {
-          inElement(*ent);
           apf::MeshElement * mlm = apf::createMeshElement(msh,*ent);
+          inElement(mlm);
           process(mlm);
           apf::NewArray<int> ids;
           apf::getElementNumbers(nm,*ent,ids);
@@ -297,7 +301,7 @@ namespace bio
       gmi_free_set(fcs);
     }
   }
-  void LagrangeConstraint_VolumeSurface::atPoint(apf::Vector3 const & p, double w, double dV)
+  void LagrangeConstraint_VolumeSurface::atPoint(apf::Vector3 const &, double, double)
   {
     int dim = msh->getDimension();
     apf::Field * xyz = msh->getCoordinateField();
@@ -314,7 +318,7 @@ namespace bio
     calcdVdu(dVdu,xyz_u[0], xyz_u[1], xyz_u[2]);
     int sd = amsi::side(crt_rgn,msh,apf::getMeshEntity(me));
     assert(sd != 0); // if both adjacent regions are in the same model region, we haven't implemented a way to handle that, (should basically ignore)
-    double dVol = vol - load_vol;
+    double dVol = vol - load_vol; // should match volume convergence operator related to this constraint ??
     dVdu *= (lambda * sd) + (dVol * beta / prev_vol);
     /*
     apf::DynamicMatrix BVG = dVdu;
@@ -332,7 +336,7 @@ namespace bio
     dVdu += BVG; // lambda * n * dVdu + (dVol * beta / pv) * dVdu;
     */
   }
-  void PenaltyConstraint_VolumeSurface::_inElement(apf::MeshEntity * me)
+  void PenaltyConstraint_VolumeSurface::_inElement(apf::MeshElement *)
   {
     dVdu.setSize(1,nedofs);
     dVdu.zero();
@@ -350,8 +354,8 @@ namespace bio
         crt_fc = reinterpret_cast<apf::ModelEntity*>(fcs->e[ii]);
         for(auto ent = amsi::beginClassified(msh,crt_fc,dm); ent != amsi::endClassified(ent); ++ent)
         {
-          inElement(*ent);
           apf::MeshElement * mlm = apf::createMeshElement(msh,*ent);
+          inElement(mlm);
           process(mlm);
           apf::NewArray<int> ids;
           apf::getElementNumbers(nm,*ent,ids);
@@ -365,7 +369,7 @@ namespace bio
     }
   }
   // this is really only safe for mesh faces with a single integration point atm
-  void PenaltyConstraint_VolumeSurface::atPoint(apf::Vector3 const &p, double w, double dV)
+  void PenaltyConstraint_VolumeSurface::atPoint(apf::Vector3 const &, double, double)
   {
     int dim = msh->getDimension();
     apf::Field * xyz = msh->getCoordinateField();

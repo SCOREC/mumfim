@@ -1,6 +1,7 @@
 #include "bioTissueMultiscaleAnalysis.h"
 #include "bioAnalysisIO.h"
 #include "bioMultiscaleTissue.h"
+#include "bioMultiscaleConvergence.h"
 #include "bioVolumeConvergence.h"
 #include <Solvers.h>
 #include <ConvenienceFunctions.h>
@@ -21,11 +22,12 @@ namespace bio
 {
   void MultiscaleTissueIteration::iterate()
   {
-    std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
+    if(!PCU_Comm_Self())
+      std::cout << "Multiscale Nonlinear Iteration : " << iteration() << std::endl;
     if(iteration() == 0)
       tssu->updateMicro();
     las->iter();
-    LinearSolver(tssu,las);
+    fem_iter->iterate();
     tssu->iter();
     amsi::ModularIteration::iterate();
   }
@@ -46,8 +48,8 @@ namespace bio
     tssu = mt = new MultiscaleTissue(mdl,msh,pd,cm);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
-    amsi::ModularIteration * mdlr = NULL;
-    itr = mdlr = new MultiscaleTissueIteration(mt,las);
+    amsi::ModularIteration * mdl_itr = NULL;
+    itr = mdl_itr = new MultiscaleTissueIteration(static_cast<MultiscaleTissue*>(tssu),las);
     std::vector<pANode> trk_vols;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"track volume"),std::back_inserter(trk_vols));
     std::vector<VolCalc*> vls;
@@ -56,14 +58,15 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      mdlr->addOperation(trkd_vols[*trk_vol]);
+      mdl_itr->addOperation(trkd_vols[*trk_vol]);
     }
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new MultiscaleConvergence(cvg_stps.begin(),cvg_stps.end(),cplng);
-    ((MultiscaleTissue*)tssu)->initMicro();
+    static_cast<MultiscaleTissue*>(tssu)->initMicro();
     // output params
+#ifdef LOGRUN
     std::ostringstream cnvrt;
     cnvrt << rnk;
     state_fn = amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
@@ -85,13 +88,7 @@ namespace bio
       amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
       amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
     }
-    amsi::log(state) << "STEP, ITER,   T, STATUS, DESC" << std::endl
-                     << "   0,    0, 0.0, ACTIVE, Initializing" << std::endl;
+    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
   }
-  void MultiscaleTissueAnalysis::checkpoint()
-  {
-    TissueAnalysis::checkpoint();
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    cs->scaleBroadcast(cplng,&completed);
-  }
+#endif
 }

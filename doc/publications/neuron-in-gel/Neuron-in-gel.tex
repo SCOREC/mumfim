@@ -1,8 +1,17 @@
 %%% use 10pt options with the asme2ej format
-\documentclass[10pt]{asme2ej}
+%\documentclass[10pt]{asme2ej}
+\documentclass[]{interact}
 
-\usepackage{graphicx,epsfig,color,textcomp,amssymb,amsmath,mathrsfs,cancel,bbm,ulem}
+\usepackage{graphicx,epsfig,color,textcomp,amssymb,amsmath,mathrsfs,cancel,bbm,ulem,physics}
 
+\usepackage{natbib}% Citation support using natbib.sty
+\bibpunct[, ]{(}{)}{;}{a}{}{,}% Citation support using natbib.sty
+\renewcommand\bibfont{\fontsize{10}{12}\selectfont}% Bibliography support using natbib.sty
+
+\newcommand{\blue}[1]{\textcolor{blue}{[#1]}}
+\newcommand{\red}[1]{\textcolor{red}{[#1]}}
+\newcommand{\green}[1]{\textcolor{green}{[#1]}}
+%\newcommand{\citepnum}[1]{\citep{[#1]}}
 %% The class has several options
 %  onecolumn/twocolumn - format for one or two columns per page
 %  10pt/11pt/12pt - use 10, 11, or 12 point font
@@ -15,80 +24,89 @@
 %% The default is oneside, onecolumn, 10pt, final
 
 
-\title{Mechanical Modeling of a Neuron Embedded in Collagenous Tissue}
+\title{Image-based Multi-scale Mechanical Analysis of Strain Amplification in Neurons Embedded in Collagen Gel}
 
-%%% first author
-\author{Victor W. L. Chan
-    \affiliation{
-	Scientific Computation Research Center,\\
-	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
-	Troy, NY 12180
-    }	
-}
+\author{
+\name{Victor W. L. Chan\textsuperscript{a},  William R. Tobin\textsuperscript{a}, Sijia Zhang\textsuperscript{b}, Beth A. Winkelstein\textsuperscript{b}, Victor H. Barocas\textsuperscript{c}, Mark S. Shephard\textsuperscript{a}, Catalin R. Picu\textsuperscript{a,d}\thanks{Corresponding Author: Catalin R. Picu, Tel: +518 276-2195, E-mail: picuc@rpi.edu}}
+\affil{\textsuperscript{a}Scientific Computational Research Center, Rensselaer Polytechnic Institute, Low Center for Industrial Innocation, Troy, NY 12180; \\ \textsuperscript{b}Department of Bioengineering, University of Pennsylvania, Philadelphia, PA 19104; \\ \textsuperscript{c}Department of Biomedical Engineering, University of Minnesota, Minneapolis, MN 55455; \\ \textsuperscript{d}Department of Mechanical, Aerospace and Nuclear Engineering, Rensselaer Polytechnic Institute, Troy, NY 12180 } }
 
-%%% second author
-%%% remove the following entry for single author papers
-%%% add more entries for additional authors
-\author{William R. Tobin 
-    \affiliation{ Scientific Computation Research Center,\\
-	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
-	Troy, NY 12180
-    }
-}
-
-%%% third author
-%%% remove the following entry for single author papers
-%%% add more entries for additional authors
-\author{Sijia Zhang
-    \affiliation{ Department of Bioengineering,\\
-        University of Pennsylvania,\\
-	240 Skirkanich Hall,\\
-        210 South 33rd Street,\\
-         Philadelphia, PA 19104
-    }
-}
-
-\author{Beth A. Winkelstein
-    \affiliation{ Department of Bioengineering,\\
-        University of Pennsylvania,\\
-	240 Skirkanich Hall,\\
-        210 South 33rd Street,\\
-         Philadelphia, PA 19104
-    }
-}
-
-\author{Victor H. Barocas
-    \affiliation{ Department of Biomedical Engineering,\\
-        University of Minnesota,\\
-	7-105 Nils Hasselmo Hall,\\
-        312 Church Street SE,\\
-        Minneapolis, MN 55455
-    }
-}
-
-\author{Mark S. Shephard
-    \affiliation{ Scientific Computation Research Center,\\
-	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
-	Troy, NY 12180
-    }
-}
-
-\author{Catalin R. Picu
-       \thanks{Address all correspondence for other issues to this author.} 
-        \affiliation{ Scientific Computation Research Center,\\
-	Rensselaer Polytechnic Institute,\\
-	Low Center for Industrial Innovation, CII-4011,\\
-	110 8th Street,\\
-	Troy, NY 12180\\
-	email: picuc@rpi.edu
-    }
-}
+%%%% first author
+%\author{Victor W. L. Chan
+%    \affiliation{
+%	Scientific Computation Research Center,\\
+%	Rensselaer Polytechnic Institute,\\
+%	Low Center for Industrial Innovation, CII-4011,\\
+%	110 8th Street,\\
+%	Troy, NY 12180
+%    }	
+%}
+%
+%%%% second author
+%%%% remove the following entry for single author papers
+%%%% add more entries for additional authors
+%\author{William R. Tobin 
+%    \affiliation{ Scientific Computation Research Center,\\
+%	Rensselaer Polytechnic Institute,\\
+%	Low Center for Industrial Innovation, CII-4011,\\
+%	110 8th Street,\\
+%	Troy, NY 12180
+%    }
+%}
+%
+%%%% third author
+%%%% remove the following entry for single author papers
+%%%% add more entries for additional authors
+%\author{Sijia Zhang
+%    \affiliation{ Department of Bioengineering,\\
+%        University of Pennsylvania,\\
+%	240 Skirkanich Hall,\\
+%        210 South 33rd Street,\\
+%         Philadelphia, PA 19104
+%    }
+%}
+%
+%\author{Beth A. Winkelstein
+%    \affiliation{ Department of Bioengineering,\\
+%        University of Pennsylvania,\\
+%	240 Skirkanich Hall,\\
+%        210 South 33rd Street,\\
+%         Philadelphia, PA 19104
+%    }
+%}
+%
+%\author{Victor H. Barocas
+%    \affiliation{ Department of Biomedical Engineering,\\
+%        University of Minnesota,\\
+%	7-105 Nils Hasselmo Hall,\\
+%        312 Church Street SE,\\
+%        Minneapolis, MN 55455
+%    }
+%}
+%
+%\author{Mark S. Shephard
+%    \affiliation{ Scientific Computation Research Center,\\
+%	Rensselaer Polytechnic Institute,\\
+%	Low Center for Industrial Innovation, \\
+%	CII-4011, 110 8th Street,\\
+%	Troy, NY 12180
+%    }
+%}
+%
+%\author{Catalin R. Picu
+%       \thanks{Address all correspondence for other issues to this author.} 
+%        \affiliation{Scientific Computation Research Center,\\
+%	Rensselaer Polytechnic Institute,\\
+%	Low Center for Industrial Innovation, \\
+%	CII-4011, 110 8th Street,\\
+%	Troy, NY 12180; \\
+%	Department of Mechanical, Aerospace and Nuclear Engineering, \\
+%	Rensselaer Polytechnic Institute, \\
+%	Jonsson Engineering Center,\\
+%	Rm.\ 2049, 110 8th Street, \\
+%	Troy, NY 12180 \\
+%	email: picuc@rpi.edu
+%    }
+%}
 
 
 
@@ -98,23 +116,52 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
-{\it 
-Needs to be filled in.
-}
+A general multi-scale strategy is presented for modeling the mechanical environment of a group of neurons that were embedded within a collagenous matrix. The results of the multi-scale simulation were used to estimate the local strains that arise in neurons when the extracellular matrix is deformed. The distribution of local strains was found to depend strongly on the configuration of the embedded neurons relative to the loading direction, reflecting the anisotropic mechanical behavior of the neurons. More importantly, the applied strain on the surrounding extracellular matrix was amplified in the neurons for all loading configurations that were considered. In the most severe case, the applied strain was amplified by at least a factor of 2 in 10$\%$ of the neuron by volume. The approach presented in this paper provides an extension to the capability of past methods by enabling the realistic representation of complex cell geometry into a multi-scale framework. The simulation results for the embedded neurons provide local strain information that is not accessible by current experimental techniques.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-Excessive loading in facet capsule ligament (FCL) induces damage to collagen network and axons of innervating neurons [references].``Although injurious ligament loading is known to activate nociceptors for pain signaling, the local biomechanical mechanisms by which neurons are injured, their biomechanical vulnerability, and the resulting physiological dysfnction are still poorly understood \cite{Zhang:2016ga}.'' Recently, an integrated experimental and modeling approach was employed to examine the responses of neurons and the surrounding collagen fibers to ligamentous matrix loading. This approach provided initial understanding of how macroscopic deformation is translated to neuronal loading and signaling \cite{Zhang:2016ga}. In this paper, we build on the work of Zhang et al. \cite{Zhang:2016ga} and examine the mechanical interaction between neuron and surrounding collagen gel.  In order to capture the fibrillar microstructure of the collagen gel surrounding the neuron, we use a volume-averaged multi-scale model \cite{Chandran:2007hy,Stylianopoulos:2007dp}. The multi-scale model has been previously used to model the passive mechanical contribution of cells in collagen gel, where the cell was represented with a simple spherical geometry \cite{Lai:2013fp}. In this paper, we expand on the previous work by considering a realistic geometry of the neuron, which is reconstructed from images taken experimentally. The multi-scale model is implemented in the adaptive multi-scale simulation infrastructure (AMSI) [reference for AMSI?].
+In early studies of tissue mechanics \citep{Fung1993}, the focus was on developing constitutive equations that described the mechanical behavior of a tissue as a continuous, homogeneous entity. Even the continuous tissue mechanics problem is extremely difficult, with issues such as viscoelasticity \citep{Limbert:2004ha,Pena:2010jl}, nonlinearity \citep{Fung1993}, multiphasicity \citep{Mow:1980,Simon:1992cx}, anisotropy \citep{Fung1993,Humphrey2001,Ehret:2009hh}, active stress generation \citep{Ambrosi:2011fb}, damage \citep{Alastrue:2007ck}, and growth and remodeling \citep{Humphrey:2002ga,Menzel:2012ip} all coming into play under various circumstances. Much of the work in biomechanics has attempted to capture these different complexities at a continuum level given the macroscopic nature of humans and the apparent continuity of the tissue when viewed on the macroscopic scale.
+
+More recently, however, it has been recognized that the essential unit that responds to a macroscopic load is in fact microscopic, such as a somatosensory nerve ending \citep{Quindlen:2016ik}, a chondrocyte within articular cartilage \citep{Guilak:2000ir}, a cell remodeling its scaffold in an engineered blood vessel \citep{Isenberg:2006cg,Syedain:2017br}, or - most relevant to the current work - a neurite undergoing physiological and excessive stretch in collagen constructs mimicking (spinal) ligaments \citep{Sperry:2017ez,Zhang:2017gr}. In each of these cases, a macroscopic, tissue-scale loading condition is transferred to the microscopic, cell-scale stress, which in turn drives the cellular response. If we hope to understand the microscopic response to a macroscopic load, a scale-bridging strategy is needed.
+
+The constrained-mixture approach \citep{Humphrey:2002ga} has been effective in predicting growth and remodeling at the continuum scale, but it does not account for the local cell stress that arises. As such, constrained-mixture models are not designed to address the effect of local strain field variations due to the presence of a cell, as observed experimentally in fibroblast-populated collagen gels \citep{Pizzo:2005hv}. 
+
+Inspired by classic work in the theory of composite materials \citep{Hashin:1962tm}, numerous studies have now been made where models are constructed of a cell surrounded by acellular material. In proposed cases, the approach employed is to place a cell of idealized shape (sphere or ellipsoid) in the center of the cubic domain made up of an acellular material. A notable extension is the multi-cell simulation study of Marquez, Genin, and Elson \citep{Marquez:2010dm}, in which cylindrical or ellipsoidal cells were progressively added to the system, and an exponential increase in the tangent moduli of the extracellular matrix was observed when the cells percolated the domain.  Another contribution \citep{Lai:2013fp} was the replacement of the closed-form constitutive equation with a multi-scale model that allows better representation of the extracellular matrix structure.
+
+In spite of these recent advances, there is still more work to be done in pursuing a realistic representation of the cell's or tumor's mechanical environment under a given tissue load. Perhaps the most salient missing feature of current models is the fact that the microscopic entity is rarely spherical in shape.  For example, cells spread and polarize within a collagen matrix, e.g., \citep{Guido:1993cm,Friedl:1998dl}, and a malignant tumor can have an extremely complex geometry \citep{Cristini:2003ja}. There is a compelling need for methods that can account for the detailed microscale geometry when downscaling mechanical information.
+
+Major barriers to a realistic representation of complex cell geometry include the generation of a model geometry from experimentally measured images and the subsequent mesh generation on that model geometry. Furthermore, the number of degrees of freedom required to represent properly the complex cell geometry is large, and when coupled with a multi-scale framework that is required to model the fibrous architecture of the extracellular matrix, the computational demand can become prohibitive. In this work, we addressed some of those challenges by developing a multi-scale model of a group of neurons embedded within a collagenous matrix. The objective in this work was to develop a general modeling strategy in which (1) confocal microscopy or another three-dimensional imaging modality is used to generate a realistic representation of a complex cell geometry, (2) that geometric model, along with the surrounding extracellular matrix, is converted to a finite-element mesh, (3) a multi-scale model is implemented on that mesh using a network microstructural model at each Gauss point \citep{Chandran:2007hy,Stylianopoulos:2007dp}, and (4) the solution of the mechanics problem is used to determine the distribution of strains within the cell. 
+
+Although the approach described herein is general, it is focused on the specific experimental system in which dorsal root ganglion (DRG) neurons are embedded in a collagen gel. This model system and others like it  \citep{Zhang:2016ga,Zhang:2017gr,Zhang:2017kq}, allow detailed study of the cellular mechanisms of neuronal injury in a more controllable environment than can be achieved in vivo. As such, it has the potential to provide insight into the mechanism of neuronal injury under mechanical load, with markers of neuronal injury being quantified in response to different macroscopic strains and/or strain rates \citep{Zhang:2016ga}. To summarize the experimental system, neurons were embedded in collagen gels to mimic the innervation of ligamentous tissue, such as that found in the spinal facet capsular ligament \citep{McLain1998RF,Kallakuri:2012ib} and the knee joint capsule \citep{Schultz1984RA,Khalsa:CKPnLlfY}. This in vitro system has been utilized to study the effects of macroscopic and microscopic scale tissue mechanics on neuronal responses in the context of pain. Previous studies using this and similar neuron-collagen culture models suggest that neuronal activation and pain signaling can be modulated by the macroscopic strain and collagen organization of the surrounding extracellular matrix \citep{Zhang:2016ga, Zhang:2017gr}. However, the system does not at present enable experimental evaluation of detailed neuronal mechanics, which is important for understanding the local mechanisms of neuronal mechanosensing and/or injury due to tissue loading. Therefore, an image-based multi-scale model that complements that neuron-collagen in vitro system is needed to investigate the relationships between macroscopic tissue deformations and mechanical changes in neurons. 
+
+The complex geometry of the neurons is incorporated into our model by employing tools \citep{simmetrix} that are capable of generating geometric models from experimental images \citep{Klaas_conference, Klaas:2013ug} and of meshing the resulting geometric model \citep{Shephard:2000vc}. Additionally, the large computational demands of a multi-scale model on the resulting mesh are accommodated by the adaptive multi-scale simulation infrastructure (AMSI) library \citep{Delalondre:2010kt,Tobin:2017ip}, which was designed to handle massively parallel simulations simultaneously on multiple scales. From this model, we observed strong strain amplification in the neurons due primarily to their complex geometry. The results provide a relation between the applied far field and the neuronal strain leading to the onset of pain.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Materials and Methods}
-To investigate the mechanical interaction between neuron and surrounding collagen gel, a geometric model and its corresponding finite-element mesh is generated from confocal images of an individual neuron from a neuronal culture that was developed to mimic innervation of collagenous tissue (see Ref.\ \citenum{Zhang:2016ga} for preparation of neuronal culture). Thereby, the complex geometry of the neuron is incorporated into our simulations and enables us to extend our findings to realistic physiological environments. In this section, the details for modeling a neuron that is embedded in a collagen gel is provided. 
+\section{Representation of Complex Cell Geometry}
 
-%=========================================================================================================
-\subsection{Generation of Model and Finite-Element Mesh from Experimental Images}
-Confocal images were taken from a neuronal culture that was developed to mimic innervation of collagenous tissue. \textcolor{red}{[Sijia: can you provide some details about how the images were obtained?]} The stack of confocal images are shown schematically in Fig.\ \ref{fig:image_to_model}(a). The confocal images are converted to a geometric model using Simmetrix's \textit{ImageToModel} tool \cite{simmetrix} and its corresponding mesh was generated using Simmetrix meshing tools \cite{simmetrix,Shephard:2000vc}. The neuron-in-gel model and its corresponding mesh is shown in Figs.\ \ref{fig:image_to_model}(b) and (c), respectively. 
+A realistic representation of complex cell geometry was generated from three-dimensional (3D) voxelated data that originated from a stack of image slices. In this work, confocal Z-stack images were taken from an unloaded 3D neuron-collagen culture system. Briefly, DRG were harvested from embryonic day 18 rats, dissociated and embedded in a collagen Type I gel (2mg/ml; Corning Inc; Corning, NY), using methods described in prior studies \citep{Cullen:2012gu, Zhang:2016ga, Zhang:2017gr}. The structure of neurons was visualized by fluorescence labeling of the cytoskeletal protein $\beta$III-tubulin (Abcam Cambridge, MA), as described previously \citep{Zhang:2016ga, Zhang:2017gr}. A Zeiss LSM 510 confocal microscope (Carl Zeiss Inc; Thornwood, NY) was used to image the neurons.  Z-stack images (2$\mu$m thick) were taken at a resolution of 0.22$\mu$m/pixel with a 40X objective. Five consecutive images, each having a thickness of 2$\mu$m, were used to reconstruct the neuronal structure in 3D. All images were segmented using \textit{ImageJ} \citep{Schneider:2012dw} based on the positive labeling of $\beta$III-tubulin for model construction, and speckle noise in the background was removed in Adobe Photoshop (Adobe Systems Incorporated; San Jose, CA). Sample raw confocal Z-stack images that were used in our model are shown in Fig.\ \ref{fig:Z-stack-images}. 
+%
+% Z-stack images from Neuron-in-gel-Analysis folder
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{ccc}
+\includegraphics[height=4.5cm]{figure/neuron_image-scale-bar} & 
+\includegraphics[height=4.5cm]{figure/neuron_image2} \\
+\includegraphics[height=4.5cm]{figure/neuron_image3} &
+\includegraphics[height=4.5cm]{figure/neuron_image4} 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:Z-stack-images} Sample of raw images taken from Zeiss LSM 510 confocal microscope that were used in our model. The scale bar in the top left image represents 50 $\mu$m and applies to all images. The images were stacked from top to bottom in the following order: top left, top right, bottom left, and bottom right.} 
+\end{figure}
+%
+
+The confocal images were converted to a 3D voxelated data set using \textit{ImageJ} \citep{Schneider:2012dw}. Noise in the voxelated data due to the limited level of contrast in the imaging technique is removed using a combination of erosion/dilation, manual reassignment, small object removal, and smoothing operations via the \textit{ImageToModel} tool \citep{Klaas:2013ug, Klaas_conference, simmetrix}. Once processed, the voxelated data are converted into a discrete geometry via an initial triangulation that is based on voxel level operations where mesh coarsening is not performed until after the surface triangulation has been smoothed \citep{Klaas:2013ug}. Quantization artifacts on the surface of the geometry due to the voxel nature of the data are removed using a smoothing algorithm that consists of three steps \citep{Klaas:2013ug}: (1) calculate the surface normal of the desired surface geometry at each mesh face based on the normals of neighboring mesh faces; (2) smooth surface normals on the mesh to obtain the normals of desired surface geometry; (3) adjust the mesh vertex positions iteratively to create a surface that matches the smoothed surface normals.
+
+Subsequently, the discrete geometry generated from the voxelated neuron-in-gel data was enclosed in a box that represents the domain of the collagen gel. The neuron-gel interface was treated as perfectly bonded. A graded mesh of 82,105 tetrahedral elements was generated on the non-manifold neuron-in-gel geometry using the SimModeler tool of Simmetrix Inc. \citep{Shephard:2000vc,simmetrix}. The neuron-in-gel voxelated data, discrete geometry, and corresponding mesh are shown in Fig.\ \ref{fig:image_to_model}. 
 %
 % (a) Schematic of image stack - images from N2P30/Neuron/sample2 folder. 
 % (b) Neuron-in-gel model. Image generated by simModeler.
@@ -123,121 +170,107 @@ Confocal images were taken from a neuronal culture that was developed to mimic i
 \begin{center}
 $
 \begin{array}{ccc}
-\includegraphics[height=3.5cm]{figure/ImageStack.pdf} & 
-\includegraphics[height=3.5cm]{figure/neuron-in-gel_labels.pdf} &
-\includegraphics[height=3.5cm]{figure/neuron-in-gel_mesh.pdf} \\
+\includegraphics[height=2.5cm]{figure/ImageStack.pdf} & 
+\includegraphics[height=2.5cm]{figure/neuron-in-gel_labels.pdf} &
+\includegraphics[height=2.5cm]{figure/neuron-in-gel_mesh.pdf} \\
 (a) & (b) & (c)
 \end{array}
 $
 \end{center}
-\caption{\label{fig:image_to_model} (a) Stack of confocal images of a neuron from neuronal culture. (b) Model of neuron embedded in collagen gel that is generated from Simmetrix's \textit{ImageToModel} tool \cite{simmetrix}. Regions in the neuron that are marked with dashed rectangles are the cell bodies, while those that are not marked constitute the axons of the neuron. The region enclosing the neuron is the collagen gel. (c) Cut in neuron-in-gel model showing the mesh generated from Simmetrix meshing tools \cite{simmetrix,Shephard:2000vc}. A mesh of ~80k tetrahedral elements is used for simulations in this work.}
+\caption{\label{fig:image_to_model} (a) Stack of confocal images of neurons from Fig.\ \ref{fig:Z-stack-images}. (b) Geometric model of neurons that are embedded in a collagen gel. The region enclosing the neurons is the collagen gel. (c) Cut in neuron-in-gel model showing the generated mesh. In (b), the neuron cell bodies are marked with dashed ovals. The axes of load directions corresponding to $0^{\circ}$, $45^{\circ}$, and $90^{\circ}$ and regions of neuron corresponding to different local axes are also schematically illustrated.}
 \end{figure}
 %
 
-%=========================================================================================================
-\subsection{Multi-Scale Modeling of Collagen Gel}
-Soft biological tissue consisting of collagen I has been adequately modeled using a multi-scale formulation based on volume-averaging \cite{Chandran:2007hy,Stylianopoulos:2007dp,Barocas:2007gk,Lai:2012ji,Lake:2012jm}. The multi-scale formulation consists of two scales: the microscopic scale that represents the fiber level and the macroscopic scale that represents the tissue level. The mathematical formulation for the volume-averaged multi-scale method is summarized here. For a detailed formulation, see Refs.\ \citenum{Chandran:2007hy,Stylianopoulos:2007dp}. The choice of input parameters for the multi-scale model, which are based on experimental values, is then described. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Multi-Scale Method for Modeling Collagen Gel}
+\label{sec:multi-scale_method}
+Collagen gels have been modeled in the past using a multi-scale formulation based on volume averaging of fiber-network representative volume elements (RVEs) \citep{Chandran:2007hy,Stylianopoulos:2007dp,Lai:2012ji,Lake:2012jm}. Such a multi-scale formulation is also employed in this study to model the collagen gel surrounding the neurons. The multi-scale formulation consists of two scales: the collagen-network scale on which the network of collagen fibrils is represented explicitly, and the macroscopic scale that represents the continuum tissue level. Quantities corresponding to the collagen-network (or microscopic) and macroscopic scales are denoted with $(m)$ and $(M)$ superscripts, respectively. 
 
-%----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Mathematical Formulation}
-The microscopic scale is represented by a collagen network that defines the representative volume element (RVE). In our model, each RVE is generated from a Delaunay triangulation of randomly placed seed points - the edges of the triangulation represent the fibers of the network. Fiber networks with network density (total length of fibers/total number of fibers) of 100 ($\pm$ 1) were used in our simulations where the force on each fiber is
-%
+The collagen-network scale is represented by a fiber network, which defines the RVE. Each RVE is generated from the Delaunay triangulation of randomly placed seed points - the edges of the triangulation represent the fibers of the network. Each fiber only carries an axial load, with the axial forces in tension and compression given by 
+%%
+%\begin{equation}
+%T^{(m)} =
+%\begin{cases}
+%\frac{E_f A_f}{B} \left[ \exp(0.5 B(\lambda_f^2 - 1)) - 1\right] & \text{if } \lambda_f \le \lambda_S \\
+%H_S \lambda_f + h_S & \text{if } \lambda_f > \lambda_S
+%\end{cases}
+%\label{eq:fiber_force_axial}
+%\end{equation}
+%%
+%and
+%%
+%\begin{equation}
+%T^{(m)} =
+%\begin{cases}
+%\frac{E_f A_f}{B} \left[ \exp(0.5 B(\lambda_f^2 - 1)) - 1\right] & \text{if } \lambda_f \ge \lambda_C \\
+%H_C  \lambda_f + h_C & \text{if } \lambda_f < \lambda_C 
+%\end{cases},
+%\label{eq:fiber_force_compression}
+%\end{equation}
+%%
 \begin{equation}
-T_i^{(m)} = \frac{E_f A_f}{B} \left[ \exp(B\varepsilon_f^{(m)}) - 1\right],
+T^{(m)} =
+\begin{cases}
+H_C  \lambda_f + h_C & \text{if } \lambda_f < \lambda_C \\
+\frac{E_f A_f}{B} \left[ \exp(0.5 B(\lambda_f^2 - 1)) - 1\right] & \text{if } \lambda_f \in [\lambda_C, \lambda_S] \\
+H_S \lambda_f + h_S & \text{if } \lambda_f > \lambda_S
+\end{cases}
 \label{eq:fiber_force}
 \end{equation}
 %
-where $E_f$ is the linear modulus of the collagen fiber, $A_f$ is the fiber cross-sectional area, $B$ is a constant, and $\varepsilon_f \equiv 0.5(\lambda_f - 1)$ is the fiber's Green strain, where $\lambda_f$ is the fiber stretch ratio.  The superscripts $(m)$ indicate values of the microscopic scale. The boundary deformations for each RVE is determined by the macroscopic deformation state of the macroscopic scale (down-scaling).
+where 
+%
+\begin{align*}
+&E_f: \text{linear modulus of a collagen fiber.} \\
+&A_f: \text{cross-sectional area of fiber.} \\
+&B: \text{constant parameter that controls nonlinearity.} \\
+&\lambda_f \equiv \frac{l}{l_0} \text{ where } l \text{ and } l_0 \text{ are the current and initial lengths, respectively, of the fiber. } \\
+&\lambda_S: \text{ fiber stretch value at which the fiber relation transitions from nonlinear to linear.} \\
+&\lambda_C: \text{ fiber compression value at which the fiber relationship transitions from nonlinear to linear.} \\
+&H_n \equiv E_f A_f\lambda_n \exp(0.5B(\lambda_n^2 - 1)) \text{ for } n=S \text{ or } C.\nonumber\\
+&h_n \equiv \frac{E_f A_f}{B}\left[\exp(0.5 B (\lambda_n^2-1))-1\right] -H_n \lambda_n \text{ for } n=S \text{ or } C. 
+\end{align*}
+%
 
-Upon solving for fiber-force equilibrium at each RVE, the microscopic scale is coupled to the macroscopic scale via volume averaging, where the elements of the macroscopic Cauchy stress tensor can be calculated from the equilibrium microscopic fiber forces by (up-scaling)\cite{Chandran:2007hy,Stylianopoulos:2007dp}
+The fiber force vs. stretch in tension transitions from a nonlinear to linear relationship when the fiber is stretched beyond $\lambda_S$, while the fiber force in compression transitions from a nonlinear to linear relationship when the fiber is compressed below $\lambda_C$. The transition to a linear fiber force relationship for large fiber stretch in tension is consistent with experimental measurements of single collagen fibers \citep{Eppell:2006hh,Svensson:2010fr}. 
+
+Displacement boundary conditions are imposed in order to solve for network equilibrium in the RVE. The displacements at the corners of the RVE are dictated by the deformation state of the macroscopic scale via
 %
 \begin{equation}
-\sigma_{ij}^{(M)} = \frac{1}{V^{(m)}} \sum_{n \in bcl} {}^n x_i^{(m)} {}^n T_j^{(m)}.
+u^{(c,m)}_i = (F^{(M)}_{ij} - \delta_{ij}) \frac{x^{(c,m)}_j}{L^{(m)}},
+\label{eq:downscaling}
+\end{equation}
+%
+where $F^{(M)}_{ij}$ is the deformation gradient tensor of the macroscopic scale, $u^{(c,m)}$ are the displacements at the corners of the RVE,  and $x^{(c,m)}/L^{(m)}$ are the coordinates of the corners of the RVE. In Eq.\ \eqref{eq:downscaling}, $x^{(c,m)}_j$ are coordinates of a dimensionless computational domain that is a cube spanning the domain defined by (-0.5,0.5) in each of the coordinate axes. The scale conversion, $1/L^{(m)}$, relates the unit lengths between the computational and physical domains. The scaling parameter, $L^{(m)}$, is determined by comparing the average fiber length in the RVEs to the average fiber length in the collagen gel of density 2 mg/mL used in \citep{Zhang:2016ga}. The mean fiber length in such a network is 1.81 $\mu$m \citep{Lindstrom:2013gd}, while the mean segment length in the RVEs used in this work is 0.26. Based on these values $L^{(m)} = 7$ $\mu$m.
+
+Equation \eqref{eq:downscaling} is valid because the center of the RVE is defined at the origin of the computational domain. We control the motion of all nodes on the surface of the RVE and allow the interior degrees of freedom to relax such to minimize the RVE potential energy. The displacements on each node lying on the surface of the RVE are determined via linear interpolation of $x^{(c,m)}_j$. 
+
+Upon solving for network equilibrium in each RVE, the volume-averaged Cauchy stress tensor of the collagen-network scale is computed from the forces acting on nodes that lie on the surface of the RVE (bounday cross-links) \citep{Chandran:2007hy}
+%
+\begin{equation}
+s_{ij}^{(m)} = \frac{1}{V^{(m)}} \sum_{\text{boundary cross-links}} x_i^{(m)} T_j^{(m)} ,
+\label{eq:micro_stress_discrete}
+\end{equation}
+%
+where $V^{(m)}$ is the current volume of the RVE, $T_j^{(m)}$ is the $j^{th}$ component of the fiber force, and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor. The macroscopic volume-averaged Cauchy stress tensor is determined from scaling $s_{ij}^{(m)}$ by  $L^{(m)}$:
+%
+\begin{equation}
+\sigma_{ij}^{(M)} = s_{ij}^{(m)}\left(\frac{1}{L^{(m)}}\right)^2.
 \label{eq:macro_stress_discrete}
 \end{equation}
 %
-In Eq.\ \eqref{eq:macro_stress_divergence}, ${}^nx_i^{(m)}$ is the $i^{th}$ coordinate of the $n^{th}$ cross-link on the boundary of the RVE ($bcl$) and ${}^nT_j^{(m)}$ is the $j^{th}$ component of the internal force of the $n^{th}$ cross-link on the boundary. The superscripts $(M)$ indicate values of the macroscopic scale. The Cauchy stress tensor obtained from the microscopic scale are used to solve the macroscopic force balance \cite{Chandran:2007hy,Stylianopoulos:2007dp}
+This scaling is needed due to the difference in length scales between the physical macroscopic domain and the non dimensional microscopic computational domain. The averaged Cauchy stress tensor of Eq.\ \eqref{eq:macro_stress_discrete} is used to solve the volume-averaged macroscopic force balance \citep{Chandran:2007hy}
 %
 \begin{equation}
 \sigma_{ij,i}^{(M)} = \frac{1}{V^{(m)}} \int_{\partial V^{(m)}} \left( s_{ij}^{(m)} - \sigma_{ij}^{(M)} \right)u_{k,i}^{(m)} n_k dA^{(m)},
 \label{eq:macro_stress_divergence}
 \end{equation}
 %
-where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale, $n_k$ is the unit normal vector, and $s_{ij}^{(m)}$ are elements of the microscopic stress tensor. The right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} accounts for the correlation between the inhomogeneous displacement of the RVE boundary and local inhomogeneities in the stress field. \textcolor{red}{[The right-hand side is currently set to zero in our simulations.]}
+where $u_k^{(m)}$ is the displacement of the RVE boundary on the microscale and $n_k$ is the unit normal vector of the corresponding surface. Equation \eqref{eq:macro_stress_divergence} arises from integration of the microscopic-scale (RVE) Cauchy stress balance, $\sigma_{ij,i}^{(m)} = 0$. If the RVE did not deform, then the averaged equation would just be $\sigma^{(M)}_{ij,i}=0$. When the RVE deforms, however, and that deformation is position-dependent, then the average of the divergence of the stress ($\sigma_{ij,i}^{(m)}$) is no longer equal to the divergence of the average stress ($\sigma_{ij,i}^{(M)}$), and a correction term must be introduced, analogous to the corresponding term in the Reynolds transport theorem \citep{Whitaker-1999}. This term is expressed by the right-hand side of Eq.\ \eqref{eq:macro_stress_divergence} and accounts for the correlation between RVE stress and boundary displacement.
 
-%----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Parameterization of fiber network}
-The RVEs used in the multi-scale simulations are generated in a unit-cube compute domain that ranges from -0.5 to 0.5. In order to couple the Cauchy stress from microscopic to the macroscopic scale, the compute RVE must be properly scaled to the physical domain. In this study, the scaling between the compute and physical domains is determined by comparing the average fiber length in the RVEs to that in reconstituted collagen type I networks \cite{Lindstrom:2013gd} with collagen concentration of 2g/L. The average fiber length in the RVEs is 0.26 while that in the reconstituted collagen type I network is 1.81 $\mu$m \cite{Lindstrom:2013gd}. Based on these average lengths, a unit length in the compute  domain (average length is 0.26) is equivalent to 7 $\mu$m in the physical domain (average length is 1.81 $\mu$m); the scaling of $L=7 \ \mu$m is determined from the ratio 1.81 $\mu m$ / 0.26. Along the same line of argument, the Cauchy stresses calculated in the compute domain are scaled by $1/L^2$ to obtain Cauchy stresses for the physical domain.
-
-To solve the microscopic scale fiber-force problem, the parameters in Eq.\ \eqref{eq:fiber_force} must be specified. The value of $A_f$ is set according to Ref.\ \citenum{Dutov:2016gu} where the fiber radius of rat tail collagen I was measured to be 162 $\mu$m. The values for $E_f$ and $B$ are set by fitting to experimentally measured stress-strain curves of rat tail collagen I gels (see Ref.\ \citenum{Zhang:2016ga} for preparation of collagen samples). \textcolor{red}{[Sijia: can you provide experimental details for measuring stress-strain curve?]}. The stress-strain curves calculated from simulation and measured experimentally are shown in Fig.\ \ref{fig:fiber_param}(a), where $E_f = 200$ kPa and $B=20$ for the RVEs used in the simulation. 
-%
-% (a) stress-strain curve from N2P178/1-NewParams_Cube/stress-strain folder.
-% (b) fiber force curve from N2P177/LRT_Compression folder.
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=5cm]{figure/stress_strain.pdf} &
-\includegraphics[height=5cm]{figure/FiberForceRelation.pdf} \\ 
-(a) & (b) 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:fiber_param} Plots of (a) stress-strain curve calculated from simulation (blue ``x'') and measured experimentally (black line),  and (b) fiber-force relationship for RVEs used in the simulation (blue ``x") and from Eq.\ \eqref{eq:fiber_force} (black line). The parameters of the fiber-force relationship (Eq.\ \eqref{eq:fiber_force}) are $E_f = 200$ kPa and $B=20$. The fiber force used in the simulation transitions to a linear fiber force at 13$\%$ fiber stretch - the stiffness in tension beyond 13$\%$ fiber stretch ($E_T$) is 29.7 kPa. The stiffness in compression ($E_C$) is set to the slope of Eq.\ \eqref{eq:fiber_force} at zero fiber stretch, which is 1.65 kPa.}
-\end{figure}
-%
-
-In order to achieve the stress-strain fit shown in Fig.\ \ref{fig:fiber_param}(a), the exponential fiber force of Eq.\ \eqref{eq:fiber_force} is made to transition to a linear fiber-force relationship at a fiber stretch ratio of $13\%$ in tension;  the tensile stiffness for each fiber in the RVE stays constant at 29.7 kPa for fiber stretch ratios above $13\%$. Additionally, the fiber stiffness in compression is set the slope of Eq.\ \eqref{eq:fiber_force} at zero fiber stretch, which is 1.65 kPa in order to prevent the RVE fiber network from collapsing at large deformations; the fiber force from Eq.\ \eqref{eq:fiber_force} and that used in the simulations are shown in Fig.\ \ref{fig:fiber_param}(b).
-
-The Poisson ratio is measured from the volume change of the domain via
-%
-\begin{equation}
-\nu = \frac{1}{2}\left(1- \frac{\Delta V}{V_0}\frac{l_0}{\Delta l}\right).
-\label{eq:poisson-ratio}
-\end{equation}
-%
-The Poisson ratio as a function of applied bulk strain for the fiber-force relationship used to calculate the stress-strain curve in Fig.\ \ref{fig:fiber_param}(a) is plotted in Fig.\ \ref{fig:fiber_param2}(a). The Poisson ratio increases as a function of applied strain, and becomes larger than 0.5 at an applied strain of approximately $15\%$. The behavior of increasing Poisson ratio is consistent with experiments \cite{Vader:2009js}, however the values of Poisson ratio measured experimentally is significantly larger than what is seen in our simulations. \textcolor{red}{This difference in the Poisson ratio can be attributed to the inability of our continuum model to represent the mechanisms that arise in actual collagen fiber networks.}
-%
-% (a) Poisson ratio curve from N2P178/1-NewParams_Cube/poisson-ratio folder.
-% (b) Alignment curve from N2P178/1-NewParams_Cube/alignment folder.
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[height=5cm]{figure/PoissonRatio.pdf} &
-\includegraphics[height=5cm]{figure/alignment.pdf} \\ 
-(a) & (b)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:fiber_param2} Plots of (a) Poisson ratio calculated from simulation and (b) fiber alignment metric $P_2$ calculated from simulation (blue ``x") and measured experimentally (black line). Simulation results are calculated with fiber-force relationship used to obtain stress-strain curve in Fig.\ \ref{fig:fiber_param}.}
-\end{figure}
-%
-
-The fiber alignment in innervated collagenous tissue was measured using the QPLI method \cite{Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ is measured in each pixel. \textcolor{red}{[Sijia: can you describe experimental setup for QPLI method?]} To compare fiber alignment that is measured experimentally and calculated from simulations, the orientation index $P_2$ is considered. The value of $P_2$ is calculated from the angle $\theta$ between fibers and the direction of alignment
-%
-\begin{equation}
-P_2 = \frac{3 <\cos^2\theta> - 1}{2},
-\label{eq:P2_simulation}
-\end{equation}
-%
-where $<a>$ denotes the average of $a$. The value of $P_2$ ranges from 1 ($\theta=0$ or $\pi$) in which the fibers are completely aligned to -1/2 ($\theta=\pi/2$) in which the fibers are orthogonal to the alignment direction. When $P_2=0$, the fiber network is randomly oriented. The orientation index $P_2$ can be calculated from $\alpha$ and $\delta$ of the QPLI method via
-%
-\begin{align}
-&P_2 = \int_0^{\pi} p(\theta) \cos^2\theta d\theta \nonumber\\
-&p(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{1-2\delta_i}{\pi} + \frac{4 \delta_i}{\pi}\cos^2(\theta - \alpha_i)\right],
-\label{eq:P2_experiment}
-\end{align}
-%
-where $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The fiber alignment as a function of bulk applied strain calculated from simulation and measured experimentally is plotted in Fig.\ \ref{fig:fiber_param2}(b). As expected, the fibers become more aligned as applied strain increases - the alignment in the RVE is stronger than in experiment for the same amount applied strain. \textcolor{red}{[The stronger alignment in the RVE is likely due to the large coordination of Delaunay network used in our model.]}
-
-%=========================================================================================================
-\subsection{Constitutive Relationship to Model Neuron}
-Cross-linked microtubule bundles that are axially aligned are a major structural feature of axons, giving rise to anisotropic mechanical behavior \cite{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \cite{JavierBonet:2008uxa,Bonet:1998vc}. The alignment of the microtubule bundles decrease within the cell bodies causing the mechanical behavior to become more isotropic \textcolor{red}{[Need to find references that supports this]}. To capture such behavior, the cell bodies are modeled as a transversely isotropic hyperelastic material where the axial stiffness is a function of distance from the cell-body/axon interface - the axial stiffness is lowest at the center of the cell body. 
-
-%----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Mathematical Formulation}
-A compressible transversely isotropic neo-Hookean model is used to model \cite{Bonet:1998vc} the axons and cell bodies of the neuron. The elements of the Cauchy stress tensor and spatial elasticity tensor can be expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \cite{Bonet:1998vc}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Constitutive Relationship for Modeling of Neurons}
+Cross-linked axially-aligned microtubule bundles are a major structural feature of axons and give rise to macroscopic mechanical anisotropy \citep{Peter:2012fc}. To account for such mechanical anisotropy, the axons are modeled as a transversely isotropic hyperelastic material \citep{Bonet:1998vc,JavierBonet:2008uxa}. The elements of the Cauchy stress tensor and spatial (Eulerian) elasticity tensor are expressed in terms of neo-Hookean (nh) and transversely isotropic (trns) components \citep{Bonet:1998vc}
 %
 \begin{equation}
 \sigma_{ij} = \sigma^{\text{nh}}_{ij} + \sigma^{\text{trns}}_{ij} \ \ \text{ and } \ \ c_{ijkl} = c^{\text{nh}}_{ijkl} + c^{\text{trns}}_{ijkl},
@@ -256,7 +289,7 @@ respectively, where
 \label{eq:trns_iso}
 \end{align}
 %
-The constants of Eq.\ \eqref{eq:trns_iso} are defined as
+In Eq.\ \eqref{eq:trns_iso}, $b_{ij}$ are elements of the left Cauchy-Green strain tensor and $a_i$ is a component of the mapping of the direction of anisotropy in the undeformed state, $A_k$, to the current state via the deformation gradient, $F_{ik}$, via $a_i \equiv F_{ik}A_k$. $\lambda$ and $\mu$ are the Lam\'e constants that define the material properties of the isotropic component, while $\beta$, $\gamma$, and $\alpha$ are parameters that define the material properties of the anisotropic component. The parameters of Eq.\ \eqref{eq:trns_iso} can be written in terms of material constants as
 %
 \begin{align}
 &\lambda = \frac{2\mu (\nu+n\nu^2)}{m} \ \ \ \ \ \gamma = \frac{E_A(1-\nu)}{8m} - \frac{\lambda+2\mu}{8} + \frac{\alpha}{2} - \beta \nonumber\\
@@ -267,191 +300,383 @@ The constants of Eq.\ \eqref{eq:trns_iso} are defined as
 \label{eq:trns_iso_constants}
 \end{align}
 %
-where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In the cell bodies, the axial Young's modulus decreases as one moves away from the cell-body/axon interface towards the interior of the cell body by 
+where $\mu$ is the shear modulus, $G_A$ is the axial shear modulus, $\nu$ is the Poisson ratio, and $E_A$ is axial Young's modulus. In our analysis, the shear modulus is set to be isotropic such that $G_A=\mu$ and $\alpha = 0$. All the constants in Eq.\ \eqref{eq:trns_iso_constants} are set once all material constants ($\mu$, $G_A$, $\nu$, and $E_A$) are specified. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Parameter Specifications}
+
+\subsection{Parameters of Collagen Network}
+Collagen I gels identical to those in which the neurons were embedded were subjected to uniaxial tensile loading at 0.5mm/s up to 25$\%$ strain using an Instron 5865 (Instron, Norwood, MA), as described in  \cite{Zhang:2016ga}. The measured stress-strain curve is shown in Fig.\ \ref{fig:multi-scale_properties}(a). This data is used to calibrate three parameters ($E_f$, $B$, and $\lambda_S$) of the constitutive behavior of fibers of the collagen network. The prediction of the model gel is obtained with an RVE containing a network of density identical to that of the physical gel. Table \ref{table:multi-scale_parameters} shows the set of parameters used for the collagen network. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ l c l }
+\hline \hline
+Parameter & Specification & Source \\
+\hline 
+$E_f$ & 200 kPa & Fit to experimental data. \\
+$A_f$ & 0.0825 $\mu$m$^2$ & Based on \cite{Dutov:2016gu} \\
+$B$ & 20 & Fit to experimental data. \\
+$\lambda_S$ &1.13 & Fit to experimental data. \\
+$\lambda_C$ & 1.0 & Chosen by authors. \\ 
+$H_S$ & 297.25 $\mu$N & Calculated from $E_f$, $A_f$, $B$, and $\lambda_S$.\\
+$H_C$ & 16.5 $\mu$N & Calculated from $E_f$, $A_f$, $B$, and $\lambda_C$. \\
+$h_S$ & -322.74 $\mu$N & Calculated from $E_f$, $A_f$, $B$, $\lambda_S$, and $H_S$. \\
+$h_C$ & -15.67 $\mu$N & Calculated from $E_f$, $A_f$, $B$, $\lambda_C$, and $H_C$. \\
+$L^{(m)}$ & 7 $\mu$m & Based on mean segment length of RVE reported in Section \ref{sec:multi-scale_method}.\\ 
+\hline \hline
+\end{tabular}
+\end{center}
+\caption{Parameters of the constitutive behavior of the fiber network used to model the collagen gel.}
+\label{table:multi-scale_parameters}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+As seen in Fig.\ \ref{fig:multi-scale_properties}(a), a good fit to the experimental stress-strain curve was obtained using the parameters listed in Table \ref{table:multi-scale_parameters}. The value of $A_f$ was chosen according to \citep{Dutov:2016gu} where the fiber radius of rat tail collagen I was measured to be 162 nm. The parameters $E_f$ and $B$ were adjusted to capture the stiffening in the stress-strain curve at approximately 11$\%$ strain observed experimentally, while $\lambda_S$ was adjusted to capture the stiffness of the linear regime in the stress-strain curve at large strains. Since the fibers in this model only have axial forces, the value of $\lambda_C$ was selected to give a stiffness in compression that is significantly smaller than that in tension. This represents the softening associated with buckling or off-axis loading of fibers in compression. By choosing $\lambda_C = 1.0$, the response in compression remains linear for all strains encountered in simulations. The fiber-force vs.\ strain curve for the parameters listed in Table \ref{table:multi-scale_parameters} is plotted in Fig.\ \ref{fig:multi-scale_properties}(b).
+%
+% (a) fiber force curve from N2P177/LRT_Compression folder.
+% (c) Poisson ratio curve from N2P178/1-NewParams_Cube/poisson-ratio folder.
+% (d) Alignment curve from N2P178/1-NewParams_Cube/alignment folder.
+
+% (a) stress-strain curve from N2P178/1-NewParams_Cube/stress-strain folder.
+% (b) fiber force curve plotted in Figures/Figure3b/ForceRelations.m
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=5cm]{figure/stress_strain.pdf} &
+\includegraphics[height=5cm]{figure/FiberForceRelation.pdf} \\
+(a) & (b) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:multi-scale_properties} Plots of (a) model network and experimental gel stress-strain, and (b) model collagen fiber force vs.\ fiber-strain curve for parameters listed in Table \ref{table:multi-scale_parameters}. In (a), the result from simulation is plotted using black solid line, while experimentally measured data is plotted with blue dots. The line connecting the blue dots was added to aid visual interpretation. In (b), the values of $\lambda_C$ and $\lambda_S$ are marked as blue dashed and red dotted vertical lines, respectively. }
+\end{figure}
+%
+
+For the parameters in Table \ref{table:multi-scale_parameters}, fiber alignment was also examined. Although fibers in our simulations rearrange in 3D, a two-dimensional (2D) orientation index, $P_2$, is considered in order to make the connection with experimental observations. The value of $P_2$ is calculated from the angle $\theta$ between the projection of the fiber in the plane of analysis and the direction of stretch and is given by
 %
 \begin{equation}
-E_A^{cell} = \left(1 - \frac{D}{a}\right)E_A,
-\label{eq:cellEA}
+P_2 = 2 <\cos^2\theta> - 1,
+\label{eq:P2_simulation}
 \end{equation}
 %
-where $D$ is the distance of an interior point of the cell body to the closest cell-body/axon interface and $a$ is a constant that dictates how quickly $E_A$ decreases when moving from the cell-body/axon interface towards the interior of the cell body. The axial stiffness decreases more quickly for smaller values of $a$.
+where $<x>$ denotes the ensemble average of $x$ over all fibers. The value of $P_2$ ranges from 1 in which the fibers are completely aligned in the stretch direction to -1 in which all fibers are orthogonal to the stretch direction. When $P_2=0$, the fiber network is randomly oriented. 
 
-%----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Parameterization of cell body and axon}
-The value of $E_A$ is based on the study by Peter and Mofrad \cite{Peter:2012fc}, where the mechanical behavior of axonal microtubule bundles under tension were simulated with a discrete bead-spring model. To apply their results for microtubule bundles to our neuron model, we assume that only the microtubule bundles carry force in the axon and that the stress of the microtubule bundles can be redistributed over the cross-sectional area of the axon. Based on these assumptions, the axial stiffness of the axon can be related to the axial stiffness of the microtubule bundles ($E_{MTb}$) by
+Experimentally, the fiber alignment in innervated collagenous tissue was measured using quantitative polarized light imaging (QPLI) \citep{Quinn:2008df,Quinn:2009bf} where alignment angle $\alpha$ and retardation $\delta$ were measured in each pixel. The customized QPLI system used in these experiments \citep{Zhang:2016ga} is comprised of a fiber-optic light source (Dolan-Jenner Industries Inc., Boxborough, MA), a motor-controlled linear polarizer (Edmund Optics, Barrington, NJ) that rotates at 750 rpm, and a circular analyzer mounted to a high-speed camera (Phantom-v9.1; Vision Research Inc, Wayne, NJ) \citep{Zhang:2016ga}. The QPLI system was integrated with a mechanical testing device, and collagen I gels were placed between the rotating polarizer and the circular analyzer. Polarized light images were acquired during tensile loading at 500 fps with 14.5 pixel/mm resolution and processed using harmonic analysis to extract the alignment angle and retardation \citep{Tower:2002hk,Quinn:2008df}. The orientation index $P_2$ is calculated from $\alpha$ and $\delta$ of the QPLI method via (see Appendix \ref{app:P2_derivation})
+%
+\begin{align}
+&P_2 = 2 \int_0^{\pi} p(\theta) \cos^2\theta d\theta - 1 \nonumber\\
+&p(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{C-2\delta_i}{\pi C} + \frac{4 \delta_i}{\pi C} \cos^2(\theta - \alpha_i)\right],
+\label{eq:P2_experiment}
+\end{align}
+%
+where the probability distribution, $p(\theta)$, is a convenient approximation of the actual distribution of collagen orientation in the sample. In Eq.\ \eqref{eq:P2_experiment}, $\delta_i$ and $\alpha_i$ are the retardation and alignment angle, respectively, of the $i^{th}$ pixel. The proportionality constant $C$ relates $\delta_i$ to the difference in the eigenvalues of the orientation tensor. A method to infer $C$ based on the experimental conditions was not available. Hence, we fit $C$ to the experimental $P_2$ vs.\ strain curve. When $C=0.5$, good agreement between the experimental and simulated fiber orientation was achieved (Fig.\ \ref{fig:fiber_alignment}). Such agreement between simulation and experimental results reinforces our choice of the RVE fiber network parameters listed in Table \ref{table:multi-scale_parameters}.
+%
+%  Alignment curve from N2P178/1-NewParams_Cube/alignment folder.
+% Updated curve from ../Figures/Figure4/compare_P2.m
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{c}
+\includegraphics[height=5cm]{figure/alignment.pdf} 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:fiber_alignment} Fiber aligment metric $P_2$ of simulation using parameters listed in Table \ref{table:multi-scale_parameters} and of experimental results using $C=0.5$ for Eq.\ \eqref{eq:P2_experiment}. Results from simulation plotted using black solid line, while experimentally measured data are plotted in blue dots.}
+\end{figure}
+%
+%\textcolor{red}{[According to Professor Picu, alignment is more pronounced at low strains and less pronounced at high strains if deformation is non-affine (compared to the case of affine deformation). The behavior in Fig.\ \ref{fig:fiber_param2}(b) is in agreement if it is valid that the Delaunay fiber network that we are using deforms affinely due to the the large coordinate of the Delaunay network used in our model.]}
+
+\subsection{Parameters of the Constitutive Description of the Neurons}
+
+The value of $E_A$ in Eq.\ \eqref{eq:trns_iso_constants} is based on the study by Peter and Mofrad \citep{Peter:2012fc}, where the mechanical behavior of axonal microtubule bundles under tension was simulated with a discrete bead-spring model. To apply their results for microtubule bundles to our neuron model, we assume that only the microtubule bundles carry force in the axon and that the stress of the microtubule bundles can be redistributed over the cross-sectional area of the axon. Since the microtubules are the stiffest component of the cytoskeleton \citep{Fletcher:2010ku}, the mechanical contribution from the actin filaments (membrane cortex) is ignored. Based on these assumptions, the axial stiffness of the axon can be related to the axial stiffness of the microtubule bundles, $E_{MTb}$, by
 %
 \begin{equation}
 E_A = \frac{E_{MTb} A_{MTb}}{A_A},
 \label{eq:EA_EMTb_relation}
 \end{equation}
 %
-where $A_{MTb}$ and $A_A$ are the cross-sectional areas of the microtubule bundle and axon, respectively. 
+where $A_{MTb}$ and $A_A$ are the cross-sectional areas of the microtubule bundle and axon, respectively. Peter and Mofrad \citep{Peter:2012fc} suggested that the stress-strain relationship of the microtubule bundle is well represented by a power-law fit that results in a strain-dependent elastic modulus. For this study, $E_{MTb}$ was taken to be $1\times 10^5$ kPa, which corresponds to a low strain of less than 0.1$\%$. The value of $A_{MTb}$ was determined to be 0.00933 $\mu$m${}^2$ based on the diameter of each microtubule and the number of microtubule cross sections within a microtubule bundle, see Ref.\ \citep{Peter:2012fc} for schematic. We assume that the cross-section of the microtubule bundle contains 19 rows of microtubules, each with a diameter of 25 nm. Lastly, the value of $A_A$ was determined to be 13.3 $\mu$m${}^2$, based on an average axon diameter of approximately 4 $\mu$m in the neuron. $E_A$ is determined from Eq.\ \eqref{eq:EA_EMTb_relation} to be 70 kPa. 
 
-The cross-sectional areas and elastic moduli for the axon are listed in table \ref{table:axon_parameters}. The transverse stiffness of the cell body and axon is set to 1.5 kPa according to AFM measurements of the neuron soma from Simon et al. \cite{Simon:2016ig}. We assume that the axon and cell body have the same mechanical behavior in the transverse direction.
+The parameters used in Eq.\ \eqref{eq:trns_iso_constants} for modeling the neuron structure are listed in Table \ref{table:neuron_parameters}. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht]
 \begin{center}
 \begin{tabular}{ l c l }
 \hline \hline
-$A_{MTb}$ & 0.344 $\mu$m${}^2$ & calculated according to schematic in Fig.\ \ref{fig:microtubule_bundle}. \\
-$A_A$ & 19.6 $\mu$m${}^2$ & calculated from average axon diameter. \\
-$E_{MTb}$ & $4\times 10^{4}$ kPa & this is an average value - the elastic modulus of the microtubule bundle increases linearly with strain \cite{Peter:2012fc}. \\
-$E_A$ & 70 kPa  & calculated from Eq.\ \eqref{eq:EA_EMTb_relation}. \\ \hline \hline
+Parameter & Specification & Source\\
+ \hline
+$E_A $ & 70 kPa & Calculated from Eq.\ \eqref{eq:EA_EMTb_relation}. \\ 
+$E_T $ & 1.5 kPa & Based on \cite{Simon:2016ig} \\
+$\nu $ & 0.3 & Chosen by authors. \\
+$\mu $ & 0.577 kPa & Calculated from $E_T$ and $\nu$. \\ 
+$G_A (= \mu) $ & 0.577 kPa & Shear modulus assumed to be isotropic.\\ 
+$t$ & 30 $\mu$m & From analysis in Section \ref{sec:results}. \\
+\hline
+$n $ & 46.7 & Calculated from $E_A$, $\mu$, and $\nu$. \\
+$m $ & -7.7 & Calculated from $\nu$ and $n$. \\
+$\lambda $ &  -0.67 kPa & Calculated from $\nu$, $\mu$, $n$, and $m$. \\
+$\alpha $ & 0 kPa & Calculated from $\mu$ and $G_A$. \\
+$\beta $ & 0.154 kPa & Calculated from $\mu$, $\nu$, $n$, and $m$. \\
+$\gamma $ & -1.01 kPa & Calculated from $E_A$, $\nu$, $m$, $\lambda$, $\mu$, $\alpha$, and $\beta$.\\
+\hline \hline
 \end{tabular}
 \end{center}
-\caption{Parameters for axon structure.}
-\label{table:axon_parameters}
+\caption{Parameters for constitutive model of neuron.}
+\label{table:neuron_parameters}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%image from BiotissueMeetings/Biotissue_Meeting_3_17_17
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{c}
-\includegraphics[height=5cm]{figure/microtubule_bundle.pdf} 
-\end{array}
-$
-\end{center}
-\caption{\label{fig:microtubule_bundle} Cross-section of microtubule bundle based on dimensions from Ref.\ \citenum{Peter:2012fc}. Diameter of a microtubule (black dot) is 25nm and edge-to-edge spacing between microtubules is 20nm. Figure is not drawn to scale. }
-\end{figure}
+The transverse stiffness of the axons and cell bodies was set to 1.5 kPa based on the measurements of Simon et al.\ \citep{Simon:2016ig}. The six constants in Eq.\ \eqref{eq:trns_iso_constants} are all determined when the values listed in Table \ref{table:neuron_parameters} are fully specified.
+
+The axial stiffness of the cell body was chosen based on the relative alignment of the microtubules. The microtubules transition from an almost perfectly aligned state in the axon to a generally unaligned state within the cell body \citep{MofradBook}. Within the cell body, the microtubules become progressively less aligned with the center of the cell body having the least alignment. Consequently, the axial stiffness within the cell body decreases and is lowest at the center. The cell bodies are modeled as a transversely isotropic hyperelastic material of axial stiffness represented by a function of position within a cell, Eq.\ \ref{eq:cellEA}. 
 %
-
-%=========================================================================================================
-\subsection{Multi-scale Implementation via AMSI}
-\textcolor{red}{Bill can briefly describe implementation of AMSI here.}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results and Discussion}
-To gain insight about the interactions within innervated collagenous tissue, we examine the mechanical behavior of our embedded neuron model when the surrounding collagen gel is loaded in different directions. The load directions relative to the neuron structure are illustrated in the schematic of Fig.\ \ref{fig:analysis_schematic}(a). Loads of up to 20$\%$ bulk strain are considered to capture the behavior below and above the pain threshold of $16\%$ bulk strain \cite{Zhang:2016ga}. For the results in this section, $a=30$ is used for $E_A^{cell}$ in Eq.\ \eqref{eq:cellEA}. The resulting axial Young's modulus in the neuron is plotted in Fig.\ \ref{fig:analysis_schematic}(b).
+\begin{equation}
+E_A^{cell} = \left(1 - \frac{D}{t}\right)E_A.
+\label{eq:cellEA}
+\end{equation}
+%
+In Eq.\ \eqref{eq:cellEA} $D$ is the distance from an interior point of the cell body to the closest axon, and $t$ is a constant describing the rate of change of $E_A^{cell}$. The geometry shown in Fig.\ \ref{fig:image_to_model}(b) indicates that the parameter $D$ ranges from 9 to 25 $\mu$m. We select a value of $t=30$ $\mu$m for our calculations. The axial stiffness of the neuron structure evaluated based on these parameters is shown in Fig.\ \ref{fig:axial_stiffness}.
 %
 %image for axial young's modulus from N2P178/3-Neuron_FT folder
 \begin{figure}[ht]
 \begin{center}
 $
-\begin{array}{cc}
-\includegraphics[height=4cm]{figure/AngleLoadingSchematic.pdf} &
-\includegraphics[height=3.5cm]{figure/axial_youngs_modulus_a30.pdf} \\
-(a) & (b)
+\begin{array}{c}
+\includegraphics[height=3.5cm]{figure/axial_youngs_modulus_t30.pdf} 
 \end{array}
 $
 \end{center}
-\caption{\label{fig:analysis_schematic} (a) Schematic showing load directions corresponding to 0 (solid black arrows), 45 (dotted arrows), and 90 (stripped arrows) degrees relative to the neuron structure. (b) Plot of axial Young's modulus for $a=40$ in Eq.\ \eqref{eq:cellEA} and $E_A=70$ kPa.}
+\caption{\label{fig:axial_stiffness} Axial stiffness of neuron structure analyzed.}
 \end{figure}
 %
-%=========================================================================================================
-\subsection{Strain Distributions in Neuron}
-The complementary cumulative distribution function (cdf) for the maximum principal strain is calculated for the neuron structure via
-%
-\begin{equation}
-1 - cdf(x) = 1 - \sum_{i=1}^x f(i) = 1 - Pr[X \le x],
-\label{eq:comp_cdf}
-\end{equation}
-%
-where $f$ is a probability density function and $X$ is a random variable (maximum principal strain in our case). Equation \ref{eq:comp_cdf} measures the probability that the neuron experiences a maximum principal strain of \textit{at least} $x$. The complementary cdf for the neuron structure is shown in Fig.\ \ref{fig:neuron_cdf} for different angles of applied load.
-%
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_neuron_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_neuron_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_neuron_compare_stps_farfield.pdf} \\
-(a) & (b) & (c)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_cdf} Complementary cdfs of normalized maximum principal strain ($\varepsilon_1$) in the neuron for applied loads at (a) 0 degrees, (b) 45 degrees, and (c) 90 degrees. For each angle, the complementary cdfs for bulk strains below and at the pain threshold (16$\%$) are shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
-\end{figure}
-%
-For all angles of applied load considered, the neuron experiences local strains that are significantly larger than the applied load on the surrounding collagen gel. The largest local strain in the neuron is at least 3 times that of the bulk strain for all applied loads, with the amplification factor being more than 6 times when the applied load is at 90 degrees (see tails of distributions in Fig.\ \ref{fig:neuron_cdf}).
+The transition in the axial stiffness within the cell bodies presented in Eq.\ \eqref{eq:cellEA} is artificial. To understand how this transition affects the final strain distribution in the neuron, the transition rate was varied by adjusting $t$ in Eq.\ \eqref{eq:cellEA}. Values of $t = 28$ $\mu$m, 30 $\mu$m, and 50 $\mu$m were considered (discussed in Appendix \ref{app:vary_t}), and the strain distribution within the neurons was found to be insensitive to the parameter $t$.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation}
+\label{sec:implementation}
 
-The shape and spread of the strain distributions in the neuron vary with the bulk strain for an applied load at 90 degrees - the spread of the distributions increase with larger bulk strain. In contrast, the shape and spread of the strain distributions in the neuron remain relatively constant for applied loads at 0 and 45 degrees. Additional insight can be gained by separating the strain distribution of the neuron into contributions from the cell bodies and axons. The complimentary cdfs for the cell bodies and axons are plotted in Fig.\ \ref{fig:components_cdf}.
-%
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_cellbodies_compare_stps.pdf} & 
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_cellbodies_compare_stps_farfield.pdf} \\
-(a) & (b) & (c) \\
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_cdf_axons_compare_stps.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_cdf_axons_compare_stps_farfield.pdf} \\
-(d) & (e) & (f)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:components_cdf} Complementary cdfs of normalized maximum principal strain ($\varepsilon_1$) in the cell bodies ((a)-(c)) and axons ((d)-(f)) for applied loads at (a,d) 0 degrees, (b,e) 45 degrees, and (c,f) 90 degrees. For each angle, the complementary cdfs for bulk strains below and at the pain threshold (16$\%$) are shown. The values of $\varepsilon_1$ are normalized by the applied bulk strain ($\varepsilon_{\text{bulk}}$) that is applied to the surrounding collagen gel.  }
-\end{figure}
-%
+%\input{figure/multi-scale-coupling-data.pdf_tex}\label{fig:coupling-data}
+\subsection{Adaptive multi-scale simulation infrastructure}
+Our multi-scale model is implemented using the adaptive multi-scale simulation infrastructure (AMSI) \citep{Tobin:2017ip}, which is designed to support massively parallel simulations on multiple scales. AMSI accommodates the computational demands of the multi-scale simulation by combining existing single-scale analysis codes into multi-scale analyses. The macroscopic simulation code and the microscopic simulation codes are independent codes coupled through the AMSI libraries. AMSI manages the parallel execution space for each code, as well as the parallel communication responsible for the transmission of required data between them. 
 
-The strain distribution in the cell bodies for the applied load at 45 degrees is essentially identical for all bulk strains, \textcolor{red}{which indicates the cell bodies are deforming affinely with the surrounding collagen gel.} For the same angle of applied load there are slight variations in the distributions for the axons, which account for the small variations seen in the distributions of the neuron (see Fig.\ \ref{fig:neuron_cdf}(b)). For the applied load at 0 degrees, variations in the distributions of the cell bodies and axons for different bulk strains become more apparent. For the cell bodies, the distribution shifts to the right with larger bulk strains while the shape and spread of the distributions remain relatively constant. For the axons, the distributions shift to the left and the spread of the distributions decrease with larger bulk strains. The variations in the distributions of the cell bodies and axons ultimately cancel out leaving the overall distributions in the neuron relatively constant for different bulk strains (see Fig.\ \ref{fig:neuron_cdf}(a)). 
-
-For the applied load at 90 degrees, the distributions of the cell bodies and axons shift to the right and the spread of the distributions grow with larger bulk strains. The subtle step feature of the distribution in the neuron (see Fig.\ \ref{fig:neuron_cdf}(c)) becomes apparent for the strain distributions in the cell bodies. This step feature indicates that there are two regimes of strain in the cell bodies, which are clearly seen in the plots of maximum principal strain in Figs.\ \ref{fig:neuron_MPS}(e) and (f) - the strain in the cell body that is parallel to the direction of applied load at 90 degrees is significantly lower than the other two cell bodies. \textcolor{red}{[What are the implications of widening strain distribution?]}
+%Each of the scales in the simulation supplies information required to inform the requirements of the multi-scale communication and the distribution of inter-scale coupling data in both the parallel execution space and the problem domain. This data is used by AMSI to communicate the coupling data required at each phase of simulation, and to accommodate dynamic run-time operations such as load balancing. A discussion of the underlying design considerations of AMSI can be found in \citep{Delalondre:2010kt}.
 %
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{cc}
-\includegraphics[width=8cm]{figure/MPS_rot0_strain10.pdf} & 
-\includegraphics[width=8cm]{figure/MPS_rot0_strain16.pdf} \\
-(a) & (b) \\ 
-\includegraphics[width=8cm]{figure/MPS_rot45_strain10.pdf} &
-\includegraphics[width=8cm]{figure/MPS_rot45_strain16.pdf} \\
-(c) & (d) \\
-\includegraphics[width=8cm]{figure/MPS_rot90_strain10.pdf} & 
-\includegraphics[width=8cm]{figure/MPS_rot90_strain16.pdf} \\
-(e) & (f)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:neuron_MPS} Maximum principal strain for applied loads at 0 degrees (first row), 45 degrees (second row), and 90 degrees (third row). Bulk strains of 10$\%$ and 16$\%$ are considered. Note that the color bar ranges from 5$\%$ to 30$\%$ strain for bulk strain of 10$\%$ and from 10$\%$ to 40$\%$ for 16$\%$ bulk strain.}
-\end{figure}
-%
+%The physical scales of macroscopic continuum and the microscopic collagen network are assumed to be strongly separated, allowing the application of well-defined domain relationships between the scales. Thus, no runtime considerations are required with respect to domain data locality. Parallel data locality of the required coupling data must still be accounted for during simulation execution.
 
-\subsection{Fiber Alignment in Collagen Gel}
-
-%
-\begin{figure}[ht]
-\begin{center}
-$
-\begin{array}{ccc}
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_5.pdf} & 
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_8.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_27.pdf} \\
-(a) & (b) & (c) \\ 
-\includegraphics[height=4cm]{figure/rot0_FT50_128_1920_histo_gel_20.pdf} &
-\includegraphics[height=4cm]{figure/rot45_FT50_128_1920_histo_gel_20.pdf} &
-\includegraphics[height=4cm]{figure/rot90_FT_dspBC50_a30_128_1920_histo_gel_47.pdf} \\
-(d) & (e) & (f)
-\end{array}
-$
-\end{center}
-\caption{\label{fig:gel_P2} Distribution of $P_2$ in collagen gel for applied loads at 0 degrees (left column), 45 degrees (middle column), and 90 degrees (right column). The distributions for 10$\%$ (top row) and 16$\%$ (bottom row) bulk strain are shown. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
-\end{figure}
-%
-
+The macroscopic-scale domain is discretized using an unstructured mesh that is partitioned across the parallel execution space of the scale. Figure \ref{fig:scales} depicts the relationship between the two scales with respect to the macroscopic-scale unstructured mesh, an individual numerical integration point on that mesh, and the RVE-level microscopic-scale simulation corresponding to that macroscopic-scale location.
 %
 \begin{figure}[ht]
 \begin{center}
 $
 \begin{array}{c}
-\includegraphics[height=6cm]{figure/avgP2.pdf} 
+\includegraphics[height=4cm]{figure/biotissue-scales.png} 
 \end{array}
 $
 \end{center}
-\caption{\label{fig:avg_P2} Average of $P_2$ in the gel for applied loads at 0, 45, and 90 degrees. $P_2$ is calculated relative to the [1,0,0] axis, i.e., the axis along the direction of 0 degrees applied load.}
+\caption{\label{fig:scales} Schematic showing the hierarchy of scales in the multi-scale simulation}
 \end{figure}
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Conclusion}
+
+AMSI manages the relationship between the domains of the macroscopic and microscopic scale problem. At each macroscopic-scale numerical integration point, the deformation gradient $F_{ij}$ is calculated and provided to the AMSI coupling system, which uses a communication plan to provide the value to the collagen-network scale RVE simulation related to the integration point. This $F_{ij}$ value is used by the collagen-network scale, as shown in Eq.\ \eqref{eq:downscaling}, to establish the boundary conditions for the current state of the RVE problem. Once a solution has been reached for the collagen-network scale simulation, the macroscopic-scale volume-averaged Cauchy stress term $\sigma_{ij}^{(M)}$ from Eq.\ \eqref{eq:macro_stress_discrete} and stress derivative terms $\sigma^{(M)}_{ij,k}$ are supplied to AMSI. These terms are communicated to the macroscopic scale and associated with the coupled integration point for use in assembling the macroscopic-scale linear algebraic system for the current Newton iteration.
+
+Up- and down-scaling transformations of the coupling data currently occur in the user code after (or before) employing the communication plan. The down-scaling of the deformation gradient terms to generate the displacement on the corner of an RVE in equation \ref{eq:downscaling} takes place at the collagen-network scale after the coupling communication. The up-scaling in equation \ref{eq:macro_stress_discrete} also takes place at the collagen-network scale, prior to communicating the stress terms to the macroscopic scale.
+
+\subsection{Computational Model Solved}\label{sec:specification}
+The solution to the macroscopic boundary value problem in Eq.\ \eqref{eq:macro_stress_divergence} is obtained using the Finite Element-method (FEM). The domain of the embedded neuron is discretized by a mesh consisting of  82,105 linear tetrahedral elements - 14,250 in the neuron and 67,855 in the collagen gel - giving rise to more than 985k degrees of freedom (DOF) in the macroscopic scale.
+
+The computation demands are substantially greater for the collagen-network scale where each fiber network RVE consists of, on average, 284 fiber cross links. Three DOF exist for each fiber cross link, giving rise to 852 DOF per RVE. Since there is a single RVE for each numerical integration point of the macroscopic mesh of the collagen gel, the total DOF for the collagen-network scale is more than 57 million (852 DOF/RVE $\times$ 67,855 RVEs). 
+
+The large computational demands of the neuron-in-gel multi-scale model requires both the macroscopic and microscopic scale calculations to be performed in parallel. We employ the AMSI libraries to manage the parallel execution space for each scale. For our simulations, a total of 2048 cores were used on the AMOS BlueGene/Q maintained by the Center for Computational Innovations at RPI. Each node on the AMOS system has a 16-core 1.6GHz A2 processor with 16GB of DDR3 RAM, thus 128 nodes were allocated to the execution of this problem, with 128GB of memory. Of the assigned cores, 128 were devoted to the macroscale computation, while the remaining 1920 cores were used to compute the microscale RVE simulations. 
+
+As the macroscale and microscale codes are assigned separate partitions of the parallel execution space, the simulation never sees 100\% parallel utilization due to the need of each scale to block while waiting for the other to compute. In order to achieve good performance given this constraint, we consider the computational demand of each scale and partition the simulation scales to prioritize process utilization and reduce process idle time.
+
+The DOF count at each scale provides an initial estimate of the computational demand of the problem, however the complexity of the physics and software implementation of each scale also contributes a heuristic weight which, when applied to the DOF count, allows a more appropriate comparison of the computational demand at each scale. Particularly, this approach justifies the use of a core ratio between the macroscale and microscale problems other than one derived simply from the DOF count, which would be approximately 1:57 macroscale cores to microscale cores if only taking DOFs into account. Instead the ratio of 1:15 was heuristically determined to provide a better overall process utilization by minimizing core idle time.
+
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=4cm]{figure/ss-macro.png} &
+\includegraphics[height=4cm]{figure/ss-micro.png} \\
+(a) & (b) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:strong-scaling} Strong-scaling the (a) macroscale and (b) microscale parallel allocations while holding the other scale allocation constant. Measurements taken with the multi-scale code applied to a different problem.}
+\end{figure}
+
+As the allocation and processing of individual microscale simulations is embarrassingly parallel, the allocation ratio can be scaled in favor of the microscale to reduce overall time-to-solution (see figure \ref{fig:strong-scaling}b). This approach sacrifices misroscale process utilization when holding the macroscale allocation and problem size constant as it increases the microscale idle time linearly since the time-to-solution of the macroscale is held constant. Increasing the allocation ratio in favor of the macroscale has less impact on the overall process utilization (see figure \ref{fig:strong-scaling}a) or time-to-solution as both of these are dominated by the work to be conducted at the microscale.
+
+Increasing the total parallel allocation while holding the problem size and allocation ratio constant reduces time-to-solution while retaining the same process utilization characteristics up to the point where the microscale code begins to lose efficiency due to increasing communication overhead on a problem of constant size.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{acknowledgment}
+\section{Results and Discussion}
+\label{sec:results}
 
-\end{acknowledgment}
+The embedded neuron model described above provides local strain information within the neuron structure that is inaccessible by current experimental procedures. Therefore, the neuron model serves as a computational microscope that can be used to probe the  neuron's response to its mechanical environment under load. For this study, the collagen gel surrounding the neuron was subjected to grip strains of up to 16$\%$, which corresponds to the threshold loading beyond which pain is reported to arise \citep{Lee:2004jl,Dong:2012bn,Zhang:2016ga,Ita:Ys0ulxs9,Zhang:2017gr}. 
+
+The strain within the neuron was quantified by a complementary cumulative distribution function (ccdf) defined as 
+%
+\begin{equation}
+\text{ccdf}(X) = \int_{X}^{\infty} p_{\epsilon^*}(X)d\epsilon^* = \text{Pr}[ \epsilon^*\ge X],
+\label{eq:ccdf}
+\end{equation}
+%
+where $p_{\epsilon^*}(X)$ is the probability density function of $\epsilon^*$, and $\epsilon^*$ is either the axial, $\epsilon_{\text{ax}}$, or transverse, $\epsilon_{\text{trns}}$, strain with respect to the local axon axis; the four regions corresponding to the different local axes in the neuron were shown schematically in Fig.\ \ref{fig:image_to_model}(b). Equation \ref{eq:ccdf} is the probability that an arbitrary point within the neuron experiences an axial or transverse strain of \textit{greater than or equal to} $X$. The value measured in Eq.\ \eqref{eq:ccdf} is approximately equal to the volume fraction of the neuron that experiences a strain of greater than or equal to $X$. In the analysis below, the Green-Lagrange strain was used for measuring deformation. 
+
+%=========================================================================================================
+\subsection{Strain Distribution within Neuronal Bodies}
+\label{subsec:strain_distribution}
+
+In vivo, a patch of tissue can be loaded in various ways depending on the activity or event imposing the load. To gain an understanding of the strain in the neuronal bodies under arbitrary loading, we examined the axial and transverse strain distributions in the neuron for the three different loading conditions shown in Fig.\ \ref{fig:image_to_model}(b) for $t=30$ $\mu$m. The model is rotated relative to the far-field loading direction in-plane because the structure considered is approximately planar. Color maps of the maximum principal strain in the neuron for a grip strain of 16$\%$ (painful ligament loading) and for $0^{\circ}$, $45^{\circ}$, and $90^{\circ}$ loading are plotted in Fig.\ \ref{fig:neuron_MPS}.
+%
+% Images from Green-Lagrange-Strain/MaxPrnStrn folder.
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{c}
+\includegraphics[height=4cm]{figure/rot0_FT50_stp13.pdf} \\
+(a) \\
+\includegraphics[height=4cm]{figure/rot45_FT50_stp46.pdf} \\
+(b) \\
+\includegraphics[height=4cm]{figure/rot90_FT50_stp36.pdf} \\
+(c)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_MPS} Color maps of maximum principal strain in neuron for grip strain of 16$\%$ for loading angles of (a) $0^{\circ}$, (b) $45^{\circ}$, and (c) $90^{\circ}$. The color bar ranges from 10$\%$ to 40$\%$ maximum principal strain.}
+\end{figure}
+%
+For all angles of loading, large portions of the neuron experience strains that are greater than the 16$\%$ applied grip strain. This result indicates that the applied strains on the collagen gel are amplified in the neuron, which could lead to neuronal damage even when the surrounding tissue is moderately loaded. 
+
+To gain a more quantitative understanding of the strain distribution in the neuron, we focused on the normal strains along and transverse to the axon axis, and computed their ccdf for two levels of far field strain (10$\%$ and 16$\%$ corresponding to non-painful and painful ligament loading, respectively) and three loading directions (Fig.\ \ref{fig:image_to_model}(b)).
+%
+% Figure generated in Green-Lagrange-Strain/AxialStrn or TrnsStrn folders
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=5.5cm]{figure/angle0_combined_axial.pdf} &
+\includegraphics[height=5.5cm]{figure/angle0_combined_trns.pdf} \\
+(a) & (b) \\
+\includegraphics[height=5cm]{figure/angle45_combined_axial.pdf} &
+\includegraphics[height=5cm]{figure/angle45_combined_trns.pdf} \\
+(c) & (d) \\
+\includegraphics[height=5cm]{figure/angle90_combined_axial.pdf} &
+\includegraphics[height=5cm]{figure/angle90_combined_trns.pdf} \\
+(e) & (f) 
+\end{array}
+$
+\end{center}
+\caption{\label{fig:strain_ccdfs} Complementary cumulative distribution functions for axial (left column) and transverse (right column)  strains in neuron for $0^{\circ}$ (top row), $45^{\circ}$ (middle row), and $90^{\circ}$ (bottom row) loading. Distributions for 10$\%$ (blue dashed line) and 16$\%$ (black solid line) grip strains are plotted for all loading directions. The dashed and solid red lines indicate the approximate fraction of the neuron volume that experience a strain of greater than or equal to 10$\%$ and 16$\%$, respectively. }
+\end{figure}
+%
+The resulting ccdf are shown in Fig.\ \ref{fig:strain_ccdfs}. The shapes of the strain distributions vary significantly for different applied strains and loading directions. The strong dependence of the strain distribution on loading configuration reflects the anisotropic nature of the embedded neuron, where the axial stiffness is more than one order of magnitude greater than the transverse stiffness. Relative to the stiffness of the surrounding collagen gel, the axial stiffness of the neuron is larger while the transverse stiffness of the neuron is smaller. 
+
+
+%Due to its complex geometry, the embedded neuron is exposed to both transverse and axial components of loading. The spread of the ccdfs reflects the range of tranverse and axial loads that different regions within the neuron experience, both in tension (positive values) and in compression (negative values). Since the ccdfs are measured for strains that are either parallel or perpendicular to the local axial direction of the neuron, 
+%
+%The range of strains experienced by the neuron in tension and compression are listed in Table \ref{table:ccdf_spread_compare}.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{table}[ht]
+%\begin{center}
+%\begin{tabular}{ c c c c c }
+%\hline\hline
+%& \multicolumn{2}{c}{axial strain} & \multicolumn{2}{c}{transverse strains} \\ \hline 
+%Loading Direction & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ & $\epsilon_{\text{grip}}=0.1$ & $\epsilon_{\text{grip}}=0.16$ \\
+%\hline 
+%\multicolumn{5}{c}{Range in tension} \\ \hline
+%0 deg. & 0.20 & 0.33 & 0.24 & 0.39\\ 
+%45 deg. & 0.11 & 0.18 & 0.31 & 0.60\\
+%90 deg. & 0.16 & 0.26 & 0.34 & 0.56\\ \hline 
+%%
+%\multicolumn{5}{c}{Range in compression} \\ \hline 
+%0 deg. & 0.05 & 0.10 & 0.08 & 0.12\\ 
+%45 deg. & 0.03 & 0.06 & 0.04 & 0.06\\
+%90 deg. &  0.06 & 0.13 & 0.06 & 0.11\\ \hline \hline
+%\end{tabular}
+%\end{center}
+%\caption{Range of strain values experienced by neuron in tension and compression. The range is defined by $\max(\epsilon_x) - \min(\epsilon_x)$ where $x = $ tension or compression. }
+%\label{table:ccdf_spread_compare}
+%\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%In tension, the largest and smallest range for axial strains is experienced in the 45 and 90 degree loading cases, respectively. On the other hand, the largest and smallest range for transverse strains is experienced in the 90 degree and 45 degree loading cases, respectively. \blue{what does range size physically mean?}
+%
+%The neuron does not experience compression in the axial direction when loaded at 45 degrees. 
+
+In all cases, the strain magnitude within the neuron is larger for an applied strain of 16$\%$, as expected; the black solid curve lies to the right (left) of the blue dashed curve for positive (negative) values of strain. Interestingly, aside from the axial strain case for $0^{\circ}$ loading, the same fraction of the neuron volume experiences a strain that is greater than or equal to the applied grip strain, regardless of the strain magnitude or the loading direction; that is, the red dashed and solid lines intersect the same value on the ordinate of the ccdf. In the case of axial strain for $0^{\circ}$ loading, the fraction of the neuron volume that amplifies the applied strain increases with grip strain. 
+
+The fraction of the neuron volume that experiences a value of strain that is greater than or equal to the far-field applied strain is listed in Table \ref{table:ccdf_volfrac_compare} for all cases plotted in Fig.\ \ref{fig:strain_ccdfs}.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ c c c c c }
+\hline\hline
+& \multicolumn{2}{c}{axial strain} & \multicolumn{2}{c}{transverse strains} \\ \hline 
+Loading Direction & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ \\
+\hline 
+$0^{\circ}$ & 19$\%$ & 28$\%$ & 9$\%$ & 9$\%$\\ 
+$45^{\circ}$ & 0$\%$ & 0$\%$ & 23$\%$ & 23$\%$\\
+$90^{\circ}$ & 13$\%$ & 13$\%$ & 67$\%$ & 67$\%$\\ \hline \hline
+\end{tabular}
+\end{center}
+\caption{Fraction of the neuron volume that experiences a strain that is greater than or equal to the applied strain on surrounding collagen gel for different loading directions.}
+\label{table:ccdf_volfrac_compare}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+As seen in Table \ref{table:ccdf_volfrac_compare}, the applied strain on the collagen gel is amplified in the neuron predominantly along the axial direction for $0^{\circ}$ loading and in the transverse direction for $45^{\circ}$ and $90^{\circ}$ loading. For $45^{\circ}$ loading, less than 0.1$\%$ of the neuron volume experiences an axial strain that is greater than or equal to the applied strain.
+
+The values listed in Table \ref{table:ccdf_volfrac_compare} are consistent with how the embedded neuron is oriented relative to the different loading directions. When loading at $0^{\circ}$ a majority of the neuron volume (regions 1, 2, and 4 in Fig.\ \ref{fig:image_to_model}(b)) is loaded predominantly in the axial direction causing a larger fraction of the neuron to be amplified in the axial direction. On the other hand, when loading at $90^{\circ}$ a majority of the neuron volume (regions 1, 3, and 4 in Fig.\ \ref{fig:image_to_model}(b)) are loaded predominantly in the transverse direction causing a larger fraction of the neuron to be amplified in the transverse direction. The amplification of the applied strain in the transverse direction is significantly greater because the neuron is much more compliant in the transverse direction relative to the axial direction.  The neuron also experiences a significant strain amplification in the transverse direction when loaded at $45^{\circ}$ because the axial direction of region 1 lies perpendicular to the $45^{\circ}$ loading direction.
+
+Physiologically more important are the tails of the strain distributions, which represent the largest strains experienced by the neuron. The minimum strains experienced by the most-deformed 10$\%$ of the neuron (by volume fraction) are listed in Table \ref{table:ccdf_tail_strains} for each loading case. 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ c c c c c }
+\hline\hline
+& \multicolumn{2}{c}{Largest 10$\%$ of axial strain} & \multicolumn{2}{c}{Largest 10$\%$ of transverse strain} \\ \hline 
+Loading Direction & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ & $\epsilon_{\text{grip}}=10\%$ & $\epsilon_{\text{grip}}=16\%$ \\
+\hline 
+$0^{\circ}$ & $11\%^*$ & $19\%^*$ & 4\% & 6\%\\ 
+$45^{\circ}$ & $6\%$ & $10\%$ & $17\%^*$ & $28\%^*$\\
+$90^{\circ}$ & 5\% & 9\% & $22\%^*$ & $37\%^*$\\ \hline \hline
+\end{tabular}
+\end{center}
+\caption{The minimum strain values experienced by the most-deformed 10$\%$ of the neuron. Asterisks indicate strain values that are greater than the applied strain, i.e., applied strain is amplified within neuron.}
+\label{table:ccdf_tail_strains}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+Consistent with above, the largest minimum strain experienced by the most-deformed 10$\%$ of the neuron occurs in the axial direction for $0^{\circ}$ loading and in the transverse direction for $45^{\circ}$ and $90^{\circ}$ loading. When this minimum strain is greater than the applied grip strain, amplification arises. Loading cases in which amplification arises are marked with an asterisk in Table \ref{table:ccdf_tail_strains}.
+
+When the system is loaded at $90^{\circ}$, 10$\%$ of the neuron volume experiences a strain amplification of at least a factor of 2 in the transverse direction. When loaded at $45^{\circ}$, the same fraction of the neuron volume experiences an amplification of at least a factor of 1.7. When loaded at $0^{\circ}$, 10$\%$ of the neuron volume experiences a strain amplification of at least a factor of 1.1 in the axial direction. The smaller amplification in the axial direction is due to the larger stiffness of the neuron in the axial direction relative to the transverse direction. 
+
+In the above analysis, we used the strains along and transverse to the axons, as well as the maximum principal strain as measures of neuron deformation. However, the actual cause of neuronal injury remains unknown. There is still much work to be done in the experimental characterization of neuronal injury and identification of the mechanisms leading to pain.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Summary}
+\label{sec:summary}
+
+We have presented a general modeling strategy in which (1) a realistic representation of a complex cell geometry is generated from confocal microscopy images of dorsal root ganglion neurons embedded in a collagen gel; (2) the geometric model is converted into a finite-element mesh; (3) a multi-scale model is implemented in the mesh corresponding to the extracellular matrix (collagen gel); and (4) an analysis of the strain distributions within the neuron due to mechanical loading on the extracellular matrix is performed.
+
+The large computational demands that arise from the unstructured mesh of a complex cell geometry coupled with a multi-scale model are accommodated through the AMSI library, which is used to manage the parallel execution spaces of the macroscopic and microscopic scale simulation codes and to plan and enact the parallel communication operations required to couple the two codes together into a multi-scale simulation. 
+
+The simulation results for the embedded neuron provides local strain information that is not accessible by current experimental techniques, thereby providing important insights about the mechanism of neuronal injury under mechanical loading. We find that the strain distribution in the neuron depends strongly on the configuration of the embedded neuron relative to the loading direction, which reflects the anisotropic mechanical properties of the neuron. More importantly, we observe that the applied strain on the surrounding environment is amplified within the neuron for all loading configurations considered. In the most severe cases, the applied strain is amplified by at least a factor of 2 in 10$\%$ of the neuron volume. 
+
+The work presented in this paper provides an extension to the capability of past modeling strategies by enabling the realistic representation of complex cell geometry into a multi-scale framework. Although several physiologically important mechanisms for the embedded neuron system have been left out, e.g., chemical mediators, calcium signaling, and membrane viability, the results from the simplified system nonetheless provide meaningful results that can be built upon in future work. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{acknowledgment}
+%\begin{enumerate}
+%\item{NIH Grants}
+%\item{Computing resources were provided by the Center for Computational Innovations at Rensselaer Polytechnic Institute \red{Will check specific wording on CCI website.}}
+%\end{enumerate}
+%\end{acknowledgment}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The bibliography is stored in an external database file
@@ -471,7 +696,8 @@ $
 % Here's where you specify the bibliography style file.
 % The full file name for the bibliography style file 
 % used for an ASME paper is asmems4.bst.
-\bibliographystyle{asmems4}
+%%\bibliographystyle{asmems4}
+\bibliographystyle{tfcse}
 
 % Here's where you specify the bibliography database file.
 % The full file name of the bibliography database for this
@@ -479,5 +705,111 @@ $
 % to you.
 \bibliography{references}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{Derivation of $P_2$ from $\alpha$ and $\delta$ of the QPLI method}
+\label{app:P2_derivation}
+
+Consider a distribution of orientation $\theta$ for pixel $i$ as 
+%
+\begin{equation}
+p_i(\theta) = q_i + r_i\cos^2(\theta - \alpha_i) \ \ \text{for} \ \ \theta \in (0,\pi),
+\label{eq:distribution}
+\end{equation}
+%
+where $\alpha_i$ is the alignment measured at pixel $i$ by the QPLI method and $q_i$ and $r_i$ are constants for the $i^{th}$ pixel. Applying the normalization 
+%
+\begin{equation}
+\int_0^{\pi}p_i(\theta)d\theta = 1,
+\end{equation}
+%
+a relationship between $q_i$ and $r_i$ is obtained:
+%
+\begin{equation}
+\pi q_i + \frac{\pi}{2}r_i = 1.
+\label{eq:q_relationship}
+\end{equation}
+%
+Using the relationship in Eq.\ \eqref{eq:q_relationship}, Eq.\ \eqref{eq:distribution} can be rewritten as
+%
+\begin{equation}
+p_i(\theta) = q_i + \frac{2}{\pi}(1-\pi q_i)\cos^2(\theta-\alpha_i)
+\label{eq:distribution_q}
+\end{equation}
+%
+
+The orientation tensor for each pixel can be written in terms of $p_i(\theta)$ as
+%
+\begin{eqnarray}
+\pmb{A}^i = 
+\begin{bmatrix}
+\int_0^{\pi} p_i(\theta) \cos^2(\theta)d\theta & \int_0^{\pi} p_i(\theta) \sin(\theta) \cos(\theta)d\theta \\
+\int_0^{\pi} p_i(\theta) \sin(\theta) \cos(\theta)d\theta & \int_0^{\pi} p_i(\theta) \sin^2(\theta)d\theta
+\end{bmatrix} = 
+%
+\frac{1-\pi q_i}{4} 
+\begin{bmatrix}
+\cos(2 \alpha_i) & \sin(2 \alpha_i) \\
+\sin(2\alpha_i) & - \cos(2\alpha_i)
+\end{bmatrix},
+\label{eq:Ai}
+\end{eqnarray}
+%
+where the eigenvalues of $\pmb{A}^i$ are
+\begin{equation}
+\Lambda_1 = \frac{1+\pi q_i}{4} \ \ \text{and} \ \ \Lambda_2 = \frac{3-\pi q_i}{4}. 
+\end{equation}
+%
+The retardation at each pixel, $\delta_i$, is related to the the eigenvalues through a proportionality constant, $C$, by
+%
+\begin{equation}
+\delta_i = C |\Lambda_2 - \Lambda_1| = C \left(\frac{1-\pi q_i}{2}\right).
+\label{eq:delta_i}
+\end{equation}
+%
+From Eq.\ \eqref{eq:delta_i}, the constant $q_i$ can be written in terms of the retardation as
+%
+\begin{equation}
+q_i = \frac{1}{\pi}\left(1-\frac{2\delta_i}{C}\right),
+\end{equation}
+%
+and the distribution at pixel $i$ from Eq.\ \eqref{eq:distribution_q} can be rewritten as
+%
+\begin{equation}
+p_i(\theta) = \frac{C-2\delta_i}{\pi C} + \frac{4 \delta_i}{\pi C}\cos^2(\theta-\alpha_i).
+\label{eq:distribution_delta}
+\end{equation}
+%
+
+The distribution of orientation $\theta$ for the entire image is simply the average over the distribution of each pixel
+%
+\begin{equation}
+p(\theta) = \frac{1}{N} \sum_{i=1}^N p_i(\theta) = \frac{1}{N} \sum_{i=1}^N \left[ \frac{C-2\delta_i}{\pi C} + \frac{4 \delta_i}{\pi C}\cos^2(\theta-\alpha_i) \right],
+\end{equation}
+%
+which is the equation presented in Eq.\ \eqref{eq:P2_experiment}.
+
+%=========================================================================================================
+\section{Varying Axial Stiffness ($t$) in the Cell Body}
+\label{app:vary_t}
+
+The complementary cumulative distribution function for different axial stiffnesses of the cell body (different values of $t$) are plotted in Fig.\ \ref{fig:neuron_ccdf_vary_a} for the $0^{\circ}$ loading case for a grip strain of 16$\%$ on the collagen gel. 
+%
+% Figures generated in SCOREC/Choose-CellStiffness/Compare-CellStiffness folder
+\begin{figure}[ht]
+\begin{center}
+$
+\begin{array}{cc}
+\includegraphics[height=5cm]{figure/neuron_compare_t_ccdf_axial.pdf} &
+\includegraphics[height=5cm]{figure/neuron_compare_t_ccdf_trns.pdf} \\
+(a) & (b)
+\end{array}
+$
+\end{center}
+\caption{\label{fig:neuron_ccdf_vary_a} Complimentary cumulative distribution functions for (a) axial and (b) transverse strains in the neuron due to a $0^{\circ}$ load of 16$\%$ grip strain. The distributions are for axial cell-body stiffnesses corresponding to t=28 $\mu$m (blue dashed line), 30 $\mu$m (red dotted line), and 50 $\mu$m (black solid line). The dashed arrow in (a) indicates the direction of increasing $t$ and the inset in (a) enlarges the heel of the distribution to aid visual interpretation. }
+\end{figure}
+%
+These results suggest that the strain distribution within the neurons is insensitive to the axial distribution of stiffness of the cell body. The negative values of strain seen in the distributions are due to lateral contraction that arises from the Poisson effect. 
 
 \end{document}

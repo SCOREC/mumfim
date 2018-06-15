@@ -1,66 +1,26 @@
-\documentclass[12pt,aps,pre]{revtex4}
-%\documentclass[aps,pre,onecolumn,superscriptaddress]{revtex4-1}
-\usepackage{graphicx, epsfig,cancel}
-\usepackage{color}
-\usepackage{textcomp}
-\usepackage{amssymb,amsmath} 
-\usepackage{setspace}
-
-% for writing code snippets in latex
-\usepackage{listings}
-
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\newcommand{\blue}[1]{\textcolor{blue}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{[#1]}}
-\newcommand{\green}[1]{\textcolor{green}{#1}}
-
-\newcommand{\diff}{\mathop{}\!\mathrm{d}}
-
-\begin{document}
-\setstretch{1.5}
-\title{Macrocale Derivation}
-\author{V. W. L. Chan and W. R. Tobin}
-\maketitle
+\chapter{Macrocale Derivation}
+\chapterauthor{V. W. L. Chan and W. R. Tobin}
 
 \section{Motivation}
 
-Formulation for Biotissue code.
+This chapter describes the formulation of the boundary value problem (BVP) at the macroscopic size scale. It discusses the weak form of the BVP, and solution method. It describes some of the numerical details which are needed to construct the macroscopic solution, e.g. the linear tetrahedral shape function, and residual formulation.
 
 \section{Macro Scale}
 
-\subsection{Momentum Balance and Formulation of the Residual}
+\todo{replace with section \ref{sec:NLFEM}}
+\subsection{Momentum Balance and Residual}
 
 We are interested in solving the Cauchy Momentum Balance Equation for a body in static equilibrium and in absence of body forces:
 %
 \begin{align}
-\nabla \cdot \pmb{\sigma} =& \; 0 \text{ in } \Omega \label{momentum_balance} \\
-\pmb{\sigma} \cdot \pmb{n} =& \; \pmb{t} \text{ on } \partial \Omega \nonumber
+\nabla \cdot \mat{\sigma} =& \; 0 \text{ in } \Omega \label{momentum_balance} \\
+\mat{\sigma} \cdot \vec{n} =& \; \vec{t} \text{ on } \partial \Omega \nonumber
 \end{align}
 %
-where $\pmb{\Omega}$ is the problem domain, $\partial \pmb{\Omega}$ is the domain boundary, $\pmb{\sigma}$ is the Cauchy stress tensor, $\pmb{n}$ is the outward-facing unit normal along the domain boundary, and $\pmb{t}$ is the surface traction along the domain boundary.
+where $\vec{\Omega}$ is the problem domain, $\partial \vec{\Omega}$ is the domain boundary, $\mat{\sigma}$ is the Cauchy stress tensor, $\vec{n}$ is the outward-facing unit normal along the domain boundary, and $\vec{t}$ is the surface traction along the domain boundary.
 %
 \begin{eqnarray}
-\pmb{\sigma} \equiv
+\vec{\sigma} \equiv
 \begin{bmatrix}
 \sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
 \sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
@@ -70,20 +30,20 @@ where $\pmb{\Omega}$ is the problem domain, $\partial \pmb{\Omega}$ is the domai
 \end{eqnarray}
 %
 
-Since we intend to use the Galerkin Finite Element Method (FEM), we will need to consider the Galerkin weak form of Eq.\ \eqref{momentum_balance}. We obtain the weak or variational form of the equation by multiplying using an appropriate weighting function $\phi \in \pmb{V}$ where $\pmb{V}$ is an infinite-dimensional trial space and then integrating over the domain:
+Since we intend to use the Galerkin Finite Element Method (FEM), we will need to consider the Galerkin weak form of Eq.\ \eqref{momentum_balance}. We obtain the weak or variational form of the equation by multiplying using an appropriate weighting function $\phi \in \vec{V}$ where $\vec{V}$ is an infinite-dimensional trial space and then integrating over the domain:
 
 %
 \begin{equation}
-\int_\Omega \phi(\nabla \cdot \pmb{\sigma}) \diff \Omega = 0
+\int_\Omega \phi(\nabla \cdot \mat{\sigma}) \diff \Omega = 0
 \label{weak_form1}
 \end{equation}
 %
 
-Using the divergenge identity 
+Using the divergence identity \todo{correct terminology?}
 
 %
 \begin{equation}
-\nabla \cdot (\phi \pmb{\sigma}) = \pmb{\sigma} (\nabla \phi) + \phi (\nabla \cdot \pmb{\sigma}) \nonumber
+\nabla \cdot (\phi \mat{\sigma}) = \mat{\sigma} (\nabla \phi) + \phi (\nabla \cdot \mat{\sigma}) \nonumber
 \end{equation}
 %
 
@@ -91,52 +51,48 @@ to arrive at
 
 %
 \begin{equation}
-\int_\Omega \nabla \cdot (\phi \pmb{\sigma}) - \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\int_\Omega \nabla \cdot (\phi \mat{\sigma}) - \mat{\sigma} (\nabla \phi) \diff \Omega = 0
 \label{weak_form2}
 \end{equation}
 %
 
-seperating the integrand terms and applying the Divergence Theorem: 
+separating the integrand terms and applying the Divergence Theorem to the first term we arrive at:
 
 %
 \begin{equation}
-\int_\Omega \nabla \cdot \textbf{F} \diff \Omega = \iint_{\partial \Omega} \textbf{F} \cdot \textbf{n} \; \diff \partial \Omega \nonumber
-\end{equation}
-%
-
-where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\textbf{n}$ is the normal to the surface, to the first term in Eq.\ \eqref{weak_form2} we have
-
-%
-\begin{equation}
-\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n} \; \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega = 0
+\int_{\partial \Omega} (\phi \mat{\sigma}) \cdot \vec{n} \; \diff \partial \Omega - \int_\Omega \mat{\sigma} (\nabla \phi) \diff \Omega = 0
 \label{weak_form3}
 \end{equation}
 %
 
+where $\partial \Omega$ indicates that the integral is over the boundary of the domain and $\vec{n}$ is the unit normal to the surface.
+
+\todo[prepend, caption={Complete BVP derivation}]{I don't think we make this assumption in code formulation. E.G. we should show the formulation in terms of the full, BVP with no assumption.}
 If we consider a surface-traction free problem, the first term in Eq.\ \eqref{weak_form3} goes to zero and we have
 
 %
 \begin{equation}
-\int_\Omega \pmb{\sigma} \nabla \phi \diff \Omega = 0
+\int_\Omega \mat{\sigma} \nabla \phi \diff \Omega = 0
 \label{weak_form}
 \end{equation}
 %
 
-Finally, we cast the problem in a Galerkin form by selecting a finite subspace of the trial space $\pmb{V}_h \subseteq \pmb{V}$ and selecting our trial functions from this finite subspace $\phi_i \in \pmb{V}_h$
+Finally, we cast the problem in a Galerkin form by selecting a finite subspace of the trial space $\vec{V}_h \subseteq \vec{V}$ and selecting our trial functions from this finite subspace $\phi_i \in \vec{V}_h$
 
 %
 \begin{equation}
-\int_\Omega \pmb{\sigma} \nabla \phi_i \diff \Omega = 0
+\int_\Omega \mat{\sigma} \nabla \phi_i \diff \Omega = 0
 \label{galerkin_weak_form}
 \end{equation}
 %
 
 which is the problem we will set out to solve in this note.
 
+\todo{Should these matrices be explicitly written out, or can we just write them in summation form e.g. Hughes}
 To clearly see the problem, the terms within the integral of Eq.\ \eqref{galerkin_weak_form} can be explicitly written out as
 %
 \begin{eqnarray}
-\pmb{\sigma} \nabla \phi_i &=&
+\mat{\sigma} \nabla \phi_i &=&
 \begin{bmatrix}
 \sigma_{xx} & \sigma_{xy} & \sigma_{xz} \\
 \sigma_{yx} & \sigma_{yy} & \sigma_{yz} \\
@@ -174,16 +130,18 @@ where the $x$, $y$, and $z$ in the subscript indicate the $x$, $y$, and $z$ cont
 
 \subsection{Newton-Raphson Procedure}
 
+\todo[prepend, caption={NR wrong for specified BVP}]{this section makes no sense w.r.t the previous section. e.g. how are we solving a newton raphson iteration in displacements, when our bvp is formulated in terms of stresses and a weighting function.}
 To minimize the residual in Eq.\ \eqref{galerkin_weak_form}, and hence solve the problem, the Newton-Raphson Procedure is used
 %
 \begin{equation}
-\pmb{K}_T \delta u = -R, \ \ \text{where} \ \ u^{n+1} = u^{n} + \delta u,
+\mat{K}_T \delta u = -\vec{R}, \ \ \text{where} \ \ \vec{u}^{n+1} = \vec{u}^{n} + \delta \vec{u},
 \end{equation}
 %
-and 
+
+\todo[prepend,caption={incorrect residual}]{I think the residual should be in terms of the displacements, since the NR proceedure was written out in terms of displacements, granted you can make comment that taking derivative w.r.t. the current coord is same as taking the derivative w.r.t. the displacements.} and
 %
 \begin{eqnarray}
-\pmb{K}_T \equiv
+\mat{K}_T \equiv
 \begin{bmatrix}
 \frac{\partial R_x}{\partial x_n} & \frac{\partial R_x}{\partial y_n} & \frac{\partial R_x}{\partial z_n} \\
 \frac{\partial R_y}{\partial x_n} & \frac{\partial R_y}{\partial y_n} & \frac{\partial R_y}{\partial z_n} \\
@@ -192,6 +150,7 @@ and
 \end{bmatrix}
 \end{eqnarray}
 %
+
 where $x_n$, $y_n$, and $z_n$ are the nodal positions (the vertices in this case) of the element.
 
 As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each node of the element. The derivatives indicated in Eq.\ \eqref{tangent_stiffness} for the $x$ contribution to each node are
@@ -214,14 +173,15 @@ As seen in Eq.\ \eqref{galerkin_weak_form} we are solving the problem at each no
 && + \left(  \sigma_{xx} \frac{\partial \phi_i}{\partial x} + \sigma_{xy} \frac{\partial \phi_i}{\partial y} + \sigma_{xz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
 \label{dRx}
 \end{eqnarray}
+ \todo{write in indicial form, not sure if needed at all here, move to multiscale formulation section?}
 %
 
-Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account \red{this is essentially the 3D Leibniz integration rule. Discuss Eq.\ \eqref{dRx} in terms of Leibniz integration rule}. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
+Note that the derivatives of $R_{ix}$ takes into account the change in the residual due to the change in nodal position and due to the change in the volume of the element. Therefore, the changes in the residual due to change in volume but no change in stress state and due to change in stress state and no change in volume are both taken into account this is essentially the 3D Leibniz integration rule. The derivatives of $R_{iy}$ and $R_{iz}$ are written out in the Appendix \ref{app:dRy_and_dRz}.
 
-The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.
+The $\sigma_{rs}$, $\partial \sigma_{rs}/\partial x_n$, $\partial \sigma_{rs}/\partial y_n$, and $\partial \sigma_{rs}/\partial z_n$ terms in Eq.\ \eqref{dRx} are determined from the micro scale calculations (see later section). In order to evaluate the $\partial \phi_i/\partial x$ and $\partial /\partial x_n (\partial \phi_i/\partial x)$ terms, we need to first specify the specific shape functions that are used for our calculations.\todo{We need to state that we can pull out the stresses due to the fact that they are just nodal constants.}
 
 \subsection{Tetrahedral Shape Functions and Their Derivatives}
-
+\todo{this section has not been edited yet.}
 The shape functions, $\phi_i$, for the four nodes of a linear tetrahedral element are
 %
 \begin{equation}
@@ -604,7 +564,7 @@ x_3 & \frac{\partial \phi_n}{\partial t} &  \frac{\partial \phi_i}{\partial t}
 %
 The above terms are calculated in microscale. % and the derivatives of $\partial \phi_i/\partial x$ with respect to $x_n$, $y_n$, and $z_n$ are stored in the variable dkdx as dkdx[in][3*n], dkdx[in][3*n+1], and dkdx[in][3*n+2], respectively. Note that ``in" corresponds to the subscript $n$, while ``n'' corresponds to the subscript $i$. Since we are employing a linear tetrahedral element, ``in" and ``n" range from 0 to 3. 
 
-Each node of the tetrahedral element contains three derivatives $(\partial/\partial x_n, \partial/\partial y_n, \partial/\partial z_n)$ for each shape function (total of 4 for the tetrahedral element). Therefore, each node contains 12 entries. Since there are 4 nodes for each tetrahedral element, dkdx for each element is a 4 $\times$ 12 array:
+Each node of the tetrahedral element contains three derivatives $(\frac{\partial}{\partial x_n}, \frac{\partial}{\partial y_n}, \frac{\partial}{\partial z_n})$ for each shape function (total of 4 for the tetrahedral element). Therefore, each node contains 12 entries. Since there are 4 nodes for each tetrahedral element, dkdx for each element is a 4 $\times$ 12 array:
 %
 \begin{eqnarray}
 dkdx = 
@@ -622,9 +582,7 @@ dkdx =
 %
 where the rows correspond to the ``current" node number and the columns correspond to the derivative of the shape functions of the ``other" nodes with respect to $x_n$, $y_n$, and $z_n$.
 
-The derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/\partial z$ with respect to $x_n$, $y_n$, and $z_n$ are determined by following the same procedures used to determine the derivatives in Eq.\ \eqref{dkdx}. These terms, dkdy and dkdz, are explicitly written out in the appendix \red{need to add this later}.
-
-\section{Micro Scale}
+The derivatives of $\partial \phi_i/\partial y$ and $\partial \phi_i/\partial z$ with respect to $x_n$, $y_n$, and $z_n$ are determined by following the same procedures used to determine the derivatives in Eq.\ \eqref{dkdx}. These terms, dkdy and dkdz, are explicitly written out in the appendix \todo{need to add this later}.
 
 \section{Code Implementation of Macro Scale}
 
@@ -771,7 +729,7 @@ where
 \nonumber\\
 \end{eqnarray}
 %
-represents the first terms on the right-hand-sides of the relationships in Eq.\ \eqref{dRx}. Note that the terms in first\_term are different for each node ($n$) and shape function ($i$). 
+represents the first terms on the right-hand-sides of the relationships in Eq.\ \eqref{dRx}. Note that the terms in first\_term are different for each node ($n$) and shape function ($i$). \todo{the way this is written is extremely unclear}
 
 \subsection{Second Term}
 
@@ -877,7 +835,7 @@ where
 %In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero and solution to the problem is obtained when 
 %%
 %\begin{equation}
-%\int_{\partial \Omega} (\phi \pmb{\sigma}) \cdot \pmb{n}  \diff \partial \Omega - \int_\Omega \pmb{\sigma} (\nabla \phi) \diff \Omega =  0
+%\int_{\partial \Omega} (\phi \mat{\sigma}) \cdot \vec{n}  \diff \partial \Omega - \int_\Omega \mat{\sigma} (\nabla \phi) \diff \Omega =  0
 %\label{weak_form_neumann}
 %\end{equation}
 %%
@@ -886,20 +844,20 @@ where
 %In the case of Neumann boundary conditions, the surface integral in Eq.\ \eqref{weak_form3} will no longer go to zero. Since it is unclear how to deal with the surface integral in Eq.\ \eqref{weak_form3}, we will instead consider Eq.\ \eqref{weak_form2}, weak form prior to applying the divergence theorem:
 %%
 %\begin{eqnarray}
-%R_i &=& \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV - \int_V \pmb{\sigma} \nabla \phi_i dV \nonumber\\
+%R_i &=& \int_V \nabla \cdot (\phi_i \mat{\sigma}) dV - \int_V \mat{\sigma} \nabla \phi_i dV \nonumber\\
 %&=& A_i + B_i.
 %\end{eqnarray}
 %%
 %The term of interest is 
 %%
 %\begin{equation}
-%A_i = \int_V \nabla \cdot (\phi_i \pmb{\sigma}) dV,
+%A_i = \int_V \nabla \cdot (\phi_i \mat{\sigma}) dV,
 %\end{equation}
 %%
 %where 
 %%
 %\begin{eqnarray}
-%\nabla \cdot (\phi_i \pmb{\sigma}) &=& 
+%\nabla \cdot (\phi_i \mat{\sigma}) &=& 
 %\begin{bmatrix}
 %\frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z}
 %\end{bmatrix}
@@ -964,68 +922,3 @@ where
 %\end{eqnarray}
 %%
 %where the only new terms are the $\partial \sigma_{ij}/\partial x$ and $\partial/\partial x_n (\partial \sigma_{ij}/\partial x)$ type terms. \red{Can we take the derivatives of $\sigma_{ij}$ analytically?} 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\appendix
-\section{Derivatives of $y$ and $z$ Contributions of Residuals}
-\label{app:dRy_and_dRz}
-
-The derivatives of $R_{iy}$ with respect to $x_n$, $y_n$, and $z_n$ are
-%
-\begin{eqnarray}
-%%%%
-\frac{\partial R_{iy}}{\partial x_n} &=& \frac{\partial R_{iy}}{\partial x_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{yy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}}{\partial x_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&&+ \int_V \left( \sigma_{yx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right)+\sigma_{yy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial x_n} \left(\int_V dV \right) \nonumber\\
-%%%%
-\frac{\partial R_{iy}}{\partial y_n} &=& \frac{\partial R_{iy}}{\partial y_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial y_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{yy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} +  \frac{\partial \sigma_{yz}}{\partial y_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&& + \int_V \left( \sigma_{yx} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{yy} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial y_n} \left(\int_V dV \right) \nonumber\\
-%%%%
-\frac{\partial R_{iy}}{\partial z_n} &=& \frac{\partial R_{iy}}{\partial z_n} \bigg |_V + \frac{\partial R_{iy}}{\partial V} \frac{\partial V}{\partial z_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{yx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{yy}}{\partial z_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{yz}}{\partial z_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&&+ \int_V \left(\sigma_{yx} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{yy} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{yz} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{yx} \frac{\partial \phi_i}{\partial x} + \sigma_{yy} \frac{\partial \phi_i}{\partial y} + \sigma_{yz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
-\label{dRy}
-\end{eqnarray}
-%
-
-Similarly, the derivatives of $R_{iz}$ with respect to $x_n$, $y_n$, and $z_n$ are
-%
-\begin{eqnarray}
-%%%%
-\frac{\partial R_{iz}}{\partial x_n} &=& \frac{\partial R_{iz}}{\partial x_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial x_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial x_n}\frac{\partial \phi_i}{\partial x} + \frac{\partial \sigma_{zy}}{\partial x_n}\frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}}{\partial x_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&&+ \int_V \left( \sigma_{zx} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial x}\right)+\sigma_{zy} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial x_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial x_n} \left(\int_V dV \right) \nonumber\\
-%%%%
-\frac{\partial R_{iz}}{\partial y_n} &=& \frac{\partial R_{iz}}{\partial y_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial y_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial y_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{zy}}{\partial y_n}\frac{\partial \phi_i}{\partial y} +  \frac{\partial \sigma_{zz}}{\partial y_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&& + \int_V \left( \sigma_{zx} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{zy} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial y_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial y_n} \left(\int_V dV \right) \nonumber\\
-%%%%
-\frac{\partial R_{iz}}{\partial z_n} &=& \frac{\partial R_{iz}}{\partial z_n} \bigg |_V + \frac{\partial R_{iz}}{\partial V} \frac{\partial V}{\partial z_n} \nonumber\\
-&=& \int_V \left(\frac{\partial \sigma_{zx}}{\partial z_n}\frac{\partial \phi_i}{\partial x} +\frac{\partial \sigma_{zy}}{\partial z_n} \frac{\partial \phi_i}{\partial y} + \frac{\partial \sigma_{zz}}{\partial z_n}\frac{\partial \phi_i}{\partial z}  \right) dV \nonumber\\
-&&+ \int_V \left(\sigma_{zx} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial x}\right)+ \sigma_{zy} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial y}\right) + \sigma_{zz} \frac{\partial}{\partial z_n} \left(\frac{\partial \phi_i}{\partial z}\right) \right) dV \nonumber\\
-&& + \left(  \sigma_{zx} \frac{\partial \phi_i}{\partial x} + \sigma_{zy} \frac{\partial \phi_i}{\partial y} + \sigma_{zz} \frac{\partial \phi_i}{\partial z} \right) \frac{\partial}{\partial z_n} \left(\int_V dV \right).
-\label{dRz}
-\end{eqnarray}
-%
-\bibliographystyle{apsrev}
-\bibliography{References}
-\end{document}

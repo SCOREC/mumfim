@@ -1,5 +1,5 @@
 #include <amsiNeumannIntegrators.h>
-#include <LinearElasticIntegrator.h>
+#include <amsiLinearElasticConstitutive.h>
 #include <apfFunctions.h>
 #include <sim.h>
 #include "bioLinearTissue.h"

@@ -1,0 +1,41 @@
+13
+
+type "num timesteps" : int d < 1 >;
+type "load balancing" : int r mapped <<-2 "none"> <-1 "user"> <1 "random"> <2 "equal">>;
+
+type "convergence operator" : void A e < n >;
+
+image "linear convergence" : "convergence operator"
+{
+
+};
+
+type "convergence type" : int r mapped <<0 "load_residual"> <1 "solution_residual"> <2 "mixed_residual">>;
+type "reference value" : int r mapped <<0 "initial"> <1 "load_step"> <2 "iteration">>;
+type "epsilon" : double E 1 d < 1e-12 >;
+type "iteration cap" : int d < 12 >;
+
+image "nonlinear iteration" : "convergence operator"
+{
+  R "convergence type";
+  R "reference value";
+  R "epsilon";
+  O "iteration cap";
+};
+
+type "track volume" : void e < r >;
+
+image "volume convergence" : "convergence operator"
+{
+  R "reference value";
+  R type "regions" : reference "track volume";
+  R "epsilon";
+  O "iteration cap";
+};
+
+image "macro" : "solution strategy" {
+  R "num timesteps";
+  R "load balancing";
+  O "track volume";
+  O "convergence operator";
+};

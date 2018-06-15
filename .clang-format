@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+BreakBeforeBraces: Stroustrup
+BreakConstructorInitializersBeforeComma: true
+NamespaceIndentation: All
+MaxEmptyLinesToKeep: 0
+AccessModifierOffset: 0

@@ -84,10 +84,11 @@ namespace bio
             /* 6. Iterate through msh regions that are classified in "snk" and process each msh region. */
             for (auto msh_rgn = amsi::beginClassified(msh,*snk,dm); msh_rgn != amsi::endClassified(msh_rgn); ++msh_rgn)
             {
-              this->set_target_xyz(fc_xyz);
-              this->inElement(*msh_rgn);
+              set_target_xyz(fc_xyz);
               apf::MeshElement * msh_elmt = apf::createMeshElement(msh,*msh_rgn);
-              this->process(msh_elmt);
+              inElement(msh_elmt);
+              process(msh_elmt);
+              apf::destroyMeshElement(msh_elmt);
             }
           }
         }
@@ -101,7 +102,7 @@ namespace bio
     auto end = amsi::endClassified(bgn);
     amsi::getAvgFieldValue(msh->getCoordinateField(),bgn,end,mdl_fc_xyz);
   }
-  void StiffnessVariation::atPoint(apf::Vector3 const &p, double w, double dV)
+  void StiffnessVariation::atPoint(apf::Vector3 const &p, double, double)
   {
     /* Find global coordinates for Gauss Integration Point */
     apf::Mesh * msh = apf::getMesh(stf_vrtn_fld);
