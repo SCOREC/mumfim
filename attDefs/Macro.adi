@@ -1,0 +1,6 @@
+[AttDefInfo]
+DisplayName=Macro
+SolverName=macro
+[1]
+AttDefs=simMacro/attDefs/v01
+PatternInfo=

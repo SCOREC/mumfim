@@ -1,0 +1,16 @@
+13 # attdef file version
+
+type "results directory":string e < n > E 0 d < "." >;
+type "output force" : void e < f >;
+type "output displacement" : void e < v e f r >;
+type "output volume" : void e < r >;
+
+############
+#! \toplevel
+
+image "macro" : "output" {
+  O "output force";
+  O "output displacement";
+  O "output volume";
+  O "results directory";
+};
