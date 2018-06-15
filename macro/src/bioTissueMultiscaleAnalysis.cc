@@ -89,6 +89,6 @@ namespace bio
       amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
     }
     amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
-  }
 #endif
+  }
 }
