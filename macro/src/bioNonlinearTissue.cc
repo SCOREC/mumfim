@@ -277,6 +277,7 @@ namespace bio
     //#ifdef SCOREC
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_SCALE, &rnk);
+    /*
     std::stringstream fnm;
     fnm << amsi::fs->getResultsDir() << "/qlty.stp_" << load_step << ".rnk_"
         << rnk << ".dat";
@@ -285,6 +286,7 @@ namespace bio
     std::ofstream file(fnm.str().c_str(), std::ofstream::out);
     amsi::PrintField(qfld, file).run();
     apf::destroyField(qfld);
+    */
     //#endif
   }
   void NonlinearTissue::storeStrain(apf::MeshElement* me, double* strain)
