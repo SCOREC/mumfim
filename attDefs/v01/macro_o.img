@@ -5,12 +5,29 @@ type "output force" : void e < f >;
 type "output displacement" : void e < v e f r >;
 type "output volume" : void e < r >;
 
+
+type "3D Orientation Tensor": void
+type "2D Orientation Tensor": void
+{
+  R type "axis": tensor1 3 E 1;
+}
+
+# we currently only support getting the orientation tensor
+# as a field over the entire model
+type "output orientation tensor" e <m>:
+{
+  O "3D Orientation Tensor";
+  O "2D Orientation Tensor";
+}
+
 ############
 #! \toplevel
+
 
 image "macro" : "output" {
   O "output force";
   O "output displacement";
   O "output volume";
   O "results directory";
+  O "output orientation tensor";
 };

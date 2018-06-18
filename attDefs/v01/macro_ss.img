@@ -10,9 +10,9 @@ image "linear convergence" : "convergence operator"
 
 };
 
-type "convergence type" : int r mapped <<0 "load_residual"> <1 "solution_residual"> <2 "mixed_residual">>;
-type "reference value" : int r mapped <<0 "initial"> <1 "load_step"> <2 "iteration">>;
-type "epsilon" : double E 1 d < 1e-12 >;
+type "convergence type" : int r mapped <<0 "load_residual"> <1 "solution_residual"> <2 "mixed_residual">> d < 2 >;
+type "reference value" : int r mapped <<0 "initial"> <1 "load_step"> <2 "iteration">> d < 2 >;
+type "epsilon" : double E 1 d < 1e-8 >;
 type "iteration cap" : int d < 12 >;
 
 image "nonlinear iteration" : "convergence operator"

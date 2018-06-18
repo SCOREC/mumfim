@@ -38,16 +38,6 @@ image "matrix constraint" : "component constraints" {
   O type "zz":tensor0 3 E 1 d <0.0>;
 };
 
-type "dirichlet" : void e < v e f r > {
-  R "field name";
-  R "component constraints";
-};
-
-type "neumann" : void e < v e f r > {
-  R type "type" : string;
-  R "component constraints";
-};
-
 # E (expression option) must appear prior to d (default) option
 type "displacement" : void e < v e f r > {
    O type "x":tensor0 3 E 1 d <0.0>;
@@ -88,9 +78,9 @@ image "transverse_isotropic" : "continuum model" {
   R type "axial youngs modulus" : tensor0 1 E 1 d < 10000.0 >;
 };
 
-type "active" : int r mapped <<0 "false"> <1 "true">>;
 type "tag" : int;
-type "structural member" : int r mapped <<0 "truss"> <1 "beam">>;
+#type "structural member" : int r mapped <<0 "truss"> <1 "beam">> d <0>;
+type "structural member" : int r mapped <<0 "truss">> d <0>;
 
 type "nonlinearity parameter" : tensor0 1 d < 1.2 >;
 type "linear transition" : tensor0 1 d < 1.6 > ;
@@ -107,12 +97,6 @@ image "nonlinear" : "force reaction" {
 type "radius" : tensor0 3 d < 3.49911271e-8 >;
 type "volume fraction" : tensor0 1 d < 0.003 >;
 
-type "fiber orientation" : void
-{
-  R type "axis" : tensor1 3 E 1;
-  R type "alignment" : tensor0 3 E 1;
-};
-
 type "fiber type" : int r mapped <<0 "primary"> <1 "support">>;
 
 # types of multiscale models which can be used
@@ -122,12 +106,10 @@ type "fiber specification" : void e < r > {
   R "force reaction";
   R "radius";
   R "volume fraction";
-  O "fiber orientation";
 };
 
 type "multiscale model" : void e < r > {
 #  R type "fiber specifications" : list reference "fiber specification";
-  R "active";
   R type "directory" : string;
   R type "prefix" : string;
   R type "count" : int;
@@ -135,8 +117,6 @@ type "multiscale model" : void e < r > {
   R "force reaction";
   R "radius";
   R "volume fraction";
-  O "fiber orientation";
-  O "continuum model";
 };
 
 type "material model" : void e < r > {
@@ -177,8 +157,6 @@ type "stiffness gradient" : void e < n >
 
 image "macro" : "problem definition" {
   O "field";
-  O cat "constraint" "dirichlet";
-  O cat "constraint" "neumann";
   O cat "constraint" "displacement";
   O cat "constraint" "traction";
   O cat "constraint" "pressure";
