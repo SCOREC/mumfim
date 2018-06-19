@@ -395,16 +395,10 @@ namespace bio
     n[0] = prm.data[ORIENTATION_AXIS_X];
     n[1] = prm.data[ORIENTATION_AXIS_Y];
     n[2] = prm.data[ORIENTATION_AXIS_Z];
-    if(!PCU_Comm_Self())
-      std::cout << "N: " << n[0] << " " << n[1] << " " << n[2] << "\n";
     if (hdr.data[COMPUTE_ORIENTATION_3D]) {
-      if(!PCU_Comm_Self())
-        std::cout << "compute 3d tensor\n";
       get3DOrientationTensor(ans->fn, ornt_3d);
     }
     if (hdr.data[COMPUTE_ORIENTATION_2D]) {
-      if(!PCU_Comm_Self())
-        std::cout << "compute 2d tensor\n";
       get2DOrientationTensor(ans->fn, n, ornt_2d);
     }
   }
