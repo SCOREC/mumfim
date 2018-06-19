@@ -57,30 +57,6 @@ namespace bio
     // 9 for 3D orientation tensor, and 9 for the 2D orientation tensor
     double data[9+9];
   };
-  struct MicroFODatatypes
-  {
-    MPI_Datatype hdr;
-    MPI_Datatype prm;
-    MPI_Datatype ini;
-    MPI_Datatype dat;
-    MPI_Datatype rst;
-    MPI_Datatype step_rslt;
-    MicroFODatatypes()
-    {
-      MPI_Type_contiguous(NUM_HEADER_FIELDS,MPI_INTEGER,&hdr);
-      MPI_Type_contiguous(NUM_PARAM_FIELDS,MPI_DOUBLE,&prm);
-      MPI_Type_contiguous(4*3,MPI_DOUBLE,&ini);
-      MPI_Type_contiguous(9,MPI_DOUBLE,&dat);
-      MPI_Type_contiguous(4*3*6+9+9,MPI_DOUBLE,&rst);
-      MPI_Type_contiguous(9+9, MPI_DOUBLE, &step_rslt);
-      MPI_Type_commit(&hdr);
-      MPI_Type_commit(&prm);
-      MPI_Type_commit(&ini);
-      MPI_Type_commit(&dat);
-      MPI_Type_commit(&rst);
-      MPI_Type_commit(&step_rslt);
-    }
-  };
 }
 namespace amsi
 {

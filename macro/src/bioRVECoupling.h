@@ -23,7 +23,6 @@ namespace bio
     std::vector<micro_fo_step_result> stp_rslt;
     size_t snd_ptrn;
     size_t rcv_ptrn;
-    MicroFODatatypes mtd;
   public:
   RVECoupling(apf::Mesh * m, apf::Field * crt, apf::Field * old, int o)
       : msh(m)
@@ -36,7 +35,6 @@ namespace bio
       , stp_rslt()
       , snd_ptrn()
       , rcv_ptrn()
-      , mtd()
     {
       rst_fst = apf::createIPField(msh,"micro_fo_rve_offset",apf::SCALAR,1);
       int ip_id = 0;
@@ -79,9 +77,9 @@ namespace bio
       void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(ptrn,hdr,mtd.hdr);
-      cs->Communicate(ptrn,prm,mtd.prm);
-      cs->Communicate(ptrn,dat,mtd.ini);
+      cs->Communicate(ptrn,hdr,amsi::mpi_type<bio::micro_fo_header>());
+      cs->Communicate(ptrn,prm,amsi::mpi_type<bio::micro_fo_params>());
+      cs->Communicate(ptrn,dat,amsi::mpi_type<bio::micro_fo_init_data>());
     }
     size_t addRVEs(int sz)
     {
@@ -99,12 +97,12 @@ namespace bio
     void sendRVEData(std::vector<micro_fo_data> & bfr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(snd_ptrn,bfr,mtd.dat);
+      cs->Communicate(snd_ptrn,bfr,amsi::mpi_type<bio::micro_fo_data>());
     }
     void recvRVEData()
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(rcv_ptrn,rsts,mtd.rst);
+      cs->Communicate(rcv_ptrn,rsts, amsi::mpi_type<bio::micro_fo_result>());
     }
     micro_fo_result * getRVEResult(apf::MeshEntity * me, int ip)
     {
@@ -114,7 +112,8 @@ namespace bio
     void recvRVEStepData()
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(rcv_ptrn,stp_rslt,mtd.step_rslt);
+      cs->Communicate(rcv_ptrn,stp_rslt,amsi::mpi_type<bio::micro_fo_step_result>());
+
     }
     micro_fo_step_result * getRVEStepResult(apf::MeshEntity * me, int ip) {
       int fst = apf::getScalar(rst_fst, me, ip);
