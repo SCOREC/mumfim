@@ -72,6 +72,23 @@ if(DOXYGEN_FOUND)
                     COMMENT "Generating API documentation with doxygen." VERBATIM)
 endif()
 
+# FIXME this is not ideal that we are setting the amsi
+# verbosity flags here, but it works...
+if(VERBOSITY)
+  if(VERBOSITY GREATER 3)
+    message(WARNING "Invalid verbosity. Seting VERBOSITY=3")
+  endif(VERBOSITY GREATER 3)
+  if(VERBOSITY EQUAL 1)
+    add_definitions(-DAMSI_VERBOSE_1)
+  elseif(VERBOSITY EQUAL 2)
+    add_definitions(-DAMSI_VERBOSE_1 -DAMSI_VERBOSE_2)
+  elseif(VERBOSITY EQUAL 3)
+    add_definitions(-DAMSI_VERBOSE_1 -DAMSI_VERBOSE_2 -DAMSI_VERBOSE_3)
+  else(VERBOSITY EQUAL 1)
+    message(FATAL_ERROR "Something went wrong with VERBOSITY setting: ${VERBOSITY}")
+  endif(VERBOSITY EQUAL 1)
+endif(VERBOSITY)
+
 find_package(SCOREC CONFIG REQUIRED)
 add_subdirectory(micro_fo)
 #add_subdirectory(micro_fm)

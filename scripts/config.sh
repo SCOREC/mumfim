@@ -33,6 +33,7 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
     -DCMAKE_PREFIX_PATH=/gpfs/u/scratch/PASC/shared/install/amsi/lib/cmake/amsi \
     -DSCOREC_DIR=/gpfs/u/scratch/PASC/shared/install/core/lib/cmake/SCOREC \
     -DSPARSKIT_DIR=/gpfs/u/scratch/PASC/shared/install/sparskit \
+    -DVERBOSITY=0 \
     ..
   chmod g+rw $BUILD_DIR
 else
@@ -53,6 +54,7 @@ else
       -Dlas_DIR=$DEVROOT/install/las/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/lib/cmake \
       -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
+      -DVERBOSITY=1 \
       ..
 fi
 
