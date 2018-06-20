@@ -94,7 +94,7 @@ image "nonlinear" : "force reaction" {
   R "nonlinearity parameter";
   R "linear transition";
 };
-type "radius" : tensor0 3 d < 3.49911271e-8 >;
+type "radius" : tensor0 3 d < 3.49911271e-8 > obsolete;
 type "volume fraction" : tensor0 1 d < 0.003 >;
 
 type "fiber type" : int r mapped <<0 "primary"> <1 "support">>;
