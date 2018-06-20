@@ -54,7 +54,7 @@ else
       -Dlas_DIR=$DEVROOT/install/las/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/lib/cmake \
       -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
-      -DVERBOSITY=1 \
+      -DVERBOSITY=0 \
       ..
 fi
 

@@ -108,6 +108,7 @@ namespace bio
       apf::Vector3 edgeUnit = (p1 - p0).normalize();
       // project edge unit into plane defined by normal
       // e.g. t = edgeUnit-(edgeUnit.n)n (subtract out the normal part)
+      // we could use apf::reject here in future
       apf::Vector3 t = edgeUnit - n * (edgeUnit * n);
       t = t.normalize();
       apf::Matrix3x3 temp = apf::tensorProduct(t, t);

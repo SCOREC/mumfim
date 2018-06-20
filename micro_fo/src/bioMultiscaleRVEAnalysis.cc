@@ -53,9 +53,11 @@ namespace bio
     {
       apf::Vector3 nd_xyz;
       apf::Vector3 nd_u_old;
+      // the xyz coordinates in the original frame
       apf::getVector(xyz,ent,nd,nd_xyz);
       apf::getVector(u,ent,nd,nd_u_old);
       apf::Vector3 nd_u = FmI * nd_xyz;
+      // FIXME this is a place where floating point math could kill us
       apf::Vector3 nd_du = nd_u - nd_u_old;
       apf::setVector(u,ent,nd,nd_u);
       apf::setVector(du,ent,nd,nd_du);
@@ -65,22 +67,66 @@ namespace bio
       apply(u);
     }
   };
-  void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
+  void applyMultiscaleCoupling(FiberRVEAnalysis* ans, micro_fo_data* data)
   {
     int d = ans->rve->getDim();
     assert(d == 3 || d == 2);
     apf::Matrix3x3 F;
-    for(int ei = 0; ei < d; ++ei)
-      for(int ej = 0; ej < d; ++ej)
-        F[ei][ej] = data->data[ei*d + ej];
-    apf::Mesh * rve_msh = ans->rve->getMesh();
-    apf::Field * rve_du = ans->rve->getdUField();
-    apf::Field * rve_u = ans->rve->getUField();
-    ApplyDeformationGradient(F,rve_msh,rve_du,rve_u).run();
-    apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
-    apf::Field * fn_du = ans->fn->getdUField();
-    apf::Field * fn_u = ans->fn->getUField();
-    ApplyDeformationGradient(F,fn_msh,fn_du,fn_u).run();
+    for (int ei = 0; ei < d; ++ei)
+      for (int ej = 0; ej < d; ++ej) F[ei][ej] = data->data[ei * d + ej];
+    apf::Mesh* rve_msh = ans->rve->getMesh();
+    apf::Field* rve_du = ans->rve->getdUField();
+    apf::Field* rve_u = ans->rve->getUField();
+    // apply deformation gradient to the rve cube
+    ApplyDeformationGradient(F, rve_msh, rve_du, rve_u).run();
+    apf::Mesh* fn_msh = ans->fn->getNetworkMesh();
+    apf::Field* fn_du = ans->fn->getdUField();
+    apf::Field* fn_u = ans->fn->getUField();
+    // only apply first order continuation if we have derivative information
+    // from the last iteration
+    if (ans->dx_fn_dx_rve_set) {
+      int dim = ans->rve->getDim();
+      int nnd = ans->rve->numNodes();
+      apf::DynamicVector rve_duv(nnd * dim);
+      // array of the displacement field change since last itr of the rve cube
+      apf::NewArray<apf::Vector3> rve_dus;
+      apf::Element* du_elmt =
+          apf::createElement(rve_du, ans->rve->getMeshEnt());
+      apf::getVectorNodes(du_elmt, rve_dus);
+      apf::destroyElement(du_elmt);
+      apf::NewArray<int> rve_dofs;
+      apf::getElementNumbers(ans->rve->getNumbering(), ans->rve->getMeshEnt(),
+                             rve_dofs);
+      // reorder rve dofs with dofids since dx_fn_dx_rve uses them
+      for (int nd = 0; nd < nnd; ++nd) {
+        for (int dm = 0; dm < dim; ++dm) {
+          rve_duv[rve_dofs[nd * dim + dm]] = rve_dus[nd][dm];
+        }
+      }
+      int fn_dofs = ans->fn->getDofCount();
+      apf::DynamicVector du_fn(fn_dofs);
+      apf::multiply(ans->dx_fn_dx_rve, rve_duv, du_fn);
+      ApplyDeformationGradient app_F(F, fn_msh, fn_du, fn_u);
+      // Apply the deformation gradient to the boundary nodes and do not add
+      // extra term from first order continuation e.g. set du_fn to zero on
+      // boundary
+      for (auto vrt = ans->bnd_nds[RVE::side::all].begin();
+           vrt != ans->bnd_nds[RVE::side::all].end(); ++vrt) {
+        for (int dm = 0; dm < dim; ++dm) {
+          int dof = apf::getNumber(ans->fn->getUNumbering(), *vrt, 0, dm);
+          du_fn(dof) = 0.0;
+        }
+        app_F.inEntity(*vrt);
+        app_F.atNode(0);
+        app_F.outEntity();
+      }
+      // note that we want to accumulate the du*fx_fn_dx_rve onto the u field
+      ApplySolution(ans->fn->getUNumbering(), &du_fn[0], 0, true).apply(fn_u);
+    }
+    else {
+      // apply deformation gradient to the fiber network mesh
+      ApplyDeformationGradient(F, fn_msh, fn_du, fn_u).run();
+    }
   }
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
