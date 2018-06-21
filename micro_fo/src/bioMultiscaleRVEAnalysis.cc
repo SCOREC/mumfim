@@ -601,6 +601,7 @@ namespace bio
         std::vector<micro_fo_result> results(data.size());
         PCU_Switch_Comm(MPI_COMM_SELF);
         int ii = 0;
+	BIO_V1(double t0 = MPI_Wtime();)
         for(auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
           applyMultiscaleCoupling(*rve,&data[ii]);
@@ -629,6 +630,8 @@ namespace bio
           apf::writeVtkFiles(sout.str().c_str(),(*rve)->fn->getNetworkMesh(),1);
 #endif
         }
+	BIO_V1(double t1 = MPI_Wtime();)
+	BIO_V1(std::cout << "Computed " << ans.size() << " RVEs in " << t0-t1 << " seconds." << std::endl;)
         PCU_Switch_Comm(AMSI_COMM_SCALE);
         cs->Communicate(send_ptrn, results, amsi::mpi_type<micro_fo_result>());
         macro_iter++;
