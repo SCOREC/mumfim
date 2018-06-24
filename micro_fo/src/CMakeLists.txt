@@ -9,7 +9,8 @@ set(micro_fo_public_headers
   bioRVEVolumeTerms.h
   bioTrussIntegrator.h
   bioUtil.h
-  bioUtil_impl.h)
+  bioUtil_impl.h
+  bioVerbosity.h)
 
 set(micro_fo_src_files
   bioRVE.cc

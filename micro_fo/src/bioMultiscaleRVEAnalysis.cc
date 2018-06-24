@@ -10,6 +10,7 @@
 #include <apfMDS.h>
 #include <gmi.h>
 #include <cassert>
+#include <bioVerbosity.h>
 namespace bio
 {
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,

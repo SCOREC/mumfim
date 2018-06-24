@@ -20,7 +20,6 @@ set(biotissue_public_headers
   bioULMultiscaleIntegrator.h
   bioVariableRecovery.h
   bioVariableRecovery_impl.h
-  bioVerbosity.h
   bioVolumeConstraint.h
   bioVolumeConvergence.h)
 
