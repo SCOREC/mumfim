@@ -86,7 +86,9 @@ namespace bio
     GRIter ri = GM_regionIter(imdl);
     while ((rgn = (pGEntity)GRIter_next(ri))) {
       pAttribute mm = GEN_attrib(rgn, "material model");
+      assert(mm);
       pAttribute cm = Attribute_childByType(mm, "continuum model");
+      assert(cm);
       char* img_cls = Attribute_imageClass(cm);
       int cnst_type = getConstitutiveTypeFromString(img_cls);
       Sim_deleteString(img_cls);

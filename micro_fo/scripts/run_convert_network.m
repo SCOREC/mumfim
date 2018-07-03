@@ -4,9 +4,7 @@ d = '/fasttmp/deoges/develop/bio_probs/fiber_networks/set_4/';
 files = dir(fullfile(d, '*.txt'));
 
 names = {files.name};
-%for i=1:size(names,2)
-for i=1:7
-  names{i};
+for i=1:size(names,2)
   % append new to the name before the numeral
   underscores = strfind(names{i},'_');
   lstUnd = underscores(end);
