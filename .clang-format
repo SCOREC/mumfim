@@ -4,3 +4,4 @@ BreakConstructorInitializersBeforeComma: true
 NamespaceIndentation: All
 MaxEmptyLinesToKeep: 0
 AccessModifierOffset: 0
+AllowShortLoopsOnASingleLine: false

@@ -344,7 +344,9 @@ namespace bio
           }
           apf::Vector3 delta;
           for(int ii = 0; ii < dim; ++ii)
-            delta[ii] = dof == bnd_dofs[ii] ? 1.0 : 0.0;
+            delta[ii] = (dof == bnd_dofs[ii] ? 1.0 : 0.0);
+          for (int i = dim; i < 3; ++i)
+            delta[i] = -1;
           apf::Vector3 fs;
           for(int ii = 0; ii < dim; ++ii)
             fs[ii] = F[bnd_dofs[ii]];
