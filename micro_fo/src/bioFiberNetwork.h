@@ -27,13 +27,9 @@ namespace bio
     amsi::XpYFunc * xpufnc;
     apf::Field * xpu;
     apf::Field * du;
-    apf::Field * dw;
     apf::Numbering * udof;
-    apf::Numbering * wdof;
     int ucnt;
-    int wcnt;
     FiberMember tp;
-    int dim;
     std::vector<FiberReaction*> rctns;
   public:
     /**
@@ -48,15 +44,13 @@ namespace bio
      *  @return the dimensionality of the fiber network (2 or 3)
      */
     int getDim() const { return fn->getDimension(); }
-    int getDofCount() const { return ucnt + wcnt; }
+    int getDofCount() const { return ucnt; }
     FiberMember getFiberMember()      { return tp;   }
     apf::Mesh * getNetworkMesh()      { return fn;   }
     apf::Field * getUField()          { return u;    }
     apf::Field * getdUField()         { return du;   }
     apf::Field * getXpUField()        { return xpu;  }
-    apf::Field * getdWField()         { return dw;   }
     apf::Numbering * getUNumbering()  { return udof; }
-    apf::Numbering * getdWNumbering() { return wdof; }
     std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
   };
 

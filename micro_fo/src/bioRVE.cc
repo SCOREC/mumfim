@@ -66,7 +66,7 @@ namespace bio
     cbe_dof = apf::createNumbering(cbe_u);
     xpufnc = new amsi::XpYFunc(cbe->getCoordinateField(),cbe_u);
     cbe_xpu = apf::createUserField(cbe,"xpu",apf::VECTOR,apf::getShape(cbe_u),xpufnc);
-    int cbe_dof_cnt = apf::NaiveOrder(cbe_dof);
+    int cbe_dof_cnt __attribute__((unused)) = apf::NaiveOrder(cbe_dof);
     assert(dim == 3 ? cbe_dof_cnt == 24 : cbe_dof_cnt == 8);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
   }
