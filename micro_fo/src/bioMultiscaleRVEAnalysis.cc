@@ -482,6 +482,7 @@ namespace bio
     eff = amsi::activateLog("micro_fo_efficiency");
     wgt = amsi::activateLog("micro_fo_weights");
     tmg = amsi::activateLog("micro_fo_timing");
+    rve_tp_lg = amsi::activateLog("rve_type_log");
   }
   void MultiscaleRVEAnalysis::initCoupling()
   {
@@ -535,6 +536,7 @@ namespace bio
         fl << rve_tp_dirs[ii] << jj+1 << ".txt";
         FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
         fn_rctns->msh = loadFromFile(fl.str());
+        fn_rctns->fileName = fl.str();
         apf::Mesh2 * fn = fn_rctns->msh;
         fl << ".params";
         loadParamsFromFile(fn,fl.str(),std::back_inserter(fn_rctns->rctns));
@@ -597,10 +599,21 @@ namespace bio
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
         fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this, fix
         *rve = initFromMultiscale(fn,sprs[tp][rnd],bfrs,hdr,prm,dat);
-        ii++;
+        fn->setRVEType(ii);
+        BIO_V2(
+            // print the list of fiber network names to file
+            if (!PCU_Comm_Self()) {
+            amsi::log(rve_tp_lg) << ii << " "<<fns[tp][rnd]->fileName << std::endl;
+            })
+        ++ii;
       }
     }
     PCU_Switch_Comm(AMSI_COMM_SCALE);
+    if (!PCU_Comm_Self()) {
+      std::ofstream rve_tp_lg_fs(amsi::fs->getResultsDir() + "/rve_tp.log",
+                                 std::ios::out | std::ios::app);
+      amsi::flushToStream(rve_tp_lg, rve_tp_lg_fs);
+    }
     cs->CommPattern_UpdateInverted(recv_ptrn,send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);

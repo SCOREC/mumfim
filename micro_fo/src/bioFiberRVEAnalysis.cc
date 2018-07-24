@@ -124,11 +124,8 @@ namespace bio
                       an->fn->getUField(),
                       s,0,&fr_acm).run();
     ops->restore(an->u,s);
-    // this is somewhat useful, but the real information I want
-    // is the id of the macroscale mesh element that relates to this
-    // microscale analysis...
-    BIO_V2(int rank; MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
-           std::cout << "Micro RVE PROC: " << rank << "Iter:"<<this->iteration()<<"\n";)
+    BIO_V2(std::cout << "RVE: " << an->fn->getRVEType()
+                     << " Iter: " << this->iteration() << "\n";)
     Iteration::iterate();
   }
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)

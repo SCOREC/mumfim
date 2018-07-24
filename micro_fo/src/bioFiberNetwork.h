@@ -14,6 +14,7 @@ namespace bio
   {
     apf::Mesh2 * msh;
     std::vector<FiberReaction*> rctns;
+    std::string fileName;
   };
   /**
    * Responsible for managing the internal state of a single fiber-network
@@ -31,6 +32,8 @@ namespace bio
     int ucnt;
     FiberMember tp;
     std::vector<FiberReaction*> rctns;
+    // the rve filename map
+    int rve_tp;
   public:
     /**
      * Construct a FiberNetwork object.
@@ -45,6 +48,13 @@ namespace bio
      */
     int getDim() const { return fn->getDimension(); }
     int getDofCount() const { return ucnt; }
+    /*
+     * returns the type of rve (e.g. filename as an integer)
+     * the mapping between this integer and the filename can
+     * be found in the rve_tp log
+     */
+    int getRVEType()                  { return rve_tp;}
+    void setRVEType(int rve_t)        { rve_tp = rve_t;}
     FiberMember getFiberMember()      { return tp;   }
     apf::Mesh * getNetworkMesh()      { return fn;   }
     apf::Field * getUField()          { return u;    }
