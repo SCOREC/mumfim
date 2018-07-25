@@ -122,7 +122,7 @@ namespace bio
         app_F.outEntity();
       }
       // note that we want to accumulate the du*fx_fn_dx_rve onto the u field
-      ApplySolution(ans->fn->getUNumbering(), &du_fn[0], 0, true).apply(fn_u);
+      ApplySolution(fn_u, ans->fn->getUNumbering(), &du_fn[0], 0, true).run();
     }
     else {
       // apply deformation gradient to the fiber network mesh

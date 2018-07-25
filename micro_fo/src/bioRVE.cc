@@ -140,7 +140,7 @@ namespace bio
   }
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {
-    ApplySolution(rve->getNumbering(),&du[0],0,true).apply(rve->getUField());
+    ApplySolution(rve->getUField(), rve->getNumbering(),&du[0],0,true).run();
   }
   void getRVEDisplacement(RVE * rve, apf::DynamicVector & u)
   {

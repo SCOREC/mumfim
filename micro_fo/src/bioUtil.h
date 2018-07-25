@@ -74,10 +74,10 @@ namespace bio
     apf::MeshEntity * me;
     bool add;
   public:
-    ApplySolution(apf::Numbering * nm, const double * s, int d = 0, bool a = true)
+    ApplySolution(apf::Field * fld, apf::Numbering * nm, const double * s, int d = 0, bool a = true)
       : amsi::FieldOp()
       , num(nm)
-      , fld(NULL)
+      , fld(fld)
       , fldcmp()
       , sol(s)
       , dof0(d)
@@ -85,8 +85,11 @@ namespace bio
       , add(a)
     {
       assert(nm);
-      fld = apf::getField(num);
       fldcmp = apf::countComponents(fld);
+    }
+    void run()
+    {
+     apply(fld); 
     }
     bool inEntity(apf::MeshEntity * m)
     {
