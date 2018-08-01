@@ -602,18 +602,17 @@ namespace bio
         fn->setRVEType(ii);
         BIO_V2(
             // print the list of fiber network names to file
-            if (!PCU_Comm_Self()) {
             amsi::log(rve_tp_lg) << ii << " "<<fns[tp][rnd]->fileName << std::endl;
-            })
+            )
         ++ii;
       }
     }
     PCU_Switch_Comm(AMSI_COMM_SCALE);
-    if (!PCU_Comm_Self()) {
-      std::ofstream rve_tp_lg_fs(amsi::fs->getResultsDir() + "/rve_tp.log",
-                                 std::ios::out | std::ios::app);
-      amsi::flushToStream(rve_tp_lg, rve_tp_lg_fs);
-    }
+    int rank=-1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::ofstream rve_tp_lg_fs(amsi::fs->getResultsDir() + "/rve_tp."+std::to_string(rank)+".log",
+                               std::ios::out | std::ios::app);
+    amsi::flushToStream(rve_tp_lg, rve_tp_lg_fs);
     cs->CommPattern_UpdateInverted(recv_ptrn,send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
