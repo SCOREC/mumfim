@@ -708,9 +708,8 @@ namespace bio
             // was successful
             if (microIterSolveSuccess) {
               solveSuccess = true;
-              destroyAnalysis(rve);
-              rve = tmpRVE;
-              ans[i] = rve;
+              destroyAnalysis(*rve);
+              *rve = tmpRVE;
             }
             ++microAttemptCount;
           } while (solveSuccess == false &&
@@ -724,8 +723,7 @@ namespace bio
           // we've converged and have not reset the state of the vectors,
           // matrices, and buffers the inversion of the tangent stiffness matrix
           // should be available in the buffers?
-          recoverMultiscaleResults(rve, &results[ii]);
-
+          recoverMultiscaleResults(*rve, &results[ii]);
           ii++;
 #ifdef WRITE_MICRO_PER_ITER
           std::stringstream sout;
