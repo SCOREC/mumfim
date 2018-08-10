@@ -79,8 +79,11 @@ namespace bio
   }
   MultiscaleRVE::~MultiscaleRVE()
   {
+    apf::destroyField(macro_u);
     apf::destroyElement(macro_elmnt);
     apf::destroyMeshElement(macro_melmnt);
+    macro->destroyNative();
+    apf::destroyMesh(macro);
   }
   void MultiscaleRVE::calcdRVEdFE(apf::DynamicMatrix & dRVEdFE)
   {

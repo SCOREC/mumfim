@@ -54,15 +54,18 @@ namespace bio
      * the mapping between this integer and the filename can
      * be found in the rve_tp log
      */
-    int getRVEType()                  { return rve_tp;}
-    void setRVEType(int rve_t)        { rve_tp = rve_t;}
-    FiberMember getFiberMember()      { return tp;   }
-    apf::Mesh * getNetworkMesh()      { return fn;   }
-    apf::Field * getUField()          { return u;    }
-    apf::Field * getdUField()         { return du;   }
-    apf::Field * getXpUField()        { return xpu;  }
-    apf::Numbering * getUNumbering()  { return udof; }
+    int getRVEType() const                  { return rve_tp;}
+    void setRVEType(int rve_t)              { rve_tp = rve_t;}
+    FiberMember getFiberMember() const      { return tp;   }
+    apf::Mesh * getNetworkMesh() const      { return fn;   }
+    apf::Field * getUField() const          { return u;    }
+    apf::Field * getdUField() const         { return du;   }
+    apf::Field * getXpUField() const        { return xpu;  }
+    apf::Numbering * getUNumbering() const  { return udof; }
+    // TODO this should be made const, but it will take some refactor work
+    // in the Truss integrator
     std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
+    void setFiberReactions(std::vector<FiberReaction*> &frns) { rctns = frns; }
   };
 
   /**

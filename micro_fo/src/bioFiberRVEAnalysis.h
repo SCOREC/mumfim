@@ -29,8 +29,9 @@ namespace bio
   };
   class FiberRVEAnalysis
   {
-    public:
+    protected:
     FiberNetwork * fn;
+    public:
     // move this out of here! requires coupling data structures as currently written hmmm...
     MultiscaleRVE * multi;
     RVE * rve;
@@ -49,10 +50,12 @@ namespace bio
     explicit FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(FiberNetwork *fn, FiberRVEAnalysisVecs *vecs,
                      micro_fo_solver &slvr, micro_fo_int_solver &slvr_int);
+    ~FiberRVEAnalysis();
     las::Mat *getK() const { return vecs->k; }
     las::Vec *getU() const { return vecs->u; }
     las::Vec *getF() const { return vecs->f; }
     las::Solve *getSlv() const { return vecs->slv; }
+    FiberNetwork *getFn() const { return fn; }
   };
   FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *,
                                            FiberRVEAnalysisVecs *vecs);

@@ -92,7 +92,20 @@ namespace bio
   }
   RVE::~RVE()
   {
+    apf::destroyElement(cbe_u_e);
+    cbe_u_e = NULL;
+    apf::destroyField(cbe_u);
+    cbe_u = NULL;
+    apf::destroyField(cbe_du);
+    cbe_du = NULL;
+    apf::destroyField(cbe_xpu);
+    cbe_xpu = NULL;
+    apf::destroyNumbering(cbe_dof);
     delete xpufnc;
+    xpufnc = NULL;
+    cbe->destroyNative();
+    apf::destroyMesh(cbe);
+    cbe = NULL;
   }
   apf::MeshEntity * RVE::getSide(side sd) const
   {

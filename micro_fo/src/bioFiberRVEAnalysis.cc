@@ -21,7 +21,7 @@ namespace bio
       es = new TrussIntegrator(fn->getUNumbering(),
                                fn->getUField(),
                                fn->getXpUField(),
-                               &fn->getFiberReactions()[0],
+                               &(fn->getFiberReactions()[0]),
                                k,
                                f,
                                1);
@@ -53,7 +53,6 @@ namespace bio
   FiberRVEAnalysis::FiberRVEAnalysis(const FiberRVEAnalysis &an)
   {
     fn = new FiberNetwork(*an.fn);
-    //rve = new RVE(*an.rve);
     multi = new MultiscaleRVE(*an.multi);
     // need to keep the same rve in the MultiscaleRVE and in the
     // FiberRVEAnalysis
@@ -122,6 +121,22 @@ namespace bio
     this->es = createMicroElementalSystem(fn,getK(),getF());
     this->dx_fn_dx_rve_set = false;
   }
+  FiberRVEAnalysis::~FiberRVEAnalysis() {
+
+    delete fn;
+    fn = NULL;
+    delete rve;
+    rve = NULL;
+    delete es;
+    es = NULL;
+    // don't delete vecs because they are manage externally
+    vecs = NULL;
+    delete multi;
+    multi = NULL;
+    for(int i=0; i<RVE::side::all+1; ++i) {
+      bnd_nds[i].clear();
+    }
+  }
   FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *fn,
                                          FiberRVEAnalysisVecs *vecs,
                                          micro_fo_solver &slvr,
@@ -141,9 +156,8 @@ namespace bio
   }
   void destroyAnalysis(FiberRVEAnalysis *fa)
   {
-    delete fa->rve;
-    fa->fn = NULL;
     delete fa;
+    fa = NULL;
   }
   FiberRVEAnalysisVecs *createFiberRVEAnalysisVecs(int ndofs,
                                                    las::Sparsity *csr,
@@ -152,6 +166,8 @@ namespace bio
     return new FiberRVEAnalysisVecs(ndofs, csr, bfrs);
   }
   void destroyFiberRVEAnalysisVecs(FiberRVEAnalysisVecs *vecs) {
+    delete vecs;
+    vecs = NULL;
   }
   FiberRVEAnalysis *  copyAnalysis(FiberRVEAnalysis * an) {
     return new FiberRVEAnalysis(*an);
@@ -166,7 +182,7 @@ namespace bio
     ops->zero(an->getK());
     ops->zero(an->getU());
     ops->zero(an->getF());
-    apf::Mesh * fn = an->fn->getNetworkMesh();
+    apf::Mesh * fn = an->getFn()->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
     int ii = 0;
@@ -181,25 +197,25 @@ namespace bio
     fn->end(itr);
     applyRVEBC(an->bnd_nds[RVE::all].begin(),
                an->bnd_nds[RVE::all].end(),
-               an->fn->getUNumbering(),
+               an->getFn()->getUNumbering(),
                an->getK(),
                an->getF());
     an->getSlv()->solve(an->getK(),an->getU(),an->getF());
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
-    amsi::FreeApplyOp fr_wrt(an->fn->getUNumbering(),&wrt);
-    amsi::FreeApplyOp fr_acm(an->fn->getUNumbering(),&acm);
+    amsi::FreeApplyOp fr_wrt(an->getFn()->getUNumbering(),&wrt);
+    amsi::FreeApplyOp fr_acm(an->getFn()->getUNumbering(),&acm);
     double * s = NULL;
     ops->get(an->getU(),s);
-    amsi::ApplyVector(an->fn->getUNumbering(),
-                      an->fn->getdUField(),
+    amsi::ApplyVector(an->getFn()->getUNumbering(),
+                      an->getFn()->getdUField(),
                       s,0,&fr_wrt).run();
-    amsi::ApplyVector(an->fn->getUNumbering(),
-                      an->fn->getUField(),
+    amsi::ApplyVector(an->getFn()->getUNumbering(),
+                      an->getFn()->getUField(),
                       s,0,&fr_acm).run();
     ops->restore(an->getU(),s);
     BIO_V2(int rank = -1; MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-           std::cout << "RVE: " << an->fn->getRVEType() << " Iter: "
+           std::cout << "RVE: " << an->getFn()->getRVEType() << " Iter: "
                      << this->iteration() << " Rank: " << rank << "\n";)
     Iteration::iterate();
   }
@@ -212,9 +228,9 @@ namespace bio
     double * f = NULL;
     ops->get(fra->getF(),f);
     auto & bnd = fra->bnd_nds[RVE::all];
-    apf::Numbering * nm = fra->fn->getUNumbering();
-    apf::Field * uf = fra->fn->getUField();
-    apf::Mesh * fn = fra->fn->getNetworkMesh();
+    apf::Numbering * nm = fra->getFn()->getUNumbering();
+    apf::Field * uf = fra->getFn()->getUField();
+    apf::Mesh * fn = fra->getFn()->getNetworkMesh();
     for(auto vrt = bnd.begin(); vrt != bnd.end(); ++vrt)
     {
       int dof[3] = {};

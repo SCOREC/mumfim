@@ -27,9 +27,9 @@ namespace bio
     apf::Field* rve_u = ans->rve->getUField();
     // apply deformation gradient to the rve cube
     ApplyDeformationGradient(F, rve_msh, rve_du, rve_u).run();
-    apf::Mesh* fn_msh = ans->fn->getNetworkMesh();
-    apf::Field* fn_du = ans->fn->getdUField();
-    apf::Field* fn_u = ans->fn->getUField();
+    apf::Mesh* fn_msh = ans->getFn()->getNetworkMesh();
+    apf::Field* fn_du = ans->getFn()->getdUField();
+    apf::Field* fn_u = ans->getFn()->getUField();
     // only apply first order continuation if we have derivative information
     // from the last iteration
     if (ans->dx_fn_dx_rve_set) {
@@ -51,7 +51,7 @@ namespace bio
           rve_duv[rve_dofs[nd * dim + dm]] = rve_dus[nd][dm];
         }
       }
-      int fn_dofs = ans->fn->getDofCount();
+      int fn_dofs = ans->getFn()->getDofCount();
       apf::DynamicVector du_fn(fn_dofs);
       apf::multiply(ans->dx_fn_dx_rve, rve_duv, du_fn);
       ApplyDeformationGradient app_F(F, fn_msh, fn_du, fn_u);
@@ -61,7 +61,7 @@ namespace bio
       for (auto vrt = ans->bnd_nds[RVE::side::all].begin();
            vrt != ans->bnd_nds[RVE::side::all].end(); ++vrt) {
         for (int dm = 0; dm < dim; ++dm) {
-          int dof = apf::getNumber(ans->fn->getUNumbering(), *vrt, 0, dm);
+          int dof = apf::getNumber(ans->getFn()->getUNumbering(), *vrt, 0, dm);
           du_fn(dof) = 0.0;
         }
         app_F.inEntity(*vrt);
@@ -69,7 +69,7 @@ namespace bio
         app_F.outEntity();
       }
       // note that we want to accumulate the du*fx_fn_dx_rve onto the u field
-      ApplySolution(fn_u, ans->fn->getUNumbering(), &du_fn[0], 0, true).run();
+      ApplySolution(fn_u, ans->getFn()->getUNumbering(), &du_fn[0], 0, true).run();
     }
     else {
       // apply deformation gradient to the fiber network mesh
@@ -79,11 +79,11 @@ namespace bio
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
     auto ops = las::getLASOps<las::sparskit>();
-    int dim = ans->fn->getNetworkMesh()->getDimension();
-    apf::Field * xpu = ans->fn->getXpUField();
+    int dim = ans->getFn()->getNetworkMesh()->getDimension();
+    apf::Field * xpu = ans->getFn()->getXpUField();
     apf::Vector3 xpu_val;
     apf::Vector3 f_val;
-    apf::Numbering * num = ans->fn->getUNumbering();
+    apf::Numbering * num = ans->getFn()->getUNumbering();
     int dofs[3];
     double * f = NULL;
     ops->get(ans->getF(),f);
@@ -93,7 +93,7 @@ namespace bio
     for(auto nd = ans->bnd_nds[RVE::all].begin(); nd != ans->bnd_nds[RVE::all].end(); ++nd)
     {
       apf::getVector(xpu,*nd,0,xpu_val);
-      for(int ii = 0; ii < ans->fn->getDim(); ++ii)
+      for(int ii = 0; ii < ans->getFn()->getDim(); ++ii)
         dofs[ii] = apf::getNumber(num,*nd,0,ii);
       strs[0][0] += xpu_val[0] * f[dofs[0]];
       strs[0][1] += xpu_val[1] * f[dofs[0]];
@@ -111,7 +111,7 @@ namespace bio
   }
   void convertStress(FiberRVEAnalysis * ans, double * stress)
   {
-    int dim = ans->fn->getNetworkMesh()->getDimension();
+    int dim = ans->getFn()->getNetworkMesh()->getDimension();
     int sigma_length = dim == 3 ? 6 : 3;
     // convert to a macro-scale term
     double vol = ans->rve->measureDu();
@@ -198,7 +198,7 @@ namespace bio
                      FiberRVEAnalysis * ans)
   {
     int dim = ans->rve->getDim();
-    int fn_dof_cnt = ans->fn->getDofCount();
+    int fn_dof_cnt = ans->getFn()->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes()*dim;
     dRdx_rve.setSize(fn_dof_cnt,rve_dof_cnt);
     dRdx_rve.zero();
@@ -214,7 +214,7 @@ namespace bio
       int plnr_dim = (sd == RVE::side::rgt || sd == RVE::side::lft) ? 0 :
         (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
       for(auto vrt = ans->bnd_nds[sd].begin(); vrt != ans->bnd_nds[sd].end(); ++vrt)
-        calcdRdx_rve_term(dRdx_rve,ans->fn,ans->rve,sd_ent,*vrt,plnr_dim,a);
+        calcdRdx_rve_term(dRdx_rve,ans->getFn(),ans->rve,sd_ent,*vrt,plnr_dim,a);
     }
   }
   // ans->k needs to be modified during calculation ofr dS_dx_fn prior to calling this
@@ -224,7 +224,7 @@ namespace bio
   {
     auto ops = las::getLASOps<las::sparskit>();
     int dim = ans->rve->getDim();
-    int fn_dof_cnt = ans->fn->getDofCount();
+    int fn_dof_cnt = ans->getFn()->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes()*dim;
     apf::DynamicVector f(fn_dof_cnt);
     apf::DynamicVector u(fn_dof_cnt);
@@ -247,6 +247,10 @@ namespace bio
       std::copy(uptr,uptr+fn_dof_cnt,u.begin());
       dx_fn_dx_rve.setColumn(ii,u);
     }
+    vb->destroy(skt_f);
+    vb->destroy(skt_u);
+    delete qslv;
+    delete iluslv;
   }
   // setup additional solves with the rows of dR_dx_rve as the force vector
   // need to modify matrix as done in calc_precond in old code prior to these solves, this also produces dS_dx_fn the change of the stresses on the boundary of the RVE w.r.t. the fiber network coordinates
@@ -256,20 +260,20 @@ namespace bio
     auto ops = las::getLASOps<las::sparskit>();
     int dim = ans->rve->getDim();
     int sigma_length = dim == 3 ? 6 : 3;
-    int fn_dof_cnt = ans->fn->getDofCount();
+    int fn_dof_cnt = ans->getFn()->getDofCount();
     ds_dx_fn.setSize(sigma_length,fn_dof_cnt);
     ds_dx_fn.zero();
-    apf::Numbering * dofs = ans->fn->getUNumbering();
+    apf::Numbering * dofs = ans->getFn()->getUNumbering();
     double * F = NULL;
     ops->get(ans->getF(),F);
     // iterate over all fibers with a node on the boundary
     for(auto vrt = ans->bnd_nds[RVE::all].begin(); vrt != ans->bnd_nds[RVE::all].end(); ++vrt)
     {
-      apf::Mesh * fn_msh = ans->fn->getNetworkMesh();
+      apf::Mesh * fn_msh = ans->getFn()->getNetworkMesh();
       assert(fn_msh->countUpward(*vrt) == 1);
       apf::Vector3 Nx;
       // need the displaced node coordinates, not the reference coords
-      apf::getVector(ans->fn->getXpUField(),*vrt,0,Nx);
+      apf::getVector(ans->getFn()->getXpUField(),*vrt,0,Nx);
       //fn_msh->getPoint(*vrt,0,Nx);
       apf::MeshEntity * edg = fn_msh->getUpward(*vrt,0);
       apf::MeshEntity * vrts[2];
@@ -314,7 +318,7 @@ namespace bio
   void recoverStressDerivs(FiberRVEAnalysis * ans, double * sigma, double * dstrss_drve)
   {
     int dim = ans->rve->getDim();
-    //int fn_dof_cnt = ans->fn->getDofCount();
+    //int fn_dof_cnt = ans->getFn()->getDofCount();
     int sigma_length = dim == 3 ? 6 : 3;
     apf::DynamicMatrix dR_dx_rve;
     calcdR_dx_rve(dR_dx_rve,ans);
@@ -324,7 +328,7 @@ namespace bio
     // this effects the force vector which is used in the calculation of
     // dS_dx_fn above so we must do it after.
     applyRVEBC(ans->bnd_nds[RVE::all].begin(),ans->bnd_nds[RVE::all].end(),
-               ans->fn->getUNumbering(),ans->getK(),ans->getF());
+               ans->getFn()->getUNumbering(),ans->getK(),ans->getF());
     calcdx_fn_dx_rve(ans->dx_fn_dx_rve,ans,dR_dx_rve);
     apf::DynamicMatrix ds_dx_rve;
     apf::multiply(ds_dx_fn,ans->dx_fn_dx_rve,ds_dx_rve);
@@ -360,7 +364,7 @@ namespace bio
     // boundary conditions anyway
     ops->zero(ans->getK());
     ops->zero(ans->getF());
-    apf::Mesh * fn  = ans->fn->getNetworkMesh();
+    apf::Mesh * fn  = ans->getFn()->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * it = fn->begin(1);
     while((me = fn->iterate(it)))
@@ -392,23 +396,26 @@ namespace bio
     n[1] = prm.data[ORIENTATION_AXIS_Y];
     n[2] = prm.data[ORIENTATION_AXIS_Z];
     if (hdr.data[COMPUTE_ORIENTATION_3D]) {
-      get3DOrientationTensor(ans->fn, ornt_3d);
+      get3DOrientationTensor(ans->getFn(), ornt_3d);
     }
     if (hdr.data[COMPUTE_ORIENTATION_2D]) {
-      get2DOrientationTensor(ans->fn, n, ornt_2d);
+      get2DOrientationTensor(ans->getFn(), n, ornt_2d);
     }
   }
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() {
+    delete bfrs;
     for(auto v = vecs.begin(); v!=vecs.end();++v) {
       delete (*v);
     }
     for(auto rve=ans.begin(); rve!=ans.end(); ++rve) {
       destroyAnalysis(*rve);
+      (*rve) = NULL;
     }
     assert(fns.size() == sprs.size() && fns.size() == dofs_cnt.size());
+    // need to delete any fns that were not used as part of an analysis
     for(std::size_t i=0; i<fns.size(); ++i) {
       for(int j=0;j<rve_tp_cnt[i]; ++j) {
-        delete fns[i][j];
+        //delete fns[i][j];
         las::destroySparsity<las::CSR*>(sprs[i][j]);
       }
       delete [] fns[i];
@@ -418,6 +425,8 @@ namespace bio
     fns.clear();
     sprs.clear();
     dofs_cnt.clear();
+    vecs.clear();
+    meshes.clear();
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
     : eff()
@@ -540,7 +549,9 @@ namespace bio
     {
       // FIXME need to clear out FiberRVEAnalysisVecs,
       // sparsity, dofs_cnt, etc here.
-      destroyAnalysis(ans[*idx]);
+      // We also cannot just destroy the analysis w/o removing the corresponding
+      // terms from the ans vector see vector erase
+      //destroyAnalysis(ans[*idx]);
     }
     std::vector<int> to_add;
     std::vector<int> empty;
@@ -559,7 +570,6 @@ namespace bio
                     amsi::mpi_type<bio::micro_fo_solver>());
     cs->Communicate(recv_init_ptrn, slvr_int_prms,
                     amsi::mpi_type<bio::micro_fo_int_solver>());
-    gmi_model * nl_mdl = gmi_load(".null");
     PCU_Switch_Comm(MPI_COMM_SELF);
     int ii = 0;
     for(auto rve = ans.begin(); rve != ans.end(); ++rve)
@@ -573,9 +583,9 @@ namespace bio
         micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
         int tp = hdr.data[RVE_TYPE];
         int rnd = rand() % rve_tp_cnt[tp];
-        apf::Mesh * msh_cpy = apf::createMdsMesh(nl_mdl,fns[tp][rnd]->msh);
+        apf::Mesh * msh_cpy = apf::createMdsMesh(gmi_load(".null"),meshes[tp][rnd]);
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
-        fn->getFiberReactions() = fns[tp][rnd]->rctns; // hate this, fix
+        fn->setFiberReactions(fns[tp][rnd]->rctns);
         vecs.push_back(createFiberRVEAnalysisVecs(dofs_cnt[tp][rnd], sprs[tp][rnd], bfrs));
         *rve = initFromMultiscale(fn, vecs[ii], hdr, prm, dat,
                                   slvr_prm, slvr_int_prm);
@@ -645,8 +655,8 @@ namespace bio
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         int ii = 0;
         BIO_V1(double t0 = MPI_Wtime();)
-        for(std::size_t i=0; i<ans.size(); ++i) {
-          FiberRVEAnalysis* rve = ans[i];
+        FiberRVEAnalysis* tmpRVE = NULL;
+        for(auto rve = ans.begin(); rve != ans.end(); ++rve) {
           unsigned int maxMicroAttempts = 0; //parameter
           unsigned int microAttemptCutFactor; // parameter
           bool solveSuccess = false;
@@ -656,7 +666,7 @@ namespace bio
             // create a deep copy of the analysis
             // Note the current implementation of copy does not deep copy
             // the sparskit matrices, vectors, or solver
-            FiberRVEAnalysis* tmpRVE = copyAnalysis(rve);
+            tmpRVE = copyAnalysis(*rve);
             val_gen vg(tmpRVE);
             eps_gen eg(tmpRVE->solver_eps);
             ref_gen rg;
@@ -699,6 +709,8 @@ namespace bio
               // cutIterations are successful
               microIterSolveSuccess =
                   (amsi::numericalSolve(&itr, &cnvrg) && microIterSolveSuccess);
+              // cleanup the oscillation detection memory
+              delete osc_itr;
               // don't bother computing the rest of the attempt if any
               // subiteration fails, for our current use case we don't care what
               // made us fail, we will try to reduce the load and try again.
@@ -709,13 +721,14 @@ namespace bio
             if (microIterSolveSuccess) {
               solveSuccess = true;
               destroyAnalysis(*rve);
-              *rve = tmpRVE;
+              (*rve) = tmpRVE;
+              tmpRVE = NULL;
             }
             ++microAttemptCount;
           } while (solveSuccess == false &&
                    (microAttemptCount <= maxMicroAttempts));
           if (!solveSuccess) {
-            std::cerr << "RVE: " << (rve)->fn->getRVEType()
+            std::cerr << "RVE: " << (*rve)->getFn()->getRVEType()
                       << " failed to converge in " << microAttemptCount - 1
                       << " attempts on processor " << rank << std::endl;
             std::abort();  // should I use MPI_Abort() here?
@@ -731,7 +744,7 @@ namespace bio
           MPI_Comm_rank(AMSI_COMM_SCALE,&rnk);
           sout << "rnk_" << rnk << "_fn_" << ii
                << "_step_" << macro_step << "_iter_" << macro_iter;
-          apf::writeVtkFiles(sout.str().c_str(),(rve)->fn->getNetworkMesh(),1);
+          apf::writeVtkFiles(sout.str().c_str(),(*rve)->fn->getNetworkMesh(),1);
 #endif
         }
         BIO_V1(double t1 = MPI_Wtime();)
