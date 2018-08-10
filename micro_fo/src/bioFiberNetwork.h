@@ -12,7 +12,6 @@ namespace bio
 {
   struct FiberNetworkReactions
   {
-    apf::Mesh2 * msh;
     std::vector<FiberReaction*> rctns;
     std::string fileName;
   };

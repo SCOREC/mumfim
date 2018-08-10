@@ -29,6 +29,7 @@ namespace bio
     // analysis
     std::vector<int> rve_tp_cnt;
     std::vector<FiberNetworkReactions **> fns;
+    std::vector<apf::Mesh2 **> meshes;
     std::vector<micro_fo_header> hdrs;
     std::vector<micro_fo_params> prms;
     std::vector<micro_fo_solver> slvr_prms;

@@ -415,12 +415,18 @@ namespace bio
     // need to delete any fns that were not used as part of an analysis
     for(std::size_t i=0; i<fns.size(); ++i) {
       for(int j=0;j<rve_tp_cnt[i]; ++j) {
-        //delete fns[i][j];
+        delete fns[i][j];
         las::destroySparsity<las::CSR*>(sprs[i][j]);
+        if(meshes[i][j]) {
+          meshes[i][j]->destroyNative();
+          apf::destroyMesh(meshes[i][j]);
+          meshes[i][j] = NULL;
+        }
       }
       delete [] fns[i];
       delete [] sprs[i];
       delete [] dofs_cnt[i];
+      delete [] meshes[i];
     }
     fns.clear();
     sprs.clear();
@@ -509,6 +515,7 @@ namespace bio
       fns.push_back(new FiberNetworkReactions*[rve_tp_cnt[ii]]);
       sprs.push_back(new las::Sparsity*[rve_tp_cnt[ii]]);
       dofs_cnt.push_back(new int[rve_tp_cnt[ii]]);
+      meshes.push_back(new apf::Mesh2*[rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
     PCU_Switch_Comm(MPI_COMM_SELF);
@@ -519,9 +526,9 @@ namespace bio
         std::stringstream fl;
         fl << rve_tp_dirs[ii] << jj+1 << ".txt";
         FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
-        fn_rctns->msh = loadFromFile(fl.str());
+        meshes[ii][jj] = loadFromFile(fl.str());
+        apf::Mesh2 * fn = meshes[ii][jj];
         fn_rctns->fileName = fl.str();
-        apf::Mesh2 * fn = fn_rctns->msh;
         fl << ".params";
         loadParamsFromFile(fn,fl.str(),std::back_inserter(fn_rctns->rctns));
         fns[ii][jj] = fn_rctns;
