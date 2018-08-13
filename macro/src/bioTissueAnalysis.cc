@@ -13,6 +13,7 @@ namespace bio
     , mx_stp(1)
     , tssu(NULL)
     , itr()
+    , itr_stps()
     , cvg()
     , cvg_stps()
     , trkd_vols()
@@ -36,13 +37,22 @@ namespace bio
   { }
   TissueAnalysis::~TissueAnalysis()
   {
-    delete cvg;
-    for(auto c = cvg_stps.begin(); c != cvg_stps.end(); ++c)
-    {
-      amsi::Convergence * cn = *c;
-      delete cn;
-      *c = NULL;
+    // since we know all of the iteration steps are allocated on the heap delete
+    // them
+    for (auto itr_stp = itr_stps.begin(); itr_stp != itr_stps.end();
+         ++itr_stp) {
+      delete (*itr_stp);
+      (*itr_stp) = NULL;
     }
+    delete itr;
+    // since we know all of the convegence steps are allocated on the heap
+    // delete them
+    for (auto cvg_stp = cvg_stps.begin(); cvg_stp != cvg_stps.end();
+         ++cvg_stp) {
+      delete (*cvg_stp);
+      (*cvg_stp) = NULL;
+    }
+    delete cvg;
     delete tssu;
     delete las;
   }
@@ -55,9 +65,7 @@ namespace bio
     pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
-    tssu = new NonlinearTissue(mdl,msh,pd,cm);
-    amsi::ModularIteration * mdl_itr = NULL;
-    itr = mdl_itr = new TissueIteration(tssu,las);
+    tssu = new NonlinearTissue(mdl,msh,pd,ss,cm);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
     std::vector<pANode> trk_vols;
@@ -68,11 +76,13 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      mdl_itr->addOperation(trkd_vols[*trk_vol]);
+      itr_stps.push_back(trkd_vols[*trk_vol]);
     }
+    // We want to do the tissue iteration after we compute the volumes
+    itr_stps.push_back(new TissueIteration(tssu,las));
+    itr = new amsi::MultiIteration(itr_stps.begin(), itr_stps.end());
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
-    cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(),cvg_stps.end());
     // output params
 #ifdef LOGRUN
@@ -117,8 +127,7 @@ namespace bio
                        << "start_step"
                        << std::endl;
 #endif
-      if(!PCU_Comm_Self())
-	std::cout << "Load step = " << stp << std::endl;
+      if (!PCU_Comm_Self()) std::cout << "Load step = " << stp << std::endl;
       if(amsi::numericalSolve(itr,cvg))
       {
 #ifdef LOGRUN
@@ -128,7 +137,7 @@ namespace bio
                          << "end_solve"
                          << std::endl;
 #endif
-        if(stp == mx_stp)
+        if(stp >= mx_stp-1)
         {
           completed = true;
           std::cout << "Final load step converged. Case complete." << std::endl;

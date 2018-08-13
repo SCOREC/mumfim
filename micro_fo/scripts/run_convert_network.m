@@ -5,6 +5,7 @@ files = dir(fullfile(d, '*.txt'));
 
 names = {files.name};
 for i=1:size(names,2)
+  names{i}
   % append new to the name before the numeral
   underscores = strfind(names{i},'_');
   lstUnd = underscores(end);

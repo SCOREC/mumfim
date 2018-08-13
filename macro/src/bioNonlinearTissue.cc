@@ -28,9 +28,9 @@
 namespace bio
 {
   NonlinearTissue::NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
-                                   MPI_Comm cm)
+                                   pACase ss, MPI_Comm cm)
       : FEA(cm)
-      , apfSimFEA(imdl, imsh, pd, cm)
+      , apfSimFEA(imdl, imsh, pd, ss, cm)
       , constitutives()
       , dv_prev(0.0)
       , load_step(0)
@@ -148,7 +148,7 @@ namespace bio
   }
   void NonlinearTissue::computeInitGuess(amsi::LAS* las)
   {
-    LinearTissue lt(model, mesh, prob_def, analysis_comm);
+    LinearTissue lt(model, mesh, prob_def, solution_strategy, analysis_comm);
     lt.setSimulationTime(T);
     LinearSolver(&lt, las);
     las->iter();

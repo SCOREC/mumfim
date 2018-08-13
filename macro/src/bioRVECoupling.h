@@ -73,13 +73,15 @@ namespace bio
       std::copy(dlt_bgn,dlt_end,std::back_inserter(to_dlt));
       cs->RemoveData(snd_ptrn,to_dlt);
     }
-    template <typename I1, typename I2, typename I3>
-      void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat)
+    template <typename I1, typename I2, typename I3, typename I4, typename I5>
+      void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat, I4 micro_slvr, I5 micro_int_slvr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
       cs->Communicate(ptrn,hdr,amsi::mpi_type<bio::micro_fo_header>());
       cs->Communicate(ptrn,prm,amsi::mpi_type<bio::micro_fo_params>());
       cs->Communicate(ptrn,dat,amsi::mpi_type<bio::micro_fo_init_data>());
+      cs->Communicate(ptrn,micro_slvr,amsi::mpi_type<bio::micro_fo_solver>());
+      cs->Communicate(ptrn,micro_int_slvr,amsi::mpi_type<bio::micro_fo_int_solver>());
     }
     size_t addRVEs(int sz)
     {

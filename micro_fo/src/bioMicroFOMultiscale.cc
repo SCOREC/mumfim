@@ -80,4 +80,28 @@ namespace amsi
     }
     return tp.val;
   }
+  template <>
+  MPI_Datatype mpi_type<bio::micro_fo_solver>()
+  {
+    static static_init<MPI_Datatype> tp;
+    if(!tp.init)
+    {
+      MPI_Type_contiguous(bio::NUM_MICRO_SOLVER_FIELDS,MPI_DOUBLE,&tp.val);
+      MPI_Type_commit(&tp.val);
+      tp.init = true;
+    }
+    return tp.val;
+  }
+  template <>
+  MPI_Datatype mpi_type<bio::micro_fo_int_solver>()
+  {
+    static static_init<MPI_Datatype> tp;
+    if(!tp.init)
+    {
+      MPI_Type_contiguous(bio::NUM_MICRO_SOLVER_INT_FIELDS,MPI_INTEGER,&tp.val);
+      MPI_Type_commit(&tp.val);
+      tp.init = true;
+    }
+    return tp.val;
+  }
 }

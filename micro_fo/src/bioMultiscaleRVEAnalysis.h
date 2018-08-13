@@ -31,9 +31,14 @@ namespace bio
     std::vector<FiberNetworkReactions **> fns;
     std::vector<micro_fo_header> hdrs;
     std::vector<micro_fo_params> prms;
+    std::vector<micro_fo_solver> slvr_prms;
+    std::vector<micro_fo_int_solver> slvr_int_prms;
     std::vector<las::Sparsity **> sprs;
     std::vector<FiberRVEAnalysis*> ans;
     las::SparskitBuffers * bfrs;
+    std::vector<FiberRVEAnalysisVecs*> vecs;
+    // a vector that stores the dof number for each type of network
+    std::vector<int*> dofs_cnt;
     int macro_iter;
     int macro_step;
     // funcs
@@ -43,6 +48,7 @@ namespace bio
     void updateCoupling();
   public:
     MultiscaleRVEAnalysis();
+    ~MultiscaleRVEAnalysis();
     virtual void init();
     virtual void run();
   };

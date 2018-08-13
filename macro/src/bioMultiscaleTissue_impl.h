@@ -28,8 +28,10 @@ namespace bio
     }
     }
   */
-  template <typename O1, typename O2, typename O3>
-    void MultiscaleTissue::serializeNewRVEData(O1 new_hdrs, O2 new_prms, O3 new_data, bool all)
+  template <typename O1, typename O2, typename O3, typename O4, typename O5>
+  void MultiscaleTissue::serializeNewRVEData(O1 new_hdrs, O2 new_prms,
+                                             O3 new_data, O4 new_slvr_prms,
+                                             O5 new_int_slvr_prms, bool all)
   {
     apf::MeshEntity * rgn = NULL;
     apf::MeshIterator * it = NULL;
@@ -46,12 +48,16 @@ namespace bio
           micro_fo_header hdr;
           micro_fo_params prm;
           micro_fo_init_data dat;
+          micro_fo_solver slvr;
+          micro_fo_int_solver int_slvr;
           getInternalRVEData(rgn,hdr,prm,dat);
-          getExternalRVEData(rgn,hdr,prm);
+          getExternalRVEData(rgn,hdr,prm,slvr,int_slvr);
           hdr.data[GAUSS_ID] = ip;
           *new_hdrs++ = hdr;
           *new_prms++ = prm;
           *new_data++ = dat;
+          *new_slvr_prms++ = slvr;
+          *new_int_slvr_prms++ = int_slvr;
         }
       }
       apf::destroyMeshElement(mlm);

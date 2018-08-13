@@ -1,9 +1,11 @@
 13
-
+#
+## Fields
 type "num timesteps" : int d < 1 >;
 type "load balancing" : int r mapped <<-2 "none"> <-1 "user"> <1 "random"> <2 "equal">>;
 
 type "convergence operator" : void A e < n >;
+type "microscale convergence operator" : void A e < n >;
 
 image "linear convergence" : "convergence operator"
 {
@@ -23,6 +25,7 @@ image "nonlinear iteration" : "convergence operator"
   O "iteration cap";
 };
 
+
 type "track volume" : void e < r >;
 
 image "volume convergence" : "convergence operator"
@@ -33,9 +36,41 @@ image "volume convergence" : "convergence operator"
   O "iteration cap";
 };
 
+# These should really be called iteration cap 
+# and epsilon, but I cannot figure out how to change
+# the default values, so I gave them a new name.
+type "micro iteration cap" : int d < 200 >;
+type "micro epsilon" : double E 1 d < 1e-6 >;
+type "number of attempts" : int d < 5 >;
+type "attempt cut factor" : int d < 2 >;
+type "previous itr factor" : double d < 1.0 >;
+type "oscillation detection" : void A e < n >;
+image "iteration only" : "oscillation detection" {
+  R "number of attempts";
+  R "attempt cut factor";
+  R "micro iteration cap";
+};
+image "previous residual" : "oscillation detection" {
+  R "number of attempts";
+  R "attempt cut factor";
+  R "previous itr factor";
+};
+image "combined" : "oscillation detection" {
+  R "number of attempts";
+  R "attempt cut factor";
+  R "micro iteration cap";
+  R "previous itr factor";
+};
+image "nonlinear iteration" : "microscale convergence operator"
+{
+  R "micro epsilon";
+  R "oscillation detection"; 
+};
+
 image "macro" : "solution strategy" {
   R "num timesteps";
   R "load balancing";
   O "track volume";
   O "convergence operator";
+  O "microscale convergence operator";
 };

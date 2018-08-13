@@ -33,6 +33,28 @@ namespace bio
     ORIENTATION_AXIS_Z = 7,
     NUM_PARAM_FIELDS = 8
   };
+  enum micro_solver_fields
+  {
+    MICRO_SOLVER_EPS=0,
+    PREV_ITER_FACTOR=1, 
+    NUM_MICRO_SOLVER_FIELDS=2
+  };
+  enum micro_solver_int_fields
+  {
+    MAX_MICRO_CUT_ATTEMPT=0,
+    MICRO_ATTEMPT_CUT_FACTOR=1,
+    MAX_MICRO_ITERS=2,
+    DETECT_OSCILLATION_TYPE=3,
+    NUM_MICRO_SOLVER_INT_FIELDS=4
+  };
+  struct micro_fo_solver
+  {
+    double data[NUM_MICRO_SOLVER_FIELDS];
+  };
+  struct micro_fo_int_solver
+  {
+    int data[NUM_MICRO_SOLVER_INT_FIELDS];
+  };
   struct micro_fo_params
   {
     double data[NUM_PARAM_FIELDS];
@@ -64,6 +86,10 @@ namespace amsi
     MPI_Datatype mpi_type<bio::micro_fo_header>();
   template <>
     MPI_Datatype mpi_type<bio::micro_fo_params>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_solver>();
+  template <>
+    MPI_Datatype mpi_type<bio::micro_fo_int_solver>();
   template <>
     MPI_Datatype mpi_type<bio::micro_fo_init_data>();
   template <>

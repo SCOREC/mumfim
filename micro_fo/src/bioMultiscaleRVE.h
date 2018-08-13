@@ -2,6 +2,7 @@
 #define BIO_MULTISCALE_RVE_H_
 #include "bioRVE.h"
 #include "bioMicroFOMultiscale.h"
+#include <amsiDetectOscillation.h>
 namespace bio
 {
   /*
@@ -32,14 +33,13 @@ namespace bio
     double rve_dim;
     double scale_conversion;
   public:
-    MultiscaleRVE(RVE * rve,
-                  FiberNetwork * fn,
-                  micro_fo_header & hdr,
-                  micro_fo_params & prms,
-                  micro_fo_init_data & dat);
-    ~MultiscaleRVE();
-    void calcdRVEdFE(apf::DynamicMatrix & dRVEdFE);
-    double getScaleConversion() const { return scale_conversion; }
+  MultiscaleRVE(RVE *rve, FiberNetwork *fn, micro_fo_header &hdr,
+                micro_fo_params &prms, micro_fo_init_data &data);
+  MultiscaleRVE(const MultiscaleRVE &mrve);
+  RVE *getRVE() const { return rve; }
+  ~MultiscaleRVE();
+  void calcdRVEdFE(apf::DynamicMatrix &dRVEdFE);
+  double getScaleConversion() const { return scale_conversion; }
   };
 }
 #endif

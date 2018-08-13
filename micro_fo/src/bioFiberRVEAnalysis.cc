@@ -11,7 +11,7 @@
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
-  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+  static apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
                                                las::Mat * k,
                                                las::Vec * f)
   {
@@ -27,52 +27,124 @@ namespace bio
                                1);
     return es;
   }
-  FiberRVEAnalysis * makeFiberRVEAnalysis(FiberNetwork * fn,
-                                          las::Sparsity * csr,
-                                          las::SparskitBuffers * b)
+  FiberRVEAnalysisVecs::FiberRVEAnalysisVecs(int ndofs, las::Sparsity *csr,
+                                             las::SparskitBuffers *b)
   {
-    FiberRVEAnalysis * an = new FiberRVEAnalysis;
-    an->fn = fn;
-    // todo determine rve size from input
-    an->rve = new RVE(0.5,fn->getDim());
+    las::LasCreateVec *vb = las::getVecBuilder<las::sparskit>(0);
+    las::LasCreateMat *mb = las::getMatBuilder<las::sparskit>(0);
+    this->f = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
+    this->u = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
+    this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
+    // FIXME memory leak (won't be hit in multi-scale)
+    // because we provide buffers
+    if (b == NULL)
+      b = new las::SparskitBuffers(
+          ndofs);  
+    this->slv = las::createSparskitLUSolve(b, 1e-6);
+  }
+  FiberRVEAnalysisVecs::~FiberRVEAnalysisVecs() {
+      auto md = las::getMatBuilder<las::sparskit>(0);
+      auto vd = las::getVecBuilder<las::sparskit>(0);
+      md->destroy(k);
+      vd->destroy(u);
+      vd->destroy(f);
+      delete slv;
+  }
+  FiberRVEAnalysis::FiberRVEAnalysis(const FiberRVEAnalysis &an)
+  {
+    fn = new FiberNetwork(*an.fn);
+    //rve = new RVE(*an.rve);
+    multi = new MultiscaleRVE(*an.multi);
+    // need to keep the same rve in the MultiscaleRVE and in the
+    // FiberRVEAnalysis
+    rve = multi->getRVE();
+    // you must recompute the boundary nodes to get the correct mesh entities
+    auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(), 0);
+    decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
+    for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd) {
+      getBoundaryVerts(this->rve, this->fn->getNetworkMesh(), bgn, end,
+                       static_cast<RVE::side>(sd),
+                       std::back_inserter(this->bnd_nds[sd]));
+    }
+    // We share the vecs across copies. k,u,f are zeroed in the
+    // FiberRVEIteration, so in current usage this is OK. The solver is just a
+    // set of buffers and a tolerance, so we should ok by copying the pointer
+    vecs = an.vecs;
+    es = createMicroElementalSystem(fn, getK(), getF());
+    dx_fn_dx_rve = an.dx_fn_dx_rve;
+    dx_fn_dx_rve_set = an.dx_fn_dx_rve_set;
+    solver_eps = an.solver_eps;
+    prev_itr_factor = an.prev_itr_factor;
+    max_cut_attempt = an.max_cut_attempt;
+    attempt_cut_factor = an.attempt_cut_factor;
+    max_itrs = an.max_itrs;
+    detect_osc_type = an.detect_osc_type;
+  }
+  // TODO determine rve size from input
+  FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork *fn,
+                                     FiberRVEAnalysisVecs *vecs,
+                                     micro_fo_solver &slvr,
+                                     micro_fo_int_solver &slvr_int)
+      : fn(fn)
+      , rve(new RVE(0.5, fn->getDim()))
+      , vecs(vecs)
+      , solver_eps(slvr.data[MICRO_SOLVER_EPS])
+      , prev_itr_factor(slvr.data[PREV_ITER_FACTOR])
+      , max_cut_attempt(slvr_int.data[MAX_MICRO_CUT_ATTEMPT])
+      , attempt_cut_factor(slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR])
+      , max_itrs(slvr_int.data[MAX_MICRO_ITERS])
+      , detect_osc_type(static_cast<amsi::DetectOscillationType>(
+            slvr_int.data[DETECT_OSCILLATION_TYPE]))
+  {
     auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(),0);
     decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
     for(int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
     {
-      getBoundaryVerts(an->rve,
-                       an->fn->getNetworkMesh(),
+      getBoundaryVerts(this->rve,
+                       this->fn->getNetworkMesh(),
                        bgn,
                        end,
                        static_cast<RVE::side>(sd),
-                       std::back_inserter(an->bnd_nds[sd]));
+                       std::back_inserter(this->bnd_nds[sd]));
     }
-    apf::Numbering * udofs = an->fn->getUNumbering();
-    int ndofs = apf::NaiveOrder(udofs);
-    las::LasCreateVec * vb = las::getVecBuilder<las::sparskit>(0);
-    las::LasCreateMat * mb = las::getMatBuilder<las::sparskit>(0);
-    an->f0 = vb->create(ndofs,LAS_IGNORE,MPI_COMM_SELF);
-    an->f = vb->create(ndofs,LAS_IGNORE,MPI_COMM_SELF);
-    an->u = vb->create(ndofs,LAS_IGNORE,MPI_COMM_SELF);
-    an->k = mb->create(ndofs,LAS_IGNORE,csr,MPI_COMM_SELF);
-    if(b == NULL)
-      b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
-    auto ops = las::getLASOps<las::sparskit>();
-    ops->zero(an->f0);
-    an->slv = las::createSparskitLUSolve(b,1e-6);
-    an->es = createMicroElementalSystem(fn,an->k,an->f);
-    an->dx_fn_dx_rve_set = false;
+    apf::Numbering* udofs = fn->getUNumbering(); 
+    apf::NaiveOrder(udofs);
+    this->es = createMicroElementalSystem(fn,getK(),getF());
+    this->dx_fn_dx_rve_set = false;
+  }
+  FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *fn,
+                                         FiberRVEAnalysisVecs *vecs,
+                                         micro_fo_solver &slvr,
+                                         micro_fo_int_solver &slvr_int)
+  {
+    FiberRVEAnalysis *an = new FiberRVEAnalysis(fn, vecs, slvr, slvr_int);
     return an;
   }
-  void destroyAnalysis(FiberRVEAnalysis * fa)
+  FiberRVEAnalysis *initFromMultiscale(
+      FiberNetwork *fn, FiberRVEAnalysisVecs* vecs,
+      micro_fo_header &hdr, micro_fo_params &prm, micro_fo_init_data &ini,
+      micro_fo_solver &slvr, micro_fo_int_solver &slvr_int)
   {
-    auto md = las::getMatBuilder<las::sparskit>(0);
-    auto vd = las::getVecBuilder<las::sparskit>(0);
-    md->destroy(fa->k);
-    vd->destroy(fa->u);
-    vd->destroy(fa->f);
+    FiberRVEAnalysis *rve = createFiberRVEAnalysis(fn, vecs, slvr, slvr_int);
+    rve->multi = new MultiscaleRVE(rve->rve, fn, hdr, prm, ini);
+    return rve;
+  }
+  void destroyAnalysis(FiberRVEAnalysis *fa)
+  {
     delete fa->rve;
     fa->fn = NULL;
     delete fa;
+  }
+  FiberRVEAnalysisVecs *createFiberRVEAnalysisVecs(int ndofs,
+                                                   las::Sparsity *csr,
+                                                   las::SparskitBuffers *bfrs)
+  {
+    return new FiberRVEAnalysisVecs(ndofs, csr, bfrs);
+  }
+  void destroyFiberRVEAnalysisVecs(FiberRVEAnalysisVecs *vecs) {
+  }
+  FiberRVEAnalysis *  copyAnalysis(FiberRVEAnalysis * an) {
+    return new FiberRVEAnalysis(*an);
   }
   FiberRVEIteration::FiberRVEIteration(FiberRVEAnalysis * a)
     : amsi::Iteration()
@@ -80,16 +152,10 @@ namespace bio
   {}
   void FiberRVEIteration::iterate()
   {
-    /*
-    PCU_Switch_Comm(MPI_COMM_SELF);
-    if(!PCU_Comm_Self())
-      apf::writeVtkFiles("rve",an->rve->getMesh());
-    PCU_Switch_Comm(AMSI_COMM_SCALE);
-    */
     auto ops = las::getLASOps<las::sparskit>();
-    ops->zero(an->k);
-    ops->zero(an->u);
-    ops->zero(an->f);
+    ops->zero(an->getK());
+    ops->zero(an->getU());
+    ops->zero(an->getF());
     apf::Mesh * fn = an->fn->getNetworkMesh();
     apf::MeshEntity * me = NULL;
     apf::MeshIterator * itr = fn->begin(1);
@@ -106,26 +172,25 @@ namespace bio
     applyRVEBC(an->bnd_nds[RVE::all].begin(),
                an->bnd_nds[RVE::all].end(),
                an->fn->getUNumbering(),
-               an->k,
-               an->f);
-    if(this->iteration() == 0)
-      ops->axpy(1.0,an->f,an->f0);
-    an->slv->solve(an->k,an->u,an->f);
+               an->getK(),
+               an->getF());
+    an->getSlv()->solve(an->getK(),an->getU(),an->getF());
     amsi::WriteOp wrt;
     amsi::AccumOp acm;
     amsi::FreeApplyOp fr_wrt(an->fn->getUNumbering(),&wrt);
     amsi::FreeApplyOp fr_acm(an->fn->getUNumbering(),&acm);
     double * s = NULL;
-    ops->get(an->u,s);
+    ops->get(an->getU(),s);
     amsi::ApplyVector(an->fn->getUNumbering(),
                       an->fn->getdUField(),
                       s,0,&fr_wrt).run();
     amsi::ApplyVector(an->fn->getUNumbering(),
                       an->fn->getUField(),
                       s,0,&fr_acm).run();
-    ops->restore(an->u,s);
-    BIO_V2(std::cout << "RVE: " << an->fn->getRVEType()
-                     << " Iter: " << this->iteration() << "\n";)
+    ops->restore(an->getU(),s);
+    BIO_V2(int rank = -1; MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+           std::cout << "RVE: " << an->fn->getRVEType() << " Iter: "
+                     << this->iteration() << " Rank: " << rank << "\n";)
     Iteration::iterate();
   }
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
@@ -135,7 +200,7 @@ namespace bio
       for(int jj = 0; jj < 3; ++jj)
         sigma[ii][jj] = 0.0;
     double * f = NULL;
-    ops->get(fra->f,f);
+    ops->get(fra->getF(),f);
     auto & bnd = fra->bnd_nds[RVE::all];
     apf::Numbering * nm = fra->fn->getUNumbering();
     apf::Field * uf = fra->fn->getUField();
@@ -155,7 +220,7 @@ namespace bio
         for(int jj = 0; jj < 3; ++jj)
           sigma[ii][jj] += f[dof[ii]] * x[jj];
     }
-    ops->restore(fra->f,f);
+    ops->restore(fra->getF(),f);
     // this is just the symmetric part of the matrix, there should be a standalone operation for this...
     sigma[0][1] = sigma[1][0] = 0.5 * (sigma[0][1] + sigma[1][0]);
     sigma[0][2] = sigma[2][0] = 0.5 * (sigma[0][2] + sigma[2][0]);

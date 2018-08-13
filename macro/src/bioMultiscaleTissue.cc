@@ -2,20 +2,23 @@
 #include "bioULMultiscaleIntegrator.h"
 #include "bioULMultiscaleHydrostaticPressureIntegrator.h"
 #include <amsiControlService.h> // amsi
+#include <amsiDetectOscillation.h>
 namespace bio
 {
-  MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm)
-    : NonlinearTissue(g,m,pd,cm)
-    , mltscl(NULL)
-    , crt_rve(apf::createIPField(apf_mesh,"micro_rve_type",apf::SCALAR,1))
-    , prv_rve(apf::createIPField(apf_mesh,"micro_old_type",apf::SCALAR,1))
-    , compute_ornt_3D(false)
-    , compute_ornt_2D(false)
-    , ornt_3D(NULL)
-    , ornt_2D(NULL)
-    , fo_cplg(apf_mesh,crt_rve,prv_rve,apf::getShape(apf_primary_field)->getOrder())
-    , nm_rves(0)
-    , rve_dirs()
+  MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd,
+                                     pACase ss, MPI_Comm cm)
+      : NonlinearTissue(g, m, pd, ss, cm)
+      , mltscl(NULL)
+      , crt_rve(apf::createIPField(apf_mesh, "micro_rve_type", apf::SCALAR, 1))
+      , prv_rve(apf::createIPField(apf_mesh, "micro_old_type", apf::SCALAR, 1))
+      , compute_ornt_3D(false)
+      , compute_ornt_2D(false)
+      , ornt_3D(NULL)
+      , ornt_2D(NULL)
+      , fo_cplg(apf_mesh, crt_rve, prv_rve,
+                apf::getShape(apf_primary_field)->getOrder())
+      , nm_rves(0)
+      , rve_dirs()
   {
     ornt_3D = apf::createIPField(apf_mesh, "ornt_tens_3D", apf::MATRIX,1);
     ornt_2D = apf::createIPField(apf_mesh, "ornt_tens_2D", apf::MATRIX,1);
@@ -225,11 +228,18 @@ namespace bio
     std::vector<micro_fo_params> nw_prms;
     std::vector<micro_fo_init_data> nw_data;
     std::vector<int> to_dlt;
+    std::vector<micro_fo_solver> slvr_prms;
+    std::vector<micro_fo_int_solver> slvr_int_prms;
     fo_cplg.updateRVEDeletion(std::back_inserter(to_dlt));
-    serializeNewRVEData(std::back_inserter(nw_hdrs),std::back_inserter(nw_prms),std::back_inserter(nw_data));
-    fo_cplg.deleteRVEs(to_dlt.begin(),to_dlt.end());
+    serializeNewRVEData(std::back_inserter(nw_hdrs),
+                        std::back_inserter(nw_prms),
+                        std::back_inserter(nw_data),
+                        std::back_inserter(slvr_prms),
+                        std::back_inserter(slvr_int_prms));
+    fo_cplg.deleteRVEs(to_dlt.begin(), to_dlt.end());
     size_t add_ptrn = fo_cplg.addRVEs(nw_hdrs.size());
-    fo_cplg.sendNewRVEs(add_ptrn,nw_hdrs,nw_prms,nw_data);
+    fo_cplg.sendNewRVEs(add_ptrn, nw_hdrs, nw_prms, nw_data, slvr_prms,
+                        slvr_int_prms);
     fo_cplg.updateRecv();
     nm_rves += nw_hdrs.size();
   }
@@ -321,7 +331,9 @@ namespace bio
   }
   void MultiscaleTissue::getExternalRVEData(apf::MeshEntity* ent,
                                             micro_fo_header& hdr,
-                                            micro_fo_params& prm)
+                                            micro_fo_params& prm,
+                                            micro_fo_solver& slvr,
+                                            micro_fo_int_solver& int_slvr)
   {
     pGEntity smdl_ent = EN_whatIn(reinterpret_cast<pEntity>(ent));
     pAttribute mm = GEN_attrib(smdl_ent, "material model");
@@ -349,6 +361,68 @@ namespace bio
     prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
     prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
     prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
+    //pPList micro_cnvgs = PList_new();
+    //pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
+    pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
+    assert(micro_cnvg);
+    pAttribute dtct_osc =
+        Attribute_childByType(micro_cnvg, "oscillation detection");
+    assert(dtct_osc);
+    pAttribute micro_eps = Attribute_childByType(micro_cnvg, "micro epsilon");
+    assert(micro_eps);
+    pAttribute num_attempts = NULL;
+    pAttribute cut_factor = NULL;
+    pAttribute itr_cap = NULL;
+    pAttribute prev_itr_factor = NULL;
+    char* detect_osc_type = Attribute_imageClass(dtct_osc);
+    if (strcmp(detect_osc_type, "iteration only") == 0) {
+      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+      itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
+      int_slvr.data[DETECT_OSCILLATION_TYPE] =
+          static_cast<int>(amsi::DetectOscillationType::IterationOnly);
+      assert(itr_cap);
+    }
+    else if (strcmp(detect_osc_type, "previous residual") == 0) {
+      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+      prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
+      int_slvr.data[DETECT_OSCILLATION_TYPE] =
+          static_cast<int>(amsi::DetectOscillationType::PrevNorm);
+      assert(prev_itr_factor);
+    }
+    else if (strcmp(detect_osc_type, "combined") == 0) {
+      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+      itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
+      prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
+      int_slvr.data[DETECT_OSCILLATION_TYPE] =
+          static_cast<int>(amsi::DetectOscillationType::IterationPrevNorm);
+      assert(itr_cap);
+      assert(prev_itr_factor);
+    }
+    else {
+      std::cerr << detect_osc_type
+                << " is not a valid oscillation detection type. attDefs and "
+                   "MultiscaleTissue are out of sync.\n";
+      std::abort();
+    }
+    assert(num_attempts);
+    assert(cut_factor);
+    slvr.data[MICRO_SOLVER_EPS] = AttributeDouble_value((pAttributeDouble)micro_eps);
+    // should not choose number less than 1E-6 for now due to LAS using single
+    // precision
+    assert(slvr.data[MICRO_SOLVER_EPS] >= 1E-6);
+    slvr.data[PREV_ITER_FACTOR] =
+        prev_itr_factor
+            ? AttributeDouble_value((pAttributeDouble)prev_itr_factor)
+            : 0;
+    int_slvr.data[MAX_MICRO_CUT_ATTEMPT] =
+        AttributeInt_value((pAttributeInt)num_attempts);
+    int_slvr.data[MICRO_ATTEMPT_CUT_FACTOR] =
+        AttributeInt_value((pAttributeInt)cut_factor);
+    int_slvr.data[MAX_MICRO_ITERS] =
+        itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,

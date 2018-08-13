@@ -4,6 +4,8 @@
 #include <apfFunctions.h>
 #include <apfMeshIterator.h>
 #include <apfMeshUtil.h>
+#include <apfMDS.h>
+#include <apfConvert.h>
 namespace bio
 {
   template <typename O>
@@ -69,6 +71,24 @@ namespace bio
     int cbe_dof_cnt __attribute__((unused)) = apf::NaiveOrder(cbe_dof);
     assert(dim == 3 ? cbe_dof_cnt == 24 : cbe_dof_cnt == 8);
     cbe_u_e = apf::createElement(cbe_u,cbe_e);
+  }
+  RVE::RVE(const RVE & rve) {
+    dim = rve.dim;
+    crd = rve.crd;
+    cbe = amsi::makeNullMdlEmptyMesh();
+    apf::convert(rve.cbe, static_cast<apf::Mesh2*>(cbe));
+    apf::MeshIterator * it = cbe->begin(3);
+    cbe_e = cbe->iterate(it);
+    cbe->end(it);
+    cbe_u = cbe->findField(apf::getName(rve.cbe_u));
+    cbe_u_e = apf::createElement(cbe_u,cbe_e);
+    cbe_du = cbe->findField(apf::getName(rve.cbe_du));
+    cbe_xpu = cbe->findField(apf::getName(rve.cbe_xpu));
+    xpufnc = new amsi::XpYFunc(cbe->getCoordinateField(), cbe_u);
+    apf::updateUserField(cbe_xpu, xpufnc);
+    cbe_dof = cbe->findNumbering(apf::getName(rve.cbe_dof));
+    assert(cbe_dof);
+    assert(apf::getField(cbe_dof));
   }
   RVE::~RVE()
   {

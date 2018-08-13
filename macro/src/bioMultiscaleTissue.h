@@ -8,7 +8,7 @@ namespace bio
   class MultiscaleTissue : public NonlinearTissue
   {
   public:
-    MultiscaleTissue(pGModel g, pParMesh m, pACase pd, MPI_Comm cm);
+    MultiscaleTissue(pGModel g, pParMesh m, pACase pd, pACase ss, MPI_Comm cm);
     ~MultiscaleTissue();
     virtual void Assemble(amsi::LAS * las);
     void computeRVEs();
@@ -49,11 +49,15 @@ namespace bio
     amsi::ElementalSystem * getIntegrator(apf::MeshEntity * me, int ii);
     template <typename O>
       void serializeRVEData(O o);
-    template <typename O1, typename O2, typename O3>
-      void serializeNewRVEData(O1 nw_hdrs, O2 nw_prms, O3 nw_data, bool all = false);
+    template <typename O1, typename O2, typename O3, typename O4, typename O5>
+    void serializeNewRVEData(O1 nw_hdrs, O2 nw_prms, O3 nw_data,
+                             O4 nw_slvr_prms, O5 nw_int_slvr_prms,
+                             bool all = false);
     void getExternalRVEData(apf::MeshEntity * ent,
                             micro_fo_header & hdr,
-                            micro_fo_params & prms);
+                            micro_fo_params & prms,
+                            micro_fo_solver & slvr,
+                            micro_fo_int_solver &int_slvr);
     void getInternalRVEData(apf::MeshEntity * ent,
                             micro_fo_header & hdr,
                             micro_fo_params & prms,

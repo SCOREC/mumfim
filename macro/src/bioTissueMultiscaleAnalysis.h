@@ -14,30 +14,26 @@
 #include <stdexcept>
 namespace bio
 {
-  class MultiscaleTissueIteration : public amsi::ModularIteration
+  class MultiscaleTissueIteration : public amsi::Iteration
   {
   protected:
     MultiscaleTissue * tssu;
     amsi::LAS * las;
     Iteration * fem_iter;
   public:
-    MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
-      : amsi::ModularIteration()
-      , tssu(a)
-      , las(l)
-      , fem_iter(amsi::buildLinearFEMIteration(a,l))
-    { }
-    ~MultiscaleTissueIteration()
-    {
-      delete fem_iter;
-    }
-    void iterate();
+  MultiscaleTissueIteration(MultiscaleTissue* a, amsi::LAS* l)
+      : tssu(a), las(l), fem_iter(amsi::buildLinearFEMIteration(a, l))
+  {
+  }
+  ~MultiscaleTissueIteration() { delete fem_iter; }
+  void iterate();
   };
   class MultiscaleTissueAnalysis : public TissueAnalysis
   {
   public:
     MultiscaleTissueAnalysis(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm);
     virtual void init();
+    virtual void run();
   private:
     size_t cplng;
   };

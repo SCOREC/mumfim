@@ -1,6 +1,8 @@
 #include "bioMultiscaleRVE.h"
 #include "bioUtil.h"
 #include <apfMeshUtil.h>
+#include <apfMDS.h>
+#include <apfConvert.h>
 #include <cmath> // M_PI
 #include <numeric>
 #include <cassert>
@@ -16,24 +18,41 @@ namespace bio
     double ttl_fbr_lngth = std::accumulate(lngths.begin(),lngths.end(),0.0);
     return sqrt(ttl_fbr_lngth * fbr_area / fbr_vl_frc);
   }
-  MultiscaleRVE::MultiscaleRVE(RVE * r,
-                               FiberNetwork * fn,
-                               micro_fo_header & hdr,
-                               micro_fo_params & prm,
-                               micro_fo_init_data & dat)
-    : rve(r)
-    , gss_id(hdr.data[GAUSS_ID])
-    , dim(rve->getDim())
-    , lcl_gss()
-    , macro(NULL)
-    , macro_ent(NULL)
-    , macro_melmnt(NULL)
-    , macro_elmnt(NULL)
-    , nnd(0)
-    , fbr_area(prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS] * M_PI)
-    , fbr_vl_frc(prm.data[VOLUME_FRACTION])
-    , rve_dim(1.0)
-    , scale_conversion()
+  MultiscaleRVE::MultiscaleRVE(const MultiscaleRVE& mrve)
+  {
+    rve = new RVE(*mrve.getRVE());
+    gss_id = mrve.gss_id;
+    dim = mrve.dim;
+    lcl_gss = mrve.lcl_gss;
+    macro = amsi::makeNullMdlEmptyMesh();
+    apf::convert(mrve.macro, static_cast<apf::Mesh2*>(macro));
+    macro_u = macro->findField(apf::getName(mrve.macro_u));
+    apf::MeshIterator* it = macro->begin(3);
+    macro_ent = macro->iterate(it);
+    macro->end(it);
+    macro_melmnt = apf::createMeshElement(macro, macro_ent);
+    macro_elmnt = apf::createElement(macro_u, macro_ent);
+    nnd = mrve.nnd;
+    fbr_area = mrve.fbr_area;
+    rve_dim = mrve.rve_dim;
+    scale_conversion = mrve.scale_conversion;
+    fbr_vl_frc = mrve.fbr_vl_frc;
+  }
+  MultiscaleRVE::MultiscaleRVE(RVE* r, FiberNetwork* fn, micro_fo_header& hdr,
+                               micro_fo_params& prm, micro_fo_init_data& dat)
+      : rve(r)
+      , gss_id(hdr.data[GAUSS_ID])
+      , dim(rve->getDim())
+      , lcl_gss()
+      , macro(NULL)
+      , macro_ent(NULL)
+      , macro_melmnt(NULL)
+      , macro_elmnt(NULL)
+      , nnd(0)
+      , fbr_area(prm.data[FIBER_RADIUS] * prm.data[FIBER_RADIUS] * M_PI)
+      , fbr_vl_frc(prm.data[VOLUME_FRACTION])
+      , rve_dim(1.0)
+      , scale_conversion()
   {
     (void)fbr_area;
     (void)fbr_vl_frc;

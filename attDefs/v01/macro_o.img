@@ -1,5 +1,6 @@
 13 # attdef file version
-
+#
+## fields
 type "results directory":string e < n > E 0 d < "." >;
 type "output force" : void e < f >;
 type "output displacement" : void e < v e f r >;

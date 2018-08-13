@@ -5,7 +5,7 @@
 #include <apfMeasure.h>
 namespace bio
 {
-  class VolCalc : public amsi::PerIter, public amsi::PerStep
+  class VolCalc : public amsi::Iteration, public amsi::PerStep
   {
   public:
     template <typename I>
@@ -20,12 +20,13 @@ namespace bio
       std::copy(bgn,end,std::back_inserter(mdl_ents)); // use amsi caster
       v = vps = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
-    void iter()
+    virtual void iterate() override
     {
       pv = v;
       v = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
+      Iteration::iterate();
     }
-    void step()
+    void step() override
     {
       vps = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }

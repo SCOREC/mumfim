@@ -4,6 +4,10 @@
 #include <numeric> // accumulate
 #include <string>
 #include <mth.h>
+#include <apfMDS.h>
+#include <apfConvert.h>
+#include <apfMeshUtil.h> // amsi::makeNullMdlEmptyMesh()
+
 namespace bio
 {
   FiberNetwork::FiberNetwork(apf::Mesh * f)
@@ -30,6 +34,28 @@ namespace bio
     // IT IS TOO FRAGILE
     udof = apf::createNumbering(u);
     ucnt = apf::NaiveOrder(udof);
+  }
+  FiberNetwork::FiberNetwork(const FiberNetwork& net)
+  {
+    fn = amsi::makeNullMdlEmptyMesh();
+    apf::convert(net.fn, static_cast<apf::Mesh2*>(fn));
+    u = fn->findField(apf::getName(net.u));
+    du = fn->findField(apf::getName(net.du));
+    xpu = fn->findField(apf::getName(net.xpu));
+    xpufnc = new amsi::XpYFunc(fn->getCoordinateField(), u);
+    apf::updateUserField(xpu, xpufnc);
+    // not a clean way to do this...we can either assume that the naming scheme
+    // of the numbering won't change, or that we always have the first numbering
+    udof = fn->findNumbering(apf::getName(net.udof));
+    assert(udof);
+    assert(apf::getField(udof));
+    tp = net.tp;
+    rve_tp = net.rve_tp;
+    // ordering of reactions should be same in copy
+    rctns.resize(net.rctns.size());
+    std::copy(net.rctns.begin(), net.rctns.end(), rctns.begin());
+    ucnt = net.ucnt;
+
   }
   FiberNetwork::~FiberNetwork()
   {

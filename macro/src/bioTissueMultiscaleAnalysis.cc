@@ -29,7 +29,7 @@ namespace bio
     las->iter();
     fem_iter->iterate();
     tssu->iter();
-    amsi::ModularIteration::iterate();
+    amsi::Iteration::iterate();
   }
   MultiscaleTissueAnalysis::MultiscaleTissueAnalysis(pGModel imdl, pParMesh imsh, pACase cs, MPI_Comm cm)
     : TissueAnalysis(imdl,imsh,cs,cm)
@@ -45,11 +45,9 @@ namespace bio
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
     MultiscaleTissue * mt = NULL;
-    tssu = mt = new MultiscaleTissue(mdl,msh,pd,cm);
+    tssu = mt = new MultiscaleTissue(mdl,msh,pd,ss,cm);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
-    amsi::ModularIteration * mdl_itr = NULL;
-    itr = mdl_itr = new MultiscaleTissueIteration(static_cast<MultiscaleTissue*>(tssu),las);
     std::vector<pANode> trk_vols;
     amsi::cutPaste<pANode>(AttNode_childrenByType((pANode)ss,"track volume"),std::back_inserter(trk_vols));
     std::vector<VolCalc*> vls;
@@ -58,11 +56,13 @@ namespace bio
       std::vector<apf::ModelEntity*> mdl_ents;
       amsi::getAssociatedModelItems(ss,*trk_vol,std::back_inserter(mdl_ents));
       trkd_vols[*trk_vol] = new VolCalc(mdl_ents.begin(),mdl_ents.end(),tssu->getUField());
-      mdl_itr->addOperation(trkd_vols[*trk_vol]);
+      itr_stps.push_back(trkd_vols[*trk_vol]);
     }
+    // compute the multiscale tissue iteration after the volumes have been computed
+    itr_stps.push_back(new MultiscaleTissueIteration(static_cast<MultiscaleTissue*>(tssu),las));
+    itr = new amsi::MultiIteration(itr_stps.begin(), itr_stps.end());
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
-    cvg_stps.push_back(new amsi::ResetIteration(&amsi::linear_convergence, itr));
     cvg = new MultiscaleConvergence(cvg_stps.begin(),cvg_stps.end(),cplng);
     static_cast<MultiscaleTissue*>(tssu)->initMicro();
     // output params
@@ -90,5 +90,10 @@ namespace bio
     }
     amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
 #endif
+  }
+  void MultiscaleTissueAnalysis::run() {
+    TissueAnalysis::run();
+    amsi::ControlService* cs = amsi::ControlService::Instance();
+    cs->scaleBroadcast(cplng, &completed);
   }
 }

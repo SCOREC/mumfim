@@ -17,8 +17,8 @@ void display_help_string()
             << "  [-h, --help]                              display this help text\n"
             << "  [-g, --model model_file]                  the model file (.smd)\n"
             << "  [-m, --mesh mesh_file]                    the mesh file (.sms)\n"
-            << "  [-c, --case string]                       a string specifying the analysis case to run"
-            << "  [-b, --balancing]                         specify if load balancing of RVEs is desired";
+            << "  [-c, --case string]                       a string specifying the analysis case to run\n"
+            << "  [-b, --balancing]                         specify if load balancing of RVEs is desired\n";
 }
 std::string model_filename("");
 std::string mesh_filename("");
@@ -91,7 +91,7 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   amsi::initAnalysis(argc,argv,cm);
   int rnk = -1;
   MPI_Comm_rank(cm,&rnk);
-  //Sim_logOn("simmetrix_log");
+  AMSI_DEBUG(Sim_logOn("simmetrix_log"));
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(),"micro_fo_data");
   pGModel mdl = NULL;
@@ -130,8 +130,17 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     amsi::flushToStream(macro_stress,strss_fs);
   }
 # endif
-  AMSI_DEBUG(Sim_logOff());
-  amsi::freeAnalysis();
+  try {
+    AMSI_DEBUG(Sim_logOff());
+    amsi::freeAnalysis();
+  }
+  catch (pSimError err) {
+    std::cout << "Simmetrix error caught: " << std::endl
+              << "  Code  : " << SimError_code(err) << std::endl
+              << "  String: " << SimError_toString(err) << std::endl;
+    SimError_delete(err);
+    MPI_Abort(AMSI_COMM_WORLD, -1);
+  }
   return result;
 }
 int main(int argc, char **argv)

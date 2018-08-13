@@ -9,23 +9,19 @@ namespace bio
     void buildLASConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, O out);
   template <typename I, typename O>
     void buildVolumeConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::Field * u, O out);
-  class TissueIteration : public amsi::ModularIteration
+  class TissueIteration : public amsi::Iteration
   {
   protected:
     NonlinearTissue * tssu;
     amsi::LAS * las;
   public:
-    TissueIteration(NonlinearTissue * t, amsi::LAS * l)
-      : amsi::ModularIteration()
-      , tssu(t)
-      , las(l)
-    {}
-    virtual void iterate()
-    {
-      LinearSolver(tssu,las);
-      tssu->iter();
-      las->iter();
-      amsi::ModularIteration::iterate();
+  TissueIteration(NonlinearTissue* t, amsi::LAS* l) : tssu(t), las(l) {}
+  virtual void iterate()
+  {
+    LinearSolver(tssu, las);
+    tssu->iter();
+    las->iter();
+    amsi::Iteration::iterate();
     }
   };
   class TissueAnalysis
@@ -51,7 +47,10 @@ namespace bio
     int stp;
     int mx_stp;
     NonlinearTissue * tssu;
+    // this is actually a MultiIteration
     amsi::Iteration * itr;
+    std::vector<amsi::Iteration*> itr_stps;
+    // this is actually a MultiConvergence
     amsi::Convergence * cvg;
     std::vector<amsi::Convergence*> cvg_stps;
     std::map<pANode,VolCalc*> trkd_vols;

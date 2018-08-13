@@ -5,9 +5,9 @@
 #include "bioLinearTissue.h"
 namespace bio
 {
-  LinearTissue::LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, MPI_Comm cm)
+  LinearTissue::LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, pACase iss, MPI_Comm cm)
     : FEA(cm)
-    , amsi::apfSimFEA(imdl,imsh,ipd,cm)
+    , amsi::apfSimFEA(imdl,imsh,ipd,iss,cm)
   {
     apf_primary_field = apf::createLagrangeField(apf_mesh,"linear_displacement",apf::VECTOR,1);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);

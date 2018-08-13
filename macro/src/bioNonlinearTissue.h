@@ -44,7 +44,7 @@ namespace bio
     int load_step;
     int iteration;
     public:
-    NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd,
+    NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, pACase ss,
                     MPI_Comm cm = AMSI_COMM_SCALE);
     virtual ~NonlinearTissue();
     void computeInitGuess(amsi::LAS* las);

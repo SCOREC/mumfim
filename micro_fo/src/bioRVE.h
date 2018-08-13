@@ -38,6 +38,7 @@ namespace bio
   protected:
   public:
     RVE(double cr = 0.5, int d = 3);
+    RVE(const RVE & rve);
     ~RVE();
     apf::MeshEntity * getSide(side sd) const;
     /**
