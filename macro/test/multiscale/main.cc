@@ -113,7 +113,6 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     amsi::freeCase(cs);
     GM_release(mdl);
     M_release(msh);
-    // FIXME this is a memory leak, should call M_release/GM_release if they are noexcept
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl

@@ -413,20 +413,20 @@ namespace bio
     }
     assert(fns.size() == sprs.size() && fns.size() == dofs_cnt.size());
     // need to delete any fns that were not used as part of an analysis
-    for(std::size_t i=0; i<fns.size(); ++i) {
-      for(int j=0;j<rve_tp_cnt[i]; ++j) {
+    for (std::size_t i = 0; i < fns.size(); ++i) {
+      for (int j = 0; j < rve_tp_cnt[i]; ++j) {
         delete fns[i][j];
         las::destroySparsity<las::CSR*>(sprs[i][j]);
-        if(meshes[i][j]) {
+        if (meshes[i][j]) {
           meshes[i][j]->destroyNative();
           apf::destroyMesh(meshes[i][j]);
           meshes[i][j] = NULL;
         }
       }
-      delete [] fns[i];
-      delete [] sprs[i];
-      delete [] dofs_cnt[i];
-      delete [] meshes[i];
+      delete[] fns[i];
+      delete[] sprs[i];
+      delete[] dofs_cnt[i];
+      delete[] meshes[i];
     }
     fns.clear();
     sprs.clear();

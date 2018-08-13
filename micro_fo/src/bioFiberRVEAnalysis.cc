@@ -79,16 +79,6 @@ namespace bio
     max_itrs = an.max_itrs;
     detect_osc_type = an.detect_osc_type;
   }
-  void createVecs(FiberRVEAnalysis* an,int ndofs,FiberNetwork * fn, las::Sparsity *csr, las::SparskitBuffers * b) {
-    las::LasCreateVec * vb = las::getVecBuilder<las::sparskit>(0);
-    las::LasCreateMat * mb = las::getMatBuilder<las::sparskit>(0);
-    an->f = vb->create(ndofs,LAS_IGNORE,MPI_COMM_SELF);
-    an->u = vb->create(ndofs,LAS_IGNORE,MPI_COMM_SELF);
-    an->k = mb->create(ndofs,LAS_IGNORE,csr,MPI_COMM_SELF);
-    if(b == NULL)
-      b = new las::SparskitBuffers(ndofs); // TODO memory leak (won't be hit in multi-scale)
-    an->slv = las::createSparskitLUSolve(b,1e-6);
-  }
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork *fn,
                                      FiberRVEAnalysisVecs *vecs,
@@ -165,17 +155,19 @@ namespace bio
   {
     return new FiberRVEAnalysisVecs(ndofs, csr, bfrs);
   }
-  void destroyFiberRVEAnalysisVecs(FiberRVEAnalysisVecs *vecs) {
+  void destroyFiberRVEAnalysisVecs(FiberRVEAnalysisVecs *vecs)
+  {
     delete vecs;
     vecs = NULL;
   }
-  FiberRVEAnalysis *  copyAnalysis(FiberRVEAnalysis * an) {
+  FiberRVEAnalysis *copyAnalysis(FiberRVEAnalysis *an)
+  {
     return new FiberRVEAnalysis(*an);
   }
-  FiberRVEIteration::FiberRVEIteration(FiberRVEAnalysis * a)
-    : amsi::Iteration()
-    , an(a)
-  {}
+  FiberRVEIteration::FiberRVEIteration(FiberRVEAnalysis *a)
+      : amsi::Iteration(), an(a)
+  {
+  }
   void FiberRVEIteration::iterate()
   {
     auto ops = las::getLASOps<las::sparskit>();
