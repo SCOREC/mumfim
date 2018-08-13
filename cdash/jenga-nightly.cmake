@@ -48,22 +48,22 @@ set(COMMON_OPTIONS
   "-DCMAKE_CXX_COMPILER:FILEPATH=mpicxx"
   "-DBUILD_TESTS=ON"
   "-DLOGRUN=TRUE"
-  "-DSCOREC_DIR=/fasttmp/mersoj/develop/install/core/Debug/lib/cmake/SCOREC"
+  "-DSCOREC_DIR=$ENV{DEVROOT}/install/core/Debug/lib/cmake/SCOREC"
   "-DCMAKE_CXX_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
   "-DCMAKE_C_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
   "-DCMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=-g -O0 -fprofile-arcs -ftest-coverage"
-  "-Dlas_DIR=$DEVROOT/install/Debug/las/lib/cmake"
-  "-Dlas_core_DIR=$DEVROOT/install/Debug/las/lib/cmake"
+  "-Dlas_DIR=$ENV{DEVROOT}/install/las/Debug/lib/cmake"
+  "-Dlas_core_DIR=$ENV{DEVROOT}/install/las/Debug/lib/cmake"
   "-DWRITE_MICRO_ITER=0"
   "-DWRITE_MICRO_STEP=0"
   "-DVERBOSITY=0"
   )
 
 SET(DEVELOP_CONFIGURE_OPTIONS "${COMMON_OPTIONS}"
-  "-DCMAKE_PREFIX_PATH=/fasttmp/mersoj/develop/test/amsi/cdash/build/develop/amsi"
+  "-DCMAKE_PREFIX_PATH=$ENV{DEVROOT}/test/amsi/cdash/build/develop/amsi"
 )
 SET(MASTER_CONFIGURE_OPTIONS "${COMMON_OPTIONS}"
-  "-DCMAKE_PREFIX_PATH=/fasttmp/mersoj/master/test/amsi/cdash/build/master/amsi"
+  "-DCMAKE_PREFIX_PATH=$ENV{DEVROOT}/test/amsi/cdash/build/master/amsi"
 )
 
 function(git_exec CMD ACTION)
