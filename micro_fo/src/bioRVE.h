@@ -35,7 +35,6 @@ namespace bio
     amsi::XpYFunc * xpufnc;
     apf::Field * cbe_xpu;
     apf::Numbering * cbe_dof;
-  protected:
   public:
     RVE(double cr = 0.5, int d = 3);
     RVE(const RVE & rve);

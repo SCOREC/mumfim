@@ -790,7 +790,18 @@ namespace bio
           {
             std::cerr << "RVE: " << (*rve)->getFn()->getRVEType()
                       << " failed to converge in " << microAttemptCount - 1
-                      << " attempts on processor " << rank << std::endl;
+                      << " attempts on processor " << rank << "\n"
+                      << "during  Macro Step " << macro_step
+                      << " and macro iteration " << macro_iter << std::endl;
+            // write the fiber network out if we fail, so we can test externally
+#ifndef WRITE_MICRO_PER_ITER
+            std::stringstream sout;
+            sout << amsi::fs->getResultsDir() << "/"
+                 << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
+                 << "_step_" << macro_step << "_iter_" << macro_iter;
+            apf::writeVtkFiles(
+                sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
+#endif
             std::abort();  // should I use MPI_Abort() here?
           }
           // we've converged and have not reset the state of the vectors,
@@ -799,13 +810,10 @@ namespace bio
           recoverMultiscaleResults(*rve, &results[ii]);
           ii++;
 #ifdef WRITE_MICRO_PER_ITER
-          std::stringstream sout;
-          int rnk = -1;
-          MPI_Comm_rank(AMSI_COMM_SCALE, &rnk);
-          sout << "rnk_" << rnk << "_fn_" << ii << "_step_" << macro_step
-               << "_iter_" << macro_iter;
+          sout << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
+               << "_step_" << macro_step << "_iter_" << macro_iter;
           apf::writeVtkFiles(
-              sout.str().c_str(), (*rve)->fn->getNetworkMesh(), 1);
+              sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
 #endif
         }
         BIO_V1(double t1 = MPI_Wtime();)
@@ -838,9 +846,10 @@ namespace bio
       {
         std::stringstream sout;
         int rnk = -1;
-        MPI_Comm_rank(AMSI_COMM_SCALE, &rnk);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
         int ii = 0;
-        sout << "rnk_" << rnk << "_fn_" << ii << "_step_" << macro_step;
+        sout << "rnk_" << rnk << "_fn_" << (*rve)->getFn()->getRVEType()
+             << "_step_" << macro_step << "_iter_" << macro_iter;
         apf::writeVtkFiles(sout.str().c_str(), (*rve)->fn->getNetworkMesh(), 1);
         sout.str("");
         ii++;
