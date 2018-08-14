@@ -27,7 +27,7 @@ namespace bio
                                1);
     return es;
   }
-  FiberRVEAnalysisVecs::FiberRVEAnalysisVecs(int ndofs,
+  LinearStructs::LinearStructs(int ndofs,
                                              las::Sparsity * csr,
                                              las::SparskitBuffers * b)
   {
@@ -41,7 +41,7 @@ namespace bio
     if (b == NULL) b = new las::SparskitBuffers(ndofs);
     this->slv = las::createSparskitLUSolve(b, 1e-6);
   }
-  FiberRVEAnalysisVecs::~FiberRVEAnalysisVecs()
+  LinearStructs::~LinearStructs()
   {
     auto md = las::getMatBuilder<las::sparskit>(0);
     auto vd = las::getVecBuilder<las::sparskit>(0);
@@ -85,7 +85,7 @@ namespace bio
   }
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork * fn,
-                                     FiberRVEAnalysisVecs * vecs,
+                                     LinearStructs * vecs,
                                      micro_fo_solver & slvr,
                                      micro_fo_int_solver & slvr_int)
       : fn(fn)
@@ -133,7 +133,7 @@ namespace bio
     }
   }
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
-                                            FiberRVEAnalysisVecs * vecs,
+                                            LinearStructs * vecs,
                                             micro_fo_solver & slvr,
                                             micro_fo_int_solver & slvr_int)
   {
@@ -141,7 +141,7 @@ namespace bio
     return an;
   }
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
-                                        FiberRVEAnalysisVecs * vecs,
+                                        LinearStructs * vecs,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         micro_fo_init_data & ini,
@@ -157,13 +157,13 @@ namespace bio
     delete fa;
     fa = NULL;
   }
-  FiberRVEAnalysisVecs * createFiberRVEAnalysisVecs(int ndofs,
+  LinearStructs * createLinearStructs(int ndofs,
                                                     las::Sparsity * csr,
                                                     las::SparskitBuffers * bfrs)
   {
-    return new FiberRVEAnalysisVecs(ndofs, csr, bfrs);
+    return new LinearStructs(ndofs, csr, bfrs);
   }
-  void destroyFiberRVEAnalysisVecs(FiberRVEAnalysisVecs * vecs)
+  void destroyLinearStructs(LinearStructs * vecs)
   {
     delete vecs;
     vecs = NULL;

@@ -21,8 +21,8 @@ int main(int ac, char*av[])
   las::Sparsity* csr =
       (las::Sparsity*)las::createCSR(fn.getUNumbering(), fn.getDofCount());
   las::SparskitBuffers* bfrs = new las::SparskitBuffers(fn.getDofCount());
-  bio::FiberRVEAnalysisVecs* vecs =
-      bio::createFiberRVEAnalysisVecs(fn.getDofCount(), csr, bfrs);
+  bio::LinearStructs* vecs =
+      bio::createLinearStructs(fn.getDofCount(), csr, bfrs);
   // we can leave the solver params uninitialized since we don't solve anything
   // in this test
   bio::micro_fo_solver slvr;

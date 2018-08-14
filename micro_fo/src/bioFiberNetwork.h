@@ -1,13 +1,13 @@
 #ifndef BIO_FIBER_NETWORK_H_
 #define BIO_FIBER_NETWORK_H_
-#include "bioFiberReactions.h"
-#include "bioFiber.h"
-#include <apfFunctions.h> // amsi
 #include <apf.h>
+#include <apfFunctions.h>  // amsi
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <string>
 #include <vector>
+#include "bioFiber.h"
+#include "bioFiberReactions.h"
 namespace bio
 {
   struct FiberNetworkReactions
@@ -21,7 +21,7 @@ namespace bio
    */
   class FiberNetwork
   {
-  protected:
+    protected:
     apf::Mesh * fn;
     apf::Field * u;
     amsi::XpYFunc * xpufnc;
@@ -30,14 +30,15 @@ namespace bio
     apf::Numbering * udof;
     int ucnt;
     FiberMember tp;
-    std::vector<FiberReaction*> rctns;
+    std::vector<FiberReaction *> rctns;
     // the rve filename map
     int rve_tp;
-  public:
+
+    public:
     /**
      * Construct a FiberNetwork object.
-     * @param f A pointer to a fiber network mesh (contains only vertices and edges)
-     *          typically loaded using the NetworkLoader classes
+     * @param f A pointer to a fiber network mesh (contains only vertices and
+     * edges) typically loaded using the NetworkLoader classes
      */
     FiberNetwork(apf::Mesh * f);
     FiberNetwork(const FiberNetwork & fn);
@@ -53,20 +54,22 @@ namespace bio
      * the mapping between this integer and the filename can
      * be found in the rve_tp log
      */
-    int getRVEType() const                  { return rve_tp;}
-    void setRVEType(int rve_t)              { rve_tp = rve_t;}
-    FiberMember getFiberMember() const      { return tp;   }
-    apf::Mesh * getNetworkMesh() const      { return fn;   }
-    apf::Field * getUField() const          { return u;    }
-    apf::Field * getdUField() const         { return du;   }
-    apf::Field * getXpUField() const        { return xpu;  }
-    apf::Numbering * getUNumbering() const  { return udof; }
+    int getRVEType() const { return rve_tp; }
+    void setRVEType(int rve_t) { rve_tp = rve_t; }
+    FiberMember getFiberMember() const { return tp; }
+    apf::Mesh * getNetworkMesh() const { return fn; }
+    apf::Field * getUField() const { return u; }
+    apf::Field * getdUField() const { return du; }
+    apf::Field * getXpUField() const { return xpu; }
+    apf::Numbering * getUNumbering() const { return udof; }
     // TODO this should be made const, but it will take some refactor work
     // in the Truss integrator
-    std::vector<FiberReaction*> & getFiberReactions() { return rctns; }
-    void setFiberReactions(std::vector<FiberReaction*> &frns) { rctns = frns; }
+    std::vector<FiberReaction *> & getFiberReactions() { return rctns; }
+    void setFiberReactions(std::vector<FiberReaction *> & frns)
+    {
+      rctns = frns;
+    }
   };
-
   /**
    * get the mean orientation vector of the rve
    * \param network pointer to the the fiber network
@@ -74,11 +77,13 @@ namespace bio
    */
   void get3DOrientationTensor(bio::FiberNetwork * network, double omega[9]);
   /**
-   * get the mean orientation vector of the rve projected into the plane defined by the normal
-   * \param network pointer to the the fiber network
-   * \param normal the normal vector to the plane to project the vectors into
-   * \param \out omega orientation tensor
+   * get the mean orientation vector of the rve projected into the plane defined
+   * by the normal \param network pointer to the the fiber network \param normal
+   * the normal vector to the plane to project the vectors into \param \out
+   * omega orientation tensor
    */
-  void get2DOrientationTensor(bio::FiberNetwork* network, double const normal[3], double omega[9]);
-}
+  void get2DOrientationTensor(bio::FiberNetwork * network,
+                              double const normal[3],
+                              double omega[9]);
+}  // namespace bio
 #endif

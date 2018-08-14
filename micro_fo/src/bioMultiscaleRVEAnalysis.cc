@@ -599,7 +599,7 @@ namespace bio
     cs->RemoveData(recv_ptrn, to_delete);
     for (auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
     {
-      // FIXME need to clear out FiberRVEAnalysisVecs,
+      // FIXME need to clear out LinearStructs,
       // sparsity, dofs_cnt, etc here.
       // We also cannot just destroy the analysis w/o removing the corresponding
       // terms from the ans vector see vector erase
@@ -638,7 +638,7 @@ namespace bio
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
         fn->setFiberReactions(fns[tp][rnd]->rctns);
         vecs.push_back(
-            createFiberRVEAnalysisVecs(dofs_cnt[tp][rnd], sprs[tp][rnd], bfrs));
+            createLinearStructs(dofs_cnt[tp][rnd], sprs[tp][rnd], bfrs));
         *rve = initFromMultiscale(
             fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
         fn->setRVEType(ii);
