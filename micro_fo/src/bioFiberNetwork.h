@@ -12,7 +12,7 @@ namespace bio
 {
   struct FiberNetworkReactions
   {
-    std::vector<FiberReaction*> rctns;
+    std::vector<FiberReaction *> rctns;
     std::string fileName;
   };
   /**
