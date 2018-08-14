@@ -53,7 +53,9 @@ namespace bio
   FiberRVEAnalysis::FiberRVEAnalysis(const FiberRVEAnalysis & an)
   {
     fn = new FiberNetwork(*an.fn);
+    rve = new RVE(*an.rve);
     multi = new MultiscaleRVE(*an.multi);
+    multi->setRVE(rve);
     // need to keep the same rve in the MultiscaleRVE and in the
     // FiberRVEAnalysis
     rve = multi->getRVE();

@@ -36,7 +36,8 @@ namespace bio
   MultiscaleRVE(RVE *rve, FiberNetwork *fn, micro_fo_header &hdr,
                 micro_fo_params &prms, micro_fo_init_data &data);
   MultiscaleRVE(const MultiscaleRVE &mrve);
-  RVE *getRVE() const { return rve; }
+  RVE * getRVE() const { return rve; }
+  void setRVE(RVE * rve) { this->rve = rve; }
   ~MultiscaleRVE();
   void calcdRVEdFE(apf::DynamicMatrix &dRVEdFE);
   double getScaleConversion() const { return scale_conversion; }
