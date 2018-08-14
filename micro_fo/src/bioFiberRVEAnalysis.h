@@ -57,8 +57,10 @@ namespace bio
     las::Solve *getSlv() const { return vecs->slv; }
     FiberNetwork *getFn() const { return fn; }
   };
-  FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *,
-                                           FiberRVEAnalysisVecs *vecs);
+  FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *fn,
+                                           FiberRVEAnalysisVecs *vecs,
+                                           micro_fo_solver &slvr,
+                                           micro_fo_int_solver &slvr_int);
   FiberRVEAnalysis *initFromMultiscale(
       FiberNetwork *fn, FiberRVEAnalysisVecs *vecs, micro_fo_header &hdr,
       micro_fo_params &prm, micro_fo_init_data &ini, micro_fo_solver &slvr,

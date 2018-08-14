@@ -88,7 +88,7 @@ int main(int argc, char * argv[])
     int nedofs = apf::getElementNumbers(nm2,edg,dofs);
     ops->assemble(k2,nedofs,&dofs[0],nedofs,&dofs[0],&vls2[0]);
   }
-  fn_msh2->end(it);
+  fn_msh2->end(it2);
   // todo : refactor this because it is terrible
   // hacky way to get the matrix out, but it works!
   /*

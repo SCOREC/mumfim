@@ -128,17 +128,17 @@ namespace bio
     }
   }
   FiberRVEAnalysis *createFiberRVEAnalysis(FiberNetwork *fn,
-                                         FiberRVEAnalysisVecs *vecs,
-                                         micro_fo_solver &slvr,
-                                         micro_fo_int_solver &slvr_int)
+                                           FiberRVEAnalysisVecs *vecs,
+                                           micro_fo_solver &slvr,
+                                           micro_fo_int_solver &slvr_int)
   {
     FiberRVEAnalysis *an = new FiberRVEAnalysis(fn, vecs, slvr, slvr_int);
     return an;
   }
   FiberRVEAnalysis *initFromMultiscale(
-      FiberNetwork *fn, FiberRVEAnalysisVecs* vecs,
-      micro_fo_header &hdr, micro_fo_params &prm, micro_fo_init_data &ini,
-      micro_fo_solver &slvr, micro_fo_int_solver &slvr_int)
+      FiberNetwork *fn, FiberRVEAnalysisVecs *vecs, micro_fo_header &hdr,
+      micro_fo_params &prm, micro_fo_init_data &ini, micro_fo_solver &slvr,
+      micro_fo_int_solver &slvr_int)
   {
     FiberRVEAnalysis *rve = createFiberRVEAnalysis(fn, vecs, slvr, slvr_int);
     rve->multi = new MultiscaleRVE(rve->rve, fn, hdr, prm, ini);
