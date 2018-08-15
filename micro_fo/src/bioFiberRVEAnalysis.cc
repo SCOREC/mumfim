@@ -56,11 +56,16 @@ namespace bio
   {
     fn = new FiberNetwork(*an.fn);
     rve = new RVE(*an.rve);
-    multi = new MultiscaleRVE(*an.multi);
-    multi->setRVE(rve);
-    // need to keep the same rve in the MultiscaleRVE and in the
-    // FiberRVEAnalysis
-    rve = multi->getRVE();
+    // note if we have a singlescale run, the MultiscaleRVE pointer will be null
+    if (an.multi)
+    {
+      multi = new MultiscaleRVE(*an.multi);
+      multi->setRVE(rve);
+    }
+    else
+    {
+      multi = NULL;
+    }
     // you must recompute the boundary nodes to get the correct mesh entities
     auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(), 0);
     decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
@@ -93,6 +98,7 @@ namespace bio
                                      micro_fo_solver & slvr,
                                      micro_fo_int_solver & slvr_int)
       : fn(fn)
+      , multi(NULL)
       , rve(new RVE(0.5, fn->getDim()))
       , vecs(vecs)
       , solver_eps(slvr.data[MICRO_SOLVER_EPS])
