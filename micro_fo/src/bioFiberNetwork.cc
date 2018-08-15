@@ -7,6 +7,7 @@
 #include <apfMDS.h>
 #include <apfConvert.h>
 #include <apfMeshUtil.h> // amsi::makeNullMdlEmptyMesh()
+#include <gmi.h>
 
 namespace bio
 {
@@ -37,8 +38,9 @@ namespace bio
   }
   FiberNetwork::FiberNetwork(const FiberNetwork& net)
   {
-    fn = amsi::makeNullMdlEmptyMesh();
-    apf::convert(net.fn, static_cast<apf::Mesh2*>(fn));
+    assert(net.fn);
+    // note model is deleted with the native mesh
+    fn = apf::createMdsMesh(gmi_load(".null") , net.fn);
     u = fn->findField(apf::getName(net.u));
     du = fn->findField(apf::getName(net.du));
     xpu = fn->findField(apf::getName(net.xpu));
@@ -60,10 +62,18 @@ namespace bio
   FiberNetwork::~FiberNetwork()
   {
     apf::destroyNumbering(udof);
+    udof = NULL;
     apf::destroyField(xpu);
+    xpu = NULL;
     delete xpufnc;
+    xpufnc = NULL;
     apf::destroyField(u);
-    apf::destroyField(du);
+    u = NULL;
+    //apf::destroyField(du);
+    du = NULL;
+    fn->destroyNative();
+    apf::destroyMesh(fn);
+    fn = NULL;
   }
   // TODO this function will need to be updated if we ever use partitioned mesh
   // at the microscale

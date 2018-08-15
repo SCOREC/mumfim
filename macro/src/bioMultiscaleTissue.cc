@@ -69,7 +69,6 @@ namespace bio
     apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
     for(apf::MeshEntity * me = NULL; (me = apf_mesh->iterate(it));)
     {
-      //apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
       apf::MeshElement * mlm = apf::createMeshElement(current_coords,me);
       amsi::ElementalSystem * sys = getIntegrator(me,0); // ERROR: assumes 1 type per ent
       sys->process(mlm);
@@ -209,6 +208,8 @@ namespace bio
     int pt_num = 0; // assuming element with one integration point.
     apf::getIntPoint(mlm,1,pt_num,pcoords); // assume polynomial order of accuracy = 1.
     amsi::deformationGradient(e,pcoords,F);
+    apf::destroyElement(e);
+    apf::destroyMeshElement(mlm);
     /*
       if (detF > 0.6)
       return FIBER_ONLY;
@@ -287,6 +288,7 @@ namespace bio
           apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
         }
       }
+      apf::destroyMeshElement(mlm);
     }
     apf_mesh->end(it);
   }
@@ -407,6 +409,8 @@ namespace bio
                    "MultiscaleTissue are out of sync.\n";
       std::abort();
     }
+    delete [] detect_osc_type;
+    detect_osc_type = NULL;
     assert(num_attempts);
     assert(cut_factor);
     slvr.data[MICRO_SOLVER_EPS] = AttributeDouble_value((pAttributeDouble)micro_eps);

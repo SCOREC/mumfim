@@ -44,6 +44,8 @@ namespace bio
     }
     void outElement()
     {
+      apf::destroyElement(du_lmnt);
+      apf::destroyMeshElement(ref_lmnt);
       current_integration_point = 0;
       ent_cnt++;
       ElementalSystem::outElement();
@@ -392,6 +394,7 @@ namespace bio
       apf::getVectorNodes(e_disp,disp);
       for(int ii=0;ii<nedofs;ii++)
         u(ii) = disp[ii/3][ii%3];
+      apf::destroyElement(e_disp);
     }
     int current_integration_point;
   private:

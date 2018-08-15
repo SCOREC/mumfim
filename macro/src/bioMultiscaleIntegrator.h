@@ -364,6 +364,7 @@ namespace bio
       apf::getVectorNodes(e_disp,disp);
       for(int ii=0;ii<nedofs;ii++)
         u(ii) = disp[ii/3][ii%3];
+      apf::destroyElement(e_disp);
     }
   private:
     MultiscaleTissue * analysis;
