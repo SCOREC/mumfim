@@ -286,6 +286,7 @@ namespace bio
           recoverMultiscaleResults(*rve, &results[ii]);
           ii++;
 #ifdef WRITE_MICRO_PER_ITER
+          std::stringstream sout;
           sout << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
                << "_step_" << macro_step << "_iter_" << macro_iter;
           apf::writeVtkFiles(

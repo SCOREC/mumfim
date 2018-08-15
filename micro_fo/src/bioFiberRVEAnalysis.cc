@@ -184,7 +184,7 @@ namespace bio
       attemptCutFactor = std::pow(microAttemptCutFactor, microAttemptCount - 1);
       BIO_V1(if (attemptCutFactor > 1) std::cout
                  << "Micro Attempt: " << microAttemptCount
-                 << " cutting the original deformation gradient by: "
+                 << " cutting the original applied displacement by: "
                  << attemptCutFactor << " on rank: " << rank << "\n";)
       assert(maxMicroAttempts > 0);
       micro_fo_data appliedDefm;
@@ -196,8 +196,10 @@ namespace bio
         BIO_V3(std::cout << "Rank: " << rank << " F=";)
         for (int j = 0; j < 9; ++j)
         {
+          double I = j % 4 == 0 ? 1 : 0;
+          // cut the displacement gradient (not the deformation gradient)
           appliedDefm.data[j] =
-              (data.data[j] * microAttemptIter) / attemptCutFactor;
+              (((data.data[j] - I) * microAttemptIter) / attemptCutFactor) + I;
           BIO_V3(std::cout << appliedDefm.data[j] << " ";)
         }
         BIO_V3(std::cout << "\n";)
