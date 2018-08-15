@@ -243,31 +243,6 @@ namespace bio
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
   }
-  struct val_gen
-  {
-    val_gen(FiberRVEAnalysis * a) : an(a), prv_nrm(1.0) {}
-    FiberRVEAnalysis * an;
-    double prv_nrm;
-    double operator()()
-    {
-      auto ops = las::getLASOps<las::sparskit>();
-      double nrm = ops->norm(an->getF());
-      double val = fabs(prv_nrm - nrm);
-      prv_nrm = nrm;
-      return val;
-    }
-  };
-  struct eps_gen
-  {
-    eps_gen(double eps) : eps(eps) {}
-    double operator()(int) { return eps; }
-    protected:
-    double eps;
-  };
-  struct ref_gen
-  {
-    double operator()() { return 1.0; }
-  };
   void MultiscaleRVEAnalysis::run()
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
@@ -287,104 +262,22 @@ namespace bio
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         int ii = 0;
         BIO_V1(double t0 = MPI_Wtime();)
-        FiberRVEAnalysis * tmpRVE = NULL;
         for (auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
-          unsigned int maxMicroAttempts = 0;   // parameter
-          unsigned int microAttemptCutFactor;  // parameter
-          bool solveSuccess = false;
-          unsigned int microAttemptCount = 1;
-          unsigned int attemptCutFactor;
-          do
+          bool result = (*rve)->run(data[ii]);
+          if (!result)
           {
-            // create a deep copy of the analysis
-            // Note the current implementation of copy does not deep copy
-            // the sparskit matrices, vectors, or solver
-            tmpRVE = copyAnalysis(*rve);
-            val_gen vg(tmpRVE);
-            eps_gen eg(tmpRVE->solver_eps);
-            ref_gen rg;
-            maxMicroAttempts = tmpRVE->max_cut_attempt;
-            microAttemptCutFactor = tmpRVE->attempt_cut_factor;
-            attemptCutFactor =
-                std::pow(microAttemptCutFactor, microAttemptCount - 1);
-            BIO_V1(if (attemptCutFactor > 1) std::cout
-                       << "Micro Attempt: " << microAttemptCount
-                       << " cutting the original deformation gradient by: "
-                       << attemptCutFactor << " on rank: " << rank << "\n";)
-            assert(maxMicroAttempts > 0);
-            micro_fo_data appliedDefm;
-            bool microIterSolveSuccess = true;
-            for (unsigned int microAttemptIter = 1;
-                 microAttemptIter <= attemptCutFactor;
-                 ++microAttemptIter)
-            {
-              BIO_V3(std::cout << "Rank: " << rank << " F=";)
-              for (int j = 0; j < 9; ++j)
-              {
-                appliedDefm.data[j] =
-                    (data[ii].data[j] * microAttemptIter) / attemptCutFactor;
-                BIO_V3(std::cout << appliedDefm.data[j] << " ";)
-              }
-              BIO_V3(std::cout << "\n";)
-              applyMultiscaleCoupling(tmpRVE, &appliedDefm);
-              FiberRVEIteration rveItr(tmpRVE);
-              std::vector<amsi::Iteration *> itr_stps = {&rveItr};
-              amsi::MultiIteration itr(itr_stps.begin(), itr_stps.end());
-              amsi::UpdatingConvergence<decltype(&vg),
-                                        decltype(&eg),
-                                        decltype(&rg)>
-                  resid_cnvrg(&itr, &vg, &eg, &rg);
-              std::vector<amsi::Convergence *> cnvrg_stps = {&resid_cnvrg};
-              amsi::MultiConvergence cnvrg(cnvrg_stps.begin(),
-                                           cnvrg_stps.end());
-              amsi::Iteration * osc_itr =
-                  amsi::createOscillationDetection<decltype(&resid_cnvrg)>(
-                      tmpRVE->detect_osc_type,
-                      &resid_cnvrg,
-                      &rveItr,
-                      tmpRVE->max_itrs,
-                      tmpRVE->prev_itr_factor);
-              itr.addIteration(osc_itr);
-              // solve is successful if the current solve and all previous
-              // cutIterations are successful
-              microIterSolveSuccess =
-                  (amsi::numericalSolve(&itr, &cnvrg) && microIterSolveSuccess);
-              // cleanup the oscillation detection memory
-              delete osc_itr;
-              // don't bother computing the rest of the attempt if any
-              // subiteration fails, for our current use case we don't care what
-              // made us fail, we will try to reduce the load and try again.
-              if (!microIterSolveSuccess) break;
-            }
-            // if the attempt was completely successful then the overall solve
-            // was successful
-            if (microIterSolveSuccess)
-            {
-              solveSuccess = true;
-              destroyAnalysis(*rve);
-              (*rve) = tmpRVE;
-              tmpRVE = NULL;
-            }
-            ++microAttemptCount;
-          } while (solveSuccess == false &&
-                   (microAttemptCount <= maxMicroAttempts));
-          if (!solveSuccess)
-          {
-            std::cerr << "RVE: " << (*rve)->getFn()->getRVEType()
-                      << " failed to converge in " << microAttemptCount - 1
-                      << " attempts on processor " << rank << "\n"
-                      << "during  Macro Step " << macro_step
-                      << " and macro iteration " << macro_iter << std::endl;
+            std::cerr << "Failed during  Macro Step " << macro_step
+                      << " and macro iteration " << macro_iter << "."
+                      << std::endl;
             // write the fiber network out if we fail, so we can test externally
-#ifndef WRITE_MICRO_PER_ITER
             std::stringstream sout;
             sout << amsi::fs->getResultsDir() << "/"
                  << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
                  << "_step_" << macro_step << "_iter_" << macro_iter;
             apf::writeVtkFiles(
                 sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
-#endif
+            // if the rve didn't work, crash the analysis
             std::abort();  // should I use MPI_Abort() here?
           }
           // we've converged and have not reset the state of the vectors,

@@ -61,6 +61,7 @@ namespace bio
     las::Vec * getF() const { return vecs->f; }
     las::Solve * getSlv() const { return vecs->slv; }
     FiberNetwork * getFn() const { return fn; }
+    bool run(const micro_fo_data & data);
   };
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
                                             LinearStructs * vecs,
