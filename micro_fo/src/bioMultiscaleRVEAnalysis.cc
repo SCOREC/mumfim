@@ -11,7 +11,7 @@
 #include <cassert>
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 #include "bioRVEVolumeTerms.h"
 namespace bio
 {

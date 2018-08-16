@@ -4,7 +4,7 @@
 #include "bioStiffnessVariation.h"
 #include "bioVolumeConstraint.h"
 // micro_fo
-#include <bioMicroFOMultiscale.h>
+#include <bioMultiscaleMicroFOParams.h>
 #include <bioRVE.h>
 // amsi
 #include <apfFEA.h>

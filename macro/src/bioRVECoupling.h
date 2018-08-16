@@ -1,6 +1,6 @@
 #ifndef BIO_RVE_COUPLING_H_
 #define BIO_RVE_COUPLING_H_
-#include <bioMicroFOMultiscale.h>
+#include <bioMultiscaleMicroFOParams.h>
 namespace bio
 {
   enum MicroscaleType

@@ -1,8 +1,7 @@
 #ifndef BIO_MULTISCALE_RVE_ANALYSIS_H_
 #define BIO_MULTISCALE_RVE_ANALYSIS_H_
 #include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOMultiscale.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 #include <lasSparskit.h>
 #include <amsiReporter.h>
 #include <amsiMultiscale.h>
