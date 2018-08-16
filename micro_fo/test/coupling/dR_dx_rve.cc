@@ -18,8 +18,16 @@ int main(int ac, char*av[])
   MPI_Init(&ac,&av);
   PCU_Comm_Init();
   bio::FiberNetwork fn(bio::loadFromFile(fn_fn));
-  las::Sparsity * csr = (las::Sparsity*)las::createCSR(fn.getUNumbering(),fn.getDofCount());
-  bio::FiberRVEAnalysis * ans = bio::makeFiberRVEAnalysis(&fn,csr);
+  las::Sparsity* csr =
+      (las::Sparsity*)las::createCSR(fn.getUNumbering(), fn.getDofCount());
+  las::SparskitBuffers* bfrs = new las::SparskitBuffers(fn.getDofCount());
+  bio::LinearStructs* vecs =
+      bio::createLinearStructs(fn.getDofCount(), csr, bfrs);
+  // we can leave the solver params uninitialized since we don't solve anything
+  // in this test
+  bio::micro_fo_solver slvr;
+  bio::micro_fo_int_solver slvr_int;
+  bio::FiberRVEAnalysis* ans = bio::createFiberRVEAnalysis(&fn, vecs, slvr, slvr_int);
   apf::DynamicMatrix dRdx_rve;
   bio::calcdR_dx_rve(dRdx_rve,ans);
   notify(std::cout,fn_dR_dx_rve);
@@ -33,6 +41,9 @@ int main(int ac, char*av[])
   colPermute(dRdx_rve_tst,&pmt[0],dRdx_rve_tst_pmt);
   bool eq = (dRdx_rve == dRdx_rve_tst_pmt);
   std::cout << "dRdx_rve calculation " << (eq ? "successful!" : "failed!") << std::endl;
+  delete vecs;
+  delete bfrs;
+  las::destroySparsity<las::CSR*>(csr);
   PCU_Comm_Free();
   MPI_Finalize();
   return 0;

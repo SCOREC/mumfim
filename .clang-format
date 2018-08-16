@@ -1,7 +1,14 @@
 BasedOnStyle: Google
-BreakBeforeBraces: Stroustrup
-BreakConstructorInitializersBeforeComma: true
+BreakBeforeBraces: Allman
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BreakConstructorInitializers: BeforeComma
 NamespaceIndentation: All
 MaxEmptyLinesToKeep: 0
 AccessModifierOffset: 0
 AllowShortLoopsOnASingleLine: false
+DerivePointerAlignment: false
+PointerAlignment: Middle
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: Align
+BinPackArguments: true
+BinPackParameters: false
