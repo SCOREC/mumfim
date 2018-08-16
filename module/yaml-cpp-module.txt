@@ -1,0 +1,22 @@
+#%Module1.0#####################################################################
+##
+##  modulefile
+##
+# for Tcl script use only
+set     version      0.3.0
+set     package      yaml-cpp
+
+proc ModulesHelp { } {
+        global version
+
+        puts stderr "\tAdds directories for using $package to your path"
+        puts stderr "\n\tVersion $version\n"
+}
+module-whatis   "adds required directories to PATH, MANPATH, for using $package $version"
+
+set		root			/fasttmp/mersoj/develop/install/$package/$version
+prepend-path	PATH			$root/bin
+prepend-path	LD_LIBRARY_PATH		$root/lib
+prepend-path	C_INCLUDE_PATH		$root/include
+prepend-path	CPLUS_INCLUDE_PATH	$root/include
+prepend-path  PKG_CONFIG_PATH $root/lib/pkgconfig

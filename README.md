@@ -17,10 +17,10 @@ multiscale biological tissue implementation using amsi
      git checkout tags/release-0.3.0
      mkdir build
      cd build
-     cmake .. -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/yaml-cpp/0.3.0
+     cmake .. -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/yaml-cpp/0.3.0 -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
      make -j 16 install
      mkdir -p yaml-cpp-module $DEVROOT/module/yaml-cpp/
-     cp yaml-cpp-module $DEVROOT/module/yaml-cpp/0.3.0
+     cp module/yaml-cpp-module.txt $DEVROOT/module/yaml-cpp/0.3.0
     ```
 
 5) Build and Install Biotissue
