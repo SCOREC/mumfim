@@ -12,7 +12,7 @@
 #include <cassert>
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 //#include "bioRVEVolumeTerms.h"
 namespace bio
 {
@@ -103,11 +103,11 @@ namespace bio
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
     rve_dd = amsi::createDataDistribution(amsi::getLocal(), "macro_fo_data");
-    recv_ptrn = cs->RecvCommPattern(
-        "micro_fo_data", "macro", "macro_fo_data", "micro_fo");
+    recv_ptrn = cs->RecvCommPattern("micro_fo_data", "macro", "macro_fo_data",
+                                    "micro_fo");
     cs->CommPattern_Reconcile(recv_ptrn);
-    send_ptrn = cs->CommPattern_UseInverted(
-        recv_ptrn, "macro_fo_data", "micro_fo", "macro");
+    send_ptrn = cs->CommPattern_UseInverted(recv_ptrn, "macro_fo_data",
+                                            "micro_fo", "macro");
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);
   }
@@ -192,16 +192,15 @@ namespace bio
     std::vector<int> empty;
     size_t recv_init_ptrn = cs->AddData(recv_ptrn, empty, to_add);
     ans.resize(ans.size() + to_add.size());
-    cs->Communicate(
-        recv_init_ptrn, hdrs, amsi::mpi_type<bio::micro_fo_header>());
-    cs->Communicate(
-        recv_init_ptrn, prms, amsi::mpi_type<bio::micro_fo_params>());
-    cs->Communicate(
-        recv_init_ptrn, inis, amsi::mpi_type<bio::micro_fo_init_data>());
-    cs->Communicate(
-        recv_init_ptrn, slvr_prms, amsi::mpi_type<bio::micro_fo_solver>());
-    cs->Communicate(recv_init_ptrn,
-                    slvr_int_prms,
+    cs->Communicate(recv_init_ptrn, hdrs,
+                    amsi::mpi_type<bio::micro_fo_header>());
+    cs->Communicate(recv_init_ptrn, prms,
+                    amsi::mpi_type<bio::micro_fo_params>());
+    cs->Communicate(recv_init_ptrn, inis,
+                    amsi::mpi_type<bio::micro_fo_init_data>());
+    cs->Communicate(recv_init_ptrn, slvr_prms,
+                    amsi::mpi_type<bio::micro_fo_solver>());
+    cs->Communicate(recv_init_ptrn, slvr_int_prms,
                     amsi::mpi_type<bio::micro_fo_int_solver>());
     PCU_Switch_Comm(MPI_COMM_SELF);
     int ii = 0;

@@ -10,5 +10,5 @@ DerivePointerAlignment: false
 PointerAlignment: Middle
 AllowAllParametersOfDeclarationOnNextLine: false
 AlignAfterOpenBracket: Align
-BinPackArguments: false
+BinPackArguments: true
 BinPackParameters: false

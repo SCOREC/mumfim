@@ -1,7 +1,7 @@
 #ifndef BIO_MULTISCALE_RVE_H_
 #define BIO_MULTISCALE_RVE_H_
 #include "bioRVE.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 #include <amsiDetectOscillation.h>
 namespace bio
 {

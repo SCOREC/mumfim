@@ -5,7 +5,7 @@
 #include <lasSparskit.h>
 #include <vector>
 #include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 namespace bio
 {
   class MultiscaleRVEAnalysis

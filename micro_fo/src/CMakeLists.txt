@@ -2,8 +2,8 @@ set(micro_fo_public_headers
   bioFiberNetwork.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
-  bioMicroFOMultiscale.h
   bioMultiscaleCoupling.h
+  bioMultiscaleMicroFOParams.h
   bioMultiscaleRVEAnalysis.h
   bioMultiscaleRVE.h
   bioRVE.h
@@ -19,8 +19,8 @@ set(micro_fo_src_files
   bioFiberNetworkIO.cc
   bioFiberRVEAnalysis.cc
   bioAlignFiberNetwork.cc
-  bioMicroFOMultiscale.cc
   bioMultiscaleCoupling.cc
+  bioMultiscaleMicroFOParams.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc
   bioUtil.cc)

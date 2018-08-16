@@ -1,4 +1,4 @@
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 namespace amsi
 {
   template <typename T>

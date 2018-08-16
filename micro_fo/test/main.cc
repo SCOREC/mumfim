@@ -63,5 +63,5 @@ int main(int argc, char * argv[])
   apf::writeVtkFiles(sout.str().c_str(), an.getFn()->getNetworkMesh(), 1);
   // las::destroySparsity<CSR *>(sprs);
   amsi::freeAnalysis();
-  return 1;
+  return 0;
 }
