@@ -111,7 +111,7 @@ namespace bio
   template <typename I>
   void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
-  void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data);
+  void applyDeformation(FiberRVEAnalysis * ans, micro_fo_data * data);
 }  // namespace bio
 #include "bioFiberRVEAnalysis_impl.h"
 #endif

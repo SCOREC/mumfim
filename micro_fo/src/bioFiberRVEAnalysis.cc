@@ -209,7 +209,7 @@ namespace bio
           BIO_V3(std::cout << appliedDefm.data[j] << " ";)
         }
         BIO_V3(std::cout << "\n";)
-        applyMultiscaleCoupling(tmpRVE, &appliedDefm);
+        applyDeformation(tmpRVE, &appliedDefm);
         FiberRVEIteration rveItr(tmpRVE);
         std::vector<amsi::Iteration *> itr_stps = {&rveItr};
         amsi::MultiIteration itr(itr_stps.begin(), itr_stps.end());
@@ -377,7 +377,7 @@ namespace bio
     sigma[0][2] = sigma[2][0] = 0.5 * (sigma[0][2] + sigma[2][0]);
     sigma[1][2] = sigma[2][1] = 0.5 * (sigma[1][2] + sigma[2][1]);
   }
-  void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data)
+  void applyDeformation(FiberRVEAnalysis * ans, micro_fo_data * data)
   {
     int d = ans->rve->getDim();
     assert(d == 3 || d == 2);
