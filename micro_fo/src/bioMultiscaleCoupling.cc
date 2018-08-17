@@ -3,7 +3,7 @@
 #include <apfMatrixUtil.h>
 #include <cassert>
 #include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOMultiscale.h"
+#include "bioMultiscaleMicroFOParams.h"
 #include "bioRVEVolumeTerms.h"
 #include "bioUtil.h"
 namespace bio

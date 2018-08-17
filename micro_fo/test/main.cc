@@ -8,8 +8,13 @@
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
+#include "bioMicroFOParams.h"
 int main(int argc, char * argv[])
 {
+  //bio::MicroCase cs;
+  std::vector<bio::MicroCase> cases;
+  bio::loadMicroFOFromYamlFile("/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml", cases);
+  bio::printMicroFOCase(cases[0]);
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::string file_name =
       "/fasttmp/mersoj/develop/biotissue_problems/fiber_networks/"

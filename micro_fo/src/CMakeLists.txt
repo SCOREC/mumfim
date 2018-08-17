@@ -2,6 +2,7 @@ set(micro_fo_public_headers
   bioFiberNetwork.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
+  bioMicroFOParams.h
   bioMultiscaleCoupling.h
   bioMultiscaleMicroFOParams.h
   bioMultiscaleRVEAnalysis.h
@@ -19,6 +20,7 @@ set(micro_fo_src_files
   bioFiberNetworkIO.cc
   bioFiberRVEAnalysis.cc
   bioAlignFiberNetwork.cc
+  bioMicroFOParams.cc
   bioMultiscaleCoupling.cc
   bioMultiscaleMicroFOParams.cc
   bioMultiscaleRVEAnalysis.cc
@@ -29,6 +31,7 @@ set(micro_fo_src_files
 find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
 find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 if(WRITE_MICRO_ITER)
   set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_ITER")
@@ -46,9 +49,15 @@ endif()
 
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                    $<INSTALL_INTERFACE:include/biotissue>)
+                                    $<INSTALL_INTERFACE:include/biotissue>
+                                    PRIVATE ${yaml-cpp_INCLUDE_DIRS})
 
-target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale las_core)
+target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale 
+                      las_core
+                      PRIVATE ${yaml-cpp_LIBRARIES})
+if(yaml-cpp_FOUND)
+  target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)
+endif(yaml-cpp_FOUND)
 
 install(TARGETS micro_fo
         EXPORT biotissueTargets

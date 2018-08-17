@@ -1,10 +1,10 @@
 #ifndef BIO_MULTISCALE_COUPLING_H_
 #define BIO_MULTISCALE_COUPLING_H_
-//#include <apfDynamicMatrix.h>
-namespace apf {
-class DynamicMatrix;
-class DynamicVector;
-}
+namespace apf
+{
+  class DynamicMatrix;
+  class DynamicVector;
+}  // namespace apf
 namespace bio
 {
   class FiberRVEAnalysis;
@@ -25,8 +25,7 @@ namespace bio
                          double vol,
                          double cnv,
                          apf::DynamicMatrix & dS_dx_rve);
-  void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve,
-                     FiberRVEAnalysis * ans);
+  void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve, FiberRVEAnalysis * ans);
   void calcdx_fn_dx_rve(apf::DynamicMatrix & dx_fn_dx_rve,
                         FiberRVEAnalysis * ans,
                         apf::DynamicMatrix & dR_dx_rve);
