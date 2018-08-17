@@ -17,17 +17,6 @@ int main(int argc, char * argv[])
       "/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml", cases);
   bio::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
-  bio::micro_fo_solver slvr;
-  slvr.data[bio::MICRO_SOLVER_EPS] = cases[0].ss.cnvgTolerance;
-  slvr.data[bio::PREV_ITER_FACTOR] = cases[0].ss.oscPrms.prevNormFactor;
-  bio::micro_fo_int_solver slvr_int;
-  slvr_int.data[bio::MAX_MICRO_CUT_ATTEMPT] =
-      cases[0].ss.oscPrms.maxMicroCutAttempts;
-  slvr_int.data[bio::MICRO_ATTEMPT_CUT_FACTOR] =
-      cases[0].ss.oscPrms.microAttemptCutFactor;
-  slvr_int.data[bio::MAX_MICRO_ITERS] = cases[0].ss.oscPrms.maxIterations;
-  slvr_int.data[bio::DETECT_OSCILLATION_TYPE] =
-      static_cast<int>(cases[0].ss.oscPrms.oscType);
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::stringstream prm_name_ss;
@@ -50,7 +39,7 @@ int main(int argc, char * argv[])
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
   bio::LinearStructs * vecs = bio::createLinearStructs(ndofs, sprs, bfrs);
-  bio::FiberRVEAnalysis an(fn, vecs, slvr, slvr_int);
+  bio::FiberRVEAnalysis an(fn, vecs, cases[0].ss);
   assert(an.multi == NULL);
   bool result = an.run(cases[0].pd.deformationGradient);
   if (!result)

@@ -96,19 +96,17 @@ namespace bio
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork * fn,
                                      LinearStructs * vecs,
-                                     micro_fo_solver & slvr,
-                                     micro_fo_int_solver & slvr_int)
+                                     const MicroSolutionStrategy & ss)
       : fn(fn)
       , multi(NULL)
       , rve(new RVE(0.5, fn->getDim()))
       , vecs(vecs)
-      , solver_eps(slvr.data[MICRO_SOLVER_EPS])
-      , prev_itr_factor(slvr.data[PREV_ITER_FACTOR])
-      , max_cut_attempt(slvr_int.data[MAX_MICRO_CUT_ATTEMPT])
-      , attempt_cut_factor(slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR])
-      , max_itrs(slvr_int.data[MAX_MICRO_ITERS])
-      , detect_osc_type(static_cast<amsi::DetectOscillationType>(
-            slvr_int.data[DETECT_OSCILLATION_TYPE]))
+      , solver_eps(ss.cnvgTolerance)
+      , prev_itr_factor(ss.oscPrms.prevNormFactor)
+      , max_cut_attempt(ss.oscPrms.maxMicroCutAttempts)
+      , attempt_cut_factor(ss.oscPrms.microAttemptCutFactor)
+      , max_itrs(ss.oscPrms.maxIterations)
+      , detect_osc_type(ss.oscPrms.oscType)
   {
     auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(), 0);
     decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
@@ -210,7 +208,7 @@ namespace bio
           BIO_V3(std::cout << appliedDefm[j] << " ";)
         }
         BIO_V3(std::cout << "\n";)
-        applyDeformation(tmpRVE, appliedDefm);
+        applyGuessSolution(tmpRVE, appliedDefm);
         FiberRVEIteration rveItr(tmpRVE);
         std::vector<amsi::Iteration *> itr_stps = {&rveItr};
         amsi::MultiIteration itr(itr_stps.begin(), itr_stps.end());
@@ -262,7 +260,19 @@ namespace bio
                                             micro_fo_solver & slvr,
                                             micro_fo_int_solver & slvr_int)
   {
-    FiberRVEAnalysis * an = new FiberRVEAnalysis(fn, vecs, slvr, slvr_int);
+    // TODO this somewhat inefficient, and will be fixed when we directly
+    // communicate the solution strategy struct
+    MicroSolutionStrategy ss;
+    ss.cnvgTolerance = slvr.data[MICRO_SOLVER_EPS];
+    ss.slvrTolerance = 1E-6;             // this is not currently communicated
+    ss.slvrType = SolverType::Implicit;  // this is for forward compatibility
+    ss.oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
+    ss.oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
+    ss.oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
+    ss.oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
+        slvr_int.data[DETECT_OSCILLATION_TYPE]);
+    ss.oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
+    FiberRVEAnalysis * an = new FiberRVEAnalysis(fn, vecs, ss);
     return an;
   }
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
@@ -378,7 +388,7 @@ namespace bio
     sigma[0][2] = sigma[2][0] = 0.5 * (sigma[0][2] + sigma[2][0]);
     sigma[1][2] = sigma[2][1] = 0.5 * (sigma[1][2] + sigma[2][1]);
   }
-  void applyDeformation(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd)
+  void applyGuessSolution(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd)
   {
     int d = ans->rve->getDim();
     assert(d == 3 || d == 2);

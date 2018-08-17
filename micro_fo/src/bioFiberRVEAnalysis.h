@@ -54,8 +54,7 @@ namespace bio
     explicit FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(FiberNetwork * fn,
                      LinearStructs * vecs,
-                     micro_fo_solver & slvr,
-                     micro_fo_int_solver & slvr_int);
+                     const MicroSolutionStrategy & ss);
     ~FiberRVEAnalysis();
     las::Mat * getK() const { return vecs->k; }
     las::Vec * getU() const { return vecs->u; }
@@ -112,7 +111,7 @@ namespace bio
   template <typename I>
   void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
-  void applyDeformation(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd);
+  void applyGuessSolution(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd);
 }  // namespace bio
 #include "bioFiberRVEAnalysis_impl.h"
 #endif
