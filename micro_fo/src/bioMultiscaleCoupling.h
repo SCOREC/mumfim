@@ -13,7 +13,6 @@ namespace bio
   class micro_fo_header;
   class micro_fo_params;
   class micro_fo_step_result;
-  void applyMultiscaleCoupling(FiberRVEAnalysis * ans, micro_fo_data * data);
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data);
   void recoverMultiscaleStepResults(FiberRVEAnalysis * ans,
                                     micro_fo_header & hdr,
