@@ -10,6 +10,7 @@
 #include "bioFiberNetworkIO.h"
 #include "bioMultiscaleCoupling.h"
 #include "bioVerbosity.h"
+#include "bioMicroFOParams.h"
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
@@ -167,7 +168,7 @@ namespace bio
   {
     double operator()() { return 1.0; }
   };
-  bool FiberRVEAnalysis::run(const micro_fo_data & data)
+  bool FiberRVEAnalysis::run(const DeformationGradient & dfmGrd)
   {
     int rank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -193,7 +194,7 @@ namespace bio
                  << " cutting the original applied displacement by: "
                  << attemptCutFactor << " on rank: " << rank << "\n";)
       assert(maxMicroAttempts > 0);
-      micro_fo_data appliedDefm;
+      DeformationGradient appliedDefm;
       bool microIterSolveSuccess = true;
       for (unsigned int microAttemptIter = 1;
            microAttemptIter <= attemptCutFactor;
@@ -204,12 +205,12 @@ namespace bio
         {
           double I = j % 4 == 0 ? 1 : 0;
           // cut the displacement gradient (not the deformation gradient)
-          appliedDefm.data[j] =
-              (((data.data[j] - I) * microAttemptIter) / attemptCutFactor) + I;
-          BIO_V3(std::cout << appliedDefm.data[j] << " ";)
+          appliedDefm[j] =
+              (((dfmGrd[j] - I) * microAttemptIter) / attemptCutFactor) + I;
+          BIO_V3(std::cout << appliedDefm[j] << " ";)
         }
         BIO_V3(std::cout << "\n";)
-        applyDeformation(tmpRVE, &appliedDefm);
+        applyDeformation(tmpRVE, appliedDefm);
         FiberRVEIteration rveItr(tmpRVE);
         std::vector<amsi::Iteration *> itr_stps = {&rveItr};
         amsi::MultiIteration itr(itr_stps.begin(), itr_stps.end());
@@ -377,14 +378,14 @@ namespace bio
     sigma[0][2] = sigma[2][0] = 0.5 * (sigma[0][2] + sigma[2][0]);
     sigma[1][2] = sigma[2][1] = 0.5 * (sigma[1][2] + sigma[2][1]);
   }
-  void applyDeformation(FiberRVEAnalysis * ans, micro_fo_data * data)
+  void applyDeformation(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd)
   {
     int d = ans->rve->getDim();
     assert(d == 3 || d == 2);
     apf::Matrix3x3 F;
     for (int ei = 0; ei < d; ++ei)
       for (int ej = 0; ej < d; ++ej)
-        F[ei][ej] = data->data[ei * d + ej];
+        F[ei][ej] = dfmGrd[ei * d + ej];
     apf::Mesh * rve_msh = ans->rve->getMesh();
     apf::Field * rve_du = ans->rve->getdUField();
     apf::Field * rve_u = ans->rve->getUField();

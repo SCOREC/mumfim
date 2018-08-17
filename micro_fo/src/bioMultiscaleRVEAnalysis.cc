@@ -263,7 +263,14 @@ namespace bio
         BIO_V1(double t0 = MPI_Wtime();)
         for (auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
-          bool result = (*rve)->run(data[ii]);
+          // TODO this is somewhat inefficient and will not be needed when we
+          // directly communicate the DeformationGradient type
+          DeformationGradient dfmGrd;
+          for (int jj = 0; jj < 9; ++jj)
+          {
+            dfmGrd[jj] = data[ii].data[jj];
+          }
+          bool result = (*rve)->run(dfmGrd);
           if (!result)
           {
             std::cerr << "Failed during  Macro Step " << macro_step

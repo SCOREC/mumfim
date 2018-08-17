@@ -7,6 +7,7 @@
 #include "bioMultiscaleRVE.h"
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
+#include "bioMicroFOParams.h"
 namespace bio
 {
   class FiberRVEAnalysis;
@@ -61,7 +62,7 @@ namespace bio
     las::Vec * getF() const { return vecs->f; }
     las::Solve * getSlv() const { return vecs->slv; }
     FiberNetwork * getFn() const { return fn; }
-    bool run(const micro_fo_data & data);
+    bool run(const DeformationGradient & dfmGrd);
   };
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
                                             LinearStructs * vecs,
@@ -111,7 +112,7 @@ namespace bio
   template <typename I>
   void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
-  void applyDeformation(FiberRVEAnalysis * ans, micro_fo_data * data);
+  void applyDeformation(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd);
 }  // namespace bio
 #include "bioFiberRVEAnalysis_impl.h"
 #endif
