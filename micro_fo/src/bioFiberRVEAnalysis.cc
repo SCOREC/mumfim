@@ -31,8 +31,9 @@ namespace bio
     return es;
   }
   LinearStructs::LinearStructs(int ndofs,
-                                             las::Sparsity * csr,
-                                             las::SparskitBuffers * b)
+                               double solver_tol,
+                               las::Sparsity * csr,
+                               las::SparskitBuffers * b)
   {
     las::LasCreateVec * vb = las::getVecBuilder<las::sparskit>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::sparskit>(0);
@@ -263,8 +264,8 @@ namespace bio
     // TODO this somewhat inefficient, and will be fixed when we directly
     // communicate the solution strategy struct
     MicroSolutionStrategy ss;
-    ss.cnvgTolerance = slvr.data[MICRO_SOLVER_EPS];
-    ss.slvrTolerance = 1E-6;             // this is not currently communicated
+    ss.cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
+    ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];             // this is not currently communicated
     ss.slvrType = SolverType::Implicit;  // this is for forward compatibility
     ss.oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
     ss.oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
@@ -292,11 +293,12 @@ namespace bio
     delete fa;
     fa = NULL;
   }
-  LinearStructs * createLinearStructs(int ndofs,
-                                                    las::Sparsity * csr,
-                                                    las::SparskitBuffers * bfrs)
+  LinearStructs * createLinearStructs(int ndofs,double solver_tol,
+                                      las::Sparsity * csr,
+                                      las::SparskitBuffers * bfrs
+                                      )
   {
-    return new LinearStructs(ndofs, csr, bfrs);
+    return new LinearStructs(ndofs, solver_tol, csr, bfrs);
   }
   void destroyLinearStructs(LinearStructs * vecs)
   {

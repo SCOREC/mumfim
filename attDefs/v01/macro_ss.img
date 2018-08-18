@@ -40,7 +40,8 @@ image "volume convergence" : "convergence operator"
 # and epsilon, but I cannot figure out how to change
 # the default values, so I gave them a new name.
 type "micro iteration cap" : int d < 200 >;
-type "micro epsilon" : double E 1 d < 1e-6 >;
+type "micro solver tolerance" : double E 1 d < 1e-6 >;
+type "micro convergence tolerance" : double E 1 d < 1e-6 >;
 type "number of attempts" : int d < 5 >;
 type "attempt cut factor" : int d < 2 >;
 type "previous itr factor" : double d < 1.0 >;
@@ -63,7 +64,8 @@ image "combined" : "oscillation detection" {
 };
 image "nonlinear iteration" : "microscale convergence operator"
 {
-  R "micro epsilon";
+  R "micro convergence tolerance";
+  O "micro solver tolerance";
   R "oscillation detection"; 
 };
 

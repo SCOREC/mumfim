@@ -220,7 +220,7 @@ namespace bio
         FiberNetwork * fn = new FiberNetwork(msh_cpy);
         fn->setFiberReactions(fns[tp][rnd]->rctns);
         vecs.push_back(
-            createLinearStructs(dofs_cnt[tp][rnd], sprs[tp][rnd], bfrs));
+            createLinearStructs(dofs_cnt[tp][rnd],slvr_prm.data[MICRO_SOLVER_TOL] ,sprs[tp][rnd], bfrs));
         *rve = initFromMultiscale(
             fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
         fn->setRVEType(ii);

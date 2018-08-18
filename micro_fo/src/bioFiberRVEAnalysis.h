@@ -18,8 +18,9 @@ namespace bio
   {
     public:
     LinearStructs(int ndofs,
-                         las::Sparsity * csr,
-                         las::SparskitBuffers * b);
+                  double solver_tol,
+                  las::Sparsity * csr,
+                  las::SparskitBuffers * b);
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;
@@ -75,10 +76,10 @@ namespace bio
                                         micro_fo_solver & slvr,
                                         micro_fo_int_solver & slvr_int);
   void destroyAnalysis(FiberRVEAnalysis *);
-  LinearStructs * createLinearStructs(
-      int ndofs,
-      las::Sparsity * csr,
-      las::SparskitBuffers * bfrs = NULL);
+  LinearStructs * createLinearStructs(int ndofs,
+                                      double solver_tol,
+                                      las::Sparsity * csr,
+                                      las::SparskitBuffers * bfrs = NULL);
   void destroyFiberRVEAnalysisLinearStructs(LinearStructs * vecs);
   /*
    * perform a deep copy of the fiber rve analysis

@@ -38,7 +38,8 @@ int main(int argc, char * argv[])
   las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs);
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
-  bio::LinearStructs * vecs = bio::createLinearStructs(ndofs, sprs, bfrs);
+  bio::LinearStructs * vecs =
+      bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
   bio::FiberRVEAnalysis an(fn, vecs, cases[0].ss);
   assert(an.multi == NULL);
   bool result = an.run(cases[0].pd.deformationGradient);
