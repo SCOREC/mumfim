@@ -20,6 +20,7 @@ namespace bio
     , udof(NULL)
     , ucnt(0)
     , tp(FiberMember::truss)
+    , rve_tp(0)
   {
     assert(f);
     du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
