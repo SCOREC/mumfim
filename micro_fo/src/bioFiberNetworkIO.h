@@ -5,6 +5,7 @@
 #include <iostream>
 #include <apf.h>
 #include <apfMesh2.h>
+#include <cmath>
 namespace bio
 {
   apf::Mesh2 * loadFromStream(std::istream & strm);
@@ -36,7 +37,9 @@ namespace bio
       else if(tp == FiberConstitutive::nonlinear)
       {
         NonlinearReaction * rct = new NonlinearReaction;
-        strm >> rct->fiber_area >> rct->E >> rct->B >> rct->length_ratio_trns;
+        double fiber_radius;
+        strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns;
+        rct->fiber_area = fiber_radius*fiber_radius*M_PI;
         *out++ = rct;
       }
     }
