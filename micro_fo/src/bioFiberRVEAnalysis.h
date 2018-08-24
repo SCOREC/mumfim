@@ -10,6 +10,11 @@
 #include "bioMicroFOParams.h"
 namespace bio
 {
+  /* \brief create the elemental system integrator
+   */
+  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+                                               las::Mat * k,
+                                               las::Vec * f);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -21,6 +26,10 @@ namespace bio
                   double solver_tol,
                   las::Sparsity * csr,
                   las::SparskitBuffers * b);
+    las::Mat * getK() const { return k; }
+    las::Vec * getU() const { return u; }
+    las::Vec * getF() const { return f; }
+    las::Solve * getSlv() const { return slv; }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;

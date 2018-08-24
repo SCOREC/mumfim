@@ -19,8 +19,11 @@ namespace bio
       strm >> tp;
       if (tp == FiberConstitutive::linear)
       {
+        double fiber_radius;
         LinearReaction * rct = new LinearReaction;
-        strm >> rct->fiber_area >> rct->E;
+        strm >> fiber_radius >> rct->E;
+        rct->fiber_area = fiber_radius * fiber_radius * M_PI;
+        std::cout<<"Reaction: "<<rct->fiber_area<<" "<<fiber_radius<<"\n";
         *out++ = rct;
       }
       else if (tp == FiberConstitutive::nonlinear)
@@ -29,6 +32,7 @@ namespace bio
         double fiber_radius;
         strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns;
         rct->fiber_area = fiber_radius * fiber_radius * M_PI;
+        std::cout<<"Reaction: "<<rct->fiber_area<<" "<<fiber_radius<<"\n";
         *out++ = rct;
       }
     }

@@ -40,20 +40,29 @@ int main(int argc, char * argv[])
   fn->setFiberReactions(rctns.rctns);
   bio::LinearStructs * vecs =
       bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
-  bio::FiberRVEAnalysis an(fn, vecs, cases[0].ss);
-  assert(an.multi == NULL);
-  bool result = an.run(cases[0].pd.deformationGradient);
-  if (!result)
+  // get the stiffness matrix
+  auto ops = las::getLASOps<las::sparskit>();
+  ops->zero(vecs->getK());
+  ops->zero(vecs->getU());
+  ops->zero(vecs->getF());
+  // apf::Mesh * fn = an.getFn()->getNetworkMesh();
+  apf::Integrator * truss_es =
+      bio::createMicroElementalSystem(fn, vecs->getK(), vecs->getF());
+  apf::MeshEntity * me = NULL;
+  apf::MeshIterator * itr = fn_msh->begin(1);
+  int ii = 0;
+  while ((me = fn_msh->iterate(itr)))
   {
-    std::cerr << "The microscale analysis failed to converge" << std::endl;
+    apf::MeshElement * mlm = apf::createMeshElement(fn_msh, me);
+    truss_es->process(mlm);
+    apf::destroyMeshElement(mlm);
+    ++ii;
   }
-  std::ofstream ostrm("K2.txt");
-  las::printSparskitMat(ostrm, an.getK());
-  ostrm.close();
-  std::stringstream sout;
-  sout << "rnk_" << rank << "_fn_" << an.getFn()->getRVEType();
-  apf::writeVtkFiles(sout.str().c_str(), an.getFn()->getNetworkMesh(), 1);
-  // las::destroySparsity<las::CSR *>(sprs);
+  fn_msh->end(itr);
+  las::printSparskitMat(std::cout, vecs->getK(), las::PrintType::mmarket);
+  delete vecs;
+  delete bfrs;
+  las::destroySparsity<las::CSR*> (sprs);
   amsi::freeAnalysis();
   return 0;
 }

@@ -370,7 +370,7 @@ namespace bio
     assert(dtct_osc);
     pAttribute micro_cnvg_tol = Attribute_childByType(micro_cnvg, "micro convergence tolerance");
     assert(micro_cnvg_tol);
-    pAttribute micro_slvr = Attribute_childByType(micro_cnvg, "micro solver tolerance");
+    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
     pAttribute num_attempts = NULL;
     pAttribute cut_factor = NULL;
     pAttribute itr_cap = NULL;

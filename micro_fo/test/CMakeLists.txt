@@ -15,6 +15,12 @@ target_link_libraries(single_load_balance micro_fo amsi::multiscale)
 add_mpi_test(serialization serialization.cc 1)
 target_link_libraries(serialization micro_fo)
 
+add_mpi_test(test_stiffness ./test_stiffness.cc 1)
+target_link_libraries(test_stiffness micro_fo)
+
+add_mpi_test(test_elemental_stiffness ./test_elemental_stiffness.cc 1)
+target_link_libraries(test_elemental_stiffness micro_fo)
+
 #add_mpi_test(isolated_dof isolated_dof.cc 1)
 #target_link_libraries(isolated_dof micro_fo)
 

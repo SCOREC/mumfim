@@ -14,20 +14,16 @@
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
-  static apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
-                                                      las::Mat * k,
-                                                      las::Vec * f)
+  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+                                               las::Mat * k,
+                                               las::Vec * f)
   {
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
     if (tp == FiberMember::truss)
-      es = new TrussIntegrator(fn->getUNumbering(),
-                               fn->getUField(),
-                               fn->getXpUField(),
-                               &(fn->getFiberReactions()[0]),
-                               k,
-                               f,
-                               1);
+      es = new TrussIntegrator(fn->getUNumbering(), fn->getUField(),
+                               fn->getXpUField(), &(fn->getFiberReactions()[0]),
+                               k, f, 1);
     return es;
   }
   LinearStructs::LinearStructs(int ndofs,
