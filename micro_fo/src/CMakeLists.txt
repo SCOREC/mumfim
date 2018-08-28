@@ -33,11 +33,13 @@ find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-if(WRITE_MICRO_ITER)
+option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)
+if(ENABLE_WRITE_MICRO_PER_ITER)
   set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_ITER")
 endif()
 
-if(WRITE_MICRO_STEP)
+option(ENABLE_WRITE_MICRO_PER_STEP "Write microscale to vtk on every step" OFF)
+if(ENABLE_WRITE_MICRO_PER_STEP)
   set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_STEP")
 endif()
 
@@ -58,6 +60,24 @@ target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multis
 if(yaml-cpp_FOUND)
   target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)
 endif(yaml-cpp_FOUND)
+
+set(ENABLE_VERBOSITY HIGH CACHE STRING "Enable Debug/Verbosity Level")
+set_property(CACHE ENABLE_VERBOSITY PROPERTY STRINGS HIGH MED LOW OFF)
+if(ENABLE_VERBOSITY)
+    set(BIO_VERBOSITY_DEFINITIONS "-DBIO_VERBOSE_1")
+    if(ENABLE_VERBOSITY STREQUAL "LOW")
+    set(BIO_VERBOSITY_DEFINITIONS "-DBIO_VERBOSE_1")
+  elseif(ENABLE_VERBOSITY STREQUAL "MED")
+    set(BIO_VERBOSITY_DEFINITIONS "-DBIO_VERBOSE_1 -DBIO_VERBOSE_2")
+  elseif(ENABLE_VERBOSITY STREQUAL "HIGH")
+    set(BIO_VERBOSITY_DEFINITIONS "-DBIO_VERBOSE_1 -DBIO_VERBOSE_2 -DBIO_VERBOSE_3")
+  elseif(ENABLE_VERBOSITY STREQUAL "OFF")
+    set(BIO_VERBOSITY_DEFINITIONS "")
+  else()
+    message(FATAL_ERROR "Something went wrong with VERBOSITY setting: ${ENABLE_VERBOSITY}\n Valid options are LOW,MED,HIGH,OFF")
+  endif()
+endif(ENABLE_VERBOSITY)
+target_compile_definitions(micro_fo PUBLIC ${BIO_VERBOSITY_DEFINITIONS})
 
 install(TARGETS micro_fo
         EXPORT biotissueTargets

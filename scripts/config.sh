@@ -49,15 +49,15 @@ else
       -DCMAKE_C_COMPILER=$CC \
       -DCMAKE_CXX_COMPILER=$CXX \
       -DLOGRUN=1 \
-      -DWRITE_MICRO_ITER=0 \
-      -DWRITE_MICRO_STEP=0 \
+      -DENABLE_WRITE_MICRO_PER_ITER=OFF \
+      -DENABLE_WRITE_MICRO_PER_STEP=OFF \
       -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/$BUILD_TYPE \
       -DCMAKE_PREFIX_PATH="$DEVROOT/install/amsi/$BUILD_TYPE/lib/cmake/amsi/" \
       -DSCOREC_DIR=$DEVROOT/install/core/$BUILD_TYPE/lib/cmake/SCOREC \
       -Dlas_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
-      -DVERBOSITY=3 \
+      -DENABLE_VERBOSITY=HIGH \
       ..
 fi
 
