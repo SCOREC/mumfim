@@ -27,19 +27,7 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
                              1)
   {
   }
-  virtual void process(apf::MeshElement * e) override
-  {
-    this->inElement(e);
-    int np = countIntPoints(e, this->order);
-    for (int p = 0; p < np; ++p)
-    {
-      ipnode = p;
-      apf::Vector3 point;
-      getIntPoint(e, this->order, p, point);
-      double w = getIntWeight(e, this->order, p);
-      double dV = getDV(e, point);
-      this->atPoint(point, w, dV);
-    }
+  virtual void outElement() override {
     std::cout<<"Stiffness Element: "<<id<<"\n";
     for(int i=0;i<6;++i){
       for(int j=0; j<6;++j) {
@@ -50,9 +38,34 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
       std::cout<<"\n";
     }
     std::cout<<"\n\n";
-    this->outElement();
+    bio::TrussIntegrator::outElement();
   }
-};
+  //virtual void process(apf::MeshElement * e) override
+  //{
+  //  this->inElement(e);
+  //  int np = countIntPoints(e, this->order);
+  //  for (int p = 0; p < np; ++p)
+  //  {
+  //    ipnode = p;
+  //    apf::Vector3 point;
+  //    getIntPoint(e, this->order, p, point);
+  //    double w = getIntWeight(e, this->order, p);
+  //    double dV = getDV(e, point);
+  //    this->atPoint(point, w, dV);
+  //  }
+  //  std::cout<<"Stiffness Element: "<<id<<"\n";
+  //  for(int i=0;i<6;++i){
+  //    for(int j=0; j<6;++j) {
+  //      std::cout<<es->ke(i, j)<<" ";
+  //      // gaurantee that the elemental stiffness matrix is diagonal
+  //      assert(isclose(es->ke(i,j), es->ke(j,i)));
+  //    }
+  //    std::cout<<"\n";
+  //  }
+  //  std::cout<<"\n\n";
+  //  this->outElement();
+  //}
+};//
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);

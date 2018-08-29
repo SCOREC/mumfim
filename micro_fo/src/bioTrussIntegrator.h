@@ -80,7 +80,7 @@ namespace bio
       , f(f_)
       , id(-1)
     { }
-    void inElement(apf::MeshElement * me)
+    void inElement(apf::MeshElement * me) override
     {
       elmt = apf::createElement(u,me);
       nen = apf::countNodes(elmt);
@@ -109,7 +109,7 @@ namespace bio
       //int id = -1;
       msh->getIntTag(ent,id_tg,&id);
     }
-    void atPoint(const apf::Vector3 &, double, double)
+    void atPoint(const apf::Vector3 &, double, double) override
     {
       auto f_dfdl = fr->forceReaction(lo,l);
       double f = f_dfdl.first;
@@ -161,7 +161,7 @@ namespace bio
           es->fe(ii) += es->ke(ii,jj) * u_fxd(jj);
       */
     }
-    void outElement()
+    virtual void outElement() override
     {
       auto ops = las::getLASOps<las::sparskit>();
       ops->assemble(k,es->nedof(),&es->dofs(0),es->nedof(),&es->dofs(0),&es->ke(0,0));
