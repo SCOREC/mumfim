@@ -412,6 +412,7 @@ namespace bio
     detect_osc_type = NULL;
     assert(num_attempts);
     assert(cut_factor);
+    // FIXME replace before commit
     slvr.data[MICRO_CONVERGENCE_TOL] =
         AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
     slvr.data[MICRO_SOLVER_TOL] =

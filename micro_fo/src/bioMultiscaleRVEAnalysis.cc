@@ -146,6 +146,7 @@ namespace bio
       meshes.push_back(new apf::Mesh2 *[rve_tp_cnt[ii]]);
     }
     int dof_max = -1;
+    int nnz_max = -1;
     PCU_Switch_Comm(MPI_COMM_SELF);
     for (int ii = 0; ii < num_rve_tps; ii++)
     {
@@ -165,14 +166,18 @@ namespace bio
         apf::Numbering * n = apf::createNumbering(u);
         int dofs = apf::NaiveOrder(n);
         sprs[ii][jj] = las::createCSR(n, dofs);
+        int nnz = ((las::CSR*)sprs[ii][jj])->getNumNonzero();
         dofs_cnt[ii][jj] = dofs;
         apf::destroyNumbering(n);
         apf::destroyField(u);
         dof_max = dofs > dof_max ? dofs : dof_max;
+        nnz_max = nnz > nnz_max ? nnz : nnz_max;
       }
     }
+    assert(nnz_max > 0);
+    assert(dof_max > 0);
     PCU_Switch_Comm(AMSI_COMM_SCALE);
-    bfrs = new las::SparskitBuffers(dof_max);
+    bfrs = new las::SparskitBuffers(dof_max, nnz_max);
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {

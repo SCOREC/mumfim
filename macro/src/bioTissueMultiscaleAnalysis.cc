@@ -91,9 +91,10 @@ namespace bio
     amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
 #endif
   }
-  void MultiscaleTissueAnalysis::run() {
-    TissueAnalysis::run();
-    amsi::ControlService* cs = amsi::ControlService::Instance();
+  void MultiscaleTissueAnalysis::finalizeStep()
+  {
+    amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(cplng, &completed);
   }
-}
+  void MultiscaleTissueAnalysis::run() { TissueAnalysis::run(); }
+}  // namespace bio

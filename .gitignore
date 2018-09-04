@@ -304,5 +304,8 @@ flycheck_*.el
 # directory configuration
 .dir-locals.el
 
-#VIM
+# VIM
 *.swp
+
+# python
+*.pyc

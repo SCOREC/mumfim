@@ -32,6 +32,7 @@ namespace bio
     virtual void run();
     virtual void init();
     virtual void checkpoint();
+    virtual void finalizeStep();
     virtual void revert();
     virtual void deinit();
   protected:

@@ -32,8 +32,9 @@ namespace bio
   {
   public:
     MultiscaleTissueAnalysis(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm);
-    virtual void init();
-    virtual void run();
+    virtual void init() override;
+    virtual void run() override;
+    virtual void finalizeStep() override;
   private:
     size_t cplng;
   };
