@@ -15,6 +15,19 @@ target_link_libraries(single_load_balance micro_fo amsi::multiscale)
 add_mpi_test(serialization serialization.cc 1)
 target_link_libraries(serialization micro_fo)
 
+add_mpi_test(test_global_stiffness ./test_global_stiffness.cc 1)
+target_link_libraries(test_global_stiffness micro_fo)
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_global_stiffness_data" DESTINATION
+          "${CMAKE_CURRENT_BINARY_DIR}")
+#add_custom_command(TARGET test_global_stiffness POST_BUILD
+#                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+#                   "${CMAKE_CURRENT_SOURCE_DIR}/test_global_stiffness"
+#                   "${CMAKE_CURRENT_BINARY_DIR}/test_global_stiffness")
+#                   #"$<TARGET_FILE_DIR:test_global_stiffness>/test_global_stiffness")
+
+add_mpi_test(test_elemental_stiffness ./test_elemental_stiffness.cc 1)
+target_link_libraries(test_elemental_stiffness micro_fo)
+
 #add_mpi_test(isolated_dof isolated_dof.cc 1)
 #target_link_libraries(isolated_dof micro_fo)
 

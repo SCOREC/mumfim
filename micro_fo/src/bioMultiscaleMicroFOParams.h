@@ -1,5 +1,5 @@
-#ifndef BIO_MICROFOMULTISCALE_TYPES_H_
-#define BIO_MICROFOMULTISCALE_TYPES_H_
+#ifndef BIO_MULTISCALE_MICRO_FO_PARAMS_H_
+#define BIO_MULTISCALE_MICRO_FO_PARAMS_H_
 #include <amsiMPI.h>
 namespace bio
 {
@@ -35,9 +35,10 @@ namespace bio
   };
   enum micro_solver_fields
   {
-    MICRO_SOLVER_EPS=0,
-    PREV_ITER_FACTOR=1, 
-    NUM_MICRO_SOLVER_FIELDS=2
+    MICRO_SOLVER_TOL,
+    MICRO_CONVERGENCE_TOL,
+    PREV_ITER_FACTOR, 
+    NUM_MICRO_SOLVER_FIELDS
   };
   enum micro_solver_int_fields
   {

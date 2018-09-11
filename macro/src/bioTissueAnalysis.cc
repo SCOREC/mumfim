@@ -168,10 +168,14 @@ namespace bio
       stp++;
       t += dt;
       tssu->setSimulationTime(t);
+      std::cout<<"checkpointing (macro)"<<std::endl;
       checkpoint();
+      std::cout<<"Finalizing step (macro)"<<std::endl;
+      finalizeStep();
     }
     deinit();
   }
+  void TissueAnalysis::finalizeStep() {};
   void TissueAnalysis::checkpoint()
   {
 #ifdef LOGRUN

@@ -363,15 +363,14 @@ namespace bio
     prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
     prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
     prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
-    //pPList micro_cnvgs = PList_new();
-    //pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
     pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
     assert(micro_cnvg);
     pAttribute dtct_osc =
         Attribute_childByType(micro_cnvg, "oscillation detection");
     assert(dtct_osc);
-    pAttribute micro_eps = Attribute_childByType(micro_cnvg, "micro epsilon");
-    assert(micro_eps);
+    pAttribute micro_cnvg_tol = Attribute_childByType(micro_cnvg, "micro convergence tolerance");
+    assert(micro_cnvg_tol);
+    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
     pAttribute num_attempts = NULL;
     pAttribute cut_factor = NULL;
     pAttribute itr_cap = NULL;
@@ -413,10 +412,15 @@ namespace bio
     detect_osc_type = NULL;
     assert(num_attempts);
     assert(cut_factor);
-    slvr.data[MICRO_SOLVER_EPS] = AttributeDouble_value((pAttributeDouble)micro_eps);
+    // FIXME replace before commit
+    slvr.data[MICRO_CONVERGENCE_TOL] =
+        AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
+    slvr.data[MICRO_SOLVER_TOL] =
+        micro_slvr_tol ? AttributeDouble_value((pAttributeDouble)micro_slvr_tol)
+                       : 1E-6;
     // should not choose number less than 1E-6 for now due to LAS using single
     // precision
-    assert(slvr.data[MICRO_SOLVER_EPS] >= 1E-6);
+    assert(slvr.data[MICRO_SOLVER_TOL] <= slvr.data[MICRO_CONVERGENCE_TOL]);
     slvr.data[PREV_ITER_FACTOR] =
         prev_itr_factor
             ? AttributeDouble_value((pAttributeDouble)prev_itr_factor)

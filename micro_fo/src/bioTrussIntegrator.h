@@ -50,6 +50,7 @@ namespace bio
     apf::MeshTag * rct_tg;
     las::Mat * k;
     las::Vec * f;
+    int id;
   public:
   TrussIntegrator(apf::Numbering * n,
                   apf::Field * u_,
@@ -77,8 +78,9 @@ namespace bio
       , rct_tg(msh->findTag("fiber_reaction"))
       , k(k_)
       , f(f_)
+      , id(-1)
     { }
-    void inElement(apf::MeshElement * me)
+    void inElement(apf::MeshElement * me) override
     {
       elmt = apf::createElement(u,me);
       nen = apf::countNodes(elmt);
@@ -102,15 +104,18 @@ namespace bio
       apf::getVectorNodes(dsp_elm,crds);
       int nd_cnt = apf::countNodes(dsp_elm);
       apf::destroyElement(dsp_elm);
+      // unit vector of the fiber
       spans_l = (crds[nd_cnt-1] - crds[0]) / l;
-      int id = -1;
+      //int id = -1;
       msh->getIntTag(ent,id_tg,&id);
     }
-    void atPoint(const apf::Vector3 &, double, double)
+    void atPoint(const apf::Vector3 &, double, double) override
     {
       auto f_dfdl = fr->forceReaction(lo,l);
       double f = f_dfdl.first;
+      // the scalar version of the force derivative
       double dfdl = f_dfdl.second;
+      // why are we dividing by l here?
       double fl = f / l;
       double dfdl_fl = dfdl - fl;
       double frc = 0.0;
@@ -121,8 +126,9 @@ namespace bio
         es->fe(ii)     = -frc;
         es->fe(dim+ii) =  frc;
       }
+      // rctn is df/du
       apf::Matrix3x3 rctn = apf::tensorProduct(spans_l,spans_l*dfdl_fl) + eye()*fl;
-      double op = -1.0;
+      double op = 1.0;
       for(int ii = 0; ii < 2; ii++)
       {
         op *= -1.0;
@@ -155,7 +161,7 @@ namespace bio
           es->fe(ii) += es->ke(ii,jj) * u_fxd(jj);
       */
     }
-    void outElement()
+    virtual void outElement() override
     {
       auto ops = las::getLASOps<las::sparskit>();
       ops->assemble(k,es->nedof(),&es->dofs(0),es->nedof(),&es->dofs(0),&es->ke(0,0));

@@ -7,8 +7,14 @@
 #include "bioMultiscaleRVE.h"
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
+#include "bioMicroFOParams.h"
 namespace bio
 {
+  /* \brief create the elemental system integrator
+   */
+  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+                                               las::Mat * k,
+                                               las::Vec * f);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -17,8 +23,13 @@ namespace bio
   {
     public:
     LinearStructs(int ndofs,
-                         las::Sparsity * csr,
-                         las::SparskitBuffers * b);
+                  double solver_tol,
+                  las::Sparsity * csr,
+                  las::SparskitBuffers * b);
+    las::Mat * getK() const { return k; }
+    las::Vec * getU() const { return u; }
+    las::Vec * getF() const { return f; }
+    las::Solve * getSlv() const { return slv; }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;
@@ -53,14 +64,14 @@ namespace bio
     explicit FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(FiberNetwork * fn,
                      LinearStructs * vecs,
-                     micro_fo_solver & slvr,
-                     micro_fo_int_solver & slvr_int);
+                     const MicroSolutionStrategy & ss);
     ~FiberRVEAnalysis();
     las::Mat * getK() const { return vecs->k; }
     las::Vec * getU() const { return vecs->u; }
     las::Vec * getF() const { return vecs->f; }
     las::Solve * getSlv() const { return vecs->slv; }
     FiberNetwork * getFn() const { return fn; }
+    bool run(const DeformationGradient & dfmGrd);
   };
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
                                             LinearStructs * vecs,
@@ -74,10 +85,10 @@ namespace bio
                                         micro_fo_solver & slvr,
                                         micro_fo_int_solver & slvr_int);
   void destroyAnalysis(FiberRVEAnalysis *);
-  LinearStructs * createLinearStructs(
-      int ndofs,
-      las::Sparsity * csr,
-      las::SparskitBuffers * bfrs = NULL);
+  LinearStructs * createLinearStructs(int ndofs,
+                                      double solver_tol,
+                                      las::Sparsity * csr,
+                                      las::SparskitBuffers * bfrs = NULL);
   void destroyFiberRVEAnalysisLinearStructs(LinearStructs * vecs);
   /*
    * perform a deep copy of the fiber rve analysis
@@ -110,6 +121,7 @@ namespace bio
   template <typename I>
   void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
+  void applyGuessSolution(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd);
 }  // namespace bio
 #include "bioFiberRVEAnalysis_impl.h"
 #endif

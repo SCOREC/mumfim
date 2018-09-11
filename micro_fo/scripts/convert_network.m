@@ -30,6 +30,6 @@ end
 for n = 1 : edges
    fprintf(new_file,'%i %i\n', new_edges(n,1), new_edges(n,2));
 end
-fprintf(new_file,'%f\n',0.5);
+%fprintf(new_file,'%f\n',0.5);
 fclose(new_file);
 end

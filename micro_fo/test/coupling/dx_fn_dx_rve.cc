@@ -1,12 +1,13 @@
-#include "bioMultiscaleRVEAnalysis.h"
-#include "bioFiberNetworkIO.h"
-#include "io.h"
-#include <lasConfig.h>
-#include <lasCSRCore.h>
 #include <PCU.h>
+#include <lasCSRCore.h>
+#include <lasConfig.h>
 #include <mpi.h>
 #include <fstream>
 #include <string>
+#include "bioFiberNetworkIO.h"
+#include "bioMultiscaleCoupling.h"
+#include "bioMultiscaleRVEAnalysis.h"
+#include "io.h"
 std::string fn_fn("fn.test");
 std::string fn_dR_dx_rve("dR_dx_rve.test");
 std::string fn_k("K_dR_dx_rve.test");
@@ -24,7 +25,7 @@ int main(int ac, char * av[])
       (las::Sparsity*)las::createCSR(fn.getUNumbering(), fn.getDofCount());
   las::SparskitBuffers* bfrs = new las::SparskitBuffers(fn.getDofCount());
   bio::LinearStructs * vecs =
-      bio::createLinearStructs(fn.getDofCount(), csr, bfrs);
+      bio::createLinearStructs(fn.getDofCount(), 1E-6, csr, bfrs);
   // we can leave the solver params uninitialized since we don't solve anything
   // in this test
   bio::micro_fo_solver slvr;

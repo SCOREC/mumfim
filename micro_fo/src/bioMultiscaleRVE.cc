@@ -20,7 +20,6 @@ namespace bio
   }
   MultiscaleRVE::MultiscaleRVE(const MultiscaleRVE& mrve)
   {
-    rve = new RVE(*mrve.getRVE());
     gss_id = mrve.gss_id;
     dim = mrve.dim;
     lcl_gss = mrve.lcl_gss;
