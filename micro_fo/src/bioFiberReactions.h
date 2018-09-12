@@ -26,18 +26,18 @@ namespace bio
     // compressive transition to linear regime
     double cmp_ratio_trns = 1.0;
     std::pair<double, double> forceReaction(double orig_length,
-                                            double length) const override;
+                                            double length) const;
   };
   struct LinearReaction : public FiberReaction
   {
     double fiber_area;
     double E;
     std::pair<double, double> forceReaction(double orig_length,
-                                            double length) const override;
+                                            double length) const;
   };
   struct BeamReaction : public FiberReaction
   {
-    std::pair<double, double> forceReaction(double, double) const override;
+    std::pair<double, double> forceReaction(double, double) const;
   };
 }  // namespace bio
 #endif

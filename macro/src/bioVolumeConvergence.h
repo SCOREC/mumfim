@@ -20,13 +20,13 @@ namespace bio
       std::copy(bgn,end,std::back_inserter(mdl_ents)); // use amsi caster
       v = vps = pv = v0 = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
-    virtual void iterate() override
+    virtual void iterate() 
     {
       pv = v;
       v = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
       Iteration::iterate();
     }
-    void step() override
+    void step() 
     {
       vps = amsi::measureDisplacedModelEntities(mdl_ents.begin(),mdl_ents.end(),u);
     }
