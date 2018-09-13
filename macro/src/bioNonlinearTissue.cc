@@ -51,9 +51,6 @@ namespace bio
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh, "stress", apf::MATRIX, 1);
     apf::zeroField(strs);
-    rcvrd_strs =
-        apf::createLagrangeField(apf_mesh, "recovered_stress", apf::MATRIX, 1);
-    apf::zeroField(rcvrd_strs);
     strn = apf::createIPField(apf_mesh, "strain", apf::MATRIX, 1);
     apf::zeroField(strn);
     dfm_grd = apf::createIPField(apf_mesh, "F", apf::MATRIX, 1);
@@ -139,9 +136,11 @@ namespace bio
   {
     delete xpyfnc;
     apf::destroyField(current_coords);
-    apf::destroyField(delta_u);
+    // destroying this field currently throws an error
+    // most likely because it is zeroed and core does not
+    // properly deal with this...
+    //apf::destroyField(delta_u);
     apf::destroyField(strs);
-    apf::destroyField(rcvrd_strs);
     apf::destroyField(strn);
     apf::destroyField(stf_vrtn);
     apf::destroyField(axl_yngs_mod);

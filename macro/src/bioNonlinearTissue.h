@@ -34,7 +34,6 @@ namespace bio
     apf::Field * delta_u;
     apf::Field * current_coords;  // coordinates in current config
     apf::Field * strs;
-    apf::Field * rcvrd_strs;
     apf::Field * strn;
     apf::Field * dfm_grd;
     apf::Field * previous_rve;
