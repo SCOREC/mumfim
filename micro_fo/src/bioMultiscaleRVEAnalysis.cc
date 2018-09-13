@@ -13,6 +13,8 @@
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
+#include <fstream>
+#include <sstream>
 //#include "bioRVEVolumeTerms.h"
 namespace bio
 {
@@ -177,7 +179,8 @@ namespace bio
     assert(nnz_max > 0);
     assert(dof_max > 0);
     PCU_Switch_Comm(AMSI_COMM_SCALE);
-    bfrs = new las::SparskitBuffers(dof_max, 2*nnz_max);
+    bfrs = new las::SparskitBuffers(dof_max, 2*(nnz_max+dof_max));
+    //bfrs = new las::SparskitBuffers(dof_max);
     //bfrs = new las::SparskitBuffers(dof_max, nnz_max, dof_max);
   }
   void MultiscaleRVEAnalysis::updateCoupling()
@@ -240,9 +243,9 @@ namespace bio
     PCU_Switch_Comm(AMSI_COMM_SCALE);
     int rank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::ofstream rve_tp_lg_fs(
-        amsi::fs->getResultsDir() + "/rve_tp." + std::to_string(rank) + ".log",
-        std::ios::out | std::ios::app);
+    std::stringstream ss;
+    ss << amsi::fs->getResultsDir() << "/rve_tp." << rank << ".log";
+    std::ofstream rve_tp_lg_fs(ss.str().c_str(), (std::ios::out | std::ios::app));
     amsi::flushToStream(rve_tp_lg, rve_tp_lg_fs);
     cs->CommPattern_UpdateInverted(recv_ptrn, send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);

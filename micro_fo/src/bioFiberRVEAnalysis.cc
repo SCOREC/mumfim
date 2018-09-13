@@ -207,11 +207,13 @@ namespace bio
         BIO_V3(std::cout << "\n";)
         applyGuessSolution(tmpRVE, appliedDefm);
         FiberRVEIteration rveItr(tmpRVE);
-        std::vector<amsi::Iteration *> itr_stps = {&rveItr};
+        std::vector<amsi::Iteration *> itr_stps;
+        itr_stps.push_back(&rveItr);
         amsi::MultiIteration itr(itr_stps.begin(), itr_stps.end());
         amsi::UpdatingConvergence<decltype(&vg), decltype(&eg), decltype(&rg)>
             resid_cnvrg(&itr, &vg, &eg, &rg);
-        std::vector<amsi::Convergence *> cnvrg_stps = {&resid_cnvrg};
+        std::vector<amsi::Convergence *> cnvrg_stps;
+        cnvrg_stps.push_back(&resid_cnvrg);
         amsi::MultiConvergence cnvrg(cnvrg_stps.begin(), cnvrg_stps.end());
         amsi::Iteration * osc_itr =
             amsi::createOscillationDetection<decltype(&resid_cnvrg)>(

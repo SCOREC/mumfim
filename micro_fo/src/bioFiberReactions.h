@@ -24,7 +24,7 @@ namespace bio
     // tension transition to compressive regime
     double length_ratio_trns;
     // compressive transition to linear regime
-    double cmp_ratio_trns = 1.0;
+    double cmp_ratio_trns;
     std::pair<double, double> forceReaction(double orig_length,
                                             double length) const;
   };
