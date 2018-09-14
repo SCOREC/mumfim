@@ -282,8 +282,13 @@ namespace bio
           if (!result)
           {
             std::cerr << "Failed during  Macro Step " << macro_step
-                      << " and macro iteration " << macro_iter << "."
-                      << std::endl;
+                      << " and macro iteration " << macro_iter << ".\n"
+                      << "Applied deformation gradient was: "
+                      << "F=";
+                      for(int i=0; i<9;++i) {
+                        std::cerr<<dfmGrd[i]<<" ";
+                      }
+                      std::cerr<<std::endl;
             // write the fiber network out if we fail, so we can test externally
             std::stringstream sout;
             sout << amsi::fs->getResultsDir() << "/"
@@ -310,8 +315,8 @@ namespace bio
 #endif
         }
         BIO_V1(double t1 = MPI_Wtime();)
-        BIO_V1(std::cout << "Computed " << ans.size() << " RVEs in " << t0 - t1
-                         << " seconds." << std::endl;)
+        BIO_V1(std::cout << "Computed " << ans.size() << " RVEs in " << t1 - t0
+                         << " seconds. On rank "<<rank<<"."<< std::endl;)
         PCU_Switch_Comm(AMSI_COMM_SCALE);
         cs->Communicate(send_ptrn, results, amsi::mpi_type<micro_fo_result>());
         macro_iter++;
