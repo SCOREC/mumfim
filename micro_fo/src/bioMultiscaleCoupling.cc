@@ -180,7 +180,13 @@ namespace bio
     double * uptr = NULL;
     for (int ii = 0; ii < rve_dof_cnt; ++ii)
     {
-      las::Solve * slv = ii == 0 ? iluslv : qslv;
+      // WARNING! Here we assume that the buffers have not been reset
+      // e.g. we still have the lu decomposition saved from the problem solution
+      // if the code is changed so the buffers no longer hold the lu decomposition
+      // of the stiffness matrix, the following line can be used to get the lu
+      // decomposition on the first pass
+      //las::Solve * slv = ii == 0 ? iluslv : qslv;
+      las::Solve * slv = qslv;
       dR_dx_rve.getColumn(ii, f);
       ops->get(skt_f, fptr);
       std::copy(f.begin(), f.end(), fptr);

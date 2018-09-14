@@ -296,7 +296,9 @@ namespace bio
           }
           // we've converged and have not reset the state of the vectors,
           // matrices, and buffers the inversion of the tangent stiffness matrix
-          // should be available in the buffers?
+          // IF the code is modified so this is no longer the case you must
+          // update calcdx_fn_dx_rve to compute the the ilut (code for this is in
+          // comment of that function)
           recoverMultiscaleResults(*rve, &results[ii]);
           ii++;
 #ifdef WRITE_MICRO_PER_ITER
