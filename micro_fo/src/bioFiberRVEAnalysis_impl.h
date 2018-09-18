@@ -3,7 +3,7 @@ namespace bio
   template <typename I>
   void applyRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::Mat * k, las::Vec * f)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     apf::Mesh * msh = apf::getMesh(apf::getField(nm));
     for(auto ent = bnd_bgn; ent != bnd_end; ++ent)
     {

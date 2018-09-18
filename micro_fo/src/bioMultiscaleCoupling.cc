@@ -10,7 +10,7 @@ namespace bio
 {
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->getFn()->getNetworkMesh()->getDimension();
     apf::Field * xpu = ans->getFn()->getXpUField();
     apf::Vector3 xpu_val;
@@ -164,13 +164,13 @@ namespace bio
                         FiberRVEAnalysis * ans,
                         apf::DynamicMatrix & dR_dx_rve)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->rve->getDim();
     int fn_dof_cnt = ans->getFn()->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes() * dim;
     apf::DynamicVector f(fn_dof_cnt);
     apf::DynamicVector u(fn_dof_cnt);
-    auto vb = las::getVecBuilder<las::sparskit>(0);
+    auto vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::Vec * skt_f = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
     las::Vec * skt_u = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
     las::Solve * iluslv = las::createSparskitLUSolve(ans->getSlv(), 0.0);
@@ -185,8 +185,8 @@ namespace bio
       // if the code is changed so the buffers no longer hold the lu decomposition
       // of the stiffness matrix, the following line can be used to get the lu
       // decomposition on the first pass
-      //las::Solve * slv = ii == 0 ? iluslv : qslv;
-      las::Solve * slv = qslv;
+      las::Solve * slv = ii == 0 ? iluslv : qslv;
+      //las::Solve * slv = qslv;
       dR_dx_rve.getColumn(ii, f);
       ops->get(skt_f, fptr);
       std::copy(f.begin(), f.end(), fptr);
@@ -206,7 +206,7 @@ namespace bio
   // boundary of the RVE w.r.t. the fiber network coordinates
   void calcds_dx_fn(apf::DynamicMatrix & ds_dx_fn, FiberRVEAnalysis * ans)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->rve->getDim();
     int sigma_length = dim == 3 ? 6 : 3;
     int fn_dof_cnt = ans->getFn()->getDofCount();
@@ -316,7 +316,7 @@ namespace bio
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     // rebuild everything since we want the force vector without
     // boundary conditions anyway
     ops->zero(ans->getK());

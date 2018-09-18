@@ -99,6 +99,15 @@ if(ENABLE_VERBOSITY)
 endif(ENABLE_VERBOSITY)
 target_compile_definitions(micro_fo PUBLIC ${BIO_VERBOSITY_DEFINITIONS})
 
+set(MICRO_BACKEND sparskit CACHE STRING "sparskit petsc")
+if(MICRO_BACKEND STREQUAL "sparskit")
+  target_compile_definitions(micro_fo PUBLIC -DMICRO_BACKEND=sparskit -DMICRO_USING_SPARSKIT)
+elseif(MICRO_BACKEND STREQUAL "petsc")
+  target_compile_definitions(micro_fo PUBLIC -DMICRO_BACKEND=petsc -DMICRO_USING_PETSC)
+else()
+  message(FATAL_ERROR "You have incorrectly set MICRO_BACKEND=${MICRO_BACKEND}.\n Balid options are sparskit, petsc")
+endif()
+
 install(TARGETS micro_fo
         EXPORT biotissueTargets
         LIBRARY DESTINATION lib

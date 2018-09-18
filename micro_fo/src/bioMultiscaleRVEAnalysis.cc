@@ -179,8 +179,11 @@ namespace bio
     assert(nnz_max > 0);
     assert(dof_max > 0);
     PCU_Switch_Comm(AMSI_COMM_SCALE);
+#ifdef MICRO_USING_SPARSKIT
     // magic number that doesn't seem to require much rescaling
-    bfrs = new las::SparskitBuffers(dof_max, nnz_max*4);
+    // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
+    bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
+#endif
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {

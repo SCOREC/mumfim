@@ -31,8 +31,8 @@ namespace bio
                                las::Sparsity * csr,
                                las::SparskitBuffers * b)
   {
-    las::LasCreateVec * vb = las::getVecBuilder<las::sparskit>(0);
-    las::LasCreateMat * mb = las::getMatBuilder<las::sparskit>(0);
+    las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
+    las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
     this->f = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
     this->u = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
@@ -43,8 +43,8 @@ namespace bio
   }
   LinearStructs::~LinearStructs()
   {
-    auto md = las::getMatBuilder<las::sparskit>(0);
-    auto vd = las::getVecBuilder<las::sparskit>(0);
+    auto md = las::getMatBuilder<las::MICRO_BACKEND>(0);
+    auto vd = las::getVecBuilder<las::MICRO_BACKEND>(0);
     md->destroy(k);
     vd->destroy(u);
     vd->destroy(f);
@@ -145,7 +145,7 @@ namespace bio
     double prv_nrm;
     double operator()()
     {
-      auto ops = las::getLASOps<las::sparskit>();
+      auto ops = las::getLASOps<las::MICRO_BACKEND>();
       double nrm = ops->norm(an->getF());
       double val = fabs(prv_nrm - nrm);
       prv_nrm = nrm;
@@ -313,7 +313,7 @@ namespace bio
   }
   void FiberRVEIteration::iterate()
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     ops->zero(an->getK());
     ops->zero(an->getU());
     ops->zero(an->getF());
@@ -356,7 +356,7 @@ namespace bio
   }
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     for (int ii = 0; ii < 3; ++ii)
       for (int jj = 0; jj < 3; ++jj)
         sigma[ii][jj] = 0.0;
