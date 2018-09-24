@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
   las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs);
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
-  bio::LinearStructs * vecs =
+  bio::LinearStructs<las::MICRO_BACKEND> * vecs =
       bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
   // get the stiffness matrix
   auto ops = las::getLASOps<las::sparskit>();

@@ -1,4 +1,5 @@
 #include "bioFiberRVEAnalysis.h"
+
 #include <PCU.h>
 #include <apfMeshIterator.h>
 #include <bioVerbosity.h>
@@ -26,22 +27,44 @@ namespace bio
                                k, f, 1);
     return es;
   }
-  LinearStructs::LinearStructs(int ndofs,
+  template <>
+  LinearStructs<las::sparskit>::LinearStructs(int ndofs,
                                double solver_tol,
                                las::Sparsity * csr,
-                               las::SparskitBuffers * b)
+                               void * bfrs)
   {
+    las::SparskitBuffers * b = static_cast<las::SparskitBuffers *>(bfrs);
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    this->f = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
-    this->u = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
+    //this->f = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
+    //this->u = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
+    this->f = vb->createRHS(this->k);
+    this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
     if (b == NULL) b = new las::SparskitBuffers(ndofs);
     this->slv = las::createSparskitLUSolve(b, 1e-6);
   }
-  LinearStructs::~LinearStructs()
+  template <>
+  LinearStructs<las::petsc>::LinearStructs(int ndofs,
+                               double solver_tol,
+                               las::Sparsity * sprs,
+                               void * bfrs)
+  {
+    las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
+    las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
+    //this->f = vb->create(ndofs, 1, MPI_COMM_SELF);
+    //this->u = vb->create(ndofs, 1, MPI_COMM_SELF);
+    this->k = mb->create(ndofs, 1,sprs, MPI_COMM_SELF);
+    this->f = vb->createRHS(this->k);
+    this->u = vb->createLHS(this->k);
+    // FIXME memory leak (won't be hit in multi-scale)
+    // because we provide buffers
+    this->slv = las::createPetscLUSolve(MPI_COMM_SELF);
+  }
+  template <typename T>
+  LinearStructs<T>::~LinearStructs()
   {
     auto md = las::getMatBuilder<las::MICRO_BACKEND>(0);
     auto vd = las::getVecBuilder<las::MICRO_BACKEND>(0);
@@ -50,6 +73,11 @@ namespace bio
     vd->destroy(f);
     delete slv;
   }
+  // specifically instantiate linear structs for our
+  // solver backends
+  template class LinearStructs<las::sparskit>;
+  template class LinearStructs<las::petsc>;
+
   FiberRVEAnalysis::FiberRVEAnalysis(const FiberRVEAnalysis & an)
   {
     fn = new FiberNetwork(*an.fn);
@@ -92,7 +120,7 @@ namespace bio
   }
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork * fn,
-                                     LinearStructs * vecs,
+                                     LinearStructs<las::MICRO_BACKEND> * vecs,
                                      const MicroSolutionStrategy & ss)
       : fn(fn)
       , multi(NULL)
@@ -255,7 +283,7 @@ namespace bio
     return true;
   }
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
-                                            LinearStructs * vecs,
+                                            LinearStructs<las::MICRO_BACKEND> * vecs,
                                             micro_fo_solver & slvr,
                                             micro_fo_int_solver & slvr_int)
   {
@@ -275,7 +303,7 @@ namespace bio
     return an;
   }
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
-                                        LinearStructs * vecs,
+                                        LinearStructs<las::MICRO_BACKEND> * vecs,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         micro_fo_init_data & ini,
@@ -291,14 +319,14 @@ namespace bio
     delete fa;
     fa = NULL;
   }
-  LinearStructs * createLinearStructs(int ndofs,double solver_tol,
+  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,double solver_tol,
                                       las::Sparsity * csr,
-                                      las::SparskitBuffers * bfrs
+                                      void * bfrs
                                       )
   {
-    return new LinearStructs(ndofs, solver_tol, csr, bfrs);
+    return new LinearStructs<las::MICRO_BACKEND>(ndofs, solver_tol, csr, bfrs);
   }
-  void destroyLinearStructs(LinearStructs * vecs)
+  void destroyLinearStructs(LinearStructs<las::MICRO_BACKEND> * vecs)
   {
     delete vecs;
     vecs = NULL;
@@ -330,6 +358,10 @@ namespace bio
       ++ii;
     }
     fn->end(itr);
+    // finalize the vectors so we can set boundary condition
+    // values
+    las::finalizeMatrix<las::MICRO_BACKEND>(an->vecs->getK());
+    las::finalizeVector<las::MICRO_BACKEND>(an->vecs->getF());
     applyRVEBC(an->bnd_nds[RVE::all].begin(),
                an->bnd_nds[RVE::all].end(),
                an->getFn()->getUNumbering(),

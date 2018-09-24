@@ -19,13 +19,18 @@ namespace bio
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
   // (especially copies)
+  template <typename T>
   class LinearStructs
   {
     public:
+    // here we are sacrificing some type safety for a
+    // consistent interface if we are using sparskit
+    // the buffers should be a las::SparskitBuffers pointer
+    // and they are not used for petsc, so it can be a nullptr
     LinearStructs(int ndofs,
                   double solver_tol,
                   las::Sparsity * csr,
-                  las::SparskitBuffers * b);
+                  void * bfrs = NULL);
     las::Mat * getK() const { return k; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
@@ -39,6 +44,7 @@ namespace bio
     las::Vec * f;
     las::Solve * slv;
   };
+
   class FiberRVEAnalysis
   {
     protected:
@@ -52,7 +58,7 @@ namespace bio
     std::vector<apf::MeshEntity *> bnd_nds[RVE::side::all + 1];
     apf::Integrator * es;
     apf::DynamicMatrix dx_fn_dx_rve;
-    LinearStructs * vecs;
+    LinearStructs<las::MICRO_BACKEND> * vecs;
     bool dx_fn_dx_rve_set;
     double solver_eps;
     double prev_itr_factor;
@@ -63,7 +69,7 @@ namespace bio
     // constructors
     explicit FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(FiberNetwork * fn,
-                     LinearStructs * vecs,
+                     LinearStructs<las::MICRO_BACKEND> * vecs,
                      const MicroSolutionStrategy & ss);
     ~FiberRVEAnalysis();
     las::Mat * getK() const { return vecs->k; }
@@ -74,22 +80,22 @@ namespace bio
     bool run(const DeformationGradient & dfmGrd);
   };
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
-                                            LinearStructs * vecs,
+                                            LinearStructs<las::MICRO_BACKEND> * vecs,
                                             micro_fo_solver & slvr,
                                             micro_fo_int_solver & slvr_int);
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
-                                        LinearStructs * vecs,
+                                        LinearStructs<las::MICRO_BACKEND> * vecs,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         micro_fo_init_data & ini,
                                         micro_fo_solver & slvr,
                                         micro_fo_int_solver & slvr_int);
   void destroyAnalysis(FiberRVEAnalysis *);
-  LinearStructs * createLinearStructs(int ndofs,
+  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,
                                       double solver_tol,
                                       las::Sparsity * csr,
-                                      las::SparskitBuffers * bfrs = NULL);
-  void destroyFiberRVEAnalysisLinearStructs(LinearStructs * vecs);
+                                      void * bfrs = NULL);
+  void destroyFiberRVEAnalysisLinearStructs(LinearStructs<las::MICRO_BACKEND> * vecs);
   /*
    * perform a deep copy of the fiber rve analysis
    */

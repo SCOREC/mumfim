@@ -9,6 +9,7 @@
 #include <bioVerbosity.h>
 #include <gmi.h>
 #include <lasCSRCore.h>
+#include <lasCorePETSc.h>
 #include <cassert>
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
@@ -37,7 +38,7 @@ namespace bio
       for (int j = 0; j < rve_tp_cnt[i]; ++j)
       {
         delete fns[i][j];
-        las::destroySparsity<las::CSR *>(sprs[i][j]);
+        las::destroySparsity<las::MICRO_BACKEND>(sprs[i][j]);
         if (meshes[i][j])
         {
           meshes[i][j]->destroyNative();
@@ -147,8 +148,10 @@ namespace bio
       dofs_cnt.push_back(new int[rve_tp_cnt[ii]]);
       meshes.push_back(new apf::Mesh2 *[rve_tp_cnt[ii]]);
     }
+#ifdef MICRO_USING_SPARSKIT
     int dof_max = -1;
     int nnz_max = -1;
+#endif
     PCU_Switch_Comm(MPI_COMM_SELF);
     for (int ii = 0; ii < num_rve_tps; ii++)
     {
@@ -167,19 +170,24 @@ namespace bio
         apf::zeroField(u);
         apf::Numbering * n = apf::createNumbering(u);
         int dofs = apf::NaiveOrder(n);
+        dofs_cnt[ii][jj] = dofs;
+        //apf::NaiveOrder(n);
+#if defined MICRO_USING_SPARSKIT
         sprs[ii][jj] = las::createCSR(n, dofs);
         int nnz = ((las::CSR*)sprs[ii][jj])->getNumNonzero();
-        dofs_cnt[ii][jj] = dofs;
-        apf::destroyNumbering(n);
-        apf::destroyField(u);
         dof_max = dofs > dof_max ? dofs : dof_max;
         nnz_max = nnz > nnz_max ? nnz : nnz_max;
+#elif defined MICRO_USING_PETSC
+        sprs[ii][jj] = las::createPetscSparsity(n, dofs, PCU_Get_Comm());
+#endif
+        apf::destroyNumbering(n);
+        apf::destroyField(u);
       }
     }
-    assert(nnz_max > 0);
-    assert(dof_max > 0);
     PCU_Switch_Comm(AMSI_COMM_SCALE);
 #ifdef MICRO_USING_SPARSKIT
+    assert(nnz_max > 0);
+    assert(dof_max > 0);
     // magic number that doesn't seem to require much rescaling
     // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
     bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);

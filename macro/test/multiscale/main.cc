@@ -70,8 +70,9 @@ bool parse_options(int & argc, char ** & argv)
   opterr = 1;
   return result;
 }
-int run_micro_fo(int & , char ** &, MPI_Comm comm)
+int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
+  las::initLAS(&argc,&argv,comm);
   int rnk = -1;
   MPI_Comm_rank(comm,&rnk);
   srand(8675309+rnk);
@@ -79,6 +80,7 @@ int run_micro_fo(int & , char ** &, MPI_Comm comm)
   bio::MultiscaleRVEAnalysis rves;
   rves.init();
   rves.run();
+  //las::finalizeLAS();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }

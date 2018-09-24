@@ -2,6 +2,7 @@
 #include <amsiDetectOscillation.h>
 #include <apf.h>
 #include <lasCSRCore.h>
+#include <lasCorePETSc.h>
 #include <mpi.h>
 #include <iostream>
 #include "bioFiberNetworkIO.h"
@@ -12,6 +13,9 @@
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
+#ifdef MICRO_USING_PETSC
+  las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
+#endif
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
       "/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml", cases);
@@ -31,14 +35,24 @@ int main(int argc, char * argv[])
   // do we need to zero field? if this assert fails we need to zero the field.
   std::cout << "Problem has " << ndofs << " degrees of freedom" << std::endl;
   assert(ndofs > 0);
+#if defined MICRO_USING_SPARSKIT
   las::Sparsity * sprs = las::createCSR(n, ndofs);
+#elif defined MICRO_USING_PETSC
+  //las::Sparsity * sprs = NULL;
+  las::Sparsity * sprs = las::createPetscSparsity(n, ndofs, MPI_COMM_SELF);
+  //las::Sparsity * sprs = las::createCSR(n, ndofs);
+#endif
   // clean up the un-needed field and numbering
   apf::destroyField(u);
   apf::destroyNumbering(n);
+#if defined MICRO_USING_SPARSKIT
   las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs);
+#elif defined MICRO_USING_PETSC
+  void * bfrs = NULL;
+#endif
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
-  bio::LinearStructs * vecs =
+  bio::LinearStructs<las::MICRO_BACKEND> * vecs =
       bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
   bio::FiberRVEAnalysis an(fn, vecs, cases[0].ss);
   assert(an.multi == NULL);
@@ -47,13 +61,13 @@ int main(int argc, char * argv[])
   {
     std::cerr << "The microscale analysis failed to converge" << std::endl;
   }
-  std::ofstream ostrm("K2.txt");
-  las::printSparskitMat(ostrm, an.getK());
-  ostrm.close();
   std::stringstream sout;
   sout << "rnk_" << rank << "_fn_" << an.getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an.getFn()->getNetworkMesh(), 1);
   // las::destroySparsity<las::CSR *>(sprs);
+#ifdef MICRO_USING_PETSC
+  las::finalizePETScLAS(); 
+#endif
   amsi::freeAnalysis();
   return 0;
 }
