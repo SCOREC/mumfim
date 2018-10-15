@@ -34,7 +34,7 @@ namespace bio
     std::vector<las::Sparsity **> sprs;
     std::vector<FiberRVEAnalysis *> ans;
     las::SparskitBuffers * bfrs;
-    std::vector<LinearStructs *> vecs;
+    std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
     // a vector that stores the dof number for each type of network
     std::vector<int *> dofs_cnt;
     int macro_iter;

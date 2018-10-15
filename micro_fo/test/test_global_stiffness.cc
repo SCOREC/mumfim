@@ -51,7 +51,7 @@ int main(int argc, char * argv[])
     bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
     fn->setFiberReactions(rctns.rctns);
     std::cout<<"creating sparskit linear structures"<<std::endl;
-    bio::LinearStructs * vecs =
+    bio::LinearStructs<las::MICRO_BACKEND> * vecs =
         bio::createLinearStructs(ndofs, cases[i].ss.slvrTolerance, sprs, bfrs);
     std::cout<<"Zeroing sparkit data"<<std::endl;
     // get the stiffness matrix
@@ -110,9 +110,11 @@ int main(int argc, char * argv[])
     in2.close();
     std::cout << "Comparing matrix" << std::endl;
     assert(readMat);
+    bool close = las::sparskitMatClose(readMat, readMat2, 1E-10, 1E-15);
     std::string comp =
-        las::sparskitMatClose(readMat, readMat2, 1E-10, 1E-15) ? "True" : "False";
+         close ? "True" : "False";
     std::cout << "Matrix was close " << comp << std::endl;
+    assert(close);
     las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
     mb->destroy(readMat);
     mb->destroy(readMat2);

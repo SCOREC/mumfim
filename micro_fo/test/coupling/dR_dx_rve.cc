@@ -22,7 +22,7 @@ int main(int ac, char*av[])
   las::Sparsity* csr =
       (las::Sparsity*)las::createCSR(fn.getUNumbering(), fn.getDofCount());
   las::SparskitBuffers* bfrs = new las::SparskitBuffers(fn.getDofCount());
-  bio::LinearStructs* vecs =
+  bio::LinearStructs<las::MICRO_BACKEND>* vecs =
       bio::createLinearStructs(fn.getDofCount(),1E-6,csr, bfrs);
   // we can leave the solver params uninitialized since we don't solve anything
   // in this test

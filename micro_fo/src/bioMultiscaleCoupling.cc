@@ -10,7 +10,7 @@ namespace bio
 {
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->getFn()->getNetworkMesh()->getDimension();
     apf::Field * xpu = ans->getFn()->getXpUField();
     apf::Vector3 xpu_val;
@@ -164,29 +164,31 @@ namespace bio
                         FiberRVEAnalysis * ans,
                         apf::DynamicMatrix & dR_dx_rve)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->rve->getDim();
     int fn_dof_cnt = ans->getFn()->getDofCount();
     int rve_dof_cnt = ans->rve->numNodes() * dim;
     apf::DynamicVector f(fn_dof_cnt);
     apf::DynamicVector u(fn_dof_cnt);
-    auto vb = las::getVecBuilder<las::sparskit>(0);
-    las::Vec * skt_f = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
-    las::Vec * skt_u = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
+    auto vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
+    //las::Vec * skt_f = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
+    //las::Vec * skt_u = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
+    las::Vec * skt_f = vb->createRHS(ans->getK());
+    las::Vec * skt_u = vb->createLHS(ans->getK());
+#if defined MICRO_USING_SPARSKIT
     las::Solve * iluslv = las::createSparskitLUSolve(ans->getSlv(), 0.0);
     las::Solve * qslv = las::createSparskitQuickLUSolve(iluslv, 0.0);
+#elif defined MICRO_USING_PETSC
+    // FIXME Don't want to do a complete solve every timestep...
+    las::Solve * iluslv = las::createPetscLUSolve(MPI_COMM_SELF);
+    las::Solve * qslv = las::createPetscQuickLUSolve(iluslv);
+#endif
     dx_fn_dx_rve.setSize(fn_dof_cnt, rve_dof_cnt);
     double * fptr = NULL;
     double * uptr = NULL;
     for (int ii = 0; ii < rve_dof_cnt; ++ii)
     {
-      // WARNING! Here we assume that the buffers have not been reset
-      // e.g. we still have the lu decomposition saved from the problem solution
-      // if the code is changed so the buffers no longer hold the lu decomposition
-      // of the stiffness matrix, the following line can be used to get the lu
-      // decomposition on the first pass
-      //las::Solve * slv = ii == 0 ? iluslv : qslv;
-      las::Solve * slv = qslv;
+      las::Solve * slv = ii == 0 ? iluslv : qslv;
       dR_dx_rve.getColumn(ii, f);
       ops->get(skt_f, fptr);
       std::copy(f.begin(), f.end(), fptr);
@@ -206,7 +208,7 @@ namespace bio
   // boundary of the RVE w.r.t. the fiber network coordinates
   void calcds_dx_fn(apf::DynamicMatrix & ds_dx_fn, FiberRVEAnalysis * ans)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dim = ans->rve->getDim();
     int sigma_length = dim == 3 ? 6 : 3;
     int fn_dof_cnt = ans->getFn()->getDofCount();
@@ -215,6 +217,8 @@ namespace bio
     apf::Numbering * dofs = ans->getFn()->getUNumbering();
     double * F = NULL;
     ops->get(ans->getF(), F);
+    double zero[1] = {0.0};
+    double one[1] = {1.0};
     // iterate over all fibers with a node on the boundary
     for (auto vrt = ans->bnd_nds[RVE::all].begin();
          vrt != ans->bnd_nds[RVE::all].end();
@@ -236,17 +240,21 @@ namespace bio
       {
         for (int dd = 0; dd < dim; ++dd)
         {
-          int dof = apf::getNumber(dofs, vrts[vrt], 0, dd);
+          int dof[1] = {apf::getNumber(dofs, vrts[vrt], 0, dd)};
           apf::Vector3 ks;
           ks.zero();
+          las::finalizeMatrix<las::MICRO_BACKEND>(ans->getK());
           for (int ii = 0; ii < dim; ++ii)
           {
-            ks[ii] = las::getSparskitMatValue(ans->getK(), bnd_dofs[ii], dof);
+            double * ks_vls;
+            ops->get(ans->getK(), 1, &bnd_dofs[ii], 1, &dof[0], &ks_vls);
+            ks[ii] = ks_vls[0];
             ks[ii] *= -1.0;
+            delete [] ks_vls;
           }
           apf::Vector3 delta;
           for (int ii = 0; ii < dim; ++ii)
-            delta[ii] = (dof == bnd_dofs[ii] ? 1.0 : 0.0);
+            delta[ii] = (dof[0] == bnd_dofs[ii] ? 1.0 : 0.0);
           for (int i = dim; i < 3; ++i)
             delta[i] = -1;
           apf::Vector3 fs;
@@ -258,13 +266,13 @@ namespace bio
           apf::DynamicVector vls(sigma_length);
           amsi::mat2VoigtVec(dim, ms, &vls(0));
           for (int ii = 0; ii < sigma_length; ++ii)
-            ds_dx_fn(ii, dof) += vls(ii);
+            ds_dx_fn(ii, dof[0]) += vls(ii);
           for (int ii = 0; ii < dim; ++ii)
-            las::setSparskitMatValue(ans->getK(), bnd_dofs[ii], dof, 0.0);
+            ops->set(ans->getK(), 1, &bnd_dofs[ii], 1 , &dof[0], &zero[0]);
         }
       }
       for (int ii = 0; ii < dim; ++ii)
-        las::setSparskitMatValue(ans->getK(), bnd_dofs[ii], bnd_dofs[ii], 1.0);
+        ops->set(ans->getK(), 1, &bnd_dofs[ii], 1 , &bnd_dofs[ii], &one[0]);
     }
   }
   void recoverStressDerivs(FiberRVEAnalysis * ans,
@@ -316,7 +324,7 @@ namespace bio
   }
   void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
   {
-    auto ops = las::getLASOps<las::sparskit>();
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
     // rebuild everything since we want the force vector without
     // boundary conditions anyway
     ops->zero(ans->getK());
