@@ -38,9 +38,7 @@ int main(int argc, char * argv[])
 #if defined MICRO_USING_SPARSKIT
   las::Sparsity * sprs = las::createCSR(n, ndofs);
 #elif defined MICRO_USING_PETSC
-  //las::Sparsity * sprs = NULL;
   las::Sparsity * sprs = las::createPetscSparsity(n, ndofs, MPI_COMM_SELF);
-  //las::Sparsity * sprs = las::createCSR(n, ndofs);
 #endif
   // clean up the un-needed field and numbering
   apf::destroyField(u);
@@ -54,19 +52,23 @@ int main(int argc, char * argv[])
   fn->setFiberReactions(rctns.rctns);
   bio::LinearStructs<las::MICRO_BACKEND> * vecs =
       bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
-  bio::FiberRVEAnalysis an(fn, vecs, cases[0].ss);
-  assert(an.multi == NULL);
-  bool result = an.run(cases[0].pd.deformationGradient);
+  bio::FiberRVEAnalysis * an = bio::createFiberRVEAnalysis(
+      fn, vecs, cases[0].ss, bio::FiberRVEAnalysisType::StaticImplicit);
+  //bio::FiberRVEAnalysis * an = bio::createFiberRVEAnalysis(
+  //    fn, vecs, cases[0].ss, bio::FiberRVEAnalysisType::QuasiStaticExplicit);
+  assert(an->multi == NULL);
+  bool result = an->run(cases[0].pd.deformationGradient);
   if (!result)
   {
     std::cerr << "The microscale analysis failed to converge" << std::endl;
   }
   std::stringstream sout;
-  sout << "rnk_" << rank << "_fn_" << an.getFn()->getRVEType();
-  apf::writeVtkFiles(sout.str().c_str(), an.getFn()->getNetworkMesh(), 1);
-  // las::destroySparsity<las::CSR *>(sprs);
+  sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
+  apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
+  //las::destroySparsity<las::CSR *>(sprs);
+  las::destroySparsity<las::MICRO_BACKEND>(sprs);
 #ifdef MICRO_USING_PETSC
-  las::finalizePETScLAS(); 
+  las::finalizePETScLAS();
 #endif
   amsi::freeAnalysis();
   return 0;
