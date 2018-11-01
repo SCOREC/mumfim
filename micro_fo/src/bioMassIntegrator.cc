@@ -4,7 +4,6 @@ namespace bio
 {
   void MassIntegrator::inElement(apf::MeshElement * me)
   {
-    dens_elmt = apf::createElement(density_fld, me);
     prim_elmt = apf::createElement(primary_fld, me);
     nnd = apf::countNodes(prim_elmt);
     cmp_per_nd = apf::countComponents(primary_fld);
@@ -12,6 +11,9 @@ namespace bio
     mass_elem = apf::DynamicMatrix(nedofs, nedofs);
     mass_elem.zero();
     apf::getElementNumbers(nm, apf::getMeshEntity(me), dofs);
+    int tg = -1;
+    mesh->getIntTag(apf::getMeshEntity(me), rct_tg, &tg);
+    fr = frs[tg];
   }
   // integrate density to get mass
   void MassIntegrator::atPoint(apf::Vector3 const & p, double w, double dV)
@@ -34,8 +36,7 @@ namespace bio
           int dof2 = k * cmp_per_nd + j;
           if (massLumpType == MassLumpType::RowSum) dof2 = dof1;
           // mass = integral(density*Na*Nb*dV)
-          mass_elem(dof1, dof2) +=
-              apf::getScalar(dens_elmt, p) * N1 * N2 * w * dV;
+          mass_elem(dof1, dof2) += fr->fiber_density * N1 * N2 * w * dV;
         }
       }
     }
@@ -46,10 +47,8 @@ namespace bio
     // set mass for this element number
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
     // mass matrix
-    std::cout << mass_elem << std::endl;
     // TODO if mass matrix lumped, only assemble into the diagonals
     ops->assemble(mass, nedofs, &dofs[0], nedofs, &dofs[0], &mass_elem(0, 0));
-    apf::destroyElement(dens_elmt);
     apf::destroyElement(prim_elmt);
   }
 }  // namespace bio

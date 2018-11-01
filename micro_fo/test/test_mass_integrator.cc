@@ -7,30 +7,29 @@
 #include <cassert>
 #include "bioFiberNetworkIO.h"
 #include "bioMassIntegrator.h"
+#include "bioFiberReactions.h"
+#include <vector>
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
+  std::vector<bio::FiberReaction *> rctns;
   // create empty mesh
   // insert edge
-  std::stringstream ss;
-  ss << "3 2 0\n"
+  std::stringstream fibers;
+  std::stringstream params;
+  fibers << "3 2 0\n"
      << "0 0 0\n"
      << "1 1 1\n"
      << "1 2.5 0\n"
      << "0 1\n"
      << "1 2\n";
-  apf::Mesh2 * mesh = bio::loadFromStream(ss);
-  // apf::Mesh2 * mesh = bio::loadFromFile(
-  //    "/fasttmp/mersoj/develop/biotissue_problems/fiber_networks/"
-  //    "density_100_networks/del_rho100_new_1.txt");
+  params <<"1 2\n"<< "0 0.5 10000 1.0\n" << "0\n" << "0\n";
+  apf::Mesh2 * mesh = bio::loadFromStream(fibers);
+  bio::loadParamsFromStream(mesh, params, std::back_inserter(rctns));
   std::cout << "Mesh has " << mesh->count(1) << " edges" << std::endl;
   // add lagrange shape functions for "primary" field
   apf::Field * disp_fld =
       apf::createLagrangeField(mesh, "disp", apf::VECTOR, 1);
-  // add step shape functions for density
-  // apf::Field * dens_fld = apf::createStepField(mesh, "density", apf::SCALAR);
-  apf::Field * dens_fld =
-      apf::createField(mesh, "density", apf::SCALAR, apf::getConstant(1));
   // set dummy values for "primary" field
   apf::MeshEntity * me = NULL;
   for (int dim = 1; dim >= 0; --dim)
@@ -49,15 +48,6 @@ int main(int argc, char * argv[])
             apf::setVector(disp_fld, me, nd, apf::Vector3(0, 0, 0));
           }
         }
-        // set density values
-        if (apf::getShape(dens_fld)->hasNodesIn(dim))
-        {
-          int nnds = apf::getShape(dens_fld)->countNodesOn(mesh->getType(me));
-          for (int nd = 0; nd < nnds; ++nd)
-          {
-            apf::setScalar(dens_fld, me, nd, 0.5);
-          }
-        }
       }
     }
     mesh->end(itr);
@@ -67,7 +57,7 @@ int main(int argc, char * argv[])
   las::Sparsity * sprs = las::createCSR(num, ndofs);
   las::Mat * mass = las::createCSRMatrix(sprs);
   apf::Integrator * massIntegrator =
-      new bio::MassIntegrator(num, dens_fld, disp_fld, mass, 2, bio::MassLumpType::None);
+      new bio::MassIntegrator(num, disp_fld, mass, &(rctns[0]), 2, bio::MassLumpType::RowSum);
   massIntegrator->process(mesh, 1);
   // process(massIntegrator, mesh, 1);
   las::printSparskitMat(std::cout, mass, las::PrintType::full);
@@ -86,5 +76,7 @@ int main(int argc, char * argv[])
   las::destroySparsity<las::CSR *>(sprs);
   apf::destroyNumbering(num);
   amsi::freeAnalysis();
-  return 0;
+  // FIXME this test currently is set to fail because we don't actually confirm the value
+  // is correct in this code...I hand chacked the values for now.
+  return 1;
 }

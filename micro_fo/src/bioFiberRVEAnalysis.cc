@@ -17,29 +17,44 @@ namespace bio
   // todo: rename (shouldn't have reference to micro in a single-scale file)
   apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
                                                las::Mat * k,
-                                               las::Vec * f)
+                                               las::Vec * f,
+                                               FiberRVEAnalysisType type)
   {
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
-    if (tp == FiberMember::truss)
-      es = new TrussIntegrator(fn->getUNumbering(), fn->getUField(),
-                               fn->getXpUField(), &(fn->getFiberReactions()[0]),
-                               k, f, 1);
+    if (tp == FiberMember::truss) {
+      if(type == FiberRVEAnalysisType::StaticImplicit) {
+        es = new TrussIntegrator(fn->getUNumbering(), fn->getUField(),
+                                 fn->getXpUField(), &(fn->getFiberReactions()[0]),
+                                 k, f, 1);
+      }
+      else if(type == FiberRVEAnalysisType::QuasiStaticExplicit) {
+        es = new ExplicitTrussIntegrator(fn->getUNumbering(), fn->getUField(),
+                                 fn->getXpUField(), &(fn->getFiberReactions()[0]),
+                                 k, f, 1);
+      }
+    }
     return es;
   }
   template <>
   LinearStructs<las::sparskit>::LinearStructs(int ndofs,
                                double solver_tol,
                                las::Sparsity * csr,
-                               void * bfrs)
+                               void * bfrs,
+                               las::Sparsity * massCsr)
   {
+    if(massCsr == NULL)
+      massCsr = csr;
     las::SparskitBuffers * b = static_cast<las::SparskitBuffers *>(bfrs);
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    //this->f = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
-    //this->u = vb->create(ndofs, LAS_IGNORE, MPI_COMM_SELF);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
+    this->m = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
+    this->c = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
+    this->f_ext = vb->createRHS(this->k);
+    this->v = vb->createRHS(this->c);
+    this->a = vb->createRHS(this->m);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
@@ -50,13 +65,18 @@ namespace bio
   LinearStructs<las::petsc>::LinearStructs(int ndofs,
                                double solver_tol,
                                las::Sparsity * sprs,
-                               void * bfrs)
+                               void * bfrs,
+                               las::Sparsity * massSprs)
   {
+    if(massSprs == NULL)
+      massSprs = sprs;
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    //this->f = vb->create(ndofs, 1, MPI_COMM_SELF);
-    //this->u = vb->create(ndofs, 1, MPI_COMM_SELF);
-    this->k = mb->create(ndofs, 1,sprs, MPI_COMM_SELF);
+    this->k = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
+    this->c = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
+    this->m = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
+    this->v = vb->createRHS(this->c);
+    this->a = vb->createRHS(this->m);
     this->f = vb->createRHS(this->k);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
@@ -69,9 +89,31 @@ namespace bio
     auto md = las::getMatBuilder<las::MICRO_BACKEND>(0);
     auto vd = las::getVecBuilder<las::MICRO_BACKEND>(0);
     md->destroy(k);
+    md->destroy(c);
+    md->destroy(m);
+    vd->destroy(v);
+    vd->destroy(prev_v);
+    vd->destroy(a);
     vd->destroy(u);
     vd->destroy(f);
+    vd->destroy(prev_f);
+    vd->destroy(f_ext);
+    vd->destroy(prev_f_ext);
     delete slv;
+  }
+  template <typename T>
+  void LinearStructs<T>::updateV(las:: Vec * vel) {
+    las::LasCreateVec * vb = las::getVecBuilder<T>(0);
+    vb->destroy(prev_v);
+    prev_v = v;
+    v = vel;
+  }
+  template <typename T>
+  void LinearStructs<T>::updateF(las::Vec * force) {
+    las::LasCreateVec * vb = las::getVecBuilder<T>(0);
+    vb->destroy(prev_f);
+    prev_f = f;
+    f = force;
   }
   // specifically instantiate linear structs for our
   // solver backends
@@ -108,7 +150,6 @@ namespace bio
     // FiberRVEIteration, so in current usage this is OK. The solver is just a
     // set of buffers and a tolerance, so we should ok by copying the pointer
     vecs = an.vecs;
-    es = createMicroElementalSystem(fn, getK(), getF());
     dx_fn_dx_rve = an.dx_fn_dx_rve;
     dx_fn_dx_rve_set = an.dx_fn_dx_rve_set;
     solver_eps = an.solver_eps;
@@ -146,7 +187,6 @@ namespace bio
     }
     apf::Numbering * udofs = fn->getUNumbering();
     apf::NaiveOrder(udofs);
-    this->es = createMicroElementalSystem(fn, getK(), getF());
     this->dx_fn_dx_rve_set = false;
   }
   FiberRVEAnalysis::~FiberRVEAnalysis()
@@ -223,10 +263,10 @@ namespace bio
   }
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,double solver_tol,
                                       las::Sparsity * csr,
-                                      void * bfrs
+                                      void * bfrs, las::Sparsity * massCsr
                                       )
   {
-    return new LinearStructs<las::MICRO_BACKEND>(ndofs, solver_tol, csr, bfrs);
+    return new LinearStructs<las::MICRO_BACKEND>(ndofs, solver_tol, csr, bfrs, massCsr);
   }
   void destroyLinearStructs(LinearStructs<las::MICRO_BACKEND> * vecs)
   {

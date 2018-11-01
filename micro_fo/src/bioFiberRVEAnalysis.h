@@ -8,13 +8,26 @@
 #include "bioMultiscaleRVE.h"
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
+#include "bioMassIntegrator.h"
 namespace bio
 {
+  /*
+   * Analysis type enum describes how the solver should function, e.g.
+   * defaul explicit or implicit types. In the future this could select
+   * between different subtypes as well e.g. ImplicitNewton and
+   * ImplicitContinuation
+   */
+  enum class FiberRVEAnalysisType
+  {
+    StaticImplicit,      ///< Newton implicit solver
+    QuasiStaticExplicit  ///< Central difference explicit solver
+  };
   /* \brief create the elemental system integrator
    */
   apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
                                                las::Mat * k,
-                                               las::Vec * f);
+                                               las::Vec * f,
+                                               FiberRVEAnalysisType type=FiberRVEAnalysisType::StaticImplicit);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -30,10 +43,18 @@ namespace bio
     LinearStructs(int ndofs,
                   double solver_tol,
                   las::Sparsity * csr,
-                  void * bfrs = NULL);
+                  void * bfrs = NULL,
+                  las::Sparsity * massCsr = NULL);
     las::Mat * getK() const { return k; }
+    las::Mat * getM() const { return m; }
+    las::Mat * getC() const { return c; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
+    las::Vec * getLastV() const {return prev_v; }
+    las::Vec * getLastF() const {return prev_f; }
+    las::Vec * getLastFExt() const {return prev_f_ext; }
+    void updateV(las::Vec * v);
+    void updateF(las::Vec * f);
     las::Solve * getSlv() const { return slv; }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
@@ -44,20 +65,16 @@ namespace bio
     protected:
     las::Mat * k;
     las::Mat * m;
+    las::Mat * c;
     las::Vec * u;
     las::Vec * f;
+    las::Vec * prev_f;
+    las::Vec * f_ext;
+    las::Vec * prev_f_ext;
+    las::Vec * v;
+    las::Vec * prev_v;
+    las::Vec * a;
     las::Solve * slv;
-  };
-  /*
-   * Analysis type enum describes how the solver should function, e.g.
-   * defaul explicit or implicit types. In the future this could select
-   * between different subtypes as well e.g. ImplicitNewton and
-   * ImplicitContinuation
-   */
-  enum class FiberRVEAnalysisType
-  {
-    StaticImplicit,      ///< Newton implicit solver
-    QuasiStaticExplicit  ///< Central difference explicit solver
   };
   class FiberRVEAnalysis
   {
@@ -114,14 +131,34 @@ namespace bio
   class FiberRVEAnalysisQSExplicit : public FiberRVEAnalysis
   {
     protected:
+      double internal_energy;
+      double kinetic_energy;
+      double external_energy; // applied work
+      double time; // t(n)
     public:
-    explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit & an);
+    //explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit & an);
     FiberRVEAnalysisQSExplicit(FiberNetwork * fn,
                               LinearStructs<las::MICRO_BACKEND> * vecs,
                               const MicroSolutionStrategy & ss);
     // get the global mass matrix
     las::Mat * getM() const { return vecs->m; }
+    // get the velocity damping matrix
+    las::Mat * getC() const { return vecs->c; }
+    las::Vec * getA() const { return vecs->a; }
+    las::Vec * getV() const { return vecs->v; }
+    las::Vec * getFExt() const { return vecs->f_ext; }
+    las::Vec * getPrevFExt() const { return vecs->prev_f_ext; }
+    void setC(las::Mat * c) { vecs->c = c; }
     virtual bool run(const DeformationGradient & dfmGrd);
+    double getTime() const {return time;}
+    void setTime(double t) {time = t;}
+    double getInternalEnergy() const { return internal_energy; }
+    double getKineticEnergy() const { return kinetic_energy; }
+    double getExternalEnergy() const { return external_energy; }
+    double getTotalEnergy() const { return internal_energy + kinetic_energy + external_energy; }
+    void setInternalEnergy(double e) { internal_energy = e; }
+    void setKineticEnergy(double e) { kinetic_energy = e; }
+    void setExternalEnergy(double e) { external_energy  =e; }
     virtual FiberRVEAnalysisType getAnalysisType()
     {
       return FiberRVEAnalysisType::QuasiStaticExplicit;
@@ -150,7 +187,8 @@ namespace bio
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,
                                                           double solver_tol,
                                                           las::Sparsity * csr,
-                                                          void * bfrs = NULL);
+                                                          void * bfrs = NULL,
+                                                          las::Sparsity * massSprs=NULL);
   void destroyFiberRVEAnalysisLinearStructs(
       LinearStructs<las::MICRO_BACKEND> * vecs);
   /*
@@ -165,13 +203,37 @@ namespace bio
     FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a);
     void iterate();
   };
+  struct Amplitude
+  {
+    virtual double operator()(double time) = 0;
+    virtual double derivative(double time) = 0;
+    virtual double secondDerivative(double time) = 0;
+    virtual double integral(double time) = 0;
+    virtual ~Amplitude() {}
+  };
   class FiberRVEIterationQSExplicit : public amsi::Iteration
   {
     protected:
-    FiberRVEAnalysis * an;
+    FiberRVEAnalysisQSExplicit * an;
+    DeformationGradient appliedDefm;
+    Amplitude * amplitude;
+    std::vector<amsi::PvdData> pvd_data;
+    bool last_iter;
+    // print data every print_steps steps
+    unsigned int print_steps;
+    // the length of time the loading occurs for
+    double load_time;
+    double * u_arr;
+    double * v_arr;
+    double * a_arr;
+    double * f_arr;
+
     public:
-    FiberRVEIterationQSExplicit(FiberRVEAnalysisQSExplicit * a);
+    FiberRVEIterationQSExplicit(FiberRVEAnalysisQSExplicit * a,
+                                DeformationGradient appliedDefm,
+                                Amplitude * amplitude, double loadTime);
     void iterate();
+    bool getCompleted() { return last_iter; }
   };
   /**
    * Fix the boundary dofs and set the

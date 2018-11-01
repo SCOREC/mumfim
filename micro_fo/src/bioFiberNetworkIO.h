@@ -10,6 +10,8 @@ namespace bio
   apf::Mesh2 * loadFromFile(const std::string & fnm);
   template <typename O>
   void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns);
+  template <typename O>
+  void loadParamsFromStream(apf::Mesh2 * msh, std::istream & strm, O rctns);
 }  // namespace bio
 #include "bioFiberNetworkIO_impl.h"
 #endif

@@ -21,7 +21,7 @@ namespace bio
       {
         double fiber_radius;
         LinearReaction * rct = new LinearReaction;
-        strm >> fiber_radius >> rct->E;
+        strm >> fiber_radius >> rct->E >> rct->fiber_density;
         rct->fiber_area = fiber_radius * fiber_radius * M_PI;
         *out++ = rct;
       }
@@ -29,7 +29,7 @@ namespace bio
       {
         NonlinearReaction * rct = new NonlinearReaction;
         double fiber_radius;
-        strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns;
+        strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns >> rct->fiber_density;
         rct->cmp_ratio_trns=1.0;
         rct->fiber_area = fiber_radius * fiber_radius * M_PI;
         *out++ = rct;
@@ -87,6 +87,12 @@ namespace bio
   void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns)
   {
     std::ifstream strm(fnm.c_str());
+    ParamLoader ldr(msh);
+    ldr.fromStream(strm, rctns);
+  }
+  template <typename O>
+  void loadParamsFromStream(apf::Mesh2 * msh, std::istream & strm, O rctns)
+  {
     ParamLoader ldr(msh);
     ldr.fromStream(strm, rctns);
   }
