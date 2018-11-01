@@ -31,6 +31,7 @@ set(micro_fo_src_files
   bioMultiscaleMicroFOParams.cc
   bioMultiscaleRVEAnalysis.cc
   bioMultiscaleRVE.cc
+  bioTrussIntegrator.cc
   bioUtil.cc)
 
 #find_package(sparskit REQUIRED)

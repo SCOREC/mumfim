@@ -32,10 +32,12 @@ namespace bio
       const FiberRVEAnalysisSImplicit & an)
       : FiberRVEAnalysis(an)
   {
+    es = createMicroElementalSystem(fn, getK(), getF(), FiberRVEAnalysisType::StaticImplicit);
   }
   FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(FiberNetwork * fn,
                               LinearStructs<las::MICRO_BACKEND> * vecs,
                               const MicroSolutionStrategy & ss) : FiberRVEAnalysis(fn, vecs, ss) {
+    es = createMicroElementalSystem(fn, getK(), getF(), FiberRVEAnalysisType::StaticImplicit);
   }
   FiberRVEIterationSImplicit::FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a)
       : amsi::Iteration(), an(a)
@@ -48,18 +50,7 @@ namespace bio
     ops->zero(an->getU());
     ops->zero(an->getF());
     apf::Mesh * fn = an->getFn()->getNetworkMesh();
-    apf::MeshEntity * me = NULL;
-    apf::MeshIterator * itr = fn->begin(1);
-    int ii = 0;
-    std::stringstream sout;
-    while ((me = fn->iterate(itr)))
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(fn, me);
-      an->es->process(mlm);
-      apf::destroyMeshElement(mlm);
-      ++ii;
-    }
-    fn->end(itr);
+    an->es->process(fn, 1);
     // finalize the vectors so we can set boundary condition
     // values
     las::finalizeMatrix<las::MICRO_BACKEND>(an->vecs->getK());

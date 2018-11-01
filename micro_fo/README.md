@@ -30,7 +30,7 @@ is name `test_net.txt` the params file should be named `test_net.txt.params`.
 
 ```
 num-parameters num-fibers
-param-id  fiber-radius  youngs-modulus
+param-id  fiber-radius  youngs-modulus fiber-density
 fiber-1-parameter
 ...
 fiber-m-parameter

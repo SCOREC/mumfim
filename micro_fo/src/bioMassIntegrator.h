@@ -5,6 +5,7 @@
 #include <apfNumbering.h>
 #include <las.h>
 #include <lasConfig.h>
+#include "bioFiberReactions.h"
 namespace bio
 {
   /*
@@ -23,13 +24,10 @@ namespace bio
   class MassIntegrator : public apf::Integrator
   {
     protected:
-    // assume this is a step field (one value per element)
-    apf::Field * density_fld;
     // we will use the same field interpolations as the primary field
     // for a mechanics analysis this is the displacements/velocities
     apf::Field * primary_fld;
     apf::Numbering * nm;
-    apf::Element * dens_elmt;
     apf::Element * prim_elmt;
     apf::DynamicMatrix mass_elem;
     unsigned int nnd;
@@ -38,20 +36,27 @@ namespace bio
     apf::NewArray<int> dofs;
     las::Mat * mass;
     MassLumpType massLumpType;
+    FiberReaction ** frs;
+    FiberReaction * fr;
+    apf::MeshTag * rct_tg;
+    apf::Mesh * mesh;
+
     public:
     MassIntegrator(apf::Numbering * nm,
-                   apf::Field * density,
                    apf::Field * primary,
                    las::Mat * mass,
+                   FiberReaction ** frs,
                    int order,
                    MassLumpType mlt = MassLumpType::None)
         : apf::Integrator(order)
-        , density_fld(density)
         , primary_fld(primary)
         , nm(nm)
         , mass(mass)
         , massLumpType(mlt)
+        , frs(frs)
+        , mesh(apf::getMesh(primary))
     {
+      rct_tg = mesh->findTag("fiber_reaction");
     }
     void inElement(apf::MeshElement * me) override;
     void atPoint(apf::Vector3 const & p, double w, double dV) override;

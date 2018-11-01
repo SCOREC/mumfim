@@ -15,12 +15,13 @@ namespace bio
   struct FiberReaction
   {
     virtual std::pair<double, double> forceReaction(double, double) const = 0;
+    double fiber_density;
+    double E;
   };
   struct NonlinearReaction : public FiberReaction
   {
     double fiber_area;
     double B;
-    double E;
     // tension transition to compressive regime
     double length_ratio_trns;
     // compressive transition to linear regime
@@ -31,7 +32,6 @@ namespace bio
   struct LinearReaction : public FiberReaction
   {
     double fiber_area;
-    double E;
     std::pair<double, double> forceReaction(double orig_length,
                                             double length) const;
   };

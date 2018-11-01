@@ -11,8 +11,8 @@
 
 namespace bio
 {
-  FiberNetwork::FiberNetwork(apf::Mesh * f)
-    : fn(f)
+  FiberNetwork::FiberNetwork(apf::Mesh * mesh)
+    : fn(mesh)
     , u(NULL)
     , xpufnc(NULL)
     , xpu(NULL)
@@ -22,13 +22,23 @@ namespace bio
     , tp(FiberMember::truss)
     , rve_tp(0)
   {
-    assert(f);
+    assert(mesh);
     du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
     u  = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
+    v  = apf::createLagrangeField(fn,"v",apf::VECTOR,1);
+    a  = apf::createLagrangeField(fn,"a",apf::VECTOR,1);
+    f  = apf::createLagrangeField(fn,"f",apf::VECTOR,1);
     xpufnc = new amsi::XpYFunc(fn->getCoordinateField(),u);
     xpu = apf::createUserField(fn,"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
     apf::zeroField(du);
     apf::zeroField(u);
+    // FIXME...we have to zero the field here or we run into problems copying an
+    // empty field for the implicit analysis.
+    // we don't zero the velocity and acceleration fields here because
+    // we only need them in explicit analysis...only zero when an explicit analysis is created
+    apf::zeroField(v);
+    apf::zeroField(a);
+    apf::zeroField(f);
     // USING 'u' HERE IS VERY IMPORTANT,
     // APPLYDEFORMATIONGRADIENT USES THE
     // FIELD RETRIEVED FROM THIS NUMBERING TO
@@ -36,6 +46,12 @@ namespace bio
     // IT IS TOO FRAGILE
     udof = apf::createNumbering(u);
     ucnt = apf::NaiveOrder(udof);
+    vdof = apf::createNumbering(v);
+    adof = apf::createNumbering(a);
+    fdof = apf::createNumbering(f);
+    apf::NaiveOrder(vdof);
+    apf::NaiveOrder(adof);
+    apf::NaiveOrder(fdof);
   }
   FiberNetwork::FiberNetwork(const FiberNetwork& net)
   {
@@ -44,6 +60,9 @@ namespace bio
     fn = apf::createMdsMesh(gmi_load(".null") , net.fn);
     u = fn->findField(apf::getName(net.u));
     du = fn->findField(apf::getName(net.du));
+    a = fn->findField(apf::getName(net.a));
+    v = fn->findField(apf::getName(net.v));
+    f = fn->findField(apf::getName(net.f));
     xpu = fn->findField(apf::getName(net.xpu));
     xpufnc = new amsi::XpYFunc(fn->getCoordinateField(), u);
     apf::updateUserField(xpu, xpufnc);
@@ -58,7 +77,9 @@ namespace bio
     rctns.resize(net.rctns.size());
     std::copy(net.rctns.begin(), net.rctns.end(), rctns.begin());
     ucnt = net.ucnt;
-
+    vdof = net.vdof; 
+    adof = net.adof;
+    fdof = net.fdof;
   }
   FiberNetwork::~FiberNetwork()
   {
