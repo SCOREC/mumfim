@@ -224,6 +224,8 @@ namespace bio
    * perform a deep copy of the fiber rve analysis
    */
   // FiberRVEAnalysis * copyAnalysis(FiberRVEAnalysis * an);
+  class ExplicitOutputWriter;
+
   class FiberRVEIterationSImplicit : public amsi::Iteration
   {
     protected:
@@ -250,21 +252,17 @@ namespace bio
     FiberRVEAnalysisQSExplicit * an;
     DeformationGradient appliedDefm;
     Amplitude * amplitude;
-    std::vector<amsi::PvdData> pvd_data;
     bool last_iter;
     // print data every print_steps steps
     unsigned int print_steps;
     // the length of time the loading occurs for
     double load_time;
-    //double * u_arr;
-    //double * v_arr;
-    //double * a_arr;
-    //double * f_arr;
     // should be between 0.8 and 0.95 (Belytscheko)
     double time_step_factor;
     // Rayleigh damping factors
     double mass_damping_factor;
     double stiffness_damping_factor;
+    ExplicitOutputWriter * outputWriter;
     public:
     FiberRVEIterationQSExplicit(FiberRVEAnalysisQSExplicit * a,
                                 DeformationGradient appliedDefm,
@@ -273,7 +271,8 @@ namespace bio
                                 double timeStepFactor,
                                 double massDampingFactor,
                                 double stiffnessDampingFactor,
-                                unsigned int printSteps);
+                                unsigned int printSteps,
+                                ExplicitOutputWriter * outputWriter);
     void iterate();
     bool getCompleted() { return last_iter; }
   };
