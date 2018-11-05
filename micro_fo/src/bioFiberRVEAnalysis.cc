@@ -15,25 +15,31 @@
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
-  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
+  apf::Integrator * createImplicitMicroElementalSystem(FiberNetwork * fn,
                                                las::Mat * k,
-                                               las::Vec * f,
-                                               FiberRVEAnalysisType type)
+                                               las::Vec * f)
   {
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
     if (tp == FiberMember::truss) {
-      if(type == FiberRVEAnalysisType::StaticImplicit) {
         es = new TrussIntegrator(fn->getUNumbering(), fn->getUField(),
                                  fn->getXpUField(), &(fn->getFiberReactions()[0]),
                                  k, f, 1);
-      }
-      else if(type == FiberRVEAnalysisType::QuasiStaticExplicit) {
+    }
+    return es;
+  }
+  apf::Integrator * createExplicitMicroElementalSystem(FiberNetwork * fn,
+                                               las::Mat * k,
+                                               las::Vec * f,
+                                               las::Vec * f_int)
+  {
+    apf::Integrator * es = NULL;
+    FiberMember tp = fn->getFiberMember();
+    if (tp == FiberMember::truss) {
         es = new ExplicitTrussIntegrator(fn->getUNumbering(), fn->getUField(),
                                  fn->getXpUField(), &(fn->getFiberReactions()[0]),
-                                 k, f, 1);
+                                 k, f, f_int, 1);
       }
-    }
     return es;
   }
   template <>
@@ -52,7 +58,12 @@ namespace bio
     this->m = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
     this->c = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
+    this->f_int = vb->createRHS(this->k);
     this->f_ext = vb->createRHS(this->k);
+    this->f_damp = vb->createRHS(this->c);
+    this->prev_f_int = vb->createRHS(this->k);
+    this->prev_f_ext = vb->createRHS(this->k);
+    this->prev_f_damp = vb->createRHS(this->c);
     this->v = vb->createRHS(this->c);
     this->a = vb->createRHS(this->m);
     this->u = vb->createLHS(this->k);
@@ -96,24 +107,25 @@ namespace bio
     vd->destroy(a);
     vd->destroy(u);
     vd->destroy(f);
-    vd->destroy(prev_f);
+    vd->destroy(f_int);
     vd->destroy(f_ext);
+    vd->destroy(f_damp);
+    vd->destroy(prev_f_int);
     vd->destroy(prev_f_ext);
+    vd->destroy(prev_f_damp);
     delete slv;
   }
   template <typename T>
-  void LinearStructs<T>::updateV(las:: Vec * vel) {
-    las::LasCreateVec * vb = las::getVecBuilder<T>(0);
-    vb->destroy(prev_v);
-    prev_v = v;
-    v = vel;
-  }
-  template <typename T>
-  void LinearStructs<T>::updateF(las::Vec * force) {
-    las::LasCreateVec * vb = las::getVecBuilder<T>(0);
-    vb->destroy(prev_f);
-    prev_f = f;
-    f = force;
+  void LinearStructs<T>::swapVec(las::Vec *& v1, las::Vec *& v2, bool zero) {
+    las::Vec * tmp;
+    tmp = v1;
+    v1 = v2;
+    v2 = tmp;
+    if(zero)
+    {
+      auto ops = las::getLASOps<T>();
+      ops->zero(v2);
+    }
   }
   // specifically instantiate linear structs for our
   // solver backends

@@ -13,7 +13,7 @@ if [ "$BUILD_TYPE" == "Debug" ] ; then
   BUILD_DIR=$ROOT/build_debug
   BUILD_TESTS=ON
 elif [ "$BUILD_TYPE" == "Release" ] ; then
-  BUILD_TYPE="RelWithDebugInfo"
+  #BUILD_TYPE="RelWithDebugInfo"
   BUILD_DIR=$ROOT/build_release
   BUILD_TESTS=OFF
 fi
@@ -57,6 +57,7 @@ else
       -Dlas_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -DENABLE_VERBOSITY=HIGH \
+      -DCMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-but-set-variable" \
       ..
 fi
       # -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
