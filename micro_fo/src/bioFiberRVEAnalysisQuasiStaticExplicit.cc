@@ -1,6 +1,8 @@
 #include <pcu_util.h>
 #include "bioFiberRVEAnalysis.h"
 #include "bioMassIntegrator.h"
+#include <fstream>
+#include <sys/stat.h>
 namespace bio
 {
   /*
@@ -25,27 +27,26 @@ namespace bio
     apf::Mesh * mesh = apf::getMesh(field);
     apf::FieldShape * shp = apf::getShape(field);
     int ncomp = apf::countComponents(field);
-    double * cmps = new double[ncomp];
+    //double * cmps = new double[ncomp];
+    double cmps[ncomp];
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
     int dof;
     for (I ent = bnd_bgn; ent != bnd_end; ++ent)
     {
       int nnodes = shp->countNodesOn(mesh->getType(*ent));
-      for (int i = 0; i < nnodes; ++i)
+      for (int nd = 0; nd < nnodes; ++nd)
       {
-        memset(&cmps[0], 0.0, sizeof(double) * ncomp);
-        apf::getComponents(field, *ent, i, cmps);
+        apf::getComponents(field, *ent, nd, cmps);
         for (int cmp = 0; cmp < ncomp; ++cmp)
         {
-          if (apf::isNumbered(num, *ent, i, cmp))
+          if (apf::isNumbered(num, *ent, nd, cmp))
           {
-            dof = apf::getNumber(num, *ent, i, cmp);
-            ops->set(vec, 1, &dof, &(cmps[i]));
+            dof = apf::getNumber(num, *ent, nd, cmp);
+            ops->set(vec, 1, &dof, &(cmps[cmp]));
           }
         }
       }
     }
-    delete [] cmps;
   }
   class ApplyDeformationGradientExplicit : public ApplyDeformationGradient
   {
@@ -104,6 +105,93 @@ namespace bio
     delete massIntegrator;
     es = createExplicitMicroElementalSystem(fn, getK(), getF(), getFInt());
   }
+  class ExplicitOutputWriter
+  {
+    private:
+      unsigned int outputFrame;
+      std::vector<amsi::PvdData> pvdData;
+      std::string folder;
+      std::string pvdName;
+      FiberRVEAnalysisQSExplicit * an;
+      las::LasOps<las::MICRO_BACKEND> * ops;
+    public:
+      ExplicitOutputWriter(std::string folder, std::string pvdName, FiberRVEAnalysisQSExplicit * an)
+      : outputFrame(0)
+      , pvdData(std::vector<amsi::PvdData>())
+      , folder(folder)
+      , pvdName(pvdName)
+      , an(an)
+      , ops(las::getLASOps<las::MICRO_BACKEND>())
+      {
+        // if the folder doesn't exist create it
+        std::string fname = folder+"/";
+        struct stat sb;
+        if(stat(fname.c_str(),&sb) != 0)
+        {
+          mkdir(fname.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        }
+        // this clears the micro csv file.
+        fname = folder+"/"+"micro_results.csv";
+        std::ofstream strm(fname);
+      }
+      void write(int iteration)
+      {
+        std::string fname = folder+"/"+"micro_results.csv";
+        std::ofstream strm;
+        strm.open(fname , std::ios::out | std::ios::app);
+        assert(strm.is_open());
+        if(__builtin_expect(outputFrame == 0, 0))
+          strm<<"Frame, Iteration, Simulation_Time, Kinetic_Energy, Internal_Energy, External_Energy, Damping_Energy, "<<
+                     " A_Norm, V_norm, U_norm, F_int_norm, F_ext_norm, F_damp_norm, F_norm\n";
+        strm<<outputFrame<<", ";
+        strm<<iteration<<", ";
+        strm<<an->getTime()<<", ";
+        strm<<an->getKineticEnergy()<<", ";
+        strm<<an->getInternalEnergy()<<", ";
+        strm<<an->getExternalEnergy()<<", ";
+        strm<<ops->norm(an->getA())<<", ";
+        strm<<ops->norm(an->getV())<<", ";
+        strm<<ops->norm(an->getU())<<", ";
+        strm<<ops->norm(an->getFInt())<<", ";
+        strm<<ops->norm(an->getFExt())<<", ";
+        strm<<ops->norm(an->getFDamp())<<", ";
+        strm<<ops->norm(an->getF())<<"\n";
+        // only write fields when outputing data
+        double * s = 0;
+        // write a, v, u data to field
+        // TODO all of these field writes could be combined to reduce the number
+        // of mesh loops to 1 acceleration field
+        amsi::WriteOp wrt;
+        ops->get(an->getA(), s);
+        amsi::ApplyVector(an->getFn()->getANumbering(), an->getFn()->getAField(),
+                          s, 0, &wrt)
+            .run();
+        ops->restore(an->getA(), s);
+        // velocity field
+        ops->get(an->getV(), s);
+        amsi::ApplyVector(an->getFn()->getVNumbering(), an->getFn()->getVField(),
+                          s, 0, &wrt)
+            .run();
+        ops->restore(an->getV(), s);
+        // displacement field
+        ops->get(an->getU(), s);
+        amsi::ApplyVector(an->getFn()->getUNumbering(), an->getFn()->getUField(),
+                          s, 0, &wrt)
+            .run();
+        ops->restore(an->getU(), s);
+        ops->get(an->getF(), s);
+        amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFn()->getFField(),
+                          s, 0, &wrt)
+            .run();
+        ops->restore(an->getU(), s);
+        std::stringstream sout;
+        sout << "frame_" << outputFrame++;
+        apf::writeVtkFiles((folder+ "/" + sout.str()).c_str(),
+                           an->getFn()->getNetworkMesh(), 1);
+        pvdData.push_back(amsi::PvdData(sout.str(), an->getTime(), 0));
+        amsi::writePvdFile(folder + "/" + pvdName, pvdData);
+      }
+  };
   FiberRVEIterationQSExplicit::FiberRVEIterationQSExplicit(
       FiberRVEAnalysisQSExplicit * a,
       DeformationGradient appliedDefm,
@@ -112,7 +200,8 @@ namespace bio
       double timeStepFactor,
       double massDampingFactor,
       double stiffnessDampingFactor,
-      unsigned int printSteps)
+      unsigned int printSteps,
+      ExplicitOutputWriter * outputWriter)
       : amsi::Iteration()
       , an(a)
       , appliedDefm(appliedDefm)
@@ -123,6 +212,7 @@ namespace bio
       , time_step_factor(timeStepFactor)
       , mass_damping_factor(massDampingFactor)
       , stiffness_damping_factor(stiffnessDampingFactor)
+      , outputWriter(outputWriter)
   {
     assert(time_step_factor <= 1.0);
     auto vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
@@ -137,8 +227,6 @@ namespace bio
     las::MatMatAdd * smsma = las::getMatMatAdd<las::MICRO_BACKEND>();
     las::Mat * c;
     las::MatVecMult * mvm = las::getMatVecMult<las::MICRO_BACKEND>();
-    amsi::WriteOp wrt;
-    amsi::AccumOp accum;
     if (__builtin_expect(this->iteration() == 0, false))
     {
       ops->zero(an->getU());
@@ -152,6 +240,7 @@ namespace bio
       ops->zero(an->getPrevFInt());
       ops->zero(an->getPrevFExt());
       ops->zero(an->getPrevFDamp());
+      outputWriter->write(0);
       an->es->process(an->getFn()->getNetworkMesh(), 1);
     }
     // ITERATIONS START HERE!
@@ -255,58 +344,7 @@ namespace bio
             ((this->iteration() % print_steps) == 0) || (last_iter == true),
             false))
     {
-      std::cout << "Iteration: " << this->iteration()
-                << " Simulation time: " << an->getTime() << "\n";
-      std::cout << "Anorm: " << ops->norm(an->getA()) << std::endl;
-      std::cout << "Vnorm: " << ops->norm(an->getV()) << std::endl;
-      std::cout << "Unorm: " << ops->norm(an->getU()) << std::endl;
-      std::cout << "Fnorm: " << ops->norm(an->getF()) << std::endl;
-      // std::cout << "FIntNorm: " << "curr: " << ops->norm(an->getFInt()) <<
-      //             "  prev: "<< ops->norm(an->getPrevFInt())<<std::endl;
-      // std::cout << "FExtNorm: " << "curr: " << ops->norm(an->getFExt()) <<
-      //             "  prev: "<< ops->norm(an->getPrevFExt())<<std::endl;
-      // std::cout << "FDampNorm: " << "curr: " << ops->norm(an->getFDamp()) <<
-      //             "  prev: "<< ops->norm(an->getPrevFDamp())<<std::endl;
-      std::cout << "Kinetic Energy: " << an->getKineticEnergy() << std::endl;
-      std::cout << "Internal Energy: " << an->getInternalEnergy() << std::endl;
-      std::cout << "External Energy: " << an->getExternalEnergy() << std::endl;
-      std::cout << "Damping Energy: " << an->getDampingEnergy() << std::endl;
-      // only write fields when outputing data
-      double * s = 0;
-      // write a, v, u data to field
-      // TODO all of these field writes could be combined to reduce the number
-      // of mesh loops to 1 acceleration field
-      ops->get(an->getA(), s);
-      amsi::ApplyVector(an->getFn()->getANumbering(), an->getFn()->getAField(),
-                        s, 0, &wrt)
-          .run();
-      ops->restore(an->getA(), s);
-      // velocity field
-      ops->get(an->getV(), s);
-      amsi::ApplyVector(an->getFn()->getVNumbering(), an->getFn()->getVField(),
-                        s, 0, &wrt)
-          .run();
-      ops->restore(an->getV(), s);
-      // displacement field
-      ops->get(an->getU(), s);
-      amsi::ApplyVector(an->getFn()->getUNumbering(), an->getFn()->getUField(),
-                        s, 0, &wrt)
-          .run();
-      ops->restore(an->getU(), s);
-      ops->get(an->getF(), s);
-      amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFn()->getFField(),
-                        s, 0, &wrt)
-          .run();
-      ops->restore(an->getU(), s);
-      std::stringstream sout;
-       std::string folder = "test_explicit/";
-      //std::string folder = "te/";
-      sout << "iter_" << this->iteration();
-      apf::writeVtkFiles((folder + sout.str()).c_str(),
-                         an->getFn()->getNetworkMesh(), 1);
-      pvd_data.push_back(amsi::PvdData(sout.str(), t_npone, 0));
-      std::string fname = "test_explicit.pvd";
-      amsi::writePvdFile(folder + fname, pvd_data);
+      outputWriter->write(iteration()+1);
     }
     an->updateFExt();
     an->updateFInt();
@@ -396,6 +434,7 @@ namespace bio
     double massDampingFactor = 0;
     double stiffnessDampingFactor = -0.1;
     unsigned int printSteps = 1000;
+    ExplicitOutputWriter writer("aba/", "test_explicit.pvd", this);
     EnergyBalRefGen energy_bal_rg(this);
     EnergyBalValGen energy_bal_vg(this);
     EpsGen energy_bal_eg(energyBalEps);
@@ -407,7 +446,7 @@ namespace bio
     LinearAmp linAmp(loadTime);
     FiberRVEIterationQSExplicit itr(this, dfmGrd, &linAmp, loadTime,
                                     timeStepFactor, massDampingFactor,
-                                    stiffnessDampingFactor, printSteps);
+                                    stiffnessDampingFactor, printSteps, &writer);
     TimeConvergence time_cnvrg(&itr);
     amsi::UpdatingConvergence<decltype(&energy_bal_vg),
                               decltype(&energy_bal_eg),
@@ -421,13 +460,13 @@ namespace bio
                              &kin_energy_rg, true);
     std::vector<amsi::Convergence *> cnvrg_stps;
     // cnvrg_stps.push_back(&cnvrg_energ_bal);
-    cnvrg_stps.push_back(&cnvrg_kinetic_energy);
+    //cnvrg_stps.push_back(&cnvrg_kinetic_energy);
     // this needs to be after the other convergence checks...so they we properly
     // run and fail if the energy balance isn't correct.
     cnvrg_stps.push_back(&time_cnvrg);
     amsi::MultiConvergence cnvrg(cnvrg_stps.begin(), cnvrg_stps.end());
     bool rslt = amsi::numericalSolve(&itr, &cnvrg);
-    if (cnvrg_stps[0]->failed())
+    if (cnvrg_kinetic_energy.failed())
     {
       std::cerr << "The percentage of kinetic energy was above "
                 << kinEnergyPercent
@@ -437,6 +476,7 @@ namespace bio
       std::cerr << "Total Energy: " << getTotalEnergy() << std::endl;
       std::cerr << "Ratio: " << getKineticEnergy() / getTotalEnergy()
                 << std::endl;
+      writer.write(itr.iteration()+1);
     }
     return rslt;
   }
