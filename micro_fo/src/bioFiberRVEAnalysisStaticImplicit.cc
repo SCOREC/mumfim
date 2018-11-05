@@ -32,12 +32,12 @@ namespace bio
       const FiberRVEAnalysisSImplicit & an)
       : FiberRVEAnalysis(an)
   {
-    es = createMicroElementalSystem(fn, getK(), getF(), FiberRVEAnalysisType::StaticImplicit);
+    es = createImplicitMicroElementalSystem(fn, getK(), getF());
   }
   FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(FiberNetwork * fn,
                               LinearStructs<las::MICRO_BACKEND> * vecs,
                               const MicroSolutionStrategy & ss) : FiberRVEAnalysis(fn, vecs, ss) {
-    es = createMicroElementalSystem(fn, getK(), getF(), FiberRVEAnalysisType::StaticImplicit);
+    es = createImplicitMicroElementalSystem(fn, getK(), getF());
   }
   FiberRVEIterationSImplicit::FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a)
       : amsi::Iteration(), an(a)

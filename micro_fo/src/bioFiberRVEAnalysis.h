@@ -4,11 +4,11 @@
 #include <lasSparskit.h>
 #include <string>
 #include "bioFiberNetwork.h"
+#include "bioMassIntegrator.h"
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVE.h"
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
-#include "bioMassIntegrator.h"
 namespace bio
 {
   /*
@@ -24,10 +24,15 @@ namespace bio
   };
   /* \brief create the elemental system integrator
    */
-  apf::Integrator * createMicroElementalSystem(FiberNetwork * fn,
-                                               las::Mat * k,
-                                               las::Vec * f,
-                                               FiberRVEAnalysisType type=FiberRVEAnalysisType::StaticImplicit);
+  apf::Integrator * createImplicitMicroElementalSystem(
+      FiberNetwork * fn,
+      las::Mat * k,
+      las::Vec * f);
+  apf::Integrator * createExplicitMicroElementalSystem(
+      FiberNetwork * fn,
+      las::Mat * k,
+      las::Vec * f,
+      las::Vec * f_int);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -50,27 +55,28 @@ namespace bio
     las::Mat * getC() const { return c; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
-    las::Vec * getLastV() const {return prev_v; }
-    las::Vec * getLastF() const {return prev_f; }
-    las::Vec * getLastFExt() const {return prev_f_ext; }
-    void updateV(las::Vec * v);
-    void updateF(las::Vec * f);
+    // swaps the vector pointers if zero is true the v2 vector
+    // will be zero'd
+    void swapVec(las::Vec *& v1, las::Vec *& v2, bool zero=false);
     las::Solve * getSlv() const { return slv; }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;
     friend class FiberRVEAnalysisSImplicit;
     friend class FiberRVEAnalysisQSExplicit;
-
     protected:
     las::Mat * k;
     las::Mat * m;
     las::Mat * c;
     las::Vec * u;
     las::Vec * f;
-    las::Vec * prev_f;
+    //las::Vec * prev_f;
+    las::Vec * f_int;
+    las::Vec * prev_f_int;
     las::Vec * f_ext;
     las::Vec * prev_f_ext;
+    las::Vec * f_damp;
+    las::Vec * prev_f_damp;
     las::Vec * v;
     las::Vec * prev_v;
     las::Vec * a;
@@ -80,6 +86,7 @@ namespace bio
   {
     protected:
     FiberNetwork * fn;
+
     public:
     // move this out of here! requires coupling data structures as currently
     // written hmmm...
@@ -131,15 +138,17 @@ namespace bio
   class FiberRVEAnalysisQSExplicit : public FiberRVEAnalysis
   {
     protected:
-      double internal_energy;
-      double kinetic_energy;
-      double external_energy; // applied work
-      double time; // t(n)
+    double internal_energy;
+    double kinetic_energy;
+    double external_energy;  // applied work
+    double damping_energy;
+    double time;             // t(n)
     public:
-    //explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit & an);
+    // explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit &
+    // an);
     FiberRVEAnalysisQSExplicit(FiberNetwork * fn,
-                              LinearStructs<las::MICRO_BACKEND> * vecs,
-                              const MicroSolutionStrategy & ss);
+                               LinearStructs<las::MICRO_BACKEND> * vecs,
+                               const MicroSolutionStrategy & ss);
     // get the global mass matrix
     las::Mat * getM() const { return vecs->m; }
     // get the velocity damping matrix
@@ -148,17 +157,36 @@ namespace bio
     las::Vec * getV() const { return vecs->v; }
     las::Vec * getFExt() const { return vecs->f_ext; }
     las::Vec * getPrevFExt() const { return vecs->prev_f_ext; }
+    las::Vec * getFInt() const { return vecs->f_int; }
+    las::Vec * getPrevFInt() const { return vecs->prev_f_int; }
+    las::Vec * getFDamp() { return vecs->f_damp; }
+    las::Vec * getPrevFDamp() { return vecs->prev_f_damp; }
     void setC(las::Mat * c) { vecs->c = c; }
     virtual bool run(const DeformationGradient & dfmGrd);
-    double getTime() const {return time;}
-    void setTime(double t) {time = t;}
+    double getTime() const { return time; }
+    void setTime(double t) { time = t; }
     double getInternalEnergy() const { return internal_energy; }
     double getKineticEnergy() const { return kinetic_energy; }
     double getExternalEnergy() const { return external_energy; }
-    double getTotalEnergy() const { return internal_energy + kinetic_energy + external_energy; }
+    double getDampingEnergy() const { return damping_energy; }
     void setInternalEnergy(double e) { internal_energy = e; }
     void setKineticEnergy(double e) { kinetic_energy = e; }
-    void setExternalEnergy(double e) { external_energy  =e; }
+    void setExternalEnergy(double e) { external_energy = e; }
+    void setDampingEnergy(double e) { damping_energy = e; }
+    void updateFInt()
+    {
+      vecs->swapVec(vecs->f_int, vecs->prev_f_int);
+      static_cast<ExplicitTrussIntegrator *>(es)->updateFInt(getFInt());
+    }
+    void updateFExt() {
+                        vecs->swapVec(vecs->f_ext, vecs->prev_f_ext);
+                         }
+    void updateFDamp() { vecs->swapVec(vecs->f_damp, vecs->prev_f_damp); }
+
+    double getTotalEnergy() const
+    {
+      return internal_energy + kinetic_energy + external_energy;
+    }
     virtual FiberRVEAnalysisType getAnalysisType()
     {
       return FiberRVEAnalysisType::QuasiStaticExplicit;
@@ -184,11 +212,12 @@ namespace bio
       micro_fo_solver & slvr,
       micro_fo_int_solver & slvr_int);
   void destroyAnalysis(FiberRVEAnalysis *);
-  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,
-                                                          double solver_tol,
-                                                          las::Sparsity * csr,
-                                                          void * bfrs = NULL,
-                                                          las::Sparsity * massSprs=NULL);
+  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
+      int ndofs,
+      double solver_tol,
+      las::Sparsity * csr,
+      void * bfrs = NULL,
+      las::Sparsity * massSprs = NULL);
   void destroyFiberRVEAnalysisLinearStructs(
       LinearStructs<las::MICRO_BACKEND> * vecs);
   /*
@@ -199,6 +228,7 @@ namespace bio
   {
     protected:
     FiberRVEAnalysisSImplicit * an;
+
     public:
     FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a);
     void iterate();
@@ -213,6 +243,9 @@ namespace bio
   };
   class FiberRVEIterationQSExplicit : public amsi::Iteration
   {
+    private:
+    las::Vec * tmp;
+    las::Mat * tmp_mat;
     protected:
     FiberRVEAnalysisQSExplicit * an;
     DeformationGradient appliedDefm;
@@ -223,15 +256,24 @@ namespace bio
     unsigned int print_steps;
     // the length of time the loading occurs for
     double load_time;
-    double * u_arr;
-    double * v_arr;
-    double * a_arr;
-    double * f_arr;
-
+    //double * u_arr;
+    //double * v_arr;
+    //double * a_arr;
+    //double * f_arr;
+    // should be between 0.8 and 0.95 (Belytscheko)
+    double time_step_factor;
+    // Rayleigh damping factors
+    double mass_damping_factor;
+    double stiffness_damping_factor;
     public:
     FiberRVEIterationQSExplicit(FiberRVEAnalysisQSExplicit * a,
                                 DeformationGradient appliedDefm,
-                                Amplitude * amplitude, double loadTime);
+                                Amplitude * amplitude,
+                                double loadTime,
+                                double timeStepFactor,
+                                double massDampingFactor,
+                                double stiffnessDampingFactor,
+                                unsigned int printSteps);
     void iterate();
     bool getCompleted() { return last_iter; }
   };

@@ -92,6 +92,7 @@ namespace bio
     protected:
     double delta_t_crit;
     double delta_t_crit_elmt;
+    las::Vec * f_int;
 
     public:
     //void inElement(apf::MeshElement * me);
@@ -102,6 +103,7 @@ namespace bio
     {
       delta_t_crit = std::numeric_limits<double>::max();
     }
+    void updateFInt(las::Vec * vec) {f_int = vec;}
     double getCriticalTimeStep() const { return delta_t_crit; }
     ExplicitTrussIntegrator(apf::Numbering * n,
                             apf::Field * u_,
@@ -109,9 +111,12 @@ namespace bio
                             FiberReaction ** frs_,
                             las::Mat * k_,
                             las::Vec * f_,
+                            las::Vec * f_int_,
                             int o)
         : TrussIntegrator(n, u_, xu_, frs_, k_, f_, o)
-        , delta_t_crit(std::numeric_limits<double>::max()) {}
+        , delta_t_crit(std::numeric_limits<double>::max())
+        ,f_int(f_int_)
+        {}
   };
 }  // namespace bio
 #endif
