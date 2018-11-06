@@ -31,8 +31,7 @@ namespace bio
   apf::Integrator * createExplicitMicroElementalSystem(
       FiberNetwork * fn,
       las::Mat * k,
-      las::Vec * f,
-      las::Vec * f_int);
+      las::Vec * f);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -70,6 +69,7 @@ namespace bio
     las::Mat * c;
     las::Vec * u;
     las::Vec * f;
+    las::Vec * delta_u;
     //las::Vec * prev_f;
     las::Vec * f_int;
     las::Vec * prev_f_int;
@@ -161,6 +161,7 @@ namespace bio
     las::Vec * getPrevFInt() const { return vecs->prev_f_int; }
     las::Vec * getFDamp() { return vecs->f_damp; }
     las::Vec * getPrevFDamp() { return vecs->prev_f_damp; }
+    las::Vec * getDeltaU() { return vecs->delta_u; }
     void setC(las::Mat * c) { vecs->c = c; }
     virtual bool run(const DeformationGradient & dfmGrd);
     double getTime() const { return time; }
@@ -176,7 +177,7 @@ namespace bio
     void updateFInt()
     {
       vecs->swapVec(vecs->f_int, vecs->prev_f_int);
-      static_cast<ExplicitTrussIntegrator *>(es)->updateFInt(getFInt());
+      static_cast<ExplicitTrussIntegrator *>(es)->updateF(getFInt());
     }
     void updateFExt() {
                         vecs->swapVec(vecs->f_ext, vecs->prev_f_ext);
@@ -247,7 +248,6 @@ namespace bio
   {
     private:
     las::Vec * tmp;
-    las::Mat * tmp_mat;
     protected:
     FiberRVEAnalysisQSExplicit * an;
     DeformationGradient appliedDefm;

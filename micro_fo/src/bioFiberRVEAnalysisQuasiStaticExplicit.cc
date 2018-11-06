@@ -96,6 +96,7 @@ namespace bio
       , internal_energy(0)
       , kinetic_energy(0)
       , external_energy(0)
+      , damping_energy(0)
       , time(0)
   {
     apf::Integrator * massIntegrator = new MassIntegrator(
@@ -103,7 +104,8 @@ namespace bio
         &(fn->getFiberReactions()[0]), 2, MassLumpType::RowSum);
     massIntegrator->process(this->getFn()->getNetworkMesh(), 1);
     delete massIntegrator;
-    es = createExplicitMicroElementalSystem(fn, getK(), getF(), getFInt());
+    // note that the integrator computes the internal forces!
+    es = createExplicitMicroElementalSystem(fn, getK(), getFInt());
   }
   class ExplicitOutputWriter
   {
@@ -149,6 +151,7 @@ namespace bio
         strm<<an->getKineticEnergy()<<", ";
         strm<<an->getInternalEnergy()<<", ";
         strm<<an->getExternalEnergy()<<", ";
+        strm<<an->getDampingEnergy()<<", ";
         strm<<ops->norm(an->getA())<<", ";
         strm<<ops->norm(an->getV())<<", ";
         strm<<ops->norm(an->getU())<<", ";
@@ -285,6 +288,9 @@ namespace bio
                      an->bnd_nds[RVE::all].end());
     // 7. update nodal displacements u(n+1) = u(n)+delta_t(n+1/2)*v(n+1/2)
     ops->axpy(delta_t, an->getV(), an->getU());
+    // get delta_u
+    ops->zero(an->getDeltaU());
+    ops->axpy(delta_t, an->getV(), an->getDeltaU());
     // apply u boundary conditions
     applyBndNdsToVec(an->getFn()->getUNumbering(), an->getFn()->getUField(),
                      an->getU(), an->bnd_nds[RVE::all].begin(),
@@ -294,18 +300,6 @@ namespace bio
     ops->zero(an->getF());
     ops->zero(an->getFInt());
     an->es->process(an->getFn()->getNetworkMesh(), 1);
-    // TODO we can make this more efficient by computing these energies in the
-    // force integrator
-    // Wint_n+delta_t_nphalf/2*v_nphalf^T(f_int_n+f_int_npone)
-    // ops->axpy(1, an->getF(), an->getPrevFInt());
-    las::VecVecAdd * vva = las::getVecVecAdd<las::MICRO_BACKEND>();
-    vva->exec(0.5, an->getFInt(), 0.5, an->getPrevFInt(), tmp);
-    an->setInternalEnergy(an->getInternalEnergy() +
-                          delta_t / 2.0 * ops->dot(an->getV(), tmp));
-    // Wext = Wext_n+delta_t_nphalf/2*v_nphalf^T(f_ext_n+f_ext_npone)
-    vva->exec(0.5, an->getFExt(), 0.5, an->getPrevFExt(), tmp);
-    an->setExternalEnergy(an->getExternalEnergy() +
-                          delta_t / 2.0 * ops->dot(an->getV(), tmp));
     // compute the rayleigh damping matrix
     // FIXME there is some memory shit going on here...shouldn't need to set c
     // to nullptr
@@ -315,13 +309,13 @@ namespace bio
     smsma->exec(mass_damping_factor, an->getM(), stiffness_damping_factor,
                 an->getK(), &c);
     an->setC(c);
-    // add the damping term into the force vector
+    // compute the damping force
     mvm->exec(an->getC(), an->getV(), an->getFDamp());
-    // Wdmp = Wdmp_n+delta_t_nphalf/2*v_nphalf^T(f_dmp_n+f_dmp_npone)
-    vva->exec(0.5, an->getFDamp(), 0.5, an->getPrevFDamp(), tmp);
-    an->setDampingEnergy(an->getDampingEnergy() +
-                         delta_t / 2.0 * ops->dot(an->getV(), tmp));
+    ops->axpy(-1, an->getFInt(), an->getF());
     ops->axpy(-1, an->getFDamp(), an->getF());
+    // we don't allow the use to apply a force, so this is not needed here
+    //ops->axpy(1, an->getFExt(), an->getF());
+    // sum the forces to the total force vector (note -FInt is summed in the force integrator)
     // 9. compute a(n+1)
     an->getSlv()->solve(an->getM(), an->getA(), an->getF());
     applyBndNdsToVec(an->getFn()->getANumbering(), an->getFn()->getAField(),
@@ -334,6 +328,25 @@ namespace bio
                      an->getV(), an->bnd_nds[RVE::all].begin(),
                      an->bnd_nds[RVE::all].end());
     // 11. check energy balance (actual checking in convergence operators ...
+    ops->zero(an->getFExt()); 
+    ops->axpy(1, an->getFInt(), an->getFExt());
+    ops->axpy(1, an->getFDamp(), an->getFExt());
+    // compute inertial forces and add into external work
+    mvm->exec(an->getM(), an->getA(), tmp);
+    ops->axpy(1, tmp, an->getFExt());
+    // Wint_n+delta_t_nphalf/2*v_nphalf^T(f_int_n+f_int_npone)
+    las::VecVecAdd * vva = las::getVecVecAdd<las::MICRO_BACKEND>();
+    vva->exec(0.5, an->getFInt(), 0.5, an->getPrevFInt(), tmp);
+    an->setInternalEnergy(an->getInternalEnergy() +
+                          0.5 * ops->dot(an->getDeltaU(), tmp));
+    // Wext = Wext_n+delta_t_nphalf/2*v_nphalf^T(f_ext_n+f_ext_npone)
+    vva->exec(0.5, an->getFExt(), 0.5, an->getPrevFExt(), tmp);
+    an->setExternalEnergy(an->getExternalEnergy() +
+                          0.5 * ops->dot(an->getDeltaU(), tmp));
+    // Wdmp = Wdmp_n+delta_t_nphalf/2*v_nphalf^T(f_dmp_n+f_dmp_npone)
+    vva->exec(0.5, an->getFDamp(), 0.5, an->getPrevFDamp(), tmp);
+    an->setDampingEnergy(an->getDampingEnergy() +
+                         0.5 * ops->dot(an->getDeltaU(), tmp));
     // just compute it here) W_kin = 1/2*v^TMv
     // Wkin_npone = 1/2*(v_npone)^T.M.v_npone
     mvm->exec(an->getM(), an->getV(), tmp);
