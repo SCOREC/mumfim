@@ -42,7 +42,7 @@ namespace bio {
       for(int ii = 0; ii < dim; ii++)
       {
         // parametric coordinate along length
-        frc = -1*spans_l[ii] * f;
+        frc = spans_l[ii] * f;
         es->fe(ii)     = -frc;
         es->fe(dim+ii) =  frc;
       }
@@ -77,8 +77,6 @@ namespace bio {
         delta_t_crit = delta_t_crit_elmt;
       }
       auto ops = las::getLASOps<las::MICRO_BACKEND>();
-      ops->assemble(f_int,es->nedof(),&es->dofs(0),&es->fe(0));
-      //ops->assemble(f_ext,es->nedof(),&es->dofs(0),&es->fe_ext(0));
       TrussIntegrator::outElement();
     }
 }

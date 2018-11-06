@@ -30,15 +30,14 @@ namespace bio
   }
   apf::Integrator * createExplicitMicroElementalSystem(FiberNetwork * fn,
                                                las::Mat * k,
-                                               las::Vec * f,
-                                               las::Vec * f_int)
+                                               las::Vec * f)
   {
     apf::Integrator * es = NULL;
     FiberMember tp = fn->getFiberMember();
     if (tp == FiberMember::truss) {
         es = new ExplicitTrussIntegrator(fn->getUNumbering(), fn->getUField(),
                                  fn->getXpUField(), &(fn->getFiberReactions()[0]),
-                                 k, f, f_int, 1);
+                                 k, f, 1);
       }
     return es;
   }
@@ -60,6 +59,7 @@ namespace bio
     this->f = vb->createRHS(this->k);
     this->f_int = vb->createRHS(this->k);
     this->f_ext = vb->createRHS(this->k);
+    this->delta_u = vb->createRHS(this->k);
     this->f_damp = vb->createRHS(this->c);
     this->prev_f_int = vb->createRHS(this->k);
     this->prev_f_ext = vb->createRHS(this->k);
