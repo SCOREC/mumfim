@@ -61,8 +61,10 @@ namespace bio
                an->getK(),
                an->getF());
     an->getSlv()->solve(an->getK(), an->getU(), an->getF());
-    amsi::WriteOp wrt;
-    amsi::AccumOp acm;
+    //amsi::WriteOp wrt;
+    amsi::SubtractOp acm;
+    amsi::WriteScalarMultOp wrt(-1.0);
+    //amsi::AccumOp acm;
     amsi::FreeApplyOp fr_wrt(an->getFn()->getUNumbering(), &wrt);
     amsi::FreeApplyOp fr_acm(an->getFn()->getUNumbering(), &acm);
     double * s = NULL;

@@ -3,91 +3,10 @@
 #include "bioMassIntegrator.h"
 #include <fstream>
 #include <sys/stat.h>
+#include "bioFiberRVEAnalysisQuasiStaticExplicit.h"
+//#include <bioDynamicRelaxation.h>
 namespace bio
 {
-  /*
-  FiberRVEAnalysisQSExplicit::FiberRVEAnalysisQSExplicit(
-      const FiberRVEAnalysisSImplicit & an)
-      : FiberRVEAnalysis(an)
-  {
-  }
-  */
-  // static void applyBndNdsToVec(an->getFn()->getANumbering(),
-  //                             an->getFn()->getAField(),
-  //                             an->getA(),
-  //                             an->bnd_nds[RVE::all].begin(),
-  //                             an->bnd_nds[RVE::all].end());
-  template <typename I>
-  static void applyBndNdsToVec(apf::Numbering * num,
-                               apf::Field * field,
-                               las::Vec * vec,
-                               I bnd_bgn,
-                               I bnd_end)
-  {
-    apf::Mesh * mesh = apf::getMesh(field);
-    apf::FieldShape * shp = apf::getShape(field);
-    int ncomp = apf::countComponents(field);
-    //double * cmps = new double[ncomp];
-    double cmps[ncomp];
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    int dof;
-    for (I ent = bnd_bgn; ent != bnd_end; ++ent)
-    {
-      int nnodes = shp->countNodesOn(mesh->getType(*ent));
-      for (int nd = 0; nd < nnodes; ++nd)
-      {
-        apf::getComponents(field, *ent, nd, cmps);
-        for (int cmp = 0; cmp < ncomp; ++cmp)
-        {
-          if (apf::isNumbered(num, *ent, nd, cmp))
-          {
-            dof = apf::getNumber(num, *ent, nd, cmp);
-            ops->set(vec, 1, &dof, &(cmps[cmp]));
-          }
-        }
-      }
-    }
-  }
-  class ApplyDeformationGradientExplicit : public ApplyDeformationGradient
-  {
-    protected:
-    apf::Matrix3x3 dVdX;
-    apf::Matrix3x3 dAdX;
-    apf::Field * vField;
-    apf::Field * aField;
-    int numComp;
-    public:
-    template <class IteratorType>
-    ApplyDeformationGradientExplicit(IteratorType ent_bgn,
-                                     IteratorType ent_end,
-                                     apf::Matrix3x3 F,
-                                     Amplitude * amp,
-                                     double time,
-                                     apf::Mesh * mesh,
-                                     apf::Field * uField,
-                                     apf::Field * duField,
-                                     apf::Field * vField,
-                                     apf::Field * aField
-                                     )
-        : ApplyDeformationGradient(ent_bgn, ent_end, F, mesh, duField, uField)
-        , vField(vField)
-        , aField(aField)
-    {
-      // only apply the portion of the deformation that we expect at time t
-      FmI = FmI * (*amp)(time);
-      dVdX = FmI * amp->derivative(time);
-      dAdX = FmI * amp->secondDerivative(time);
-    }
-    virtual void atNode(int nd)
-    {
-      ApplyDeformationGradient::atNode(nd);
-      // apply velocity and acceleration fields
-      apf::Vector3 nd_v = dVdX * nd_xyz;
-      apf::Vector3 nd_a = dAdX * nd_xyz;
-      apf::setVector(vField, ent, nd, nd_v);
-      apf::setVector(aField, ent, nd, nd_a);
-    }
-  };
   FiberRVEAnalysisQSExplicit::FiberRVEAnalysisQSExplicit(
       FiberNetwork * fn,
       LinearStructs<las::MICRO_BACKEND> * vecs,
@@ -99,25 +18,25 @@ namespace bio
       , damping_energy(0)
       , time(0)
   {
+    f_int_field = apf::createLagrangeField(fn->getNetworkMesh(), "f_int_field", apf::VECTOR, 1);
+    apf::zeroField(f_int_field);
+    f_ext_field = apf::createLagrangeField(fn->getNetworkMesh(), "f_ext_field", apf::VECTOR, 1);
+    apf::zeroField(f_ext_field);
+    f_damp_field = apf::createLagrangeField(fn->getNetworkMesh(), "f_damp_field", apf::VECTOR, 1);
+    apf::zeroField(f_damp_field);
+    f_inertial_field = apf::createLagrangeField(fn->getNetworkMesh(), "f_inertial_field", apf::VECTOR, 1);
+    apf::zeroField(f_inertial_field);
+    auto vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
+    f_inertial = vb->createRHS(getC());
     apf::Integrator * massIntegrator = new MassIntegrator(
         fn->getUNumbering(), fn->getUField(), this->getM(),
         &(fn->getFiberReactions()[0]), 2, MassLumpType::RowSum);
     massIntegrator->process(this->getFn()->getNetworkMesh(), 1);
     delete massIntegrator;
     // note that the integrator computes the internal forces!
-    es = createExplicitMicroElementalSystem(fn, getK(), getFInt());
+    es = createExplicitMicroElementalSystem(fn, getK(), getFInt(), getFDamp(), getV());
   }
-  class ExplicitOutputWriter
-  {
-    private:
-      unsigned int outputFrame;
-      std::vector<amsi::PvdData> pvdData;
-      std::string folder;
-      std::string pvdName;
-      FiberRVEAnalysisQSExplicit * an;
-      las::LasOps<las::MICRO_BACKEND> * ops;
-    public:
-      ExplicitOutputWriter(std::string folder, std::string pvdName, FiberRVEAnalysisQSExplicit * an)
+  ExplicitOutputWriter::ExplicitOutputWriter(std::string folder, std::string pvdName, FiberRVEAnalysisQSExplicit * an)
       : outputFrame(0)
       , pvdData(std::vector<amsi::PvdData>())
       , folder(folder)
@@ -136,7 +55,7 @@ namespace bio
         fname = folder+"/"+"micro_results.csv";
         std::ofstream strm(fname);
       }
-      void write(int iteration)
+      void ExplicitOutputWriter::write(int iteration)
       {
         std::string fname = folder+"/"+"micro_results.csv";
         std::ofstream strm;
@@ -160,6 +79,8 @@ namespace bio
         strm<<ops->norm(an->getFDamp())<<", ";
         strm<<ops->norm(an->getF())<<"\n";
         // only write fields when outputing data
+        // FIXME the get functions allocate data which must be freed after use.
+        // This is currently a memory leak!
         double * s = 0;
         // write a, v, u data to field
         // TODO all of these field writes could be combined to reduce the number
@@ -181,12 +102,31 @@ namespace bio
         amsi::ApplyVector(an->getFn()->getUNumbering(), an->getFn()->getUField(),
                           s, 0, &wrt)
             .run();
-        ops->restore(an->getU(), s);
         ops->get(an->getF(), s);
         amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFn()->getFField(),
                           s, 0, &wrt)
             .run();
-        ops->restore(an->getU(), s);
+        // test fields
+        ops->get(an->getFInt(), s);
+        amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFIntField(),
+                          s, 0, &wrt)
+            .run();
+        ops->get(an->getFExt(), s);
+        amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFExtField(),
+                          s, 0, &wrt)
+            .run();
+        ops->get(an->getFDamp(), s);
+        amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFDampField(),
+                          s, 0, &wrt)
+            .run();
+        ops->get(an->getFInertial(), s);
+        amsi::ApplyVector(an->getFn()->getFNumbering(), an->getFInertialField(),
+                          s, 0, &wrt)
+            .run();
+        ops->get(an->getDeltaU(), s);
+        amsi::ApplyVector(an->getFn()->getUNumbering(), an->getFn()->getdUField(),
+                          s, 0, &wrt)
+            .run();
         std::stringstream sout;
         sout << "frame_" << outputFrame++;
         apf::writeVtkFiles((folder+ "/" + sout.str()).c_str(),
@@ -194,7 +134,6 @@ namespace bio
         pvdData.push_back(amsi::PvdData(sout.str(), an->getTime(), 0));
         amsi::writePvdFile(folder + "/" + pvdName, pvdData);
       }
-  };
   FiberRVEIterationQSExplicit::FiberRVEIterationQSExplicit(
       FiberRVEAnalysisQSExplicit * a,
       DeformationGradient appliedDefm,
@@ -226,9 +165,9 @@ namespace bio
   {
     // TODO check deformation wave speed
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    ops->zero(an->getC());  // don't bother zeroing because we reset it anyways
-    las::MatMatAdd * smsma = las::getMatMatAdd<las::MICRO_BACKEND>();
-    las::Mat * c;
+    //ops->zero(an->getC());  // don't bother zeroing because we reset it anyways
+    //las::MatMatAdd * smsma = las::getMatMatAdd<las::MICRO_BACKEND>();
+    //las::Mat * c;
     las::MatVecMult * mvm = las::getMatVecMult<las::MICRO_BACKEND>();
     if (__builtin_expect(this->iteration() == 0, false))
     {
@@ -243,13 +182,14 @@ namespace bio
       ops->zero(an->getPrevFInt());
       ops->zero(an->getPrevFExt());
       ops->zero(an->getPrevFDamp());
+      static_cast<ExplicitTrussIntegrator *>(an->es)->setStiffnessDampingFactor(stiffness_damping_factor);
       outputWriter->write(0);
       an->es->process(an->getFn()->getNetworkMesh(), 1);
     }
     // ITERATIONS START HERE!
     // 4. update time t(n+1) = t(n)+delta_t(n+1/2), t(n+1/2)=1/2(t(n)+t(n+1))
     double delta_t =
-        dynamic_cast<ExplicitTrussIntegrator *>(an->es)->getCriticalTimeStep() *
+        static_cast<ExplicitTrussIntegrator *>(an->es)->getCriticalTimeStep() *
         time_step_factor;
     if (__builtin_expect(this->iteration() == 0, false))
     {
@@ -291,26 +231,31 @@ namespace bio
     // get delta_u
     ops->zero(an->getDeltaU());
     ops->axpy(delta_t, an->getV(), an->getDeltaU());
+    applyBndNdsToVec(an->getFn()->getUNumbering(), an->getFn()->getdUField(),
+                     an->getDeltaU(), an->bnd_nds[RVE::all].begin(),
+                     an->bnd_nds[RVE::all].end());
     // apply u boundary conditions
+    // FIXME...these boundary conditions also need to get applied to DeltaU
     applyBndNdsToVec(an->getFn()->getUNumbering(), an->getFn()->getUField(),
                      an->getU(), an->bnd_nds[RVE::all].begin(),
                      an->bnd_nds[RVE::all].end());
     // 8. getforce
-    ops->zero(an->getK());
-    ops->zero(an->getF());
+    //ops->zero(an->getK()); // no longer explicitly compute K
+    // FIXME add mass damping...need to multiply by scalar...
+    //mvm->exec(an->getM(), an->getV(), an->getFDamp());
+    ops->zero(an->getFDamp());
     ops->zero(an->getFInt());
     an->es->process(an->getFn()->getNetworkMesh(), 1);
     // compute the rayleigh damping matrix
-    // FIXME there is some memory shit going on here...shouldn't need to set c
-    // to nullptr
-    auto mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    mb->destroy(an->getC());
-    c = 0;
-    smsma->exec(mass_damping_factor, an->getM(), stiffness_damping_factor,
-                an->getK(), &c);
-    an->setC(c);
+    //auto mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
+    //mb->destroy(an->getC());
+    //c = 0;
+    //smsma->exec(mass_damping_factor, an->getM(), stiffness_damping_factor,
+    //            an->getK(), &c);
+    //an->setC(c);
     // compute the damping force
-    mvm->exec(an->getC(), an->getV(), an->getFDamp());
+    //mvm->exec(an->getC(), an->getV(), an->getFDamp());
+    ops->zero(an->getF());
     ops->axpy(-1, an->getFInt(), an->getF());
     ops->axpy(-1, an->getFDamp(), an->getF());
     // we don't allow the use to apply a force, so this is not needed here
@@ -332,8 +277,10 @@ namespace bio
     ops->axpy(1, an->getFInt(), an->getFExt());
     ops->axpy(1, an->getFDamp(), an->getFExt());
     // compute inertial forces and add into external work
-    mvm->exec(an->getM(), an->getA(), tmp);
-    ops->axpy(1, tmp, an->getFExt());
+    mvm->exec(an->getM(), an->getA(), an->getFInertial());
+    ops->axpy(1, an->getFInertial(), an->getFExt());
+    //mvm->exec(an->getM(), an->getA(), tmp);
+    //ops->axpy(1, tmp, an->getFExt());
     // Wint_n+delta_t_nphalf/2*v_nphalf^T(f_int_n+f_int_npone)
     las::VecVecAdd * vva = las::getVecVecAdd<las::MICRO_BACKEND>();
     vva->exec(0.5, an->getFInt(), 0.5, an->getPrevFInt(), tmp);
@@ -352,13 +299,13 @@ namespace bio
     mvm->exec(an->getM(), an->getV(), tmp);
     an->setKineticEnergy(0.5 * ops->dot(an->getV(), tmp));
     an->setTime(t_npone);
-    // swap the force vectors
     if (__builtin_expect(
             ((this->iteration() % print_steps) == 0) || (last_iter == true),
             false))
     {
       outputWriter->write(iteration()+1);
     }
+    // swap the force vectors
     an->updateFExt();
     an->updateFInt();
     an->updateFDamp();
@@ -442,10 +389,10 @@ namespace bio
     double kinEnergyPercent = 10;
     double kinEnergyPercentStartup = 500;
     int kinEnergyStartupSteps = 1000;
-    double loadTime = 10;
+    double loadTime = 0.5E-2;
     double timeStepFactor = 0.95;
     double massDampingFactor = 0;
-    double stiffnessDampingFactor = -0.1;
+    double stiffnessDampingFactor = 0.1;
     unsigned int printSteps = 1000;
     ExplicitOutputWriter writer("aba/", "test_explicit.pvd", this);
     EnergyBalRefGen energy_bal_rg(this);
@@ -492,5 +439,20 @@ namespace bio
       writer.write(itr.iteration()+1);
     }
     return rslt;
+  }
+  apf::Integrator * createExplicitMicroElementalSystem(FiberNetwork * fn,
+                                               las::Mat * k,
+                                               las::Vec * f,
+                                               las::Vec * f_damp,
+                                               las::Vec * v)
+  {
+    apf::Integrator * es = NULL;
+    FiberMember tp = fn->getFiberMember();
+    if (tp == FiberMember::truss) {
+        es = new ExplicitTrussIntegrator(fn->getUNumbering(), fn->getUField(),
+                                 fn->getXpUField(), &(fn->getFiberReactions()[0]),
+                                 k, f, f_damp, v, 1);
+      }
+    return es;
   }
 }  // namespace bio

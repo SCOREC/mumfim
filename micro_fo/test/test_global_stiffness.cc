@@ -64,17 +64,7 @@ int main(int argc, char * argv[])
     apf::Integrator * truss_es =
         bio::createImplicitMicroElementalSystem(fn, vecs->getK(), vecs->getF());
     std::cout<<"Computing the  global stiffness matrix"<<std::endl;
-    apf::MeshEntity * me = NULL;
-    apf::MeshIterator * itr = fn_msh->begin(1);
-    int ii = 0;
-    while ((me = fn_msh->iterate(itr)))
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(fn_msh, me);
-      truss_es->process(mlm);
-      apf::destroyMeshElement(mlm);
-      ++ii;
-    }
-    fn_msh->end(itr);
+    truss_es->process(fn_msh, 1);
     std::ofstream out("GlobalKMatrix.mtx");
     if (!out.is_open())
     {

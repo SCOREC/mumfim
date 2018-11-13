@@ -51,8 +51,6 @@ namespace bio
     las::Mat * k;
     las::Vec * f;
     int id;
-    double sound_speed;
-
     public:
     TrussIntegrator(apf::Numbering * n,
                     apf::Field * u_,
@@ -90,19 +88,28 @@ namespace bio
   class ExplicitTrussIntegrator : public TrussIntegrator
   {
     protected:
+    double sound_speed;
     double delta_t_crit;
     double delta_t_crit_elmt;
-
+    double stiffness_damping_factor;
+    // velocity
+    las::Vec * v;
+    las::Vec * f_damp;
+    double * vel_arr;
+    apf::DynamicVector fe_damp;
     public:
-    //void inElement(apf::MeshElement * me);
+    virtual void inElement(apf::MeshElement * me) override;
+    virtual void atPoint(const apf::Vector3 &, double, double) override;
     virtual void outElement() override;
+    void setStiffnessDampingFactor(double alpha) {stiffness_damping_factor = alpha; }
     // call this before processing a second time so we capture an increase in
     // the critical time step.
     void resetCritTimeStep()
     {
       delta_t_crit = std::numeric_limits<double>::max();
     }
-    void updateF(las::Vec * vec) {f = vec;}
+    void updateF(las::Vec * vec) { f = vec; }
+    void updateFDamp(las::Vec * vec) { f_damp = vec; }
     double getCriticalTimeStep() const { return delta_t_crit; }
     ExplicitTrussIntegrator(apf::Numbering * n,
                             apf::Field * u_,
@@ -110,10 +117,19 @@ namespace bio
                             FiberReaction ** frs_,
                             las::Mat * k_,
                             las::Vec * f_,
+                            las::Vec * f_damp_,
+                            las::Vec * v_,
                             int o)
         : TrussIntegrator(n, u_, xu_, frs_, k_, f_, o)
         , delta_t_crit(std::numeric_limits<double>::max())
-        {}
+        , stiffness_damping_factor(0)
+        , v(v_)
+        , f_damp(f_damp_)
+    {
+      // std::cout<<"Explicit Truss Integrator"<<std::endl;
+      // std::cout<<es->nedof()<<std::endl;
+      fe_damp = apf::DynamicVector();
+    }
   };
 }  // namespace bio
 #endif

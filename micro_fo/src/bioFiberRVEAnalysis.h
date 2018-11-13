@@ -28,10 +28,6 @@ namespace bio
       FiberNetwork * fn,
       las::Mat * k,
       las::Vec * f);
-  apf::Integrator * createExplicitMicroElementalSystem(
-      FiberNetwork * fn,
-      las::Mat * k,
-      las::Vec * f);
   class FiberRVEAnalysis;
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
@@ -78,7 +74,6 @@ namespace bio
     las::Vec * f_damp;
     las::Vec * prev_f_damp;
     las::Vec * v;
-    las::Vec * prev_v;
     las::Vec * a;
     las::Solve * slv;
   };
@@ -135,64 +130,6 @@ namespace bio
       return FiberRVEAnalysisType::StaticImplicit;
     }
   };
-  class FiberRVEAnalysisQSExplicit : public FiberRVEAnalysis
-  {
-    protected:
-    double internal_energy;
-    double kinetic_energy;
-    double external_energy;  // applied work
-    double damping_energy;
-    double time;             // t(n)
-    public:
-    // explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit &
-    // an);
-    FiberRVEAnalysisQSExplicit(FiberNetwork * fn,
-                               LinearStructs<las::MICRO_BACKEND> * vecs,
-                               const MicroSolutionStrategy & ss);
-    // get the global mass matrix
-    las::Mat * getM() const { return vecs->m; }
-    // get the velocity damping matrix
-    las::Mat * getC() const { return vecs->c; }
-    las::Vec * getA() const { return vecs->a; }
-    las::Vec * getV() const { return vecs->v; }
-    las::Vec * getFExt() const { return vecs->f_ext; }
-    las::Vec * getPrevFExt() const { return vecs->prev_f_ext; }
-    las::Vec * getFInt() const { return vecs->f_int; }
-    las::Vec * getPrevFInt() const { return vecs->prev_f_int; }
-    las::Vec * getFDamp() { return vecs->f_damp; }
-    las::Vec * getPrevFDamp() { return vecs->prev_f_damp; }
-    las::Vec * getDeltaU() { return vecs->delta_u; }
-    void setC(las::Mat * c) { vecs->c = c; }
-    virtual bool run(const DeformationGradient & dfmGrd);
-    double getTime() const { return time; }
-    void setTime(double t) { time = t; }
-    double getInternalEnergy() const { return internal_energy; }
-    double getKineticEnergy() const { return kinetic_energy; }
-    double getExternalEnergy() const { return external_energy; }
-    double getDampingEnergy() const { return damping_energy; }
-    void setInternalEnergy(double e) { internal_energy = e; }
-    void setKineticEnergy(double e) { kinetic_energy = e; }
-    void setExternalEnergy(double e) { external_energy = e; }
-    void setDampingEnergy(double e) { damping_energy = e; }
-    void updateFInt()
-    {
-      vecs->swapVec(vecs->f_int, vecs->prev_f_int);
-      static_cast<ExplicitTrussIntegrator *>(es)->updateF(getFInt());
-    }
-    void updateFExt() {
-                        vecs->swapVec(vecs->f_ext, vecs->prev_f_ext);
-                         }
-    void updateFDamp() { vecs->swapVec(vecs->f_damp, vecs->prev_f_damp); }
-
-    double getTotalEnergy() const
-    {
-      return internal_energy + kinetic_energy + external_energy;
-    }
-    virtual FiberRVEAnalysisType getAnalysisType()
-    {
-      return FiberRVEAnalysisType::QuasiStaticExplicit;
-    }
-  };
   FiberRVEAnalysis * createFiberRVEAnalysis(
       FiberNetwork * fn,
       LinearStructs<las::MICRO_BACKEND> * vecs,
@@ -225,7 +162,6 @@ namespace bio
    * perform a deep copy of the fiber rve analysis
    */
   // FiberRVEAnalysis * copyAnalysis(FiberRVEAnalysis * an);
-  class ExplicitOutputWriter;
 
   class FiberRVEIterationSImplicit : public amsi::Iteration
   {
@@ -243,38 +179,6 @@ namespace bio
     virtual double secondDerivative(double time) = 0;
     virtual double integral(double time) = 0;
     virtual ~Amplitude() {}
-  };
-  class FiberRVEIterationQSExplicit : public amsi::Iteration
-  {
-    private:
-    las::Vec * tmp;
-    protected:
-    FiberRVEAnalysisQSExplicit * an;
-    DeformationGradient appliedDefm;
-    Amplitude * amplitude;
-    bool last_iter;
-    // print data every print_steps steps
-    unsigned int print_steps;
-    // the length of time the loading occurs for
-    double load_time;
-    // should be between 0.8 and 0.95 (Belytscheko)
-    double time_step_factor;
-    // Rayleigh damping factors
-    double mass_damping_factor;
-    double stiffness_damping_factor;
-    ExplicitOutputWriter * outputWriter;
-    public:
-    FiberRVEIterationQSExplicit(FiberRVEAnalysisQSExplicit * a,
-                                DeformationGradient appliedDefm,
-                                Amplitude * amplitude,
-                                double loadTime,
-                                double timeStepFactor,
-                                double massDampingFactor,
-                                double stiffnessDampingFactor,
-                                unsigned int printSteps,
-                                ExplicitOutputWriter * outputWriter);
-    void iterate();
-    bool getCompleted() { return last_iter; }
   };
   /**
    * Fix the boundary dofs and set the

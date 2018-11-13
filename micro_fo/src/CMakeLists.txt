@@ -1,8 +1,10 @@
 set(micro_fo_public_headers
+  bioDynamicRelaxation.h
   bioFiberNetwork.h
   bioFiberReactions.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
+  bioFiberRVEAnalysisQuasiStaticExplicit.h
   bioMassIntegrator.h
   bioMicroFOParams.h
   bioMultiscaleCoupling.h
@@ -17,11 +19,13 @@ set(micro_fo_public_headers
   bioVerbosity.h)
 
 set(micro_fo_src_files
+  bioDynamicRelaxation.cc
   bioRVE.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO.cc
   bioFiberReactions.cc
   bioFiberRVEAnalysis.cc
+  bioFiberRVEAnalysisCreation.cc
   bioFiberRVEAnalysisStaticImplicit.cc
   bioFiberRVEAnalysisQuasiStaticExplicit.cc
   bioAlignFiberNetwork.cc

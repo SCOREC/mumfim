@@ -28,19 +28,6 @@ namespace bio
     }
     return es;
   }
-  apf::Integrator * createExplicitMicroElementalSystem(FiberNetwork * fn,
-                                               las::Mat * k,
-                                               las::Vec * f)
-  {
-    apf::Integrator * es = NULL;
-    FiberMember tp = fn->getFiberMember();
-    if (tp == FiberMember::truss) {
-        es = new ExplicitTrussIntegrator(fn->getUNumbering(), fn->getUField(),
-                                 fn->getXpUField(), &(fn->getFiberReactions()[0]),
-                                 k, f, 1);
-      }
-    return es;
-  }
   template <>
   LinearStructs<las::sparskit>::LinearStructs(int ndofs,
                                double solver_tol,
@@ -103,7 +90,6 @@ namespace bio
     md->destroy(c);
     md->destroy(m);
     vd->destroy(v);
-    vd->destroy(prev_v);
     vd->destroy(a);
     vd->destroy(u);
     vd->destroy(f);
@@ -237,24 +223,6 @@ namespace bio
         slvr_int.data[DETECT_OSCILLATION_TYPE]);
     ss.oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
     return createFiberRVEAnalysis(fn, vecs, ss, type);
-  }
-  FiberRVEAnalysis * createFiberRVEAnalysis(
-      FiberNetwork * fn,
-      LinearStructs<las::MICRO_BACKEND> * vecs,
-      const MicroSolutionStrategy & ss,
-      FiberRVEAnalysisType type) {
-    FiberRVEAnalysis * an = NULL; 
-    if (type == FiberRVEAnalysisType::StaticImplicit) {
-       an = new FiberRVEAnalysisSImplicit(fn, vecs, ss);
-    }
-    else if (type == FiberRVEAnalysisType::QuasiStaticExplicit) {
-      an = new FiberRVEAnalysisQSExplicit(fn, vecs, ss);
-    }
-    else {
-      std::cerr<<"Incorrect Analysis type chosen!"<<std::endl;
-      std::abort();
-    }
-    return an;
   }
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
                                         LinearStructs<las::MICRO_BACKEND> * vecs,
