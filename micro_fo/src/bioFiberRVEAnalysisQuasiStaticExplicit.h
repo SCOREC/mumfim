@@ -18,14 +18,17 @@ namespace bio
     double time;  // t(n)
     double stiffness_damping_factor;
     double mass_damping_factor;
+    las::Vec * m_inv;
     public:
     // explicit FiberRVEAnalysisQSExplicit(const FiberRVEAnalysisSImplicit &
     // an);
     FiberRVEAnalysisQSExplicit(FiberNetwork * fn,
                                LinearStructs<las::MICRO_BACKEND> * vecs,
                                const MicroSolutionStrategy & ss);
+    virtual ~FiberRVEAnalysisQSExplicit();
     // get the global mass matrix
     las::Mat * getM() const { return vecs->m; }
+    las::Vec * getMInv() const { return m_inv; }
     // get the velocity damping matrix
     las::Mat * getC() const { return vecs->c; }
     las::Vec * getA() const { return vecs->a; }

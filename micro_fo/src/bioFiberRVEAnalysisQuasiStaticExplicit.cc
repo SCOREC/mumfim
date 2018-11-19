@@ -17,6 +17,7 @@ namespace bio
       , external_energy(0)
       , damping_energy(0)
       , time(0)
+      , m_inv(NULL)
   {
     f_int_field = apf::createLagrangeField(fn->getNetworkMesh(), "f_int_field", apf::VECTOR, 1);
     apf::zeroField(f_int_field);
@@ -33,8 +34,15 @@ namespace bio
         &(fn->getFiberReactions()[0]), 2, MassLumpType::RowSum);
     massIntegrator->process(this->getFn()->getNetworkMesh(), 1);
     delete massIntegrator;
+    // note this requires that we are usign lumped mass
+    las::MatDiagonalInverse * mdiag = las::getMatDiagonalInverse<las::MICRO_BACKEND>();
+    mdiag->exec(1.0, this->getM(), m_inv);
     // note that the integrator computes the internal forces!
     es = createExplicitMicroElementalSystem(fn, getK(), getFInt(), getFDamp(), getV());
+  }
+  FiberRVEAnalysisQSExplicit::~FiberRVEAnalysisQSExplicit()
+  {
+    las::destroyVector(m_inv);
   }
   ExplicitOutputWriter::ExplicitOutputWriter(std::string folder, std::string pvdName, FiberRVEAnalysisQSExplicit * an)
       : outputFrame(0)
@@ -262,7 +270,9 @@ namespace bio
     //ops->axpy(1, an->getFExt(), an->getF());
     // sum the forces to the total force vector (note -FInt is summed in the force integrator)
     // 9. compute a(n+1)
-    an->getSlv()->solve(an->getM(), an->getA(), an->getF());
+    //an->getSlv()->solve(an->getM(), an->getA(), an->getF());
+    las::HadamardProduct * hp = las::getHadamardProduct<las::MICRO_BACKEND>();
+    hp->exec(an->getMInv(), an->getF(), an->getA());
     applyBndNdsToVec(an->getFn()->getANumbering(), an->getFn()->getAField(),
                      an->getA(), an->bnd_nds[RVE::all].begin(),
                      an->bnd_nds[RVE::all].end());
@@ -390,10 +400,12 @@ namespace bio
     double kinEnergyPercentStartup = 500;
     int kinEnergyStartupSteps = 1000;
     double loadTime = 0.5E-2;
+    //double loadTime = 0.5E-1;
+    //double loadTime = 10;
     double timeStepFactor = 0.95;
     double massDampingFactor = 0;
     double stiffnessDampingFactor = 0.1;
-    unsigned int printSteps = 1000;
+    unsigned int printSteps = 10000;
     ExplicitOutputWriter writer("aba/", "test_explicit.pvd", this);
     EnergyBalRefGen energy_bal_rg(this);
     EnergyBalValGen energy_bal_vg(this);
