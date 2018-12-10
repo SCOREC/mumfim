@@ -98,7 +98,8 @@ namespace bio
     Amplitude * amplitude;
     bool last_iter;
     // print data every print_steps steps
-    unsigned int print_steps;
+    unsigned int history_print_steps;
+    unsigned int field_print_steps;
     // the length of time the loading occurs for
     double load_time;
     // should be between 0.8 and 0.95 (Belytscheko)
@@ -116,7 +117,8 @@ namespace bio
                                 double timeStepFactor,
                                 double massDampingFactor,
                                 double stiffnessDampingFactor,
-                                unsigned int printSteps,
+                                unsigned int historyPrintSteps,
+                                unsigned int fieldPrintSteps,
                                 ExplicitOutputWriter * outputWriter);
     virtual void iterate();
     bool getCompleted() { return last_iter; }
@@ -135,7 +137,8 @@ namespace bio
     ExplicitOutputWriter(std::string folder,
                          std::string pvdName,
                          FiberRVEAnalysisQSExplicit * an);
-    void write(int iteration);
+    void writeHistoryData(int iteration);
+    void writeFieldData(int iteration);
   };
   template <typename I>
   void applyBndNdsToVec(apf::Numbering * num,
@@ -144,6 +147,7 @@ namespace bio
                         I bnd_bgn,
                         I bnd_end)
   {
+    /*
     apf::Mesh * mesh = apf::getMesh(field);
     apf::FieldShape * shp = apf::getShape(field);
     int ncomp = apf::countComponents(field);
@@ -167,6 +171,7 @@ namespace bio
         }
       }
     }
+    */
   }
   class ApplyDeformationGradientExplicit : public ApplyDeformationGradient
   {

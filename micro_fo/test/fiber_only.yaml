@@ -2,8 +2,8 @@
   Problem Definition:
     #Mesh: /fasttmp/mersoj/develop/biotissue_problems/fiber_networks/density_100_networks/del_rho100_new_10.txt
     Mesh: /fasttmp/mersoj/develop/biotissue_problems/fiber_networks/density_100_networks/del_rho100_new_1.txt
-    Deformation Gradient: [1.5, 0, 0, 0, 0.816496581, 0, 0, 0, 0.816496581]
-    #Deformation Gradient: [1500, 0, 0, 0, 0.816496581, 0, 0, 0, 0.816496581]
+    Deformation Gradient: [1.01, 0, 0, 0, 0.99503, 0, 0, 0, .99503]
+    #Deformation Gradient: [1.5, 0, 0, 0, 0.816496581, 0, 0, 0, 0.816496581]
     #Deformation Gradient: [1,0,0,0,1,0,0,0,1]
   Solution Strategy:
     #Solver Type: Implicit

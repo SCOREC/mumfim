@@ -63,7 +63,7 @@ namespace bio
         fname = folder+"/"+"micro_results.csv";
         std::ofstream strm(fname);
       }
-      void ExplicitOutputWriter::write(int iteration)
+      void ExplicitOutputWriter::writeHistoryData(int iteration)
       {
         std::string fname = folder+"/"+"micro_results.csv";
         std::ofstream strm;
@@ -86,6 +86,9 @@ namespace bio
         strm<<ops->norm(an->getFExt())<<", ";
         strm<<ops->norm(an->getFDamp())<<", ";
         strm<<ops->norm(an->getF())<<"\n";
+      }
+      void ExplicitOutputWriter::writeFieldData(int iteration)
+      {
         // only write fields when outputing data
         // FIXME the get functions allocate data which must be freed after use.
         // This is currently a memory leak!
@@ -150,14 +153,16 @@ namespace bio
       double timeStepFactor,
       double massDampingFactor,
       double stiffnessDampingFactor,
-      unsigned int printSteps,
+      unsigned int historyPrintSteps,
+      unsigned int fieldPrintSteps,
       ExplicitOutputWriter * outputWriter)
       : amsi::Iteration()
       , an(a)
       , appliedDefm(appliedDefm)
       , amplitude(amplitude)
       , last_iter(false)
-      , print_steps(printSteps)
+      , history_print_steps(historyPrintSteps)
+      , field_print_steps(fieldPrintSteps)
       , load_time(loadTime)
       , time_step_factor(timeStepFactor)
       , mass_damping_factor(massDampingFactor)
@@ -191,7 +196,8 @@ namespace bio
       ops->zero(an->getPrevFExt());
       ops->zero(an->getPrevFDamp());
       static_cast<ExplicitTrussIntegrator *>(an->es)->setStiffnessDampingFactor(stiffness_damping_factor);
-      outputWriter->write(0);
+      outputWriter->writeHistoryData(0);
+      outputWriter->writeFieldData(0);
       an->es->process(an->getFn()->getNetworkMesh(), 1);
     }
     // ITERATIONS START HERE!
@@ -310,10 +316,16 @@ namespace bio
     an->setKineticEnergy(0.5 * ops->dot(an->getV(), tmp));
     an->setTime(t_npone);
     if (__builtin_expect(
-            ((this->iteration() % print_steps) == 0) || (last_iter == true),
+            ((this->iteration() % history_print_steps) == 0) || (last_iter == true),
             false))
     {
-      outputWriter->write(iteration()+1);
+      outputWriter->writeHistoryData(iteration()+1);
+    }
+    if (__builtin_expect(
+            ((this->iteration() % field_print_steps) == 0) || (last_iter == true),
+            false))
+    {
+      outputWriter->writeFieldData(iteration()+1);
     }
     // swap the force vectors
     an->updateFExt();
@@ -405,7 +417,8 @@ namespace bio
     double timeStepFactor = 0.95;
     double massDampingFactor = 0;
     double stiffnessDampingFactor = 0.1;
-    unsigned int printSteps = 10000;
+    unsigned int historyPrintSteps = 1000;
+    unsigned int fieldPrintSteps = 200000;
     ExplicitOutputWriter writer("aba/", "test_explicit.pvd", this);
     EnergyBalRefGen energy_bal_rg(this);
     EnergyBalValGen energy_bal_vg(this);
@@ -418,7 +431,8 @@ namespace bio
     LinearAmp linAmp(loadTime);
     FiberRVEIterationQSExplicit itr(this, dfmGrd, &linAmp, loadTime,
                                     timeStepFactor, massDampingFactor,
-                                    stiffnessDampingFactor, printSteps, &writer);
+                                    stiffnessDampingFactor, historyPrintSteps,
+                                    fieldPrintSteps, &writer);
     TimeConvergence time_cnvrg(&itr);
     amsi::UpdatingConvergence<decltype(&energy_bal_vg),
                               decltype(&energy_bal_eg),
@@ -448,7 +462,8 @@ namespace bio
       std::cerr << "Total Energy: " << getTotalEnergy() << std::endl;
       std::cerr << "Ratio: " << getKineticEnergy() / getTotalEnergy()
                 << std::endl;
-      writer.write(itr.iteration()+1);
+      writer.writeHistoryData(itr.iteration()+1);
+      writer.writeFieldData(itr.iteration()+1);
     }
     return rslt;
   }
