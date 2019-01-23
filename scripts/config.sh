@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cmake config for bio
 # usage ./config.sh [build_type] [logrun_flag]
-source $DEVROOT/scripts/util
+source ./util
 ROOT=`dirname $PWD`
 LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
@@ -56,10 +56,10 @@ else
       -DSCOREC_DIR=$DEVROOT/install/core/$BUILD_TYPE/lib/cmake/SCOREC \
       -Dlas_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
-      -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
       -DENABLE_VERBOSITY=HIGH \
       ..
 fi
+      # -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
 
 
 
