@@ -1,4 +1,4 @@
-13
+13 # attdef file version
 #
 ## Fields
 type "num timesteps" : int d < 1 >;
