@@ -30,12 +30,18 @@ is name `test_net.txt` the params file should be named `test_net.txt.params`.
 
 ```
 num-parameters num-fibers
-param-id  fiber-radius  youngs-modulus
+reaction-id  fiber-radius  youngs-modulus ...
 fiber-1-parameter
 ...
 fiber-m-parameter
 ```
-The parameter id must start at zero and be monotonically increasing.
+The `reaction-id` selects the type of reaction you would like to use. Currently there are the following options and parameters:
+
+| Reaction Type | `reaction-id` | Parameters                                                                 |
+|---------------|:-------------:|----------------------------------------------------------------------------|
+| Linear        | 0             | `fiber-radius`, `youngs-modulus`, `density`                                |
+| Linear        | 0             | `fiber-radius`, `youngs-modulus`, `B`, `transition-length-ratio`, `density`|
+
 See [here](./test/fiber_networks/del_4450seedL5_new_1.txt.params) for an example.
 
 The current version of this input file is limited to linear truss elements. A future version will
