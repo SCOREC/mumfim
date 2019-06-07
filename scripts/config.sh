@@ -43,7 +43,8 @@ if [ "$HOSTNAME" == "q.ccni.rpi.edu" ]; then
   chmod g+rw $BUILD_DIR
 else
   CC=`which mpicc`
-  CXX=`which mpicxx`
+  CXX=/lore/mersoj/kokkos/kokkos/bin/nvcc_wrapper
+  #CXX=`which mpicxx`
   cmake \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -56,10 +57,11 @@ else
       -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/$BUILD_TYPE \
       -DCMAKE_PREFIX_PATH="$DEVROOT/install/amsi/$BUILD_TYPE/lib/cmake/amsi/" \
       -DSCOREC_DIR=$DEVROOT/install/core/$BUILD_TYPE/lib/cmake/SCOREC \
-      -Dlas_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
-      -Dlas_core_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
-      -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
+      -DKokkos_DIR="/lore/mersoj/kokkos/install/lib/CMake/Kokkos" \
+      -Dlas_DIR=$DEVROOT/install/las/RelWithDebugInfo/lib/cmake \
+      -Dlas_core_DIR=$DEVROOT/install/las/RelWithDebugInfo/lib/cmake \
       -DENABLE_VERBOSITY=$VERBOSITY_LEVEL \
+      -DCMAKE_CXX_STANDARD=11 \
       -DCMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-but-set-variable" \
       ..
 fi

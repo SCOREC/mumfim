@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
     fn->setFiberReactions(rctns.rctns);
     std::cout<<"creating sparskit linear structures"<<std::endl;
     bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-        bio::createLinearStructs(ndofs, cases[i].ss.slvrTolerance, sprs, bfrs);
+        bio::createLinearStructs(ndofs, cases[i].ss->slvrTolerance, sprs, bfrs);
     std::cout<<"Zeroing sparkit data"<<std::endl;
     // get the stiffness matrix
     auto ops = las::getLASOps<las::sparskit>();

@@ -8,6 +8,7 @@
 #include "bioUtil.h"
 namespace bio
 {
+  // TODO This can be turned into a kokkos kernel
   void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();

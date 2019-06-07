@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
   bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-      bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs);
+      bio::createLinearStructs(ndofs, cases[0].ss->slvrTolerance, sprs, bfrs);
   // get the stiffness matrix
   auto ops = las::getLASOps<las::sparskit>();
   ops->zero(vecs->getK());

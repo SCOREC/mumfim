@@ -1,15 +1,26 @@
 - Case: Case 1
   Problem Definition:
     #Mesh: /fasttmp/mersoj/develop/biotissue_problems/fiber_networks/density_100_networks/del_rho100_new_10.txt
-    Mesh: /fasttmp/mersoj/develop/biotissue_problems/fiber_networks/density_100_networks/del_rho100_new_1.txt
-    Deformation Gradient: [1.01, 0, 0, 0, 0.99503, 0, 0, 0, .99503]
-    #Deformation Gradient: [1.5, 0, 0, 0, 0.816496581, 0, 0, 0, 0.816496581]
-    #Deformation Gradient: [1,0,0,0,1,0,0,0,1]
+    #Mesh: /fasttmp/mersoj/develop/biotissue_problems/fiber_networks/density_100_networks/del_rho100_new_1.txt
+    Mesh: /lore/mersoj/ETFEM/networksForAnalysis/Network_2_7.txt
+    #Deformation Gradient: [1.01, 0, 0, 0, 0.99503, 0, 0, 0, .99503]
+    Deformation Gradient: [2, 0, 0, 0, 1, 0, 0, 0, 1]
   Solution Strategy:
     #Solver Type: Implicit
     Solver Type: Explicit
+    # Implicit Solver Parameters (also needed for multiscale solve)
     Convergence Tolerance: 1E-6
     Solver Tolerance: 1E-6 # only modify this if you know what you are doing!!
+    # Explicit Solver parameters
+    Load Time: 1
+    Amplitude Type: Smooth Step
+    Viscous Damping Factor: 0
+    Print History Frequency: 1000
+    Print Field Frequency: 10000000
+    Print Field By Num Frames: false
+    Critical Time Scale Factor: 0.8
+    Energy Check Epsilon: 1E-2
+    Serial GPU Cutoff: 1009
     Detect Oscillation:
       Type: Iteration Only
       Max Micro Cut Attempt: 5

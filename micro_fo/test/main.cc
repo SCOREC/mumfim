@@ -10,15 +10,18 @@
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
+#include <Kokkos_Core.hpp>
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
+  Kokkos::initialize(argc, argv);
+  {
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
-      "/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml", cases);
+      "/lore/mersoj/biotissue/biotissue/micro_fo/test/fiber_only.yaml", cases);
   bio::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
@@ -53,15 +56,15 @@ int main(int argc, char * argv[])
   bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
   fn->setFiberReactions(rctns.rctns);
   bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-      bio::createLinearStructs(ndofs, cases[0].ss.slvrTolerance, sprs, bfrs, massSparsity);
+      bio::createLinearStructs(ndofs, cases[0].ss->slvrTolerance, sprs, bfrs, massSparsity);
   bio::FiberRVEAnalysis * an = NULL;
-  if(cases[0].ss.slvrType == bio::SolverType::Implicit) {
+  if(cases[0].ss->slvrType == bio::SolverType::Implicit) {
     an = bio::createFiberRVEAnalysis(
-        fn, vecs, cases[0].ss, bio::FiberRVEAnalysisType::StaticImplicit);
+        fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::StaticImplicit);
   }
-  else if (cases[0].ss.slvrType == bio::SolverType::Explicit) {
+  else if (cases[0].ss->slvrType == bio::SolverType::Explicit) {
     an = bio::createFiberRVEAnalysis(
-        fn, vecs, cases[0].ss, bio::FiberRVEAnalysisType::QuasiStaticExplicit);
+        fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::Explicit);
   }
   assert(an->multi == NULL);
   bool result = an->run(cases[0].pd.deformationGradient);
@@ -74,6 +77,8 @@ int main(int argc, char * argv[])
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
   //las::destroySparsity<las::CSR *>(sprs);
   las::destroySparsity<las::MICRO_BACKEND>(sprs);
+  }
+  Kokkos::finalize();
 #ifdef MICRO_USING_PETSC
   las::finalizePETScLAS();
 #endif

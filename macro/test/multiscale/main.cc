@@ -11,6 +11,7 @@
 #include <getopt.h>
 #include <string>
 #include <fenv.h>
+#include <Kokkos_Core.hpp>
 void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"
@@ -72,6 +73,8 @@ bool parse_options(int & argc, char ** & argv)
 }
 int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
 {
+  Kokkos::initialize(argc, argv);
+  {
   las::initLAS(&argc,&argv,comm);
   int rnk = -1;
   MPI_Comm_rank(comm,&rnk);
@@ -81,6 +84,8 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
   rves.init();
   rves.run();
   //las::finalizeLAS();
+  }
+  Kokkos::finalize();
   std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }

@@ -28,8 +28,9 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_global_stiffness_data" DESTINATION
 add_mpi_test(test_elemental_stiffness ./test_elemental_stiffness.cc 1)
 target_link_libraries(test_elemental_stiffness micro_fo)
 
-add_mpi_test(test_mass_integrator ./test_mass_integrator.cc 1)
-target_link_libraries(test_mass_integrator micro_fo)
+#add_mpi_test(test_mass_integrator ./test_mass_integrator.cc 1)
+#target_link_libraries(test_mass_integrator micro_fo)
+
 #add_mpi_test(isolated_dof isolated_dof.cc 1)
 #target_link_libraries(isolated_dof micro_fo)
 

@@ -2,6 +2,7 @@
 #define BIO_MICRO_FO_PARAMS_H_
 #include <amsiDetectOscillation.h>
 #include <string>
+#include <memory>
 namespace bio
 {
   struct MicroCase;
@@ -14,6 +15,10 @@ namespace bio
     Implicit,
     Explicit,
     Mixed
+  };
+  enum class AmplitudeType
+  {
+    SmoothStep
   };
   struct DeformationGradient
   {
@@ -51,12 +56,26 @@ namespace bio
     // params for prev norm type
     double prevNormFactor;
   };
+  // currently we have these parameters here because
+  // they are needed for computing derivative terms
   struct MicroSolutionStrategy
   {
     double cnvgTolerance;
     double slvrTolerance;
     SolverType slvrType;
     DetectOscillationParams oscPrms;
+  };
+  struct MicroSolutionStrategyExplicit : public MicroSolutionStrategy
+  {
+    unsigned int print_history_frequency;
+    unsigned int print_field_frequency;
+    bool print_field_by_num_frames;
+    double visc_damp_coeff;
+    double total_time;
+    int serial_gpu_cutoff;
+    double crit_time_scale_factor;
+    double energy_check_eps;
+    AmplitudeType ampType;
   };
   struct MicroOutput
   {
@@ -68,8 +87,9 @@ namespace bio
   {
     std::string name;
     MicroProblemDefinition pd;
-    MicroSolutionStrategy ss;
+    std::unique_ptr<MicroSolutionStrategy> ss;
     MicroOutput out;
+    MicroCase() : ss(new MicroSolutionStrategy) {}
   };
 }  // namespace bio
 #endif

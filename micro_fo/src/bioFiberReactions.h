@@ -14,13 +14,14 @@ namespace bio
   const char * getFiberConstitutiveString(int ii);
   struct FiberReaction
   {
+    virtual ~FiberReaction(){}
     virtual std::pair<double, double> forceReaction(double, double) const = 0;
+    double fiber_area;
     double fiber_density;
     double E;
   };
   struct NonlinearReaction : public FiberReaction
   {
-    double fiber_area;
     double B;
     // tension transition to compressive regime
     double length_ratio_trns;
@@ -31,7 +32,6 @@ namespace bio
   };
   struct LinearReaction : public FiberReaction
   {
-    double fiber_area;
     std::pair<double, double> forceReaction(double orig_length,
                                             double length) const;
   };

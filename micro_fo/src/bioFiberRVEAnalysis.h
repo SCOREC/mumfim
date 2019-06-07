@@ -20,7 +20,7 @@ namespace bio
   enum class FiberRVEAnalysisType
   {
     StaticImplicit,      ///< Newton implicit solver
-    QuasiStaticExplicit  ///< Central difference explicit solver
+    Explicit  ///< Central difference explicit solver
   };
   /* \brief create the elemental system integrator
    */
@@ -46,35 +46,20 @@ namespace bio
                   void * bfrs = NULL,
                   las::Sparsity * massCsr = NULL);
     las::Mat * getK() const { return k; }
-    las::Mat * getM() const { return m; }
-    las::Mat * getC() const { return c; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
     // swaps the vector pointers if zero is true the v2 vector
     // will be zero'd
-    void swapVec(las::Vec *& v1, las::Vec *& v2, bool zero=false);
     las::Solve * getSlv() const { return slv; }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;
     friend class FiberRVEAnalysisSImplicit;
-    friend class FiberRVEAnalysisQSExplicit;
     protected:
     las::Mat * k;
-    las::Mat * m;
-    las::Mat * c;
     las::Vec * u;
     las::Vec * f;
     las::Vec * delta_u;
-    //las::Vec * prev_f;
-    las::Vec * f_int;
-    las::Vec * prev_f_int;
-    las::Vec * f_ext;
-    las::Vec * prev_f_ext;
-    las::Vec * f_damp;
-    las::Vec * prev_f_damp;
-    las::Vec * v;
-    las::Vec * a;
     las::Solve * slv;
   };
   class FiberRVEAnalysis
@@ -172,14 +157,6 @@ namespace bio
     FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a);
     void iterate();
   };
-  struct Amplitude
-  {
-    virtual double operator()(double time) = 0;
-    virtual double derivative(double time) = 0;
-    virtual double secondDerivative(double time) = 0;
-    virtual double integral(double time) = 0;
-    virtual ~Amplitude() {}
-  };
   /**
    * Fix the boundary dofs and set the
    *  rows in the mat/vec corresponing
@@ -198,6 +175,8 @@ namespace bio
   // template <typename I>
   // void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
+  // TODO Move this to the implicit analysis since this only makes sense
+  // when working with implicit solves
   void applyGuessSolution(FiberRVEAnalysis * ans,
                           const DeformationGradient & dfmGrd);
 }  // namespace bio

@@ -2,6 +2,7 @@
 #include <cmath>
 #include <fstream>
 #include "bioFiberNetwork.h"
+#include <cassert>
 namespace bio
 {
   class ParamLoader
@@ -87,6 +88,11 @@ namespace bio
   void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns)
   {
     std::ifstream strm(fnm.c_str());
+    if(!strm.is_open())
+    {
+      std::cerr<<"Could not open parameter file"<<fnm<<" for reading.\n";
+      exit(1);
+    }
     ParamLoader ldr(msh);
     ldr.fromStream(strm, rctns);
   }

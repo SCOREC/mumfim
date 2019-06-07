@@ -41,18 +41,8 @@ namespace bio
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
-    this->m = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
-    this->c = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
-    this->f_int = vb->createRHS(this->k);
-    this->f_ext = vb->createRHS(this->k);
     this->delta_u = vb->createRHS(this->k);
-    this->f_damp = vb->createRHS(this->c);
-    this->prev_f_int = vb->createRHS(this->k);
-    this->prev_f_ext = vb->createRHS(this->k);
-    this->prev_f_damp = vb->createRHS(this->c);
-    this->v = vb->createRHS(this->c);
-    this->a = vb->createRHS(this->m);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
@@ -71,10 +61,6 @@ namespace bio
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
     this->k = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
-    this->c = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
-    this->m = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
-    this->v = vb->createRHS(this->c);
-    this->a = vb->createRHS(this->m);
     this->f = vb->createRHS(this->k);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
@@ -87,31 +73,9 @@ namespace bio
     auto md = las::getMatBuilder<las::MICRO_BACKEND>(0);
     auto vd = las::getVecBuilder<las::MICRO_BACKEND>(0);
     md->destroy(k);
-    md->destroy(c);
-    md->destroy(m);
-    vd->destroy(v);
-    vd->destroy(a);
     vd->destroy(u);
     vd->destroy(f);
-    vd->destroy(f_int);
-    vd->destroy(f_ext);
-    vd->destroy(f_damp);
-    vd->destroy(prev_f_int);
-    vd->destroy(prev_f_ext);
-    vd->destroy(prev_f_damp);
     delete slv;
-  }
-  template <typename T>
-  void LinearStructs<T>::swapVec(las::Vec *& v1, las::Vec *& v2, bool zero) {
-    las::Vec * tmp;
-    tmp = v1;
-    v1 = v2;
-    v2 = tmp;
-    if(zero)
-    {
-      auto ops = las::getLASOps<T>();
-      ops->zero(v2);
-    }
   }
   // specifically instantiate linear structs for our
   // solver backends
@@ -259,6 +223,7 @@ namespace bio
     return new FiberRVEAnalysis(*an);
   }
   */
+  // TODO: Change this to use the frozen field from the mesh database
   void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma)
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();

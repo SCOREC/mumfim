@@ -67,6 +67,19 @@ namespace bio
         break;
       case SolverType::Explicit:
         os << "Explicit\n";
+        os<<"\t\tLoad Time: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).total_time<<"\n";
+        os <<"\t\tAmplitude Type: ";
+        if(static_cast<const MicroSolutionStrategyExplicit &>(ss).ampType == AmplitudeType::SmoothStep)
+        {
+          os << "Smooth Step\n";
+        }
+        os<<"\t\tViscous Damping Factor: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).visc_damp_coeff<<"\n";
+        os<<"\t\tPrint History Frequency: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).print_history_frequency<<"\n";
+        os<<"\t\tPrint Field Frequency: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).print_field_frequency<<"\n";
+        os<<"\t\tPrint Field By Num Frames: "<<(static_cast<const MicroSolutionStrategyExplicit &>(ss).print_field_by_num_frames ? "true" : "false")<<"\n";
+        os<<"\t\tCritical Time Scale Factor: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).crit_time_scale_factor<<"\n";
+        os<<"\t\tEnergy Check Epsilon: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).energy_check_eps<<"\n";
+        os<<"\t\tSerial GPU Cutoff: "<<static_cast<const MicroSolutionStrategyExplicit &>(ss).serial_gpu_cutoff<<"\n";
         break;
       case SolverType::Mixed:
         os << "Mixed\n";
@@ -93,7 +106,7 @@ namespace bio
     os << "Problem Definition\n";
     os << cs.pd;
     os << "Solution Strategy\n";
-    os << cs.ss;
+    os << *cs.ss;
     os << "Output\n";
     os << cs.out;
     return os;
@@ -134,21 +147,47 @@ namespace bio
       std::abort();
     }
   }
-  static void operator>>(const YAML::Node & node, MicroSolutionStrategy & ss)
+  static void operator>>(const YAML::Node & node,
+                         std::unique_ptr<MicroSolutionStrategy> & ss)
   {
     std::string tmp;
     node["Solver Type"] >> tmp;
     if (tmp == "Implicit")
     {
-      ss.slvrType = SolverType::Implicit;
+      ss = std::unique_ptr<MicroSolutionStrategy>(new MicroSolutionStrategy());
+      ss->slvrType = SolverType::Implicit;
     }
     else if (tmp == "Explicit")
     {
-      ss.slvrType = SolverType::Explicit;
+      std::unique_ptr<MicroSolutionStrategyExplicit> es(
+          new MicroSolutionStrategyExplicit());
+      es->slvrType = SolverType::Explicit;
+      node["Print History Frequency"] >> es->print_history_frequency;
+      node["Print Field Frequency"] >> es->print_field_frequency;
+      node["Print Field By Num Frames"] >> es->print_field_by_num_frames;
+      node["Viscous Damping Factor"] >> es->visc_damp_coeff;
+      node["Load Time"] >> es->total_time;
+      node["Serial GPU Cutoff"] >> es->serial_gpu_cutoff;
+      node["Critical Time Scale Factor"] >> es->crit_time_scale_factor;
+      node["Energy Check Epsilon"] >> es->energy_check_eps;
+      node["Amplitude Type"] >> tmp;
+      if (tmp == "Smooth Step")
+      {
+        es->ampType = AmplitudeType::SmoothStep;
+      }
+      else
+      {
+        std::cerr << tmp << " is not a valid amplitude type. Try 'Smooth Step'."
+                  << std::endl;
+        std::abort();
+      }
+      ss = std::move(es);
     }
     else if (tmp == "Mixed")
     {
-      ss.slvrType = SolverType::Mixed;
+      ss->slvrType = SolverType::Mixed;
+      std::cerr << "Mixed Solver Not Currently Implemented" << std::endl;
+      std::abort();
     }
     else
     {
@@ -158,18 +197,18 @@ namespace bio
                 << std::endl;
       std::abort();
     }
-    node["Convergence Tolerance"] >> ss.cnvgTolerance;
+    node["Convergence Tolerance"] >> ss->cnvgTolerance;
     // only add get the solver tolerance if it exits
     if (const YAML::Node * sTol = node.FindValue("Solver Tolerance"))
     {
-      *sTol >> ss.slvrTolerance;
+      *sTol >> ss->slvrTolerance;
     }
     else
     {
       std::cout << "Setting the solver tolerance to 1E-6" << std::endl;
-      ss.slvrTolerance = 1E-6;
+      ss->slvrTolerance = 1E-6;
     }
-    if (ss.slvrTolerance > ss.cnvgTolerance)
+    if (ss->slvrTolerance > ss->cnvgTolerance)
     {
       std::cerr
           << "You should not have the solver tolerance be larger than the "
@@ -179,7 +218,8 @@ namespace bio
     }
     DetectOscillationParams oscPrms;
     node["Detect Oscillation"] >> oscPrms;
-    ss.oscPrms = oscPrms;
+    ss->oscPrms = oscPrms;
+    std::cout << "Done 2" << std::endl;
   }
   static void operator>>(const YAML::Node & node, Axis & ax)
   {
@@ -213,13 +253,14 @@ namespace bio
   {
     node["Case"] >> cs.name;
     MicroProblemDefinition pd;
-    MicroSolutionStrategy ss;
+    // MicroSolutionStrategy ss;
+    std::unique_ptr<MicroSolutionStrategy> ss;
     MicroOutput out;
     node["Problem Definition"] >> pd;
     node["Solution Strategy"] >> ss;
     node["Output"] >> out;
     cs.pd = pd;
-    cs.ss = ss;
+    cs.ss = std::move(ss);
     cs.out = out;
   }
   static void loadMicroFOFromYamlStream(std::istream & fin,
@@ -232,9 +273,10 @@ namespace bio
       parser.GetNextDocument(doc);
       for (unsigned i = 0; i < doc.size(); ++i)
       {
+        std::cout << doc.size() << std::endl;
         MicroCase cs;
         doc[i] >> cs;
-        cases.push_back(cs);
+        cases.push_back(std::move(cs));
       }
     }
     catch (YAML::ParserException & e)

@@ -1,9 +1,11 @@
 set(micro_fo_public_headers
+  bioExplicitAmplitude.h
+  bioExplicitOutputWriter.h
   bioFiberNetwork.h
   bioFiberReactions.h
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
-  bioFiberRVEAnalysisQuasiStaticExplicit.h
+  bioFiberRVEAnalysisExplicit.h
   bioMassIntegrator.h
   bioMicroFOParams.h
   bioMultiscaleCoupling.h
@@ -18,6 +20,7 @@ set(micro_fo_public_headers
   bioVerbosity.h)
 
 set(micro_fo_src_files
+  bioExplicitOutputWriter.cc
   bioRVE.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO.cc
@@ -25,7 +28,7 @@ set(micro_fo_src_files
   bioFiberRVEAnalysis.cc
   bioFiberRVEAnalysisCreation.cc
   bioFiberRVEAnalysisStaticImplicit.cc
-  bioFiberRVEAnalysisQuasiStaticExplicit.cc
+  bioFiberRVEAnalysisExplicit.cc
   bioAlignFiberNetwork.cc
   bioMassIntegrator.cc
   bioMicroFOParams.cc
@@ -36,11 +39,11 @@ set(micro_fo_src_files
   bioTrussIntegrator.cc
   bioUtil.cc)
 
-#find_package(sparskit REQUIRED)
 find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
 find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(Kokkos CONFIG REQUIRED)
 
 option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)
 if(ENABLE_WRITE_MICRO_PER_ITER)
@@ -61,10 +64,11 @@ endif()
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                     $<INSTALL_INTERFACE:include/biotissue>
-                                    PRIVATE ${yaml-cpp_INCLUDE_DIRS})
+                                    ${Kokkos_INCLUDE_DIRS}
+                                    PRIVATE ${yaml-cpp_INCLUDE_DIRS} )
 
 target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale 
-                      las_core
+                      las_core ${Kokkos_LIBRARIES}
                       PRIVATE ${yaml-cpp_LIBRARIES})
 if(yaml-cpp_FOUND)
   target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)
