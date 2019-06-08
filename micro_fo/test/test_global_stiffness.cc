@@ -13,9 +13,6 @@ int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
-  // bio::loadMicroFOFromYamlFile(
-  //    "/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml",
-  //    cases);
   bio::loadMicroFOFromYamlFile(
       "./test_global_stiffness_data/global_stiffness.yaml", cases);
   for (std::size_t i = 0; i < cases.size(); ++i)

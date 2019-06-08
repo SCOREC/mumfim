@@ -46,7 +46,7 @@ int main(int argc, char * argv[])
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
-      "/fasttmp/mersoj/develop/biotissue/micro_fo/test/fiber_only.yaml", cases);
+      "/lore/mersoj/biotissue/biotissue/micro_fo/test/fiber_only.yaml", cases);
   bio::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;

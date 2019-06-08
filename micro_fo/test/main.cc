@@ -75,7 +75,16 @@ int main(int argc, char * argv[])
   std::stringstream sout;
   sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
-  //las::destroySparsity<las::CSR *>(sprs);
+  std::cout<<"Computing the Stress"<<std::endl;
+  an->copyForceDataToForceVec();
+  apf::Matrix3x3 sigma;
+  calcStress(an, sigma);
+  printf("%0.16e\n",sigma[0][0]);
+  std::cout<<sigma<<std::endl;
+  std::cout<<"Computing stiffness matrix"<<std::endl;
+  an->computeStiffnessMatrix();
+  calcStress(an, sigma);
+  std::cout<<sigma<<std::endl;
   las::destroySparsity<las::MICRO_BACKEND>(sprs);
   }
   Kokkos::finalize();

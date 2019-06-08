@@ -1,8 +1,8 @@
 #include <apfMesh2.h>
+#include <cassert>
 #include <cmath>
 #include <fstream>
 #include "bioFiberNetwork.h"
-#include <cassert>
 namespace bio
 {
   class ParamLoader
@@ -30,8 +30,9 @@ namespace bio
       {
         NonlinearReaction * rct = new NonlinearReaction;
         double fiber_radius;
-        strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns >> rct->fiber_density;
-        rct->cmp_ratio_trns=1.0;
+        strm >> fiber_radius >> rct->E >> rct->B >> rct->length_ratio_trns >>
+            rct->fiber_density;
+        rct->cmp_ratio_trns = 1.0;
         rct->fiber_area = fiber_radius * fiber_radius * M_PI;
         *out++ = rct;
       }
@@ -53,7 +54,6 @@ namespace bio
         msh->setLongTag(me, rct_tg, &rctn);
       }
     }
-
     public:
     ParamLoader(apf::Mesh2 * m)
         : msh(m)
@@ -88,9 +88,9 @@ namespace bio
   void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns)
   {
     std::ifstream strm(fnm.c_str());
-    if(!strm.is_open())
+    if (!strm.is_open())
     {
-      std::cerr<<"Could not open parameter file"<<fnm<<" for reading.\n";
+      std::cerr << "Could not open parameter file" << fnm << " for reading.\n";
       exit(1);
     }
     ParamLoader ldr(msh);

@@ -60,6 +60,7 @@ namespace bio
   {
     double data[NUM_PARAM_FIELDS];
   };
+  // coordinates of the owning tet
   struct micro_fo_init_data
   {
     double init_data[4 * 3];

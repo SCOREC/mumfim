@@ -6,6 +6,7 @@ set(micro_fo_public_headers
   bioFiberRVEAnalysis.h
   bioFiberRVEAnalysis_impl.h
   bioFiberRVEAnalysisExplicit.h
+  bioFiberRVEAnalysisExplicit_impl.h
   bioMassIntegrator.h
   bioMicroFOParams.h
   bioMultiscaleCoupling.h

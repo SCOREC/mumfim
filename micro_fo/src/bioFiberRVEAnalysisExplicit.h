@@ -31,6 +31,7 @@ namespace bio
         , fiber_density(fn->getFiberReactions()[0]->fiber_density)
         , amp(NULL)
     {
+      es = createImplicitMicroElementalSystem(fn, getK(), getF());
       std::stringstream sout;
       int rnk = -1;
       MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
@@ -78,6 +79,9 @@ namespace bio
     int * disp_bound_dof;
     double * disp_bound_vals;
     void computeDisplcamentBC(const DeformationGradient & dfmGrd);
+    virtual void copyForceDataToForceVec();
+    virtual void copyDispDataToDispVec();
+    virtual void computeStiffnessMatrix();
   };
 }  // namespace bio
 #endif

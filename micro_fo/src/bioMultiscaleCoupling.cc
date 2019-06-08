@@ -310,6 +310,7 @@ namespace bio
     apf::destroyMeshElement(mlm);
     apf::DynamicVector stress(sigma_length);
     memcpy(&stress[0], sigma, sizeof(double) * sigma_length);
+    // FIXME Error Seems to be here somewhere...
     apf::DynamicMatrix dS_dx_rve;
     dsdxrve_2_dSdxrve(ds_dx_rve,
                       stress,
@@ -331,15 +332,7 @@ namespace bio
     ops->zero(ans->getK());
     ops->zero(ans->getF());
     apf::Mesh * fn = ans->getFn()->getNetworkMesh();
-    apf::MeshEntity * me = NULL;
-    apf::MeshIterator * it = fn->begin(1);
-    while ((me = fn->iterate(it)))
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(fn, me);
-      ans->es->process(mlm);
-      apf::destroyMeshElement(mlm);
-    }
-    fn->end(it);
+    ans->es->process(fn, 1);
     double * S = &data->data[0];
     recoverMicroscaleStress(ans, S);
     double * Q = &data->data[6];

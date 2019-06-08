@@ -11,10 +11,9 @@ namespace bio
   static std::ostream & operator<<(std::ostream & os,
                                    const DeformationGradient & dg)
   {
-    for (int i = 0; i < 9; ++i)
-    {
-      os << dg[i] << " ";
-    }
+    os << dg[0]<<" "<<dg[1]<<" "<<dg[2]<<"; ";
+    os << dg[3]<<" "<<dg[4]<<" "<<dg[5]<<"; ";
+    os << dg[6]<<" "<<dg[7]<<" "<<dg[8];
     return os;
   }
   static std::ostream & operator<<(std::ostream & os, const Axis & ax)
@@ -29,7 +28,7 @@ namespace bio
                                    const MicroProblemDefinition & pd)
   {
     os << "\t" << pd.meshFile << "\n";
-    os << "\tF=" << pd.deformationGradient << "\n";
+    os << "\tF=[" << pd.deformationGradient << "]\n";
     return os;
   }
   static std::ostream & operator<<(std::ostream & os,
@@ -219,7 +218,6 @@ namespace bio
     DetectOscillationParams oscPrms;
     node["Detect Oscillation"] >> oscPrms;
     ss->oscPrms = oscPrms;
-    std::cout << "Done 2" << std::endl;
   }
   static void operator>>(const YAML::Node & node, Axis & ax)
   {
@@ -273,7 +271,6 @@ namespace bio
       parser.GetNextDocument(doc);
       for (unsigned i = 0; i < doc.size(); ++i)
       {
-        std::cout << doc.size() << std::endl;
         MicroCase cs;
         doc[i] >> cs;
         cases.push_back(std::move(cs));
@@ -281,7 +278,7 @@ namespace bio
     }
     catch (YAML::ParserException & e)
     {
-      std::cout << e.what() << "\n";
+      std::cerr << e.what() << "\n";
     }
   }
   void loadMicroFOFromYamlFile(const std::string & filename,

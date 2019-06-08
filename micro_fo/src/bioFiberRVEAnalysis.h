@@ -59,7 +59,6 @@ namespace bio
     las::Mat * k;
     las::Vec * u;
     las::Vec * f;
-    las::Vec * delta_u;
     las::Solve * slv;
   };
   class FiberRVEAnalysis
@@ -68,7 +67,7 @@ namespace bio
     FiberNetwork * fn;
 
     public:
-    // move this out of here! requires coupling data structures as currently
+    // FIXME move this out of here! requires coupling data structures as currently
     // written hmmm...
     MultiscaleRVE * multi;
     RVE * rve;
@@ -99,6 +98,12 @@ namespace bio
     FiberNetwork * getFn() const { return fn; }
     virtual bool run(const DeformationGradient & dfmGrd) = 0;
     virtual FiberRVEAnalysisType getAnalysisType() = 0;
+    // these functions need to be implemented by any classes
+    // that use alternative storage to the las vec, or don't explicitly
+    // compute the stiffness matrix.
+    virtual void copyForceDataToForceVec() {};
+    virtual void copyDispDataToDispVec() {};
+    virtual void computeStiffnessMatrix() {};
   };
   class FiberRVEAnalysisSImplicit : public FiberRVEAnalysis
   {

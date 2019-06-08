@@ -42,7 +42,6 @@ namespace bio
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
-    this->delta_u = vb->createRHS(this->k);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
