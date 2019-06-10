@@ -97,8 +97,6 @@ int main(int argc, char * argv[])
     in2.close();
     std::cout << "Comparing matrix" << std::endl;
     assert(readMat);
-    las::ScalarMatMult * smm = las::getScalarMatMult<las::sparskit>();
-    smm->exec(-1, readMat, NULL);
     bool close = las::sparskitMatClose(readMat, readMat2, 1E-10, 1E-15);
     std::string comp =
          close ? "True" : "False";

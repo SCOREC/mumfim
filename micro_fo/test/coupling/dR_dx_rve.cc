@@ -28,6 +28,7 @@ int main(int ac, char*av[])
   // in this test
   bio::micro_fo_solver slvr;
   bio::micro_fo_int_solver slvr_int;
+  slvr_int.data[bio::MICRO_SOLVER_TYPE] = 0;
   bio::FiberRVEAnalysis* ans = bio::createFiberRVEAnalysis(&fn, vecs, slvr, slvr_int);
   apf::DynamicMatrix dRdx_rve;
   bio::calcdR_dx_rve(dRdx_rve,ans);

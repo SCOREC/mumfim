@@ -103,7 +103,7 @@ namespace bio
     // compute the stiffness matrix.
     virtual void copyForceDataToForceVec() {};
     virtual void copyDispDataToDispVec() {};
-    virtual void computeStiffnessMatrix() {};
+    virtual void computeStiffnessMatrix() { es->process(getFn()->getNetworkMesh(), 1); }
   };
   class FiberRVEAnalysisSImplicit : public FiberRVEAnalysis
   {
@@ -124,8 +124,7 @@ namespace bio
       FiberNetwork * fn,
       LinearStructs<las::MICRO_BACKEND> * vecs,
       micro_fo_solver & slvr,
-      micro_fo_int_solver & slvr_int,
-      FiberRVEAnalysisType type = FiberRVEAnalysisType::StaticImplicit);
+      micro_fo_int_solver & slvr_int);
   FiberRVEAnalysis * createFiberRVEAnalysis(
       FiberNetwork * fn,
       LinearStructs<las::MICRO_BACKEND> * vecs,

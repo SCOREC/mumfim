@@ -63,6 +63,7 @@ namespace bio
    *  sets or accumulates the array values at the index corresponding to the
    *  numbering minus the initial dof offset.
    */
+  // FIXME Can be removed and the amsi::ApplyVector class can be used instead
   class ApplySolution : public amsi::FieldOp
   {
   protected:

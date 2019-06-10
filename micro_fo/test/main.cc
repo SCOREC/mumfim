@@ -67,6 +67,10 @@ int main(int argc, char * argv[])
         fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::Explicit);
   }
   assert(an->multi == NULL);
+  apf::Matrix3x3 strss;
+  an->computeStiffnessMatrix();
+  calcStress(an, strss);
+  std::cout<<strss<<std::endl;
   bool result = an->run(cases[0].pd.deformationGradient);
   if (!result)
   {

@@ -12,40 +12,7 @@ namespace bio
     public:
     FiberRVEAnalysisExplicit(FiberNetwork * fn,
                              LinearStructs<las::MICRO_BACKEND> * vecs,
-                             const MicroSolutionStrategyExplicit & ss)
-        : FiberRVEAnalysis(fn, vecs, static_cast<MicroSolutionStrategy>(ss))
-        , visc_damp_coeff(ss.visc_damp_coeff)
-        , print_history_frequency(ss.print_history_frequency)
-        , print_field_frequency(ss.print_field_frequency)
-        , print_field_by_num_frames(ss.print_field_by_num_frames)
-        , total_time(ss.total_time)
-        , serial_gpu_cutoff(ss.serial_gpu_cutoff)
-        , crit_time_scale_factor(ss.crit_time_scale_factor)
-        , energy_check_eps(ss.energy_check_eps)
-        , disp_bound_nfixed(0)
-        , disp_bound_nodes(NULL)
-        , disp_bound_dof(NULL)
-        , disp_bound_vals(NULL)
-        , fiber_elastic_modulus(fn->getFiberReactions()[0]->E)
-        , fiber_area(fn->getFiberReactions()[0]->fiber_area)
-        , fiber_density(fn->getFiberReactions()[0]->fiber_density)
-        , amp(NULL)
-    {
-      es = createImplicitMicroElementalSystem(fn, getK(), getF());
-      std::stringstream sout;
-      int rnk = -1;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
-      sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
-      analysis_name = sout.str();
-      if(ss.ampType == AmplitudeType::SmoothStep)
-      {
-        amp = new SmoothAmp(total_time);
-      }
-      else
-      {
-        std::abort();
-      }
-    }
+                             const MicroSolutionStrategyExplicit & ss);
     ~FiberRVEAnalysisExplicit()
     {
       delete amp;
@@ -82,6 +49,7 @@ namespace bio
     virtual void copyForceDataToForceVec();
     virtual void copyDispDataToDispVec();
     virtual void computeStiffnessMatrix();
+    void relaxSystem();
   };
 }  // namespace bio
 #endif

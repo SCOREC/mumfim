@@ -1,15 +1,11 @@
 #include "bioFiberRVEAnalysisExplicit.h"
 #include <PCU.h>
-#include "bioExplicitAmplitude.h"
 #include <apf.h>
 #include <apfConvert.h>
 #include <apfMesh2.h>
-#include "bioFiberNetworkIO.h"
-#include "bioMassIntegrator.h"
+#include <las.h>
 #include <lionPrint.h>
 #include <mpi.h>
-#include "bioExplicitOutputWriter.h"
-#include "bioFiberRVEAnalysisExplicit_impl.h"
 #include <Kokkos_Core.hpp>
 #include <cassert>
 #include <iomanip>
@@ -18,38 +14,139 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <las.h>
+#include "bioExplicitAmplitude.h"
+#include "bioExplicitOutputWriter.h"
+#include "bioFiberNetworkIO.h"
+#include "bioFiberRVEAnalysisExplicit_impl.h"
+#include "bioMassIntegrator.h"
 namespace bio
 {
+  FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(FiberNetwork * fn,
+                             LinearStructs<las::MICRO_BACKEND> * vecs,
+                             const MicroSolutionStrategyExplicit & ss)
+        : FiberRVEAnalysis(fn, vecs, static_cast<MicroSolutionStrategy>(ss))
+        , visc_damp_coeff(ss.visc_damp_coeff)
+        , print_history_frequency(ss.print_history_frequency)
+        , print_field_frequency(ss.print_field_frequency)
+        , print_field_by_num_frames(ss.print_field_by_num_frames)
+        , total_time(ss.total_time)
+        , serial_gpu_cutoff(ss.serial_gpu_cutoff)
+        , crit_time_scale_factor(ss.crit_time_scale_factor)
+        , energy_check_eps(ss.energy_check_eps)
+        , disp_bound_nfixed(0)
+        , disp_bound_nodes(NULL)
+        , disp_bound_dof(NULL)
+        , disp_bound_vals(NULL)
+        , fiber_elastic_modulus(fn->getFiberReactions()[0]->E)
+        , fiber_area(fn->getFiberReactions()[0]->fiber_area)
+        , fiber_density(fn->getFiberReactions()[0]->fiber_density)
+        , amp(NULL)
+    {
+      es = createImplicitMicroElementalSystem(fn, getK(), getF());
+      std::stringstream sout;
+      int rnk = -1;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
+      sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
+      analysis_name = sout.str();
+      if(ss.ampType == AmplitudeType::SmoothStep)
+      {
+        amp = new SmoothAmp(total_time);
+      }
+      else
+      {
+        std::abort();
+      }
+      assert(fiber_density > 0);
+      assert(fiber_area > 0);
+      assert(fiber_elastic_modulus > 0);
+    }
+  // FIXME Note this is the same as a single implicit iteration...
+  // we should probably use the same function call that is there if this works
+  void FiberRVEAnalysisExplicit::relaxSystem() {
+    auto ops = las::getLASOps<las::MICRO_BACKEND>();
+    ops->zero(this->getK());
+    ops->zero(this->getU());
+    ops->zero(this->getF());
+    apf::Mesh * fn = this->getFn()->getNetworkMesh();
+    this->es->process(fn, 1);
+    // finalize the vectors so we cthis set boundary condition
+    // values
+    las::finalizeMatrix<las::MICRO_BACKEND>(this->vecs->getK());
+    las::finalizeVector<las::MICRO_BACKEND>(this->vecs->getF());
+    applyRVEBC(this->bnd_nds[RVE::all].begin(),
+               this->bnd_nds[RVE::all].end(),
+               this->getFn()->getUNumbering(),
+               this->getK(),
+               this->getF());
+    this->getSlv()->solve(this->getK(), this->getU(), this->getF());
+    //amsi::WriteOp wrt;
+    amsi::SubtractOp acm;
+    amsi::WriteScalarMultOp mlt(-1.0);
+    //amsi::AccumOp acm;
+    amsi::FreeApplyOp fr_mlt(this->getFn()->getUNumbering(), &mlt);
+    amsi::FreeApplyOp fr_acm(this->getFn()->getUNumbering(), &acm);
+    double * s = NULL;
+    ops->get(this->getU(), s);
+    amsi::ApplyVector(
+        this->getFn()->getUNumbering(), this->getFn()->getdUField(), s, 0, &fr_mlt)
+        .run();
+    amsi::ApplyVector(
+        this->getFn()->getUNumbering(), this->getFn()->getUField(), s, 0, &fr_acm)
+        .run();
+    ops->restore(this->getU(), s);
+  }
   bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd)
   {
+    std::cout << "F=[";
+    std::cout << dfmGrd[0] << " " << dfmGrd[1] << " " << dfmGrd[2] << "; ";
+    std::cout << dfmGrd[3] << " " << dfmGrd[4] << " " << dfmGrd[5] << "; ";
+    std::cout << dfmGrd[6] << " " << dfmGrd[7] << " " << dfmGrd[8];
+    std::cout << "]\n";
     computeDisplcamentBC(dfmGrd);
+    apf::Mesh * mesh = getFn()->getNetworkMesh();
+    // we do look for the field because if a previous analysis
+    // was run, then we need to let the ETFEM code know
+    apf::Field * massField = mesh->findField("nodalMass");
+    apf::zeroField(getFn()->getVField());
+    apf::zeroField(getFn()->getAField());
+    apf::zeroField(getFn()->getFField());
+    apf::zeroField(getFn()->getdUField());
+    bool rtn;
     if (this->getFn()->getDofCount() < serial_gpu_cutoff)
     {
       // run serial analysis
       ExplicitAnalysisSerial analysis(
-          static_cast<apf::Mesh2 *>(this->getFn()->getNetworkMesh()),
+          static_cast<apf::Mesh2 *>(mesh),
           total_time, fiber_elastic_modulus, fiber_area, fiber_density, amp,
           analysis_name, visc_damp_coeff, print_history_frequency,
           print_field_frequency, print_field_by_num_frames,
-          crit_time_scale_factor, energy_check_eps, getFn()->getUField(),
-          getFn()->getVField(), getFn()->getAField(), getFn()->getFField());
+          crit_time_scale_factor, energy_check_eps, getFn()->getXpUField(),
+          getFn()->getdUField(), getFn()->getVField(), getFn()->getAField(),
+          getFn()->getFField(), massField);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_vals);
-      return analysis.run();
+      rtn = analysis.run();
     }
     else
     {
       // run gpu analysis
       ExplicitAnalysisKokkos analysis(
-          static_cast<apf::Mesh2 *>(this->getFn()->getNetworkMesh()),
+          static_cast<apf::Mesh2 *>(mesh),
           total_time, fiber_elastic_modulus, fiber_area, fiber_density, amp,
           analysis_name, visc_damp_coeff, print_history_frequency,
           print_field_frequency, print_field_by_num_frames,
-          crit_time_scale_factor, energy_check_eps, getFn()->getUField(),
-          getFn()->getVField(), getFn()->getAField(), getFn()->getFField());
+          crit_time_scale_factor, energy_check_eps, getFn()->getXpUField(),
+          getFn()->getdUField(), getFn()->getVField(), getFn()->getAField(),
+          getFn()->getFField(), massField);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_vals);
-      return analysis.run();
+      rtn = analysis.run();
     }
+    // accumulate the du from the explicit analysis into the u field
+    apf::freeze(getFn()->getdUField());
+    double * du = apf::getArrayData(getFn()->getdUField());
+    amsi::AccumOp acm;
+    amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(),  du, 0, &acm).run();
+    relaxSystem();
+    return rtn;
   }
   void FiberRVEAnalysisExplicit::computeDisplcamentBC(
       const DeformationGradient & dfmGrd)
@@ -80,14 +177,14 @@ namespace bio
                                    (dfmGrd[8] - 1) * coords[2];
     }
   }
-  void FiberRVEAnalysisExplicit::copyForceDataToForceVec() 
+  void FiberRVEAnalysisExplicit::copyForceDataToForceVec()
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
     apf::freeze(getFn()->getFField());
     double * f_arr = apf::getArrayData(getFn()->getFField());
     ops->set(getF(), f_arr);
   }
-  void FiberRVEAnalysisExplicit::copyDispDataToDispVec() 
+  void FiberRVEAnalysisExplicit::copyDispDataToDispVec()
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
     apf::freeze(getFn()->getUField());
@@ -99,7 +196,8 @@ namespace bio
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
     ops->zero(getK());
     ops->zero(getF());
-    apf::Integrator * es = createImplicitMicroElementalSystem(getFn(), getK(),getF());
+    apf::Integrator * es =
+        createImplicitMicroElementalSystem(getFn(), getK(), getF());
     es->process(getFn()->getNetworkMesh(), 1);
     delete es;
   }

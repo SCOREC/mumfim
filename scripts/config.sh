@@ -46,7 +46,7 @@ else
   CXX=/lore/mersoj/kokkos/kokkos/bin/nvcc_wrapper
   #CXX=`which mpicxx`
   cmake \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
       -DBUILD_TESTS:BOOL=ON \
       -DCMAKE_C_COMPILER=$CC \

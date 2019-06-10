@@ -3,6 +3,7 @@
 #include "bioULMultiscaleHydrostaticPressureIntegrator.h"
 #include <amsiControlService.h> // amsi
 #include <amsiDetectOscillation.h>
+#include "bioMicroFOParams.h"
 namespace bio
 {
   MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd,
@@ -417,7 +418,6 @@ namespace bio
     detect_osc_type = NULL;
     assert(num_attempts);
     assert(cut_factor);
-    // FIXME replace before commit
     slvr.data[MICRO_CONVERGENCE_TOL] =
         AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
     slvr.data[MICRO_SOLVER_TOL] =
@@ -436,6 +436,18 @@ namespace bio
         AttributeInt_value((pAttributeInt)cut_factor);
     int_slvr.data[MAX_MICRO_ITERS] =
         itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
+    // Explicit solver data...these things need to get added to the attdefs
+    int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
+    //int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
+    int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStep);
+    int_slvr.data[PRINT_HISTORY_FREQUENCY] = 1000000000;
+    int_slvr.data[PRINT_FIELD_FREQUENCY] = 1;
+    int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 1;
+    int_slvr.data[SERIAL_GPU_CUTOFF] = 2000;
+    slvr.data[LOAD_TIME] = 1;
+    slvr.data[CRITICAL_TIME_SCALE_FACTOR] = 0.8;
+    slvr.data[ENERGY_CHECK_EPSILON] = 1E-2;
+    slvr.data[VISCOUS_DAMPING_FACTOR] = 0.1;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,

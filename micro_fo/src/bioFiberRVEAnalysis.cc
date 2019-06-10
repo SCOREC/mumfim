@@ -170,22 +170,38 @@ namespace bio
   FiberRVEAnalysis * createFiberRVEAnalysis(FiberNetwork * fn,
                                             LinearStructs<las::MICRO_BACKEND> * vecs,
                                             micro_fo_solver & slvr,
-                                            micro_fo_int_solver & slvr_int,
-                                            FiberRVEAnalysisType type)
+                                            micro_fo_int_solver & slvr_int)
   {
     // TODO this somewhat inefficient, and will be fixed when we directly
     // communicate the solution strategy struct
-    MicroSolutionStrategy ss;
+    MicroSolutionStrategyExplicit ss;
     ss.cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
-    ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];             // this is not currently communicated
-    ss.slvrType = SolverType::Implicit;  // this is for forward compatibility
+    ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
+    ss.total_time = slvr.data[LOAD_TIME];
+    ss.crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
+    ss.visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
+    ss.energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
+    ss.slvrType = static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
+    ss.ampType = static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
+    ss.print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
+    ss.print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
+    ss.print_field_by_num_frames = slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
+    ss.serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
     ss.oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
     ss.oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
     ss.oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
     ss.oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
         slvr_int.data[DETECT_OSCILLATION_TYPE]);
     ss.oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
-    return createFiberRVEAnalysis(fn, vecs, ss, type);
+    if(ss.slvrType == SolverType::Implicit)
+      return createFiberRVEAnalysis(fn, vecs, ss, FiberRVEAnalysisType::StaticImplicit);
+    else if(ss.slvrType == SolverType::Explicit)
+      return createFiberRVEAnalysis(fn, vecs, ss, FiberRVEAnalysisType::Explicit);
+    else
+    {
+      std::cerr<<"Incorrect solver type selected when initializing rve analysis"<<std::endl;
+      abort();
+    }
   }
   FiberRVEAnalysis * initFromMultiscale(FiberNetwork * fn,
                                         LinearStructs<las::MICRO_BACKEND> * vecs,

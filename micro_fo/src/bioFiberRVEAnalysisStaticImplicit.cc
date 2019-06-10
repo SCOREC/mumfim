@@ -63,14 +63,14 @@ namespace bio
     an->getSlv()->solve(an->getK(), an->getU(), an->getF());
     //amsi::WriteOp wrt;
     amsi::SubtractOp acm;
-    amsi::WriteScalarMultOp wrt(-1.0);
+    amsi::WriteScalarMultOp mlt(-1.0);
     //amsi::AccumOp acm;
-    amsi::FreeApplyOp fr_wrt(an->getFn()->getUNumbering(), &wrt);
+    amsi::FreeApplyOp fr_mlt(an->getFn()->getUNumbering(), &mlt);
     amsi::FreeApplyOp fr_acm(an->getFn()->getUNumbering(), &acm);
     double * s = NULL;
     ops->get(an->getU(), s);
     amsi::ApplyVector(
-        an->getFn()->getUNumbering(), an->getFn()->getdUField(), s, 0, &fr_wrt)
+        an->getFn()->getUNumbering(), an->getFn()->getdUField(), s, 0, &fr_mlt)
         .run();
     amsi::ApplyVector(
         an->getFn()->getUNumbering(), an->getFn()->getUField(), s, 0, &fr_acm)

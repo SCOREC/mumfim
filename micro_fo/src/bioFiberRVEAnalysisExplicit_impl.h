@@ -23,6 +23,33 @@
 #include "bioVerbosity.h"
 namespace bio
 {
+  KOKKOS_INLINE_FUNCTION
+  static bool isClose(double a, double b, double rtol = 1E-8, double atol = 1E-10)
+  {
+    return fabs(a - b) <= max(rtol * max(fabs(a), fabs(b)), atol);
+  }
+  static void extractCoordinateArray(apf::Mesh * m,
+                                     apf::Field * coord_field,
+                                     double *& coords,
+                                     int & nverts)
+  {
+    nverts = apf::countOwned(m, 0);
+    coords = new double[nverts * 3];
+    apf::MeshIterator * it = m->begin(0);
+    int i = 0;
+    while (apf::MeshEntity * v = m->iterate(it))
+    {
+      if (m->isOwned(v))
+      {
+        // Vector3 p;
+        // m->getPoint(v, 0, p);
+        // p.toArray(&coords[i * 3]);
+        apf::getComponents(coord_field, v, 0, &coords[i * 3]);
+        i++;
+      }
+    }
+    m->end(it);
+  }
   // types
   // H_RODA: read-only double array
   // H_RWDA: read-write double array
@@ -45,7 +72,9 @@ namespace bio
     public:
     bool run()
     {
-      computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
+      // optimization to only compute the mass matrix 1
+      if(!mass_field_initialized)
+        computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
       // copy other data to device
       copyData(mass_matrix_d, mass_matrix_h);
       copyData(coords_d, coords_h);
@@ -75,6 +104,7 @@ namespace bio
              std::cout << "Using Deformation Gradient BC has fixed "
                        << disp_nfixed << " of " << ndof
                        << " degrees of freedom.\n";)
+      // FIXME...here we assume that the initial displacements are 0!
       getElementLengths(nelem, coords_d, connectivity_d, l0_d);
       getCurrentCoords(ndof, coords_d, u_d, current_coords_d);
       getElementLengths(nelem, current_coords_d, connectivity_d, l_d);
@@ -235,6 +265,8 @@ namespace bio
     apf::Field * a_field;
     apf::Field * f_int_field;
     apf::Field * nodalMass;
+    apf::Field * coordinate_field;
+    bool mass_field_initialized;
     double fiber_density;
     double fiber_elastic_modulus;
     double fiber_area;
@@ -537,6 +569,7 @@ namespace bio
                          bool print_field_by_num_frames = false,
                          double crit_time_scale_factor = 0.8,
                          double energy_check_eps = 1E-2,
+                         apf::Field * coordinate_field=NULL,
                          apf::Field * u_field = NULL,
                          apf::Field * v_field = NULL,
                          apf::Field * a_field = NULL,
@@ -555,12 +588,18 @@ namespace bio
         , fiber_elastic_modulus(fiber_elastic_modulus)
         , fiber_area(fiber_area)
         , fiber_density(fiber_density)
+        , coordinate_field(coordinate_field)
         , u_field(u_field)
         , v_field(v_field)
         , a_field(a_field)
         , f_int_field(f_int_field)
         , nodalMass(mass_field)
+        , mass_field_initialized(true)
     {
+      if (coordinate_field == NULL)
+      {
+        coordinate_field = mesh->getCoordinateField();
+      }
       if (u_field == NULL)
       {
         u_field = apf::createLagrangeField(mesh, "u", apf::VECTOR, 1);
@@ -583,6 +622,7 @@ namespace bio
       }
       if (mass_field == NULL)
       {
+        mass_field_initialized = false;
         nodalMass = apf::createLagrangeField(mesh, "nodalMass", apf::SCALAR, 1);
         apf::zeroField(nodalMass);
       }
@@ -600,7 +640,11 @@ namespace bio
       int etype;
       apf::destruct(mesh, connectivity_arr, nelem, etype, 1);
       assert(etype == apf::Mesh::EDGE);
-      apf::extractCoords(mesh, coords_arr, nnds);
+      //apf::extractCoords(mesh, coords_arr, nnds);
+      // TODO Check to see if we can accomplish the same thing by
+      // just freezing the xpy field. My concern is that that field
+      // is a function field and may behave badly...
+      extractCoordinateArray(mesh, coordinate_field, coords_arr, nnds);
       ndof = nnds * 3;
       n_step = 0;
       dt_crit = std::numeric_limits<double>::max();
@@ -671,6 +715,7 @@ namespace bio
                            bool print_field_by_num_frames = false,
                            double crit_time_scale_factor = 0.8,
                            double energy_check_eps = 1E-2,
+                           apf::Field * coordinate_field=NULL,
                            apf::Field * u_field = NULL,
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
@@ -689,6 +734,7 @@ namespace bio
                                print_field_by_num_frames,
                                crit_time_scale_factor,
                                energy_check_eps,
+                               coordinate_field,
                                u_field,
                                v_field,
                                a_field,
@@ -795,6 +841,7 @@ namespace bio
       double elem_nrm_1, elem_nrm_2, elem_nrm_3;
       int n1, n2;
       double sound_speed = sqrt(fiber_elastic_modulus / fiber_density);
+      assert(sound_speed > 1E-15);
       double dt_crit_elem;
       // swap force arrays and zero internal forces
       for (int i = 0; i < ndof; ++i)
@@ -809,10 +856,12 @@ namespace bio
       // set the internal forces
       for (int i = 0; i < nelem; ++i)
       {
+        assert(l0[i] > 0);
         frc = getLinearReactionForce(l0[i], l[i], fiber_elastic_modulus,
                                      fiber_area);
         n1 = connectivity[i * 2];
         n2 = connectivity[i * 2 + 1];
+        assert(l[i]>0);
         elem_nrm_1 = (current_coords[n2 * 3] - current_coords[n1 * 3]) / l[i];
         elem_nrm_2 =
             (current_coords[n2 * 3 + 1] - current_coords[n1 * 3 + 1]) / l[i];
@@ -879,7 +928,7 @@ namespace bio
       {
         u[dof[i]] = values[i] * amp_t;
         du[dof[i]] = values[i] * (amp_t - amp_prev_t);
-        assert(fabs(u[dof[i]]) <= fabs(values[i]));
+        assert(fabs(u[dof[i]]) < fabs(values[i]) || isClose(u[dof[i]],values[i]));
       }
     }
     void applyVelBC_(int nfixed,
@@ -1317,6 +1366,7 @@ namespace bio
                            bool print_field_by_num_frames = false,
                            double crit_time_scale_factor = 0.8,
                            double energy_check_eps = 5E-2,
+                           apf::Field * coordinate_field=NULL,
                            apf::Field * u_field = NULL,
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
@@ -1335,6 +1385,7 @@ namespace bio
                                print_field_by_num_frames,
                                crit_time_scale_factor,
                                energy_check_eps,
+                               coordinate_field,
                                u_field,
                                v_field,
                                a_field,
