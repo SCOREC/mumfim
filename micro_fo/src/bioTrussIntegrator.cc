@@ -49,7 +49,7 @@ namespace bio
     // rctn is df/du
     apf::Matrix3x3 rctn =
         apf::tensorProduct(spans_l, spans_l * dfdl_fl) + eye() * fl;
-    double op = 1.0;
+    double op = -1.0;
     for (int ii = 0; ii < 2; ii++)
     {
       op *= -1.0;

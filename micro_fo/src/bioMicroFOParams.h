@@ -18,7 +18,8 @@ namespace bio
   };
   enum class AmplitudeType
   {
-    SmoothStep
+    SmoothStep,
+    SmoothStepHold
   };
   struct DeformationGradient
   {

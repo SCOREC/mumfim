@@ -437,14 +437,14 @@ namespace bio
     int_slvr.data[MAX_MICRO_ITERS] =
         itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
     // Explicit solver data...these things need to get added to the attdefs
-    int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
-    //int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
+    //int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
+    int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
     int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStep);
     int_slvr.data[PRINT_HISTORY_FREQUENCY] = 1000000000;
     int_slvr.data[PRINT_FIELD_FREQUENCY] = 1;
     int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 1;
     int_slvr.data[SERIAL_GPU_CUTOFF] = 2000;
-    slvr.data[LOAD_TIME] = 1;
+    slvr.data[LOAD_TIME] = 10;
     slvr.data[CRITICAL_TIME_SCALE_FACTOR] = 0.8;
     slvr.data[ENERGY_CHECK_EPSILON] = 1E-2;
     slvr.data[VISCOUS_DAMPING_FACTOR] = 0.1;

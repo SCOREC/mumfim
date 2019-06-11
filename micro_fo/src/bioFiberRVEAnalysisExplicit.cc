@@ -48,14 +48,15 @@ namespace bio
       MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
-      if(ss.ampType == AmplitudeType::SmoothStep)
-      {
-        amp = new SmoothAmp(total_time);
-      }
-      else
-      {
-        std::abort();
-      }
+      //if(ss.ampType == AmplitudeType::SmoothStep)
+      //{
+      //  amp = new SmoothAmp(total_time);
+      //}
+      //else
+      //{
+      //  std::abort();
+      //}
+      amp = new SmoothAmpHold(1.0, total_time);
       assert(fiber_density > 0);
       assert(fiber_area > 0);
       assert(fiber_elastic_modulus > 0);
@@ -79,11 +80,11 @@ namespace bio
                this->getK(),
                this->getF());
     this->getSlv()->solve(this->getK(), this->getU(), this->getF());
-    //amsi::WriteOp wrt;
-    amsi::SubtractOp acm;
-    amsi::WriteScalarMultOp mlt(-1.0);
-    //amsi::AccumOp acm;
-    amsi::FreeApplyOp fr_mlt(this->getFn()->getUNumbering(), &mlt);
+    //amsi::SubtractOp acm;
+    //amsi::WriteScalarMultOp mlt(-1.0);
+    amsi::WriteOp wrt;
+    amsi::AccumOp acm;
+    amsi::FreeApplyOp fr_mlt(this->getFn()->getUNumbering(), &wrt);
     amsi::FreeApplyOp fr_acm(this->getFn()->getUNumbering(), &acm);
     double * s = NULL;
     ops->get(this->getU(), s);
