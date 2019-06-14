@@ -41,7 +41,7 @@ namespace bio
         , fiber_density(fn->getFiberReactions()[0]->fiber_density)
         , amp(NULL)
         , system_initialized(false)
-        , dt_prev(0)
+        , itr_prev(0)
     {
       es = createImplicitMicroElementalSystem(fn, getK(), getF());
       std::stringstream sout;
@@ -100,11 +100,13 @@ namespace bio
   }
   bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd)
   {
+    BIO_V3(
     std::cout << "F=[";
     std::cout << dfmGrd[0] << " " << dfmGrd[1] << " " << dfmGrd[2] << "; ";
     std::cout << dfmGrd[3] << " " << dfmGrd[4] << " " << dfmGrd[5] << "; ";
     std::cout << dfmGrd[6] << " " << dfmGrd[7] << " " << dfmGrd[8];
     std::cout << "]\n";
+    );
     computeDisplcamentBC(dfmGrd);
     apf::Mesh * mesh = getFn()->getNetworkMesh();
     // we do look for the field because if a previous analysis
@@ -138,7 +140,7 @@ namespace bio
           getFn()->getFField(), f_ext_field, massField);
       assert(disp_bound_dof && disp_bound_vals);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
-      rtn = analysis.run(system_initialized, dt_prev);
+      rtn = analysis.run(itr_prev);
       system_initialized = true;
     }
     else
@@ -154,7 +156,7 @@ namespace bio
           getFn()->getFField(), f_ext_field, massField);
       assert(disp_bound_dof && disp_bound_vals);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
-      rtn = analysis.run(system_initialized, dt_prev);
+      rtn = analysis.run(itr_prev);
       system_initialized = true;
     }
     // delete the boundary condition data

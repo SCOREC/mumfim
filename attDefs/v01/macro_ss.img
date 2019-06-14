@@ -62,11 +62,54 @@ image "combined" : "oscillation detection" {
   R "micro iteration cap";
   R "previous itr factor";
 };
-image "nonlinear iteration" : "microscale convergence operator"
+image "implicit nonlinear iteration" : "microscale convergence operator"
 {
   R "micro convergence tolerance";
-  O "micro solver tolerance";
+  R "micro solver tolerance";
   R "oscillation detection"; 
+};
+type "serial to GPU dof cutoff" : int d <2000>;
+type "history output" : void A e<n>;
+type "field output" : void A e<n>;
+type "number of frames" : int d<0>;
+type "number of iterations" : int d<100000000>;
+type "amplitude" : void A e<n>;
+type "load time" : double d <5.0>;
+type "hold time" : double d <1.0>;
+type "energy check epsilon" : double d< 1E-2>;
+type "critical time scale factor" : double d<0.8>;
+type "viscous damping factor" : double d<0.5>;
+image "by frames" : "field output"
+{
+  R "number of frames";
+};
+image "by iterations" : "field output"
+{
+  R "number of iterations";
+};
+image "by iterations" : "history output"
+{
+  R "number of iterations";
+};
+image "Smooth Step" : "amplitude"
+{
+  R "load time"; 
+};
+image "Smooth Step and Hold" : "amplitude"
+{
+  R "load time";
+  R "hold time";
+};
+image "explicit timestep" : "microscale convergence operator"
+{
+  R "amplitude";
+  R "viscous damping factor";
+  R "critical time scale factor";
+  R "energy check epsilon";
+  R "serial to GPU dof cutoff";
+  O "history output";
+  O "field output";
+  R  "micro solver tolerance";
 };
 
 image "macro" : "solution strategy" {

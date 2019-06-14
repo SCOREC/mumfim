@@ -85,6 +85,7 @@ namespace bio
     unsigned int print_field_frequency;
     bool print_field_by_num_frames;
     double visc_damp_coeff;
+    double load_time;
     double total_time;
     int serial_gpu_cutoff;
     double crit_time_scale_factor;

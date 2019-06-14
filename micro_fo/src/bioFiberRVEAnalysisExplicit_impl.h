@@ -70,11 +70,11 @@ namespace bio
   class ExplicitAnalysisBase
   {
     public:
-    bool run(bool is_initialized=false, double & dt_prev=0)
+    bool run(unsigned long & itr_prev)
     {
       // optimization to only compute the mass matrix 1
       //if(!mass_field_initialized)
-        computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
+      computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
       // copy other data to device
       copyData(mass_matrix_d, mass_matrix_h);
       copyData(coords_d, coords_h);
@@ -123,14 +123,17 @@ namespace bio
                        << (unsigned long)(total_time /
                                           (dt_crit * crit_time_scale_factor))
                        << " timesteps.\n";)
-      double frame_time = (total_time / print_field_frequency);
+      // don't compute the frame time if the frequency is zero because this will be a divide by zero
+      double frame_time = print_field_frequency ? (total_time / print_field_frequency) : 0;
       unsigned int frame_num = 1;
-      std::stringstream ss;
-      ss << analysis_name << ".pvd";
-      ExplicitOutputWriter writer(mesh, analysis_name.c_str(), ss.str().c_str(),
-                                  W_int, W_ext, W_damp, W_kin, current_time);
-      writer.writeFieldData(0);
-      writer.writeHistoryData(0);
+      if(print_field_frequency)
+      {
+        writer.writeFieldData(itr_prev);
+      }
+      if(print_history_frequency)
+      {
+        writer.writeHistoryData(itr_prev);
+      }
       updateAcceleration(ndof, mass_matrix_d, f_d, a_d);
       do
       {
@@ -188,17 +191,16 @@ namespace bio
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
           copyData(f_ext_d, f_ext_h);
-          dt_prev = dt_crit;
-          writer.writeFieldData(n_step);
-          writer.writeHistoryData(n_step);
+          writer.writeFieldData(itr_prev+n_step);
+          writer.writeHistoryData(itr_prev+n_step);
           return false;
         }
-        bool print_field =
-            print_field_by_num_frames
+        bool print_field = print_field_frequency &&
+            (print_field_by_num_frames
                 ? ((current_time - dt_nphalf) < frame_num * frame_time) &&
                       ((current_time >= frame_num * frame_time) ||
                        current_time >= total_time)
-                : n_step % print_field_frequency == 0;
+                : n_step % print_field_frequency == 0);
         if (print_field)
         {
           // need to copy any fields that the writer will use back to the host.
@@ -209,30 +211,40 @@ namespace bio
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
           copyData(f_ext_d, f_ext_h);
-          dt_prev = dt_crit;
-          writer.writeFieldData(n_step);
+          writer.writeFieldData(itr_prev+n_step);
           ++frame_num;
         }
-        if (n_step % print_history_frequency == 0)
+        if (print_history_frequency && (n_step % print_history_frequency == 0))
         {
-          writer.writeHistoryData(n_step);
+          writer.writeHistoryData(itr_prev+n_step);
         }
       } while (current_time < total_time);
       // if we didn't already write the last frame
-      if (!print_field_by_num_frames && (n_step % print_field_frequency))
+      if (print_field_frequency && !print_field_by_num_frames && (n_step % print_field_frequency))
       {
         copyData(u_h, u_d);
         copyData(v_h, v_d);
         copyData(a_h, a_d);
         copyData(f_int_h, f_int_d);
         copyData(f_ext_d, f_ext_h);
-        dt_prev = dt_crit;
-        writer.writeFieldData(n_step);
+        writer.writeFieldData(itr_prev+n_step);
       }
-      if (n_step % print_history_frequency)
+      // make sure we copy the data out to the mesh even
+      // if we don't want to write the mesh to disk since we use this data in the
+      // multiscale analysis
+      if (!print_field_frequency)
       {
-        writer.writeHistoryData(n_step);
+        copyData(u_h, u_d);
+        copyData(v_h, v_d);
+        copyData(a_h, a_d);
+        copyData(f_int_h, f_int_d);
+        copyData(f_ext_d, f_ext_h);
       }
+      if (print_history_frequency && (n_step % print_history_frequency))
+      {
+        writer.writeHistoryData(itr_prev+n_step);
+      }
+      itr_prev = n_step;
       BIO_V3(
       std::cout << "Microscale has successfully completed in " << n_step
                 << " timesteps.\n";)
@@ -342,6 +354,7 @@ namespace bio
     D_RWDA l0_d;
     D_RWDA l_d;
     D_RWDA current_coords_d;
+    ExplicitOutputWriter writer;
 
     protected:
     template <typename D>
@@ -610,6 +623,8 @@ namespace bio
         , f_ext_field(f_ext_field)
         , nodalMass(mass_field)
         , mass_field_initialized(false)
+        , writer(mesh, analysis_name.c_str(), (analysis_name+".pvd").c_str(),
+                                  W_int, W_ext, W_damp, W_kin, current_time)
     {
       if (coordinate_field == NULL)
       {
@@ -887,16 +902,6 @@ namespace bio
                                      fiber_area);
         n1 = connectivity[i * 2];
         n2 = connectivity[i * 2 + 1];
-        if ( frc > 1)
-        {
-         std::cout<<"Large Force: "<<frc<<" "<<l0[i]<<" "<<l[i]<<" "<<fiber_elastic_modulus<<" "<<fiber_area<<std::endl;
-         std::cout<<"V: "<<v[n1*3+0]<<" "<<v[n1*3+1]<<" "<<v[n1*3+2]<<" "<<v[n2*3+0]<<" "<<v[n1*3+1]<<" "<<v[n1*3+2]<<std::endl;
-         std::cout<<"f_int: "<<f_int[n1*3+0]<<" "<<f_int[n1*3+1]<<" "<<f_int[n1*3+2]<<" "<<f_int[n2*3+0]<<" "<<f_int[n1*3+1]<<" "<<f_int[n1*3+2]<<std::endl;
-         std::cout<<"f_ext: "<<f_ext[n1*3+0]<<" "<<f_ext[n1*3+1]<<" "<<f_ext[n1*3+2]<<" "<<f_ext[n2*3+0]<<" "<<f_ext[n1*3+1]<<" "<<f_ext[n1*3+2]<<std::endl;
-         std::cout<<"f_damp: "<<f_damp[n1*3+0]<<" "<<f_damp[n1*3+1]<<" "<<f_damp[n1*3+2]<<" "<<f_damp[n2*3+0]<<" "<<f_damp[n1*3+1]<<" "<<f_damp[n1*3+2]<<std::endl;
-         std::cout<<"mass: "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n2*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<std::endl;
-         abort();
-        }
         assert(l[i]>0);
         elem_nrm_1 = (current_coords[n2 * 3] - current_coords[n1 * 3]) / l[i];
         elem_nrm_2 =

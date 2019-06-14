@@ -371,83 +371,167 @@ namespace bio
     prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
     pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
     assert(micro_cnvg);
-    pAttribute dtct_osc =
-        Attribute_childByType(micro_cnvg, "oscillation detection");
-    assert(dtct_osc);
-    pAttribute micro_cnvg_tol = Attribute_childByType(micro_cnvg, "micro convergence tolerance");
-    assert(micro_cnvg_tol);
-    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
-    pAttribute num_attempts = NULL;
-    pAttribute cut_factor = NULL;
-    pAttribute itr_cap = NULL;
-    pAttribute prev_itr_factor = NULL;
-    char* detect_osc_type = Attribute_imageClass(dtct_osc);
-    if (strcmp(detect_osc_type, "iteration only") == 0) {
-      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
-      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
-      itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
-      int_slvr.data[DETECT_OSCILLATION_TYPE] =
-          static_cast<int>(amsi::DetectOscillationType::IterationOnly);
-      assert(itr_cap);
+    char* micro_cnvg_type = Attribute_imageClass(micro_cnvg);
+    if (strcmp(micro_cnvg_type, "explicit timestep") == 0) {
+      // get explicit params
+      int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
+      pAttribute amplitude = Attribute_childByType(micro_cnvg, "amplitude");
+      pAttribute visc_damping_factor = Attribute_childByType(micro_cnvg, "viscous damping factor");
+      pAttribute critical_time_factor = Attribute_childByType(micro_cnvg, "critical time scale factor");
+      pAttribute energy_check_epsilon = Attribute_childByType(micro_cnvg, "energy check epsilon");
+      pAttribute serial_gpu_cutoff = Attribute_childByType(micro_cnvg, "serial to GPU dof cutoff");
+      assert(amplitude);
+      assert(visc_damping_factor);
+      assert(critical_time_factor);
+      assert(energy_check_epsilon);
+      assert(serial_gpu_cutoff);
+      assert(amplitude && visc_damping_factor && critical_time_factor && energy_check_epsilon && serial_gpu_cutoff);
+      int_slvr.data[SERIAL_GPU_CUTOFF] = AttributeInt_value((pAttributeInt)serial_gpu_cutoff);
+      slvr.data[CRITICAL_TIME_SCALE_FACTOR] = AttributeDouble_value((pAttributeDouble)critical_time_factor);
+      slvr.data[ENERGY_CHECK_EPSILON] = AttributeDouble_value((pAttributeDouble)energy_check_epsilon);
+      slvr.data[VISCOUS_DAMPING_FACTOR] = AttributeDouble_value((pAttributeDouble)visc_damping_factor);
+      // load data
+      char * amp_type = Attribute_imageClass(amplitude);
+      if(strcmp(amp_type,"Smooth Step") == 0)
+      {
+        int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStep);
+      }
+      else if (strcmp(amp_type, "Smooth Step and Hold") == 0)
+      {
+        int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStepHold);
+        pAttribute hold_time = Attribute_childByType(amplitude, "hold time");
+        assert(hold_time);
+        slvr.data[HOLD_TIME] = AttributeDouble_value((pAttributeDouble)hold_time);
+      }
+      else
+      {
+        std::cerr<<amp_type<<" is not a valid amplitude type. attDefs and MultiscaleTissue are out of sync."<<std::endl;
+        std::abort();
+      }
+      Sim_deleteString(amp_type);
+      pAttribute load_time = Attribute_childByType(amplitude, "load time");
+      assert(load_time);
+      slvr.data[LOAD_TIME] = AttributeDouble_value((pAttributeDouble)load_time);
+      // get output data
+      pAttribute history_output = Attribute_childByType(micro_cnvg, "history output");
+      pAttribute field_output = Attribute_childByType(micro_cnvg, "field output");
+      if(history_output)
+      {
+        pAttribute itrs = Attribute_childByType(history_output, "number of iterations");
+        assert(itrs);
+        int_slvr.data[PRINT_HISTORY_FREQUENCY] = AttributeInt_value((pAttributeInt)itrs);
+      }
+      else
+      {
+        int_slvr.data[PRINT_HISTORY_FREQUENCY] = 0;
+      }
+      if (field_output)
+      {
+        char * field_output_type = Attribute_imageClass(field_output);
+        if(strcmp(field_output_type, "by iterations") == 0)
+        {
+          int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 0;
+          pAttribute itrs = Attribute_childByType(field_output, "number of iterations");
+          assert(itrs);
+          int_slvr.data[PRINT_FIELD_FREQUENCY] = AttributeInt_value((pAttributeInt)itrs);
+        }
+        else if(strcmp(field_output_type, "by frames") == 0)
+        {
+          int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 1;
+          pAttribute frames = Attribute_childByType(field_output, "number of frames");
+          assert(frames);
+          int_slvr.data[PRINT_FIELD_FREQUENCY] = AttributeInt_value((pAttributeInt)frames);
+        }
+        else
+        {
+          std::cerr<<field_output<<" is not a valid field output type. MultiscaleTissue and attDefs are out of sync."<<std::endl;
+          std::abort();
+        }
+      }
+      else
+      {
+        int_slvr.data[PRINT_FIELD_FREQUENCY] = 0;
+        int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 0;
+      }
+
     }
-    else if (strcmp(detect_osc_type, "previous residual") == 0) {
-      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
-      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
-      prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
-      int_slvr.data[DETECT_OSCILLATION_TYPE] =
-          static_cast<int>(amsi::DetectOscillationType::PrevNorm);
-      assert(prev_itr_factor);
-    }
-    else if (strcmp(detect_osc_type, "combined") == 0) {
-      num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
-      cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
-      itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
-      prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
-      int_slvr.data[DETECT_OSCILLATION_TYPE] =
-          static_cast<int>(amsi::DetectOscillationType::IterationPrevNorm);
-      assert(itr_cap);
-      assert(prev_itr_factor);
+    else if (strcmp(micro_cnvg_type, "implicit nonlinear iteration") == 0)
+    {
+      int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
+        // get implicit params
+      pAttribute dtct_osc =
+          Attribute_childByType(micro_cnvg, "oscillation detection");
+      assert(dtct_osc);
+      pAttribute num_attempts = NULL;
+      pAttribute cut_factor = NULL;
+      pAttribute itr_cap = NULL;
+      pAttribute prev_itr_factor = NULL;
+      char* detect_osc_type = Attribute_imageClass(dtct_osc);
+      if (strcmp(detect_osc_type, "iteration only") == 0) {
+        num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+        cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+        itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
+        int_slvr.data[DETECT_OSCILLATION_TYPE] =
+            static_cast<int>(amsi::DetectOscillationType::IterationOnly);
+        assert(itr_cap);
+      }
+      else if (strcmp(detect_osc_type, "previous residual") == 0) {
+        num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+        cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+        prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
+        int_slvr.data[DETECT_OSCILLATION_TYPE] =
+            static_cast<int>(amsi::DetectOscillationType::PrevNorm);
+        assert(prev_itr_factor);
+      }
+      else if (strcmp(detect_osc_type, "combined") == 0) {
+        num_attempts = Attribute_childByType(dtct_osc, "number of attempts");
+        cut_factor = Attribute_childByType(dtct_osc, "attempt cut factor");
+        itr_cap = Attribute_childByType(dtct_osc, "micro iteration cap");
+        prev_itr_factor = Attribute_childByType(dtct_osc, "previous itr factor");
+        int_slvr.data[DETECT_OSCILLATION_TYPE] =
+            static_cast<int>(amsi::DetectOscillationType::IterationPrevNorm);
+        assert(itr_cap);
+        assert(prev_itr_factor);
+      }
+      else {
+        std::cerr << detect_osc_type
+                  << " is not a valid oscillation detection type. attDefs and "
+                     "MultiscaleTissue are out of sync.\n";
+        std::abort();
+      }
+      Sim_deleteString(detect_osc_type);
+      assert(num_attempts);
+      assert(cut_factor);
+      // should not choose number less than 1E-6 for now due to LAS using single
+      // precision
+      assert(slvr.data[MICRO_SOLVER_TOL] <= slvr.data[MICRO_CONVERGENCE_TOL]);
+      slvr.data[PREV_ITER_FACTOR] =
+          prev_itr_factor
+              ? AttributeDouble_value((pAttributeDouble)prev_itr_factor)
+              : 0;
+      int_slvr.data[MAX_MICRO_CUT_ATTEMPT] =
+          AttributeInt_value((pAttributeInt)num_attempts);
+      int_slvr.data[MICRO_ATTEMPT_CUT_FACTOR] =
+          AttributeInt_value((pAttributeInt)cut_factor);
+      int_slvr.data[MAX_MICRO_ITERS] =
+          itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
+      pAttribute micro_cnvg_tol = Attribute_childByType(micro_cnvg, "micro convergence tolerance");
+      slvr.data[MICRO_CONVERGENCE_TOL] =
+          AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
+      assert(micro_cnvg_tol);
     }
     else {
-      std::cerr << detect_osc_type
-                << " is not a valid oscillation detection type. attDefs and "
-                   "MultiscaleTissue are out of sync.\n";
-      std::abort();
+        std::cerr << micro_cnvg_type
+                  << " is not a valid microscale convergence type. attDefs and "
+                     " MultiscaleTissue are out of sync.\n";
+        std::abort();
     }
-    delete [] detect_osc_type;
-    detect_osc_type = NULL;
-    assert(num_attempts);
-    assert(cut_factor);
-    slvr.data[MICRO_CONVERGENCE_TOL] =
-        AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
+    Sim_deleteString(micro_cnvg_type);
+    // Attributes used by bot implicit and explicit
+    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
     slvr.data[MICRO_SOLVER_TOL] =
         micro_slvr_tol ? AttributeDouble_value((pAttributeDouble)micro_slvr_tol)
                        : 1E-6;
-    // should not choose number less than 1E-6 for now due to LAS using single
-    // precision
-    assert(slvr.data[MICRO_SOLVER_TOL] <= slvr.data[MICRO_CONVERGENCE_TOL]);
-    slvr.data[PREV_ITER_FACTOR] =
-        prev_itr_factor
-            ? AttributeDouble_value((pAttributeDouble)prev_itr_factor)
-            : 0;
-    int_slvr.data[MAX_MICRO_CUT_ATTEMPT] =
-        AttributeInt_value((pAttributeInt)num_attempts);
-    int_slvr.data[MICRO_ATTEMPT_CUT_FACTOR] =
-        AttributeInt_value((pAttributeInt)cut_factor);
-    int_slvr.data[MAX_MICRO_ITERS] =
-        itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
-    // Explicit solver data...these things need to get added to the attdefs
-    //int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
-    int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
-    int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStep);
-    int_slvr.data[PRINT_HISTORY_FREQUENCY] = 10000;
-    int_slvr.data[PRINT_FIELD_FREQUENCY] = 1;
-    int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 1;
-    int_slvr.data[SERIAL_GPU_CUTOFF] = 5000;
-    slvr.data[LOAD_TIME] = 10;
-    slvr.data[CRITICAL_TIME_SCALE_FACTOR] = 0.8;
-    slvr.data[ENERGY_CHECK_EPSILON] = 1E-2;
-    slvr.data[VISCOUS_DAMPING_FACTOR] = 0.5;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,

@@ -47,7 +47,7 @@ namespace bio
     // from running explicit analysis initialization phase on more than
     // a single iteration
     bool system_initialized;
-    double dt_prev;
+    unsigned long itr_prev;
     void computeDisplcamentBC(const DeformationGradient & dfmGrd);
     virtual void copyForceDataToForceVec();
     virtual void copyDispDataToDispVec();

@@ -74,25 +74,6 @@ void ExplicitOutputWriter::writeFieldData(unsigned long iteration)
   pvdData.push_back(PvdData(sout.str(), time, 0));
   writePvdFile(folder + "/" + pvdName, pvdData);
 }
-void writePvdFile(const std::string & col_fnm, const std::string & msh_prfx,
-                  int sz)
-{
-  std::string pvd(col_fnm);
-  std::fstream pvdf(pvd.c_str(), std::ios::out);
-  pvdf << "<VTKFile type=\"Collection\" version=\"0.1\">" << std::endl;
-  pvdf << "  <Collection>" << std::endl;
-  for (int ii = 0; ii < sz; ii++)
-  {
-    std::ostringstream oss;
-    oss << msh_prfx << ii + 1;
-    std::string vtu = oss.str();
-    pvdf << "    <DataSet timestep=\"" << ii << "\" group=\"\" ";
-    pvdf << "part=\"0\" file=\"" << vtu << "/" << vtu;
-    pvdf << ".pvtu\"/>" << std::endl;
-  }
-  pvdf << "  </Collection>" << std::endl;
-  pvdf << "</VTKFile>" << std::endl;
-}
 void writePvdFile(const std::string & col_fnm,
                   const std::vector<PvdData> & pvd_data)
 {
@@ -104,7 +85,7 @@ void writePvdFile(const std::string & col_fnm,
   pvdf << "  <Collection>" << std::endl;
   for (std::size_t ii = 0; ii < pvd_data.size(); ii++)
   {
-    pvdf << "    <DataSet timestep=\"" << pvd_data[ii].timestep
+    pvdf << "    <DataSet timestep=\"" << ii
          << "\" group=\"\" ";
     pvdf << "part=\"" << pvd_data[ii].part << "\" file=\""
          << pvd_data[ii].filename << "/" << pvd_data[ii].filename;
