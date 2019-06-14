@@ -26,6 +26,19 @@ namespace bio
     double data[9];
     double & operator[](std::size_t idx) { return data[idx]; }
     const double & operator[](std::size_t idx) const { return data[idx]; }
+    DeformationGradient(double d11, double d12, double d13, double d21, double d22, double d23, double d31, double d32, double d33)
+    {
+      data[0] = d11;
+      data[1] = d12;
+      data[2] = d13;
+      data[3] = d21;
+      data[4] = d22;
+      data[5] = d23;
+      data[6] = d31;
+      data[7] = d32;
+      data[8] = d33;
+    }
+    DeformationGradient() {};
     DeformationGradient operator*(double val)
     {
       DeformationGradient dg;

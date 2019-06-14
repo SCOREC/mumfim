@@ -16,9 +16,6 @@ namespace bio
     ~FiberRVEAnalysisExplicit()
     {
       delete amp;
-      delete [] disp_bound_nodes;
-      delete [] disp_bound_dof;
-      delete [] disp_bound_vals;
     }
     virtual bool run(const DeformationGradient & dfmGrd);
     virtual FiberRVEAnalysisType getAnalysisType()
@@ -45,6 +42,12 @@ namespace bio
     int * disp_bound_nodes;
     int * disp_bound_dof;
     double * disp_bound_vals;
+    double * disp_bound_init_vals;
+    // this is to attempt to deal with initialization errors that come
+    // from running explicit analysis initialization phase on more than
+    // a single iteration
+    bool system_initialized;
+    double dt_prev;
     void computeDisplcamentBC(const DeformationGradient & dfmGrd);
     virtual void copyForceDataToForceVec();
     virtual void copyDispDataToDispVec();

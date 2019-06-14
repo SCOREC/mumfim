@@ -70,10 +70,10 @@ namespace bio
   class ExplicitAnalysisBase
   {
     public:
-    bool run()
+    bool run(bool is_initialized=false, double & dt_prev=0)
     {
       // optimization to only compute the mass matrix 1
-      if(!mass_field_initialized)
+      //if(!mass_field_initialized)
         computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
       // copy other data to device
       copyData(mass_matrix_d, mass_matrix_h);
@@ -85,12 +85,16 @@ namespace bio
       copyData(v_d, v_h);
       copyData(a_d, a_h);
       copyData(f_int_d, f_int_h);
+      copyData(f_ext_d, f_ext_h);
       // copy boundary data over to the device
       disp_boundary_dof_d = createDeviceIntMirrorArray(disp_boundary_dof_h);
       disp_boundary_values_d =
           createDeviceDoubleMirrorArray(disp_boundary_values_h);
+      disp_boundary_init_values_d =
+          createDeviceDoubleMirrorArray(disp_boundary_init_values_h);
       copyData(disp_boundary_dof_d, disp_boundary_dof_h);
       copyData(disp_boundary_values_d, disp_boundary_values_h);
+      copyData(disp_boundary_init_values_d, disp_boundary_init_values_h);
       if (disp_nfixed <= 0)
       {
         std::cerr
@@ -104,7 +108,6 @@ namespace bio
              std::cout << "Using Deformation Gradient BC has fixed "
                        << disp_nfixed << " of " << ndof
                        << " degrees of freedom.\n";)
-      // FIXME...here we assume that the initial displacements are 0!
       getElementLengths(nelem, coords_d, connectivity_d, l0_d);
       getCurrentCoords(ndof, coords_d, u_d, current_coords_d);
       getElementLengths(nelem, current_coords_d, connectivity_d, l_d);
@@ -112,6 +115,7 @@ namespace bio
                           connectivity_d, mass_matrix_d, visc_damp_coeff,
                           f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
                           f_damp_d, f_damp_last_d, f_d);
+      //else
       BIO_V3(std::cout << "The initial timestep is dt=" << dt_crit
                        << ".\nIf the analysis continues with a comprable dt "
                           "the analysis "
@@ -140,9 +144,11 @@ namespace bio
         }
         t_nphalf = 0.5 * (current_time + t_npone);
         updateVelocity(ndof, a_d, (t_nphalf - current_time), v_d);
+        applyVelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
+                   disp_boundary_values_d, amp, v_d);
         updateDisplacement(ndof, v_d, dt_nphalf, u_d, du_d);
         applyDispBC(disp_nfixed, current_time, t_npone, disp_boundary_dof_d,
-                    disp_boundary_values_d, amp, u_d, du_d);
+                    disp_boundary_init_values_d, disp_boundary_values_d, amp, u_d, du_d);
         getCurrentCoords(ndof, coords_d, u_d, current_coords_d);
         getElementLengths(nelem, current_coords_d, connectivity_d, l_d);
         dt_crit = getForces(nelem, ndof, l0_d, l_d, v_d, current_coords_d,
@@ -181,6 +187,8 @@ namespace bio
           copyData(v_h, v_d);
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
+          copyData(f_ext_d, f_ext_h);
+          dt_prev = dt_crit;
           writer.writeFieldData(n_step);
           writer.writeHistoryData(n_step);
           return false;
@@ -200,6 +208,8 @@ namespace bio
           copyData(v_h, v_d);
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
+          copyData(f_ext_d, f_ext_h);
+          dt_prev = dt_crit;
           writer.writeFieldData(n_step);
           ++frame_num;
         }
@@ -215,6 +225,8 @@ namespace bio
         copyData(v_h, v_d);
         copyData(a_h, a_d);
         copyData(f_int_h, f_int_d);
+        copyData(f_ext_d, f_ext_h);
+        dt_prev = dt_crit;
         writer.writeFieldData(n_step);
       }
       if (n_step % print_history_frequency)
@@ -226,18 +238,12 @@ namespace bio
                 << " timesteps.\n";)
       return true;
     }
-    // TODO: this can be moved to the device space
-    void constructDefmGrdBC(double cube_size, double dfm_grd[9])
-    {
-      static_cast<T &>(*this).constructDefmGrdBC_(
-          nnds, coords_h, cube_size, dfm_grd, disp_nfixed, disp_boundary_dof_h,
-          disp_boundary_values_h);
-    }
-    void setDispBC(int nfixed, int * dof, double * values)
+    void setDispBC(int nfixed, int * dof, double * init_values, double * values)
     {
       disp_nfixed = nfixed;
       disp_boundary_dof_h = createHostIntArrayFromRaw(dof, nfixed);
       disp_boundary_values_h = createHostDoubleArrayFromRaw(values, nfixed);
+      disp_boundary_init_values_h = createHostDoubleArrayFromRaw(init_values, nfixed);
     }
     // this function must be marked KOKKOS_INLINE_FUNCTION because it needs to
     // be run on the device
@@ -264,6 +270,7 @@ namespace bio
     apf::Field * v_field;
     apf::Field * a_field;
     apf::Field * f_int_field;
+    apf::Field * f_ext_field;
     apf::Field * nodalMass;
     apf::Field * coordinate_field;
     bool mass_field_initialized;
@@ -276,6 +283,7 @@ namespace bio
     double * v_arr;
     double * a_arr;
     double * f_int_arr;
+    double * f_ext_arr;
     double * mass_matrix_arr;
     int * connectivity_arr;
     double * coords_arr;
@@ -302,8 +310,10 @@ namespace bio
     int disp_nfixed;
     H_RWIA disp_boundary_dof_h;
     H_RWDA disp_boundary_values_h;
+    H_RWDA disp_boundary_init_values_h;
     D_RWIA disp_boundary_dof_d;
     D_RWDA disp_boundary_values_d;
+    D_RWDA disp_boundary_init_values_d;
     double energy_check_eps;
     int nelem;
     int nnds;
@@ -324,6 +334,7 @@ namespace bio
     H_RWDA f_int_h;
     D_RWDA f_int_last_d;
     D_RWDA f_ext_d;
+    H_RWDA f_ext_h;
     D_RWDA f_ext_last_d;
     D_RWDA f_damp_d;
     D_RWDA f_damp_last_d;
@@ -464,6 +475,7 @@ namespace bio
                      double prev_t,
                      double t,
                      D_ROIA dof,
+                     D_RODA init_values,
                      D_RODA values,
                      const Amplitude * amp,
                      D_RWDA u,
@@ -472,7 +484,7 @@ namespace bio
       double amp_t = amp->operator()(t);
       double amp_prev_t = amp->operator()(prev_t);
       static_cast<T &>(*this).applyDispBC_(nfixed, amp_t, amp_prev_t, dof,
-                                           values, u, du);
+                                           init_values, values, u, du);
     }
     void applyVelBC(int nfixed,
                     double t,
@@ -538,10 +550,11 @@ namespace bio
                              double W_ext,
                              double eps)
     {
-      return fabs(W_kin + W_int + W_damp - W_ext) <=
+      double energy_bal = W_kin + W_int + W_damp - W_ext;
+      return (fabs(energy_bal) <=
              eps * std::max(std::max(fabs(W_ext),
                                      std::max(fabs(W_int), fabs(W_kin))),
-                            fabs(W_damp));
+                            fabs(W_damp)));
     }
     bool checkEnergyBalance(double W_kin,
                             double W_int,
@@ -574,6 +587,7 @@ namespace bio
                          apf::Field * v_field = NULL,
                          apf::Field * a_field = NULL,
                          apf::Field * f_int_field = NULL,
+                         apf::Field * f_ext_field = NULL,
                          apf::Field * mass_field = NULL)
         : analysis_name(analysis_name)
         , mesh(mesh)
@@ -593,8 +607,9 @@ namespace bio
         , v_field(v_field)
         , a_field(a_field)
         , f_int_field(f_int_field)
+        , f_ext_field(f_ext_field)
         , nodalMass(mass_field)
-        , mass_field_initialized(true)
+        , mass_field_initialized(false)
     {
       if (coordinate_field == NULL)
       {
@@ -620,6 +635,11 @@ namespace bio
         f_int_field = apf::createLagrangeField(mesh, "f", apf::VECTOR, 1);
         apf::zeroField(f_int_field);
       }
+      if (f_ext_field == NULL)
+      {
+        f_ext_field = apf::createLagrangeField(mesh, "f_ext", apf::VECTOR, 1);
+        apf::zeroField(f_ext_field);
+      }
       if (mass_field == NULL)
       {
         mass_field_initialized = false;
@@ -631,11 +651,13 @@ namespace bio
       apf::freeze(v_field);
       apf::freeze(a_field);
       apf::freeze(f_int_field);
+      apf::freeze(f_ext_field);
       apf::freeze(nodalMass);
       u_arr = apf::getArrayData(u_field);
       v_arr = apf::getArrayData(v_field);
       a_arr = apf::getArrayData(a_field);
       f_int_arr = apf::getArrayData(f_int_field);
+      f_ext_arr = apf::getArrayData(f_ext_field);
       mass_matrix_arr = apf::getArrayData(nodalMass);
       int etype;
       apf::destruct(mesh, connectivity_arr, nelem, etype, 1);
@@ -662,6 +684,7 @@ namespace bio
       v_h = createHostDoubleArrayFromRaw(v_arr, ndof);
       a_h = createHostDoubleArrayFromRaw(a_arr, ndof);
       f_int_h = createHostDoubleArrayFromRaw(f_int_arr, ndof);
+      f_ext_h = createHostDoubleArrayFromRaw(f_ext_arr, ndof);
       mass_matrix_h = createHostDoubleArrayFromRaw(mass_matrix_arr, nnds);
       connectivity_h = createHostIntArrayFromRaw(connectivity_arr, 2 * nelem);
       coords_h = createHostDoubleArrayFromRaw(coords_arr, ndof);
@@ -669,6 +692,7 @@ namespace bio
       v_d = createDeviceDoubleMirrorArray(v_h);
       a_d = createDeviceDoubleMirrorArray(a_h);
       f_int_d = createDeviceDoubleMirrorArray(f_int_h);
+      f_ext_d = createDeviceDoubleMirrorArray(f_int_h);
       mass_matrix_d = createDeviceDoubleMirrorArray(mass_matrix_h);
       connectivity_d = createDeviceIntMirrorArray(connectivity_h);
       coords_d = createDeviceDoubleMirrorArray(coords_h);
@@ -720,6 +744,7 @@ namespace bio
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
                            apf::Field * f_int_field = NULL,
+                           apf::Field * f_ext_field = NULL,
                            apf::Field * mass_field = NULL)
         : ExplicitAnalysisBase(mesh,
                                total_time,
@@ -739,12 +764,13 @@ namespace bio
                                v_field,
                                a_field,
                                f_int_field,
+                               f_ext_field,
                                mass_field)
     {
       du_d = createDeviceDoubleArray(ndof);
       f_d = createDeviceDoubleArray(ndof);
       f_int_last_d = createDeviceDoubleArray(ndof);
-      f_ext_d = createDeviceDoubleArray(ndof);
+      //f_ext_d = createDeviceDoubleArray(ndof);
       f_ext_last_d = createDeviceDoubleArray(ndof);
       f_damp_d = createDeviceDoubleArray(ndof);
       f_damp_last_d = createDeviceDoubleArray(ndof);
@@ -752,7 +778,7 @@ namespace bio
       l_d = createDeviceDoubleArray(nelem);
       current_coords_d = createDeviceDoubleArray(ndof);
       zeroDeviceData(f_int_last_d, ndof);
-      zeroDeviceData(f_ext_d, ndof);
+      //zeroDeviceData(f_ext_d, ndof);
       zeroDeviceData(f_ext_last_d, ndof);
       zeroDeviceData(f_damp_d, ndof);
       zeroDeviceData(f_damp_last_d, ndof);
@@ -762,7 +788,7 @@ namespace bio
     {
       deleteArray(du_d);
       deleteArray(f_int_last_d);
-      deleteArray(f_ext_d);
+      //deleteArray(f_ext_d);
       deleteArray(f_ext_last_d);
       deleteArray(f_damp_d);
       deleteArray(f_damp_last_d);
@@ -849,7 +875,7 @@ namespace bio
         f_int_last[i] = f_int[i];
         f_int[i] = 0;
         f_ext_last[i] = f_ext[i];
-        f_ext[i] = 0;
+        //f_ext[i] = 0;
         f_damp_last[i] = f_damp[i];
         f_damp[i] = visc_damp_coeff * mass_matrix[i / 3] * v[i];
       }
@@ -861,6 +887,16 @@ namespace bio
                                      fiber_area);
         n1 = connectivity[i * 2];
         n2 = connectivity[i * 2 + 1];
+        if ( frc > 1)
+        {
+         std::cout<<"Large Force: "<<frc<<" "<<l0[i]<<" "<<l[i]<<" "<<fiber_elastic_modulus<<" "<<fiber_area<<std::endl;
+         std::cout<<"V: "<<v[n1*3+0]<<" "<<v[n1*3+1]<<" "<<v[n1*3+2]<<" "<<v[n2*3+0]<<" "<<v[n1*3+1]<<" "<<v[n1*3+2]<<std::endl;
+         std::cout<<"f_int: "<<f_int[n1*3+0]<<" "<<f_int[n1*3+1]<<" "<<f_int[n1*3+2]<<" "<<f_int[n2*3+0]<<" "<<f_int[n1*3+1]<<" "<<f_int[n1*3+2]<<std::endl;
+         std::cout<<"f_ext: "<<f_ext[n1*3+0]<<" "<<f_ext[n1*3+1]<<" "<<f_ext[n1*3+2]<<" "<<f_ext[n2*3+0]<<" "<<f_ext[n1*3+1]<<" "<<f_ext[n1*3+2]<<std::endl;
+         std::cout<<"f_damp: "<<f_damp[n1*3+0]<<" "<<f_damp[n1*3+1]<<" "<<f_damp[n1*3+2]<<" "<<f_damp[n2*3+0]<<" "<<f_damp[n1*3+1]<<" "<<f_damp[n1*3+2]<<std::endl;
+         std::cout<<"mass: "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n2*3]<<" "<<mass_matrix[n1*3]<<" "<<mass_matrix[n1*3]<<std::endl;
+         abort();
+        }
         assert(l[i]>0);
         elem_nrm_1 = (current_coords[n2 * 3] - current_coords[n1 * 3]) / l[i];
         elem_nrm_2 =
@@ -920,15 +956,16 @@ namespace bio
                       double amp_t,
                       double amp_prev_t,
                       const int * dof,
+                      const double * init_values,
                       const double * values,
                       double * u,
                       double * du)
     {
       for (int i = 0; i < nfixed; ++i)
       {
-        u[dof[i]] = values[i] * amp_t;
+        u[dof[i]] = values[i] * amp_t+init_values[i];
         du[dof[i]] = values[i] * (amp_t - amp_prev_t);
-        assert(fabs(u[dof[i]]) < fabs(values[i]) || isClose(u[dof[i]],values[i]));
+        //assert(fabs(u[dof[i]]) < fabs(values[i]) || isClose(u[dof[i]],values[i]));
       }
     }
     void applyVelBC_(int nfixed,
@@ -1132,7 +1169,7 @@ namespace bio
             f_int_last(i) = f_int(i);
             f_int(i) = 0;
             f_ext_last(i) = f_ext(i);
-            f_ext(i) = 0;
+            //f_ext(i) = 0;
             f_damp_last(i) = f_damp(i);
             f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
           });
@@ -1208,15 +1245,18 @@ namespace bio
                       double amp_t,
                       double amp_prev_t,
                       KKD_ROIA dof,
+                      KKD_RODA init_values,
                       KKD_RODA values,
                       KKD_RWDA u,
                       KKD_RWDA du)
     {
       // FIXME here we have a pointer to a class which will fail in cuda!
       Kokkos::parallel_for("applyDispBC", nfixed, KOKKOS_LAMBDA(std::size_t i) {
-        u(dof(i)) = values(i) * amp_t;
-        du(dof(i)) = values(i) * (amp_t - amp_prev_t);
-        assert(fabs(u(dof(i))) <= fabs(values(i)));
+        int dof_local = dof(i);
+        double val = values(i);
+        double du_local = val * amp_t;
+        u(dof_local) = du_local + init_values(i);
+        du(dof_local) = du_local-val*amp_prev_t;
       });
     }
     void applyVelBC_(int nfixed,
@@ -1371,6 +1411,7 @@ namespace bio
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
                            apf::Field * f_int_field = NULL,
+                           apf::Field * f_ext_field = NULL,
                            apf::Field * mass_field = NULL)
         : ExplicitAnalysisBase(mesh,
                                total_time,
@@ -1390,12 +1431,13 @@ namespace bio
                                v_field,
                                a_field,
                                f_int_field,
+                               f_ext_field,
                                mass_field)
     {
       du_d = createDeviceDoubleArray(ndof);
       f_d = createDeviceDoubleArray(ndof);
       f_int_last_d = createDeviceDoubleArray(ndof);
-      f_ext_d = createDeviceDoubleArray(ndof);
+      //f_ext_d = createDeviceDoubleArray(ndof);
       f_ext_last_d = createDeviceDoubleArray(ndof);
       f_damp_d = createDeviceDoubleArray(ndof);
       f_damp_last_d = createDeviceDoubleArray(ndof);
@@ -1404,7 +1446,7 @@ namespace bio
       current_coords_d = createDeviceDoubleArray(ndof);
       zeroDeviceData(f_d, ndof);
       zeroDeviceData(f_int_last_d, ndof);
-      zeroDeviceData(f_ext_d, ndof);
+      //zeroDeviceData(f_ext_d, ndof);
       zeroDeviceData(f_ext_last_d, ndof);
       zeroDeviceData(f_damp_d, ndof);
       zeroDeviceData(f_damp_last_d, ndof);
@@ -1414,7 +1456,7 @@ namespace bio
       deleteArray(du_d);
       deleteArray(f_d);
       deleteArray(f_int_last_d);
-      deleteArray(f_ext_d);
+      //deleteArray(f_ext_d);
       deleteArray(f_ext_last_d);
       deleteArray(f_damp_d);
       deleteArray(f_damp_last_d);

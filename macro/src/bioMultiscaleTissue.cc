@@ -440,14 +440,14 @@ namespace bio
     //int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Implicit);
     int_slvr.data[MICRO_SOLVER_TYPE] = static_cast<int>(SolverType::Explicit);
     int_slvr.data[AMPLITUDE_TYPE] = static_cast<int>(AmplitudeType::SmoothStep);
-    int_slvr.data[PRINT_HISTORY_FREQUENCY] = 1000000000;
+    int_slvr.data[PRINT_HISTORY_FREQUENCY] = 10000;
     int_slvr.data[PRINT_FIELD_FREQUENCY] = 1;
     int_slvr.data[PRINT_FIELD_BY_NUM_FRAMES] = 1;
-    int_slvr.data[SERIAL_GPU_CUTOFF] = 2000;
+    int_slvr.data[SERIAL_GPU_CUTOFF] = 5000;
     slvr.data[LOAD_TIME] = 10;
     slvr.data[CRITICAL_TIME_SCALE_FACTOR] = 0.8;
     slvr.data[ENERGY_CHECK_EPSILON] = 1E-2;
-    slvr.data[VISCOUS_DAMPING_FACTOR] = 0.1;
+    slvr.data[VISCOUS_DAMPING_FACTOR] = 0.5;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,

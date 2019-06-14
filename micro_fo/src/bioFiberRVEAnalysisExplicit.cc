@@ -34,13 +34,14 @@ namespace bio
         , crit_time_scale_factor(ss.crit_time_scale_factor)
         , energy_check_eps(ss.energy_check_eps)
         , disp_bound_nfixed(0)
-        , disp_bound_nodes(NULL)
         , disp_bound_dof(NULL)
         , disp_bound_vals(NULL)
         , fiber_elastic_modulus(fn->getFiberReactions()[0]->E)
         , fiber_area(fn->getFiberReactions()[0]->fiber_area)
         , fiber_density(fn->getFiberReactions()[0]->fiber_density)
         , amp(NULL)
+        , system_initialized(false)
+        , dt_prev(0)
     {
       es = createImplicitMicroElementalSystem(fn, getK(), getF());
       std::stringstream sout;
@@ -48,15 +49,16 @@ namespace bio
       MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
-      //if(ss.ampType == AmplitudeType::SmoothStep)
-      //{
-      //  amp = new SmoothAmp(total_time);
-      //}
-      //else
-      //{
-      //  std::abort();
-      //}
-      amp = new SmoothAmpHold(1.0, total_time);
+      if(ss.ampType == AmplitudeType::SmoothStep)
+      {
+        //amp = new SmoothAmp(total_time);
+        amp = new SmoothAmpHold(5.0,total_time);
+      }
+      else
+      {
+        std::abort();
+      }
+      //amp = new SmoothAmpHold(1.0, total_time);
       assert(fiber_density > 0);
       assert(fiber_area > 0);
       assert(fiber_elastic_modulus > 0);
@@ -108,10 +110,20 @@ namespace bio
     // we do look for the field because if a previous analysis
     // was run, then we need to let the ETFEM code know
     apf::Field * massField = mesh->findField("nodalMass");
+    // TODO check if we set the u field to something different somewhere...
+    // possibly the displacements aren't the same when we leave and return to the solver?
+    // just for testing purposes, we are using the du field since it isn't
+    // used otherwise
+    apf::Field * f_ext_field = getFn()->getdUField();
     apf::zeroField(getFn()->getVField());
     apf::zeroField(getFn()->getAField());
-    apf::zeroField(getFn()->getFField());
-    apf::zeroField(getFn()->getdUField());
+    //apf::zeroField(getFn()->getFField());
+    //apf::zeroField(getFn()->getdUField());
+    //apf::zeroField(getFn()->getUField());
+    //apf::freeze(getFn()->getUField());
+    apf::Field * coords = getFn()->getNetworkMesh()->getCoordinateField(); 
+    apf::freeze(getFn()->getUField());
+    double * u_arr = apf::getArrayData(getFn()->getUField());
     bool rtn;
     if (this->getFn()->getDofCount() < serial_gpu_cutoff)
     {
@@ -121,11 +133,13 @@ namespace bio
           total_time, fiber_elastic_modulus, fiber_area, fiber_density, amp,
           analysis_name, visc_damp_coeff, print_history_frequency,
           print_field_frequency, print_field_by_num_frames,
-          crit_time_scale_factor, energy_check_eps, getFn()->getXpUField(),
-          getFn()->getdUField(), getFn()->getVField(), getFn()->getAField(),
-          getFn()->getFField(), massField);
-      analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_vals);
-      rtn = analysis.run();
+          crit_time_scale_factor, energy_check_eps,coords,
+          getFn()->getUField(), getFn()->getVField(), getFn()->getAField(),
+          getFn()->getFField(), f_ext_field, massField);
+      assert(disp_bound_dof && disp_bound_vals);
+      analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
+      rtn = analysis.run(system_initialized, dt_prev);
+      system_initialized = true;
     }
     else
     {
@@ -135,18 +149,28 @@ namespace bio
           total_time, fiber_elastic_modulus, fiber_area, fiber_density, amp,
           analysis_name, visc_damp_coeff, print_history_frequency,
           print_field_frequency, print_field_by_num_frames,
-          crit_time_scale_factor, energy_check_eps, getFn()->getXpUField(),
-          getFn()->getdUField(), getFn()->getVField(), getFn()->getAField(),
-          getFn()->getFField(), massField);
-      analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_vals);
-      rtn = analysis.run();
+          crit_time_scale_factor, energy_check_eps, coords,
+          getFn()->getUField(), getFn()->getVField(), getFn()->getAField(),
+          getFn()->getFField(), f_ext_field, massField);
+      assert(disp_bound_dof && disp_bound_vals);
+      analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
+      rtn = analysis.run(system_initialized, dt_prev);
+      system_initialized = true;
     }
+    // delete the boundary condition data
+    // TODO fix this so we aren't newing and deleting these arrays every iteration
+    delete [] disp_bound_dof;
+    disp_bound_dof=NULL;
+    delete [] disp_bound_vals;
+    disp_bound_vals=NULL;
+    delete [] disp_bound_init_vals;
+    disp_bound_init_vals = NULL;
     // accumulate the du from the explicit analysis into the u field
-    apf::freeze(getFn()->getdUField());
-    double * du = apf::getArrayData(getFn()->getdUField());
-    amsi::AccumOp acm;
-    amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(),  du, 0, &acm).run();
-    relaxSystem();
+    //apf::freeze(getFn()->getdUField());
+    //double * du = apf::getArrayData(getFn()->getdUField());
+    //amsi::AccumOp acm;
+    //amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(),  du, 0, &acm).run();
+    //relaxSystem();
     return rtn;
   }
   void FiberRVEAnalysisExplicit::computeDisplcamentBC(
@@ -155,13 +179,17 @@ namespace bio
     disp_bound_nfixed = 3 * bnd_nds[RVE::all].size();
     disp_bound_dof = new int[disp_bound_nfixed];
     disp_bound_vals = new double[disp_bound_nfixed];
-    apf::Field * current_coords_field = getFn()->getXpUField();
-    apf::Vector3 coords;
+    disp_bound_init_vals = new double[disp_bound_nfixed];
+    //apf::Field * current_coords_field = getFn()->getXpUField();
+    apf::Field * current_coords_field = getFn()->getNetworkMesh()->getCoordinateField();
+    apf::Field * disp_field = getFn()->getUField();
+    apf::Vector3 coords, disp;
     int node_num[3];
     for (std::size_t i = 0; i < bnd_nds[RVE::all].size(); ++i)
     {
       apf::MeshEntity * nd = bnd_nds[RVE::all][i];
       apf::getVector(current_coords_field, nd, 0, coords);
+      apf::getVector(disp_field, nd, 0, disp);
       node_num[0] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 0);
       node_num[1] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 1);
       node_num[2] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 2);
@@ -169,13 +197,16 @@ namespace bio
       disp_bound_dof[i * 3 + 1] = node_num[1];
       disp_bound_dof[i * 3 + 2] = node_num[2];
       disp_bound_vals[i * 3] = (dfmGrd[0] - 1) * coords[0] +
-                               dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2];
+                               dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2]-disp[0];
       disp_bound_vals[i * 3 + 1] = dfmGrd[3] * coords[0] +
                                    (dfmGrd[4] - 1) * coords[1] +
-                                   dfmGrd[5] * coords[2];
+                                   dfmGrd[5] * coords[2]-disp[1];
       disp_bound_vals[i * 3 + 2] = dfmGrd[6] * coords[0] +
                                    dfmGrd[7] * coords[1] +
-                                   (dfmGrd[8] - 1) * coords[2];
+                                   (dfmGrd[8] - 1) * coords[2]-disp[2];
+      disp_bound_init_vals[i*3] = disp[0];
+      disp_bound_init_vals[i*3+1] = disp[1];
+      disp_bound_init_vals[i*3+2] = disp[2];
     }
   }
   void FiberRVEAnalysisExplicit::copyForceDataToForceVec()

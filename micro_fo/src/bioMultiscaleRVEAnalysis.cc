@@ -308,7 +308,9 @@ namespace bio
             apf::writeVtkFiles(
                 sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
             // if the rve didn't work, crash the analysis
-            std::abort();  // should I use MPI_Abort() here?
+            // use MPI abort, so that we don't wait for networks to complete if one
+            // has failed.
+            MPI_Abort(MPI_COMM_WORLD, 1);
           }
           // we've converged and have not reset the state of the vectors,
           // matrices, and buffers the inversion of the tangent stiffness matrix
