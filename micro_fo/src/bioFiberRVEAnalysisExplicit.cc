@@ -6,7 +6,6 @@
 #include <las.h>
 #include <lionPrint.h>
 #include <mpi.h>
-#include <Kokkos_Core.hpp>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -19,6 +18,10 @@
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysisExplicit_impl.h"
 #include "bioMassIntegrator.h"
+#include "bioMicroFOConfig.h"
+#ifdef ENABLE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
 namespace bio
 {
   FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(FiberNetwork * fn,
@@ -135,8 +138,10 @@ namespace bio
     apf::freeze(getFn()->getUField());
     double * u_arr = apf::getArrayData(getFn()->getUField());
     bool rtn;
+#ifdef ENABLE_KOKKOS 
     if (this->getFn()->getDofCount() < serial_gpu_cutoff)
     {
+#endif
       // run serial analysis
       ExplicitAnalysisSerial analysis(
           static_cast<apf::Mesh2 *>(mesh),
@@ -150,6 +155,7 @@ namespace bio
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
       rtn = analysis.run(itr_prev);
       system_initialized = true;
+#ifdef ENABLE_KOKKOS 
     }
     else
     {
@@ -167,6 +173,7 @@ namespace bio
       rtn = analysis.run(itr_prev);
       system_initialized = true;
     }
+#endif
     // delete the boundary condition data
     // TODO fix this so we aren't newing and deleting these arrays every iteration
     delete [] disp_bound_dof;

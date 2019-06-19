@@ -8,6 +8,7 @@ set(micro_fo_public_headers
   bioFiberRVEAnalysisExplicit.h
   bioFiberRVEAnalysisExplicit_impl.h
   bioMassIntegrator.h
+  bioMicroFOConfig.h
   bioMicroFOParams.h
   bioMultiscaleCoupling.h
   bioMultiscaleMicroFOParams.h
@@ -44,7 +45,12 @@ find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONE
 find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(Kokkos CONFIG REQUIRED)
+
+option(ENABLE_KOKKOS "ENABLE KOKKOS GPU COMPUTATION" ON)
+configure_file(bioMicroFOConfig.h.in bioMicroFOConfig.h)
+if(ENABLE_KOKKOS)
+  find_package(Kokkos CONFIG REQUIRED)
+endif()
 
 option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)
 if(ENABLE_WRITE_MICRO_PER_ITER)
@@ -64,6 +70,7 @@ endif()
 
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
                                     $<INSTALL_INTERFACE:include/biotissue>
                                     ${Kokkos_INCLUDE_DIRS}
                                     PRIVATE ${yaml-cpp_INCLUDE_DIRS} )

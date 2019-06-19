@@ -10,15 +10,20 @@
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
+#include "bioMicroFOConfig.h"
+#ifdef ENABLE_KOKKOS
 #include <Kokkos_Core.hpp>
+#endif
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
+#ifdef ENABLE_KOKKOS
   Kokkos::initialize(argc, argv);
   {
+#endif
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
       "/lore/mersoj/biotissue/biotissue/micro_fo/test/fiber_only.yaml", cases);
@@ -90,8 +95,10 @@ int main(int argc, char * argv[])
   calcStress(an, sigma);
   std::cout<<sigma<<std::endl;
   las::destroySparsity<las::MICRO_BACKEND>(sprs);
+#ifdef ENABLE_KOKKOS
   }
   Kokkos::finalize();
+#endif
 #ifdef MICRO_USING_PETSC
   las::finalizePETScLAS();
 #endif

@@ -7,7 +7,6 @@
 #include <apfMesh2.h>
 #include <lionPrint.h>
 #include <mpi.h>
-#include <Kokkos_Core.hpp>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -21,6 +20,10 @@
 #include "bioFiberRVEAnalysisExplicit.h"
 #include "bioMassIntegrator.h"
 #include "bioVerbosity.h"
+#include "bioMicroFOConfig.h"
+#ifdef ENABLE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
 namespace bio
 {
   KOKKOS_INLINE_FUNCTION
@@ -1072,6 +1075,7 @@ namespace bio
     }
     void fence_() {}
   };
+#ifdef ENABLE_KOKKOS
   using exe_space = Kokkos::DefaultExecutionSpace;
   using KKD_RODA = Kokkos::View<const double *, exe_space::device_type>;
   using KKD_RWDA = Kokkos::View<double *, exe_space::device_type>;
@@ -1492,4 +1496,5 @@ namespace bio
       deleteArray(current_coords_d);
     }
   };
+#endif
 }  // namespace bio
