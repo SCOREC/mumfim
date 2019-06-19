@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cmake config for bio
 # usage ./config.sh [build_type] [logrun_flag]
-source $DEVROOT/scripts/util
+source ./util
 ROOT=`dirname $PWD`
 LOGRUN_OVERRIDE=$2
 if [ -z $1 ]; then
@@ -12,10 +12,12 @@ fi
 if [ "$BUILD_TYPE" == "Debug" ] ; then
   BUILD_DIR=$ROOT/build_debug
   BUILD_TESTS=ON
+  VERBOSITY_LEVEL=HIGH
 elif [ "$BUILD_TYPE" == "Release" ] ; then
-  BUILD_TYPE="RelWithDebugInfo"
+  #BUILD_TYPE="RelWithDebugInfo"
   BUILD_DIR=$ROOT/build_release
   BUILD_TESTS=OFF
+  VERBOSITY_LEVEL=OFF
 fi
 LOGRUN=ON
 if [ "$LOGRUN_OVERRIDE" != "" ] ; then
@@ -43,7 +45,7 @@ else
   CC=`which mpicc`
   CXX=`which mpicxx`
   cmake \
-      -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
       -DBUILD_TESTS:BOOL=ON \
       -DCMAKE_C_COMPILER=$CC \
@@ -57,9 +59,13 @@ else
       -Dlas_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/$BUILD_TYPE/lib/cmake \
       -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
-      -DENABLE_VERBOSITY=HIGH \
+      -DENABLE_VERBOSITY=$VERBOSITY_LEVEL \
+      -DCMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-but-set-variable" \
       ..
 fi
+      # -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \
 
+      #-DCMAKE_CXX_FLAGS="-pg -Wno-unused-variable -Wno-unused-but-set-variable" \
+      #-DCMAKE_EXE_LINKER_FLAGS="-pg" \
 
 

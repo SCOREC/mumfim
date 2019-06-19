@@ -120,23 +120,52 @@ namespace bio
   //void fromArray(apf::DynamicMatrix & to, const double * from, int nr, int nc);
   class ApplyDeformationGradient : public amsi::FieldOp
   {
-  protected:
+    protected:
     apf::Field * xyz;
     apf::Field * du;
     apf::Field * u;
     apf::MeshEntity * ent;
     apf::Matrix3x3 FmI;
-  public:
-    ApplyDeformationGradient(apf::Matrix3x3 F, apf::Mesh * msh, apf::Field * du_, apf::Field * u_)
-      : xyz(msh->getCoordinateField())
-      , du(du_)
-      , u(u_)
-      , ent(NULL)
+    std::vector<apf::MeshEntity *>::iterator ent_bgn;
+    std::vector<apf::MeshEntity *>::iterator ent_end;
+    apf::Vector3 nd_xyz;
+    bool hasEntList; // bool is true if the iterators to a list are passed in
+    void init(apf::Mesh * msh, const apf::Matrix3x3 & F)
     {
       int d = msh->getDimension();
-      for(int ii = 0; ii < d; ++ii)
-        for(int jj = 0; jj < d; ++jj)
+      for (int ii = 0; ii < d; ++ii)
+        for (int jj = 0; jj < d; ++jj)
           FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
+    }
+
+    public:
+    ApplyDeformationGradient(apf::Matrix3x3 F,
+                             apf::Mesh * msh,
+                             apf::Field * du_,
+                             apf::Field * u_)
+        : xyz(msh->getCoordinateField())
+        , du(du_)
+        , u(u_)
+        , ent(NULL)
+        , hasEntList(false)
+    {
+      init(msh, F);
+    }
+    ApplyDeformationGradient(std::vector<apf::MeshEntity *>::iterator ent_bgn,
+                             std::vector<apf::MeshEntity *>::iterator ent_end,
+                             apf::Matrix3x3 F,
+                             apf::Mesh * msh,
+                             apf::Field * du_,
+                             apf::Field * u_)
+        : xyz(msh->getCoordinateField())
+        , du(du_)
+        , u(u_)
+        , ent(NULL)
+        , ent_bgn(ent_bgn)
+        , ent_end(ent_end)
+        , hasEntList(true)
+    {
+      init(msh, F);
     }
     virtual bool inEntity(apf::MeshEntity * m)
     {
@@ -146,20 +175,22 @@ namespace bio
     virtual void outEntity() {}
     virtual void atNode(int nd)
     {
-      apf::Vector3 nd_xyz;
       apf::Vector3 nd_u_old;
       // the xyz coordinates in the original frame
-      apf::getVector(xyz,ent,nd,nd_xyz);
-      apf::getVector(u,ent,nd,nd_u_old);
+      apf::getVector(xyz, ent, nd, nd_xyz);
+      apf::getVector(u, ent, nd, nd_u_old);
       apf::Vector3 nd_u = FmI * nd_xyz;
       // FIXME this is a place where floating point math could kill us
       apf::Vector3 nd_du = nd_u - nd_u_old;
-      apf::setVector(u,ent,nd,nd_u);
-      apf::setVector(du,ent,nd,nd_du);
+      apf::setVector(u, ent, nd, nd_u);
+      apf::setVector(du, ent, nd, nd_du);
     }
     void run()
     {
-      apply(u);
+      if (hasEntList)
+        apply(ent_bgn, ent_end, u);
+      else
+        apply(u);
     }
   };
 }

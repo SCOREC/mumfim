@@ -31,10 +31,15 @@ namespace bio
     apf::zeroField(prv_rve);
     // get properties for output orienation tensor
     pAttribute ornt_tens = GM_attrib(g, "output orientation tensor");
-    pAttribute ornt_tens_3D =
-        Attribute_childByType(ornt_tens, "3D Orientation Tensor");
-    pAttribute ornt_tens_2D =
-        Attribute_childByType(ornt_tens, "2D Orientation Tensor");
+    pAttribute ornt_tens_3D = NULL;
+    pAttribute ornt_tens_2D = NULL;
+    if(ornt_tens)
+    {
+      ornt_tens_3D =
+          Attribute_childByType(ornt_tens, "3D Orientation Tensor");
+      ornt_tens_2D =
+          Attribute_childByType(ornt_tens, "2D Orientation Tensor");
+    }
     // set the class orientation status
     compute_ornt_3D = ornt_tens_3D != NULL;
     compute_ornt_2D = ornt_tens_2D != NULL;

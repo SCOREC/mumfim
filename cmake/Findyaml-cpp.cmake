@@ -1,4 +1,4 @@
-include(util)
+#include(util)
 
 find_package(PkgConfig REQUIRED QUIET)
 

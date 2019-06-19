@@ -27,7 +27,13 @@ namespace bio
     amsi::XpYFunc * xpufnc;
     apf::Field * xpu;
     apf::Field * du;
+    apf::Field * v; // velocity field
+    apf::Field * a; // acceleration field
+    apf::Field * f; // force field
     apf::Numbering * udof;
+    apf::Numbering * vdof;
+    apf::Numbering * adof;
+    apf::Numbering * fdof;
     int ucnt;
     FiberMember tp;
     std::vector<FiberReaction *> rctns;
@@ -61,7 +67,15 @@ namespace bio
     apf::Field * getUField() const { return u; }
     apf::Field * getdUField() const { return du; }
     apf::Field * getXpUField() const { return xpu; }
+    apf::Field * getVField() const { return v; }
+    apf::Field * getAField() const { return a; }
+    apf::Field * getFField() const { return f; }
     apf::Numbering * getUNumbering() const { return udof; }
+    // velocity numbering
+    apf::Numbering * getVNumbering() const { return vdof; }
+    // acceleration numbering
+    apf::Numbering * getANumbering() const {return adof; }
+    apf::Numbering * getFNumbering() const {return fdof; }
     // TODO this should be made const, but it will take some refactor work
     // in the Truss integrator
     std::vector<FiberReaction *> & getFiberReactions() { return rctns; }

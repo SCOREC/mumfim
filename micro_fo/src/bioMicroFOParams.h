@@ -20,6 +20,15 @@ namespace bio
     double data[9];
     double & operator[](std::size_t idx) { return data[idx]; }
     const double & operator[](std::size_t idx) const { return data[idx]; }
+    DeformationGradient operator*(double val)
+    {
+      DeformationGradient dg;
+      for (int i = 0; i < 9; ++i)
+      {
+        dg.data[i] = data[i] * val;
+      }
+      return dg;
+    }
   };
   struct Axis
   {

@@ -62,19 +62,9 @@ int main(int argc, char * argv[])
     // apf::Mesh * fn = an.getFn()->getNetworkMesh();
     std::cout<<"Constructing the elemental stiffness integrator"<<std::endl;
     apf::Integrator * truss_es =
-        bio::createMicroElementalSystem(fn, vecs->getK(), vecs->getF());
+        bio::createImplicitMicroElementalSystem(fn, vecs->getK(), vecs->getF());
     std::cout<<"Computing the  global stiffness matrix"<<std::endl;
-    apf::MeshEntity * me = NULL;
-    apf::MeshIterator * itr = fn_msh->begin(1);
-    int ii = 0;
-    while ((me = fn_msh->iterate(itr)))
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(fn_msh, me);
-      truss_es->process(mlm);
-      apf::destroyMeshElement(mlm);
-      ++ii;
-    }
-    fn_msh->end(itr);
+    truss_es->process(fn_msh, 1);
     std::ofstream out("GlobalKMatrix.mtx");
     if (!out.is_open())
     {
@@ -110,6 +100,8 @@ int main(int argc, char * argv[])
     in2.close();
     std::cout << "Comparing matrix" << std::endl;
     assert(readMat);
+    las::ScalarMatMult * smm = las::getScalarMatMult<las::sparskit>();
+    smm->exec(-1, readMat, NULL);
     bool close = las::sparskitMatClose(readMat, readMat2, 1E-10, 1E-15);
     std::string comp =
          close ? "True" : "False";

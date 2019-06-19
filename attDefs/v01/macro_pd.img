@@ -1,4 +1,4 @@
-13
+13 # attdef file version
 ##
 # Fields
 type "field name" : string un p "Field Name";
@@ -14,29 +14,6 @@ type "field" : void e < n > {
 
 #####################################################
 # Boundary Conditions
-type "component constraints" : void A;
-
-image "scalar constraint" : "component constraints" {
-  R type "value" : tensor0 3 E 1 d <0.0>;
-};
-
-image "vector constraint" : "component constraints" {
-  O type "x":tensor0 3 E 1 d <0.0>;
-  O type "y":tensor0 3 E 1 d <0.0>;
-  O type "z":tensor0 3 E 1 d <0.0>;
-};
-
-image "matrix constraint" : "component constraints" {
-  O type "xx":tensor0 3 E 1 d <0.0>;
-  O type "xy":tensor0 3 E 1 d <0.0>;
-  O type "xz":tensor0 3 E 1 d <0.0>;
-  O type "yx":tensor0 3 E 1 d <0.0>;
-  O type "yy":tensor0 3 E 1 d <0.0>;
-  O type "yz":tensor0 3 E 1 d <0.0>;
-  O type "zx":tensor0 3 E 1 d <0.0>;
-  O type "zy":tensor0 3 E 1 d <0.0>;
-  O type "zz":tensor0 3 E 1 d <0.0>;
-};
 
 # E (expression option) must appear prior to d (default) option
 type "displacement" : void e < v e f r > {
