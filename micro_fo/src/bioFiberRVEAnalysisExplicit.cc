@@ -30,6 +30,7 @@ namespace bio
         , print_field_frequency(ss.print_field_frequency)
         , print_field_by_num_frames(ss.print_field_by_num_frames)
         , total_time(ss.total_time)
+        , load_time(ss.load_time)
         , serial_gpu_cutoff(ss.serial_gpu_cutoff)
         , crit_time_scale_factor(ss.crit_time_scale_factor)
         , energy_check_eps(ss.energy_check_eps)
@@ -49,13 +50,20 @@ namespace bio
       MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
+      writer = new ExplicitOutputWriter(fn->getNetworkMesh(),
+                 (amsi::fs->getResultsDir() + "/" + analysis_name).c_str(),
+                 (analysis_name + ".pvd").c_str());
       if(ss.ampType == AmplitudeType::SmoothStep)
       {
-        //amp = new SmoothAmp(total_time);
-        amp = new SmoothAmpHold(5.0,total_time);
+        amp = new SmoothAmp(total_time);
+      }
+      else if(ss.ampType == AmplitudeType::SmoothStepHold)
+      {
+        amp = new SmoothAmpHold(load_time,total_time);
       }
       else
       {
+        std::cerr<<"Incorrect Amplitude type selected ("<<static_cast<int>(ss.ampType)<<")"<<std::endl;
         std::abort();
       }
       //amp = new SmoothAmpHold(1.0, total_time);
@@ -137,7 +145,7 @@ namespace bio
           print_field_frequency, print_field_by_num_frames,
           crit_time_scale_factor, energy_check_eps,coords,
           getFn()->getUField(), getFn()->getVField(), getFn()->getAField(),
-          getFn()->getFField(), f_ext_field, massField);
+          getFn()->getFField(), f_ext_field, massField, writer);
       assert(disp_bound_dof && disp_bound_vals);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
       rtn = analysis.run(itr_prev);
@@ -153,7 +161,7 @@ namespace bio
           print_field_frequency, print_field_by_num_frames,
           crit_time_scale_factor, energy_check_eps, coords,
           getFn()->getUField(), getFn()->getVField(), getFn()->getAField(),
-          getFn()->getFField(), f_ext_field, massField);
+          getFn()->getFField(), f_ext_field, massField, writer);
       assert(disp_bound_dof && disp_bound_vals);
       analysis.setDispBC(disp_bound_nfixed, disp_bound_dof, disp_bound_init_vals, disp_bound_vals);
       rtn = analysis.run(itr_prev);

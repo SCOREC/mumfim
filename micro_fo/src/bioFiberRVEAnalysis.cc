@@ -177,7 +177,8 @@ namespace bio
     MicroSolutionStrategyExplicit ss;
     ss.cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
     ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
-    ss.total_time = slvr.data[LOAD_TIME];
+    ss.total_time = slvr.data[LOAD_TIME]+slvr.data[HOLD_TIME];
+    ss.load_time = slvr.data[LOAD_TIME];
     ss.crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
     ss.visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
     ss.energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];

@@ -24,7 +24,10 @@
 namespace bio
 {
   KOKKOS_INLINE_FUNCTION
-  static bool isClose(double a, double b, double rtol = 1E-8, double atol = 1E-10)
+  static bool isClose(double a,
+                      double b,
+                      double rtol = 1E-8,
+                      double atol = 1E-10)
   {
     return fabs(a - b) <= max(rtol * max(fabs(a), fabs(b)), atol);
   }
@@ -73,7 +76,7 @@ namespace bio
     bool run(unsigned long & itr_prev)
     {
       // optimization to only compute the mass matrix 1
-      //if(!mass_field_initialized)
+      // if(!mass_field_initialized)
       computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
       // copy other data to device
       copyData(mass_matrix_d, mass_matrix_h);
@@ -115,7 +118,7 @@ namespace bio
                           connectivity_d, mass_matrix_d, visc_damp_coeff,
                           f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
                           f_damp_d, f_damp_last_d, f_d);
-      //else
+      // else
       BIO_V3(std::cout << "The initial timestep is dt=" << dt_crit
                        << ".\nIf the analysis continues with a comprable dt "
                           "the analysis "
@@ -123,16 +126,18 @@ namespace bio
                        << (unsigned long)(total_time /
                                           (dt_crit * crit_time_scale_factor))
                        << " timesteps.\n";)
-      // don't compute the frame time if the frequency is zero because this will be a divide by zero
-      double frame_time = print_field_frequency ? (total_time / print_field_frequency) : 0;
+      // don't compute the frame time if the frequency is zero because this will
+      // be a divide by zero
+      double frame_time =
+          print_field_frequency ? (total_time / print_field_frequency) : 0;
       unsigned int frame_num = 1;
-      if(print_field_frequency)
+      if (print_field_frequency)
       {
-        writer.writeFieldData(itr_prev);
+        writer->writeFieldData(itr_prev, current_time);
       }
-      if(print_history_frequency)
+      if (print_history_frequency)
       {
-        writer.writeHistoryData(itr_prev);
+        writer->writeHistoryData(itr_prev, W_int, W_ext, W_damp, W_kin, current_time);
       }
       updateAcceleration(ndof, mass_matrix_d, f_d, a_d);
       do
@@ -151,7 +156,8 @@ namespace bio
                    disp_boundary_values_d, amp, v_d);
         updateDisplacement(ndof, v_d, dt_nphalf, u_d, du_d);
         applyDispBC(disp_nfixed, current_time, t_npone, disp_boundary_dof_d,
-                    disp_boundary_init_values_d, disp_boundary_values_d, amp, u_d, du_d);
+                    disp_boundary_init_values_d, disp_boundary_values_d, amp,
+                    u_d, du_d);
         getCurrentCoords(ndof, coords_d, u_d, current_coords_d);
         getElementLengths(nelem, current_coords_d, connectivity_d, l_d);
         dt_crit = getForces(nelem, ndof, l0_d, l_d, v_d, current_coords_d,
@@ -191,16 +197,17 @@ namespace bio
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
           copyData(f_ext_d, f_ext_h);
-          writer.writeFieldData(itr_prev+n_step);
-          writer.writeHistoryData(itr_prev+n_step);
+          writer->writeFieldData(itr_prev + n_step, current_time);
+          writer->writeHistoryData(itr_prev + n_step, W_int, W_ext, W_damp, W_kin, current_time);
           return false;
         }
-        bool print_field = print_field_frequency &&
+        bool print_field =
+            print_field_frequency &&
             (print_field_by_num_frames
-                ? ((current_time - dt_nphalf) < frame_num * frame_time) &&
-                      ((current_time >= frame_num * frame_time) ||
-                       current_time >= total_time)
-                : n_step % print_field_frequency == 0);
+                 ? ((current_time - dt_nphalf) < frame_num * frame_time) &&
+                       ((current_time >= frame_num * frame_time) ||
+                        current_time >= total_time)
+                 : n_step % print_field_frequency == 0);
         if (print_field)
         {
           // need to copy any fields that the writer will use back to the host.
@@ -211,27 +218,28 @@ namespace bio
           copyData(a_h, a_d);
           copyData(f_int_h, f_int_d);
           copyData(f_ext_d, f_ext_h);
-          writer.writeFieldData(itr_prev+n_step);
+          writer->writeFieldData(itr_prev + n_step, current_time);
           ++frame_num;
         }
         if (print_history_frequency && (n_step % print_history_frequency == 0))
         {
-          writer.writeHistoryData(itr_prev+n_step);
+          writer->writeHistoryData(itr_prev + n_step, W_int, W_ext, W_damp, W_kin, current_time);
         }
       } while (current_time < total_time);
       // if we didn't already write the last frame
-      if (print_field_frequency && !print_field_by_num_frames && (n_step % print_field_frequency))
+      if (print_field_frequency && !print_field_by_num_frames &&
+          (n_step % print_field_frequency))
       {
         copyData(u_h, u_d);
         copyData(v_h, v_d);
         copyData(a_h, a_d);
         copyData(f_int_h, f_int_d);
         copyData(f_ext_d, f_ext_h);
-        writer.writeFieldData(itr_prev+n_step);
+        writer->writeFieldData(itr_prev + n_step, current_time);
       }
       // make sure we copy the data out to the mesh even
-      // if we don't want to write the mesh to disk since we use this data in the
-      // multiscale analysis
+      // if we don't want to write the mesh to disk since we use this data in
+      // the multiscale analysis
       if (!print_field_frequency)
       {
         copyData(u_h, u_d);
@@ -242,12 +250,11 @@ namespace bio
       }
       if (print_history_frequency && (n_step % print_history_frequency))
       {
-        writer.writeHistoryData(itr_prev+n_step);
+        writer->writeHistoryData(itr_prev + n_step, W_int, W_ext, W_damp, W_kin, current_time);
       }
       itr_prev = n_step;
-      BIO_V3(
-      std::cout << "Microscale has successfully completed in " << n_step
-                << " timesteps.\n";)
+      BIO_V3(std::cout << "Microscale has successfully completed in " << n_step
+                       << " timesteps.\n";)
       return true;
     }
     void setDispBC(int nfixed, int * dof, double * init_values, double * values)
@@ -255,7 +262,8 @@ namespace bio
       disp_nfixed = nfixed;
       disp_boundary_dof_h = createHostIntArrayFromRaw(dof, nfixed);
       disp_boundary_values_h = createHostDoubleArrayFromRaw(values, nfixed);
-      disp_boundary_init_values_h = createHostDoubleArrayFromRaw(init_values, nfixed);
+      disp_boundary_init_values_h =
+          createHostDoubleArrayFromRaw(init_values, nfixed);
     }
     // this function must be marked KOKKOS_INLINE_FUNCTION because it needs to
     // be run on the device
@@ -273,7 +281,6 @@ namespace bio
       double green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
       return length_ratio * elastic_modulus * area * green_strain;
     }
-
     protected:
     const std::string & analysis_name;
     Amplitude * amp;
@@ -354,8 +361,8 @@ namespace bio
     D_RWDA l0_d;
     D_RWDA l_d;
     D_RWDA current_coords_d;
-    ExplicitOutputWriter writer;
-
+    ExplicitOutputWriter * writer;
+    bool own_writer;
     protected:
     template <typename D>
     void deleteArray(D data)
@@ -565,9 +572,9 @@ namespace bio
     {
       double energy_bal = W_kin + W_int + W_damp - W_ext;
       return (fabs(energy_bal) <=
-             eps * std::max(std::max(fabs(W_ext),
-                                     std::max(fabs(W_int), fabs(W_kin))),
-                            fabs(W_damp)));
+              eps * std::max(std::max(fabs(W_ext),
+                                      std::max(fabs(W_int), fabs(W_kin))),
+                             fabs(W_damp)));
     }
     bool checkEnergyBalance(double W_kin,
                             double W_int,
@@ -578,7 +585,6 @@ namespace bio
                                                          eps);
     }
     void fence() { static_cast<T &>(*this).fence_(); }
-
     protected:
     // this protects us from accidentally calling CRTP with the wrong
     // instantiation
@@ -595,13 +601,14 @@ namespace bio
                          bool print_field_by_num_frames = false,
                          double crit_time_scale_factor = 0.8,
                          double energy_check_eps = 1E-2,
-                         apf::Field * coordinate_field=NULL,
+                         apf::Field * coordinate_field = NULL,
                          apf::Field * u_field = NULL,
                          apf::Field * v_field = NULL,
                          apf::Field * a_field = NULL,
                          apf::Field * f_int_field = NULL,
                          apf::Field * f_ext_field = NULL,
-                         apf::Field * mass_field = NULL)
+                         apf::Field * mass_field = NULL,
+                         ExplicitOutputWriter * writer = NULL)
         : analysis_name(analysis_name)
         , mesh(mesh)
         , total_time(total_time)
@@ -623,8 +630,8 @@ namespace bio
         , f_ext_field(f_ext_field)
         , nodalMass(mass_field)
         , mass_field_initialized(false)
-        , writer(mesh, analysis_name.c_str(), (analysis_name+".pvd").c_str(),
-                                  W_int, W_ext, W_damp, W_kin, current_time)
+        , writer(writer)
+        , own_writer(false)
     {
       if (coordinate_field == NULL)
       {
@@ -661,6 +668,13 @@ namespace bio
         nodalMass = apf::createLagrangeField(mesh, "nodalMass", apf::SCALAR, 1);
         apf::zeroField(nodalMass);
       }
+      if (writer == NULL)
+      {
+        writer = new ExplicitOutputWriter(mesh,
+                 (analysis_name).c_str(),
+                 (analysis_name + ".pvd").c_str());
+          own_writer = true;
+      }
       // convert apf fields to arrays
       apf::freeze(u_field);
       apf::freeze(v_field);
@@ -677,7 +691,7 @@ namespace bio
       int etype;
       apf::destruct(mesh, connectivity_arr, nelem, etype, 1);
       assert(etype == apf::Mesh::EDGE);
-      //apf::extractCoords(mesh, coords_arr, nnds);
+      // apf::extractCoords(mesh, coords_arr, nnds);
       // TODO Check to see if we can accomplish the same thing by
       // just freezing the xpy field. My concern is that that field
       // is a function field and may behave badly...
@@ -712,7 +726,10 @@ namespace bio
       connectivity_d = createDeviceIntMirrorArray(connectivity_h);
       coords_d = createDeviceDoubleMirrorArray(coords_h);
     }
-    ~ExplicitAnalysisBase() {}
+    ~ExplicitAnalysisBase() {
+      if(own_writer)
+       delete writer; 
+    }
     friend T;
   };
   using SH_RODA = const double *;
@@ -754,13 +771,14 @@ namespace bio
                            bool print_field_by_num_frames = false,
                            double crit_time_scale_factor = 0.8,
                            double energy_check_eps = 1E-2,
-                           apf::Field * coordinate_field=NULL,
+                           apf::Field * coordinate_field = NULL,
                            apf::Field * u_field = NULL,
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
                            apf::Field * f_int_field = NULL,
                            apf::Field * f_ext_field = NULL,
-                           apf::Field * mass_field = NULL)
+                           apf::Field * mass_field = NULL,
+                           ExplicitOutputWriter * writer = NULL)
         : ExplicitAnalysisBase(mesh,
                                total_time,
                                fiber_elastic_modulus,
@@ -780,12 +798,13 @@ namespace bio
                                a_field,
                                f_int_field,
                                f_ext_field,
-                               mass_field)
+                               mass_field,
+                               writer)
     {
       du_d = createDeviceDoubleArray(ndof);
       f_d = createDeviceDoubleArray(ndof);
       f_int_last_d = createDeviceDoubleArray(ndof);
-      //f_ext_d = createDeviceDoubleArray(ndof);
+      // f_ext_d = createDeviceDoubleArray(ndof);
       f_ext_last_d = createDeviceDoubleArray(ndof);
       f_damp_d = createDeviceDoubleArray(ndof);
       f_damp_last_d = createDeviceDoubleArray(ndof);
@@ -793,7 +812,7 @@ namespace bio
       l_d = createDeviceDoubleArray(nelem);
       current_coords_d = createDeviceDoubleArray(ndof);
       zeroDeviceData(f_int_last_d, ndof);
-      //zeroDeviceData(f_ext_d, ndof);
+      // zeroDeviceData(f_ext_d, ndof);
       zeroDeviceData(f_ext_last_d, ndof);
       zeroDeviceData(f_damp_d, ndof);
       zeroDeviceData(f_damp_last_d, ndof);
@@ -803,7 +822,7 @@ namespace bio
     {
       deleteArray(du_d);
       deleteArray(f_int_last_d);
-      //deleteArray(f_ext_d);
+      // deleteArray(f_ext_d);
       deleteArray(f_ext_last_d);
       deleteArray(f_damp_d);
       deleteArray(f_damp_last_d);
@@ -812,6 +831,7 @@ namespace bio
       deleteArray(l_d);
       deleteArray(current_coords_d);
     }
+
     public:
     void zeroDeviceData_(double * data, int n) { std::fill_n(data, ndof, 0); }
     void zeroHostData_(double * data, int n) { std::fill_n(data, ndof, 0); }
@@ -890,7 +910,7 @@ namespace bio
         f_int_last[i] = f_int[i];
         f_int[i] = 0;
         f_ext_last[i] = f_ext[i];
-        //f_ext[i] = 0;
+        // f_ext[i] = 0;
         f_damp_last[i] = f_damp[i];
         f_damp[i] = visc_damp_coeff * mass_matrix[i / 3] * v[i];
       }
@@ -902,7 +922,7 @@ namespace bio
                                      fiber_area);
         n1 = connectivity[i * 2];
         n2 = connectivity[i * 2 + 1];
-        assert(l[i]>0);
+        assert(l[i] > 0);
         elem_nrm_1 = (current_coords[n2 * 3] - current_coords[n1 * 3]) / l[i];
         elem_nrm_2 =
             (current_coords[n2 * 3 + 1] - current_coords[n1 * 3 + 1]) / l[i];
@@ -968,9 +988,10 @@ namespace bio
     {
       for (int i = 0; i < nfixed; ++i)
       {
-        u[dof[i]] = values[i] * amp_t+init_values[i];
+        u[dof[i]] = values[i] * amp_t + init_values[i];
         du[dof[i]] = values[i] * (amp_t - amp_prev_t);
-        //assert(fabs(u[dof[i]]) < fabs(values[i]) || isClose(u[dof[i]],values[i]));
+        // assert(fabs(u[dof[i]]) < fabs(values[i]) ||
+        // isClose(u[dof[i]],values[i]));
       }
     }
     void applyVelBC_(int nfixed,
@@ -1174,7 +1195,7 @@ namespace bio
             f_int_last(i) = f_int(i);
             f_int(i) = 0;
             f_ext_last(i) = f_ext(i);
-            //f_ext(i) = 0;
+            // f_ext(i) = 0;
             f_damp_last(i) = f_damp(i);
             f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
           });
@@ -1261,7 +1282,7 @@ namespace bio
         double val = values(i);
         double du_local = val * amp_t;
         u(dof_local) = du_local + init_values(i);
-        du(dof_local) = du_local-val*amp_prev_t;
+        du(dof_local) = du_local - val * amp_prev_t;
       });
     }
     void applyVelBC_(int nfixed,
@@ -1350,7 +1371,6 @@ namespace bio
         energies[1] = 0;
         energies[2] = 0;
       }
-
       private:
       Kokkos::View<const double *> du_;
       Kokkos::View<const double *> f_int_last_;
@@ -1411,13 +1431,14 @@ namespace bio
                            bool print_field_by_num_frames = false,
                            double crit_time_scale_factor = 0.8,
                            double energy_check_eps = 5E-2,
-                           apf::Field * coordinate_field=NULL,
+                           apf::Field * coordinate_field = NULL,
                            apf::Field * u_field = NULL,
                            apf::Field * v_field = NULL,
                            apf::Field * a_field = NULL,
                            apf::Field * f_int_field = NULL,
                            apf::Field * f_ext_field = NULL,
-                           apf::Field * mass_field = NULL)
+                           apf::Field * mass_field = NULL,
+                           ExplicitOutputWriter * writer = NULL)
         : ExplicitAnalysisBase(mesh,
                                total_time,
                                fiber_elastic_modulus,
@@ -1437,12 +1458,13 @@ namespace bio
                                a_field,
                                f_int_field,
                                f_ext_field,
-                               mass_field)
+                               mass_field,
+                               writer)
     {
       du_d = createDeviceDoubleArray(ndof);
       f_d = createDeviceDoubleArray(ndof);
       f_int_last_d = createDeviceDoubleArray(ndof);
-      //f_ext_d = createDeviceDoubleArray(ndof);
+      // f_ext_d = createDeviceDoubleArray(ndof);
       f_ext_last_d = createDeviceDoubleArray(ndof);
       f_damp_d = createDeviceDoubleArray(ndof);
       f_damp_last_d = createDeviceDoubleArray(ndof);
@@ -1451,7 +1473,7 @@ namespace bio
       current_coords_d = createDeviceDoubleArray(ndof);
       zeroDeviceData(f_d, ndof);
       zeroDeviceData(f_int_last_d, ndof);
-      //zeroDeviceData(f_ext_d, ndof);
+      // zeroDeviceData(f_ext_d, ndof);
       zeroDeviceData(f_ext_last_d, ndof);
       zeroDeviceData(f_damp_d, ndof);
       zeroDeviceData(f_damp_last_d, ndof);
@@ -1461,7 +1483,7 @@ namespace bio
       deleteArray(du_d);
       deleteArray(f_d);
       deleteArray(f_int_last_d);
-      //deleteArray(f_ext_d);
+      // deleteArray(f_ext_d);
       deleteArray(f_ext_last_d);
       deleteArray(f_damp_d);
       deleteArray(f_damp_last_d);

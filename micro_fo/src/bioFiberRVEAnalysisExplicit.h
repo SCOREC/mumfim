@@ -3,6 +3,7 @@
 #include "bioExplicitAmplitude.h"
 #include "bioFiberNetwork.h"
 #include "bioFiberRVEAnalysis.h"
+#include "bioExplicitOutputWriter.h"
 #include <string>
 namespace bio
 {
@@ -15,6 +16,7 @@ namespace bio
                              const MicroSolutionStrategyExplicit & ss);
     ~FiberRVEAnalysisExplicit()
     {
+      delete writer;
       delete amp;
     }
     virtual bool run(const DeformationGradient & dfmGrd);
@@ -27,6 +29,7 @@ namespace bio
     // implementation will be used.
     int serial_gpu_cutoff;
     double total_time;
+    double load_time;
     double fiber_elastic_modulus;
     double fiber_area;
     double fiber_density;
@@ -53,6 +56,7 @@ namespace bio
     virtual void copyDispDataToDispVec();
     virtual void computeStiffnessMatrix();
     void relaxSystem();
+    ExplicitOutputWriter * writer; 
   };
 }  // namespace bio
 #endif

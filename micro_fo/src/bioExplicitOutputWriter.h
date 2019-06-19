@@ -26,22 +26,17 @@ class ExplicitOutputWriter
   std::string folder;
   std::string pvdName;
   int header_freq;
-  double & W_int;
-  double & W_ext;
-  double & W_damp;
-  double & W_kin;
-  double & time;
   apf::Mesh * mesh;
+  std::string fname;
 
   public:
   ExplicitOutputWriter(apf::Mesh * mesh, std::string folder,
-                       std::string pvdName, double & W_int, double & W_ext,
-                       double & W_damp, double & W_kin, double & time);
-  void writeHistoryData(unsigned long iteration);
-  void writeFieldData(unsigned long iteration);
+                       std::string pvdName);
+  void writeHistoryData(unsigned long iteration, double W_int, double W_ext, double W_damp, double W_kin, double time);
+  void writeFieldData(unsigned long iteration, double time);
 };
 /// Write a paraview collection file for meshes with the format msh_prfx(ii)
-/// where ii ranges from 1 to sz.
+/// where ii ranges from 1 to sz. TODO USE AMSI VERSION
 void writePvdFile(const std::string & col_fnm,
                   const std::vector<PvdData> & pvd_data);
 }

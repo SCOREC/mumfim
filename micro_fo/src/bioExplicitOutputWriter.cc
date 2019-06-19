@@ -7,8 +7,10 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <stdio.h>
 
 namespace bio{
+  /*
 ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder, std::string pvdName,
                      double & W_int, double & W_ext, double & W_damp,
                      double & W_kin, double & time)
@@ -35,9 +37,28 @@ ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder,
   fname = folder + "/" + "micro_results.csv";
   std::ofstream strm(fname);
 }
-void ExplicitOutputWriter::writeHistoryData(unsigned long iteration)
+*/
+ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder, std::string pvdName)
+    : outputFrame(0)
+    , pvdData(std::vector<PvdData>())
+    , folder(folder)
+    , pvdName(pvdName)
+    , header_freq(0)
+    , mesh(mesh)
 {
-  std::string fname = folder + "/" + "micro_results.csv";
+  // if the folder doesn't exist create it
+  fname = folder + "/";
+  struct stat sb;
+  if (stat(fname.c_str(), &sb) != 0)
+  {
+    mkdir(fname.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  }
+  // this clears the micro csv file.
+  fname = folder + "/" + "energies.csv";
+  std::ofstream strm(fname);
+}
+void ExplicitOutputWriter::writeHistoryData(unsigned long iteration, double W_int, double W_ext, double W_damp, double W_kin, double time)
+{
   std::ofstream strm;
   strm.open(fname, std::ios::out | std::ios::app);
   assert(strm.is_open());
@@ -66,7 +87,7 @@ void ExplicitOutputWriter::writeHistoryData(unsigned long iteration)
          << W_total << "\n";
   strm.close();
 }
-void ExplicitOutputWriter::writeFieldData(unsigned long iteration)
+void ExplicitOutputWriter::writeFieldData(unsigned long iteration, double time)
 {
   std::stringstream sout;
   sout << "frame_" << outputFrame++;

@@ -370,6 +370,11 @@ namespace bio
     prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
     prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
     pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
+    // Attributes used by bot implicit and explicit
+    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
+    slvr.data[MICRO_SOLVER_TOL] =
+        micro_slvr_tol ? AttributeDouble_value((pAttributeDouble)micro_slvr_tol)
+                       : 1E-6;
     assert(micro_cnvg);
     char* micro_cnvg_type = Attribute_imageClass(micro_cnvg);
     if (strcmp(micro_cnvg_type, "explicit timestep") == 0) {
@@ -502,9 +507,6 @@ namespace bio
       Sim_deleteString(detect_osc_type);
       assert(num_attempts);
       assert(cut_factor);
-      // should not choose number less than 1E-6 for now due to LAS using single
-      // precision
-      assert(slvr.data[MICRO_SOLVER_TOL] <= slvr.data[MICRO_CONVERGENCE_TOL]);
       slvr.data[PREV_ITER_FACTOR] =
           prev_itr_factor
               ? AttributeDouble_value((pAttributeDouble)prev_itr_factor)
@@ -516,9 +518,12 @@ namespace bio
       int_slvr.data[MAX_MICRO_ITERS] =
           itr_cap ? AttributeInt_value((pAttributeInt)itr_cap) : 0;
       pAttribute micro_cnvg_tol = Attribute_childByType(micro_cnvg, "micro convergence tolerance");
+      assert(micro_cnvg_tol);
       slvr.data[MICRO_CONVERGENCE_TOL] =
           AttributeDouble_value((pAttributeDouble)micro_cnvg_tol);
-      assert(micro_cnvg_tol);
+      // should not choose number less than 1E-6 for now due to LAS using single
+      // precision
+      assert(slvr.data[MICRO_SOLVER_TOL] <= slvr.data[MICRO_CONVERGENCE_TOL]);
     }
     else {
         std::cerr << micro_cnvg_type
@@ -527,11 +532,6 @@ namespace bio
         std::abort();
     }
     Sim_deleteString(micro_cnvg_type);
-    // Attributes used by bot implicit and explicit
-    pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
-    slvr.data[MICRO_SOLVER_TOL] =
-        micro_slvr_tol ? AttributeDouble_value((pAttributeDouble)micro_slvr_tol)
-                       : 1E-6;
   }
   void MultiscaleTissue::getInternalRVEData(apf::MeshEntity * rgn,
                                             micro_fo_header & hdr,
