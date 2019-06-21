@@ -53,8 +53,9 @@ namespace bio
       MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
+      std::string dir = amsi::fs ? amsi::fs->getResultsDir() : ".";
       writer = new ExplicitOutputWriter(fn->getNetworkMesh(),
-                 (amsi::fs->getResultsDir() + "/" + analysis_name).c_str(),
+                 (dir + "/" + analysis_name).c_str(),
                  (analysis_name + ".pvd").c_str());
       if(ss.ampType == AmplitudeType::SmoothStep)
       {
