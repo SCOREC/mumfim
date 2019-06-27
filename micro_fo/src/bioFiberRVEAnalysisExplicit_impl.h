@@ -155,8 +155,12 @@ namespace bio
         }
         t_nphalf = 0.5 * (current_time + t_npone);
         updateVelocity(ndof, a_d, (t_nphalf - current_time), v_d);
-        applyVelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
-                   disp_boundary_values_d, amp, v_d);
+        // we don't really need to apply the velocity boundary condition
+        // here since the only place the boundary velocities are used are
+        // to compute the damping force on the boundary which doesn't matter
+        // since we are applying displacement boundary conditions.
+        //applyVelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
+        //           disp_boundary_values_d, amp, v_d);
         updateDisplacement(ndof, v_d, dt_nphalf, u_d, du_d);
         applyDispBC(disp_nfixed, current_time, t_npone, disp_boundary_dof_d,
                     disp_boundary_init_values_d, disp_boundary_values_d, amp,
@@ -167,8 +171,15 @@ namespace bio
                             connectivity_d, mass_matrix_d, visc_damp_coeff,
                             f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
                             f_damp_d, f_damp_last_d, f_d);
+        updateAccelVel(ndof, t_npone-t_nphalf, mass_matrix_d, f_d, a_d, v_d);
+        /*
         updateAcceleration(ndof, mass_matrix_d, f_d, a_d);
         updateVelocity(ndof, a_d, t_npone - t_nphalf, v_d);
+        */
+        applyAccelVelBC(disp_nfixed, t_npone, visc_damp_coeff, disp_boundary_dof_d,
+                        disp_boundary_values_d, mass_matrix_d, amp, a_d, v_d,
+                        f_int_d, f_ext_d, f_damp_d, f_d);
+        /*
         applyAccelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
                      disp_boundary_values_d, amp, a_d);
         applyVelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
@@ -177,6 +188,7 @@ namespace bio
         // computation is correct (set f_ext=f_int+f_ma+f_damp on boundary)
         fixBoundaryForces(disp_nfixed, disp_boundary_dof_d, mass_matrix_d, a_d,
                           f_int_d, f_ext_d, f_damp_d, f_d);
+        */
         computeEnergies(ndof, du_d, f_int_last_d, f_int_d, f_ext_last_d,
                         f_ext_d, f_damp_last_d, f_damp_d, W_int, W_ext, W_damp);
         W_kin = computeKineticEnergy(ndof, mass_matrix_d, v_d);
@@ -494,6 +506,11 @@ namespace bio
     {
       static_cast<T &>(*this).updateVelocity_(ndof, a, dt, v);
     }
+    void updateAccelVel(int ndof, double dt, D_RODA mass_matrix, D_RODA f,
+                        D_RWDA a, D_RWDA v)
+    {
+      static_cast<T &>(*this).updateAccelVel(ndof, dt, mass_matrix, f, a, v);
+    }
     void applyDispBC(int nfixed,
                      double prev_t,
                      double t,
@@ -542,6 +559,15 @@ namespace bio
     {
       static_cast<T &>(*this).fixBoundaryForces_(nfixed, dof, mass_matrix, a,
                                                  f_int, f_ext, f_damp, f);
+    }
+    void applyAccelVelBC(int nfixed, double t, double visc_damp_coeff, D_ROIA dof, D_RODA values, D_RODA mass_matrix, const Amplitude * amp,
+                         D_RWDA a, D_RWDA v, D_RWDA f_int, D_RWDA f_ext, D_RWDA f_damp, D_RWDA f)
+    {
+      double v_amp = amp->derivative(t);
+      double a_amp = amp->secondDerivative(t);
+      static_cast<T&>(*this).applyAccelVelBC_(nfixed, a_amp, v_amp, visc_damp_coeff,
+                                              dof, values, mass_matrix,
+                                              a, v, f_int, f_ext, f_damp, f);
     }
     void updateDisplacement(int ndof, D_RODA v, double dt, D_RWDA u, D_RWDA du)
     {
@@ -1258,6 +1284,17 @@ namespace bio
       Kokkos::parallel_for("updateVelocity", ndof,
                            KOKKOS_LAMBDA(std::size_t i) { v(i) += dt * a(i); });
     }
+    void updateAccelVel(int ndof, double dt, KKD_RODA mass_matrix, KKD_RODA f, KKD_RWDA a, KKD_RWDA v)
+    {
+      // 2*ndof loads, 2*ndof writes
+      // 2*ndof multiply, 2*ndof divide
+      Kokkos::parallel_for("updateAccelVel", ndof,
+                           KOKKOS_LAMBDA(std::size_t i) {
+                             double a_local = (1.0 / mass_matrix(i / 3)) * f(i);  
+                             a(i) = a_local;
+                             v(i) += dt * a_local;
+                           });
+    }
     void updateDisplacement_(int ndof,
                              KKD_RODA v,
                              double dt,
@@ -1305,7 +1342,7 @@ namespace bio
                        KKD_RODA values,
                        KKD_RWDA a)
     {
-      Kokkos::parallel_for("applyVelBC", nfixed, KOKKOS_LAMBDA(std::size_t i) {
+      Kokkos::parallel_for("applyAccelBC", nfixed, KOKKOS_LAMBDA(std::size_t i) {
         a(dof(i)) = values(i) * amp_t;
       });
     }
@@ -1329,6 +1366,29 @@ namespace bio
                 f_inertial + f_int(local_dof) + f_damp(local_dof);
             f(local_dof) = f_inertial;
           });
+    }
+    void applyAccelVelBC_(int nfixed, double a_amp, double v_amp, double visc_damp_coeff,
+                          KKD_ROIA dof, KKD_RODA values, KKD_RODA mass_matrix,
+                          KKD_RWDA a, KKD_RWDA v, KKD_RWDA f_int, KKD_RWDA f_ext, KKD_RWDA f_damp,
+                          KKD_RWDA f)
+    {
+      //4*nfixed reads, 5*nfixed writes
+      //5*nfixed multiply, 2*nfixed adds, 1 divide
+      Kokkos::parallel_for("applyAccelVelBC", nfixed, KOKKOS_LAMBDA(std::size_t i) {
+        int local_dof = dof(i);
+        double value = values(i);
+        double a_local = value * a_amp;
+        double v_local = value * v_amp;
+        double mass = mass_matrix(local_dof / 3);
+        double f_damp_local = visc_damp_coeff * mass * v_local;
+        double f_inertial = mass * a_local;
+        a(local_dof) =  a_local;
+        v(local_dof) = v_local;
+        f_damp(local_dof) = f_damp_local;
+        f_ext(local_dof) =
+            f_inertial + f_int(local_dof) + f_damp_local;
+        f(local_dof) = f_inertial;
+      });
     }
     // Struct for reduction of array of values
     struct EnergySum
