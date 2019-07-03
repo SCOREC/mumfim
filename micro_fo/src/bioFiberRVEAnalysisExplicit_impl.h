@@ -32,7 +32,7 @@ namespace bio
                       double rtol = 1E-8,
                       double atol = 1E-10)
   {
-    return fabs(a - b) <= max(rtol * max(fabs(a), fabs(b)), atol);
+    return fabs(a - b) <= fmax(rtol * fmax(fabs(a), fabs(b)), atol);
   }
   static void extractCoordinateArray(apf::Mesh * m,
                                      apf::Field * coord_field,

@@ -12,6 +12,8 @@ if(yayaml-cpp_FIND_REQUIRED AND yaml-cpp_FIND_QUIETLY)
   set(_yaml-cpp_OPTS "REQUIRED QUIET")
 endif()
 
+set(ENV{PKG_CONFIG_PATH}  "${yaml-cpp_DIR}")
+
 pkg_check_modules(YAML-CPP ${_yaml-cpp_OPTS} yaml-cpp)
 #message(INFO ${yaml-cpp_INCLUDEDIR})
 #message(INFO ${yaml-cpp_INCLUDE_DIRS})
