@@ -93,7 +93,6 @@ int run_micro_fo(int & argc, char ** & argv, MPI_Comm comm)
   }
   Kokkos::finalize();
 #endif
-  std::cout << "Microscale successfully exited." << std::endl;
   return 0;
 }
 int run_micro_fm(int &, char ** &, MPI_Comm)
@@ -112,11 +111,6 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   pParMesh msh = NULL;
   try
   {
-    if(rnk == 0)
-    {
-      std::cout << "Model file: " << model_filename << std::endl;
-      std::cout << "Mesh file: " << mesh_filename << std::endl;
-    }
     mdl = GM_load(model_filename.c_str(),NULL,NULL);
     msh = PM_load(mesh_filename.c_str(),mdl,NULL);
     auto cs = amsi::getAnalysisCase(mdl, analysis_case);
@@ -164,6 +158,8 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
+    MPI_Init(&argc, &argv);
+    PCU_Comm_Init();
     amsi::initMultiscale(argc,argv,MPI_COMM_WORLD);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");

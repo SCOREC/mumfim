@@ -50,6 +50,11 @@ option(ENABLE_KOKKOS "ENABLE KOKKOS GPU COMPUTATION" ON)
 configure_file(bioMicroFOConfig.h.in bioMicroFOConfig.h)
 if(ENABLE_KOKKOS)
   find_package(Kokkos CONFIG REQUIRED)
+# this is required since kokkos doesn't properly bring flags in
+# include(${KOKKOS_INCLUDE_DIR}/../kokkos_generated_settings.cmake)
+#  message(STATUS "Kokkos enabled - Overriding compiler flags for consistency with Kokkos install")
+#  string(REPLACE ";" " " CMAKE_CXX_FLAGS "${KOKKOS_CXX_FLAGS}")
+#  message(STATUS "Kokkos CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}")
 endif()
 
 option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)

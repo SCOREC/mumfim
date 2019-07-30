@@ -27,8 +27,9 @@ namespace bio
   struct SmoothAmp : public Amplitude
   {
     double t_max;
-    SmoothAmp(double t_max) : t_max(t_max) { assert(t_max >= 1.0); }
-    double operator()(double t) const
+    //SmoothAmp(double t_max) : t_max(t_max) { assert(t_max >= 1.0); }
+    SmoothAmp(double t_max) : t_max(t_max) { }
+    double operator()(double t) const override
     {
       double xi = t / t_max;
       return xi * xi * xi * (10 - 15 * xi + 6 * xi * xi);
@@ -52,9 +53,9 @@ namespace bio
     double t_hold;
     SmoothAmpHold(double t_max, double t_hold) : t_max(t_max), t_hold(t_hold)
     {
-      assert(t_max >= 1.0);
+      //assert(t_max >= 1.0);
     }
-    double operator()(double t) const
+    double operator()(double t) const override
     {
       if (t <= t_max)
       {
