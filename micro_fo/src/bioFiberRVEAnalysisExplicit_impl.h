@@ -1061,6 +1061,30 @@ namespace bio
         f[dof[i]] = f_inertial;
       }
     }
+    void applyAccelVelBC_(int nfixed, double a_amp, double v_amp, double visc_damp_coeff,
+                          SD_ROIA dof, SD_RODA values, SD_RODA mass_matrix,
+                          SD_RWDA a, SD_RWDA v, SD_RWDA f_int, SD_RWDA f_ext, SD_RWDA f_damp,
+                          SD_RWDA f)
+    {
+      //4*nfixed reads, 5*nfixed writes
+      //5*nfixed multiply, 2*nfixed adds, 1 divide
+      for(int i=0; i<nfixed; ++i)
+      {
+        int local_dof = dof[i];
+        double value = values[i];
+        double a_local = value * a_amp;
+        double v_local = value * v_amp;
+        double mass = mass_matrix[local_dof / 3];
+        double f_damp_local = visc_damp_coeff * mass * v_local;
+        double f_inertial = mass * a_local;
+        a[local_dof] =  a_local;
+        v[local_dof] = v_local;
+        f_damp[local_dof] = f_damp_local;
+        f_ext[local_dof] =
+            f_inertial + f_int[local_dof] + f_damp_local;
+        f[local_dof] = f_inertial;
+      }
+    }
     void computeEnergies_(int ndof,
                           SD_RODA du,
                           SD_RODA f_int_last,
