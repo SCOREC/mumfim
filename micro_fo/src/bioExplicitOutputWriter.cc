@@ -45,6 +45,10 @@ ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder,
     , pvdName(pvdName)
     , header_freq(0)
     , mesh(mesh)
+    , initd(false)
+{
+}
+void ExplicitOutputWriter::init()
 {
   // if the folder doesn't exist create it
   fname = folder + "/";
@@ -56,9 +60,11 @@ ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder,
   // this clears the micro csv file.
   fname = folder + "/" + "energies.csv";
   std::ofstream strm(fname);
+  initd = true;
 }
 void ExplicitOutputWriter::writeHistoryData(unsigned long iteration, double W_int, double W_ext, double W_damp, double W_kin, double time)
 {
+  if(!initd) init();
   std::ofstream strm;
   strm.open(fname, std::ios::out | std::ios::app);
   assert(strm.is_open());
@@ -89,6 +95,7 @@ void ExplicitOutputWriter::writeHistoryData(unsigned long iteration, double W_in
 }
 void ExplicitOutputWriter::writeFieldData(unsigned long iteration, double time)
 {
+  if(!initd) init();
   std::stringstream sout;
   sout << "frame_" << outputFrame++;
   apf::writeVtkFiles((folder + "/" + sout.str()).c_str(), mesh, 1);

@@ -28,12 +28,14 @@ class ExplicitOutputWriter
   int header_freq;
   apf::Mesh * mesh;
   std::string fname;
+  bool initd;
 
   public:
   ExplicitOutputWriter(apf::Mesh * mesh, std::string folder,
                        std::string pvdName);
   void writeHistoryData(unsigned long iteration, double W_int, double W_ext, double W_damp, double W_kin, double time);
   void writeFieldData(unsigned long iteration, double time);
+  void init();
 };
 /// Write a paraview collection file for meshes with the format msh_prfx(ii)
 /// where ii ranges from 1 to sz. TODO USE AMSI VERSION
