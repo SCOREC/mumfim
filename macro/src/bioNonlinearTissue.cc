@@ -198,16 +198,18 @@ namespace bio
       amsi::ElementalSystem* constitutive =
           constitutives[R_whatIn((pRegion)me)];
       apf::MeshElement* mlmt = apf::createMeshElement(apf_mesh, me);
+      apf::Element * elm = apf::createElement(constitutive->getField(), mlmt);
       // amsi::ElementalSystem * sys = getElementalSystem(me,0); // assumes 1
       // type of system per element
       constitutive->process(mlmt);
       apf::NewArray<apf::Vector3> dofs;
-      apf::getVectorNodes(constitutive->getElement(), dofs);
+      apf::getVectorNodes(elm, dofs);
       apf::NewArray<int> ids;
       apf::getElementNumbers(apf_primary_numbering, me, ids);
       AssembleDOFs(las, constitutive->numElementalDOFs(), &ids[0], &dofs[0],
                    &constitutive->getKe()(0, 0), &constitutive->getfe()(0),
                    constitutive->includesBodyForces());
+      apf::destroyElement(elm);
       apf::destroyMeshElement(mlmt);
     }
     apf_mesh->end(it);

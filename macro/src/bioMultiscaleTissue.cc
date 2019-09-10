@@ -77,9 +77,10 @@ namespace bio
     {
       apf::MeshElement * mlm = apf::createMeshElement(current_coords,me);
       amsi::ElementalSystem * sys = getIntegrator(me,0); // ERROR: assumes 1 type per ent
+      apf::Element * elm = apf::createElement(sys->getField(), mlm);
       sys->process(mlm);
       apf::NewArray<apf::Vector3> dofs;
-      apf::getVectorNodes(sys->getElement(),dofs);
+      apf::getVectorNodes(elm,dofs);
       apf::NewArray<int> ids;
       apf::getElementNumbers(apf_primary_numbering,me,ids);
       AssembleDOFs(las,
@@ -89,6 +90,7 @@ namespace bio
                    &sys->getKe()(0,0),
                    &sys->getfe()(0),
                    sys->includesBodyForces());
+      apf::destroyElement(elm);
       apf::destroyMeshElement(mlm);
     }
     apf_mesh->end(it);
