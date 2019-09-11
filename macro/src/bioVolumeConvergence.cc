@@ -1,4 +1,5 @@
 #include "bioVolumeConvergence.h"
+#include <amsiNonlinearAnalysis.h>
 #include <amsiCasters.h>
 #include <gmi.h>
 namespace bio
@@ -59,7 +60,7 @@ namespace bio
       return v->getVPS();
     }
   };
-  amsi::Convergence * buildVolConvergenceOperator(pACase ss, pAttribute cn, amsi::Iteration * it, VolCalc * vl, apf::Field * fld)
+  amsi::Convergence * buildVolConvergenceOperator(pACase ss, pAttribute cn, amsi::MultiIteration * it, VolCalc * vl, apf::Field * fld)
   {
     pAttribute rgn_nd_att = Attribute_childByType(cn,"regions");
     pANode rgn_nd = AttributeRefNode_value((pAttributeRefNode)rgn_nd_att);
@@ -107,7 +108,11 @@ namespace bio
     pAttribute cap_att = Attribute_childByType(cn,"iteration cap");
     amsi::SimUpdatingEpsilon * eps = new amsi::SimUpdatingEpsilon((pAttributeDouble)eps_att);
     if(cap_att)
-      eps->setCap(AttributeInt_value((pAttributeInt)cap_att));
+    {
+      // lifetime of this iteration is linked to the lifetime of the associated MultiIteration
+      amsi::Iteration * stop_at_max_iters = new amsi::StopAtMaxIters(AttributeInt_value((pAttributeInt)cap_att));
+      it->addIteration(stop_at_max_iters);
+    }
     return new amsi::UpdatingConvergence<amsi::to_R1*,decltype(eps),amsi::to_R1*>(it,dv,eps,ref_v);
   }
 }

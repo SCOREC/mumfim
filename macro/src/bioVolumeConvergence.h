@@ -60,7 +60,7 @@ namespace bio
   };
   amsi::Convergence * buildVolConvergenceOperator(pACase ss,
                                                   pAttribute cn,
-                                                  amsi::Iteration * it,
+                                                  amsi::MultiIteration * it,
                                                   VolCalc * vl,
                                                   apf::Field * fld);
 }

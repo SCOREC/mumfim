@@ -9,7 +9,7 @@ namespace bio
    * @param out typically std::back_inserter to some sort of list type.
    */
   template <typename O>
-    void buildLASConvergenceOperators(pACase ss, amsi::Iteration * it, amsi::LAS * las, O out)
+    void buildLASConvergenceOperators(pACase ss, amsi::MultiIteration * it, amsi::LAS * las, O out)
   {
     std::vector<pAttribute> cnvrg_atts;
     amsi::cutPaste<pAttribute>(AttCase_attributes(ss,"convergence operator"),std::back_inserter(cnvrg_atts));
@@ -29,7 +29,7 @@ namespace bio
    * @param out typically std::back_inserter to some sort of list type.
    */
   template <typename I, typename O>
-    void buildVolConvergenceOperators(pACase ss, amsi::Iteration * it, apf::Field * u, I vl_tks, O out)
+    void buildVolConvergenceOperators(pACase ss, amsi::MultiIteration * it, apf::Field * u, I vl_tks, O out)
   {
     std::vector<pAttribute> cnvrg_atts;
     amsi::cutPaste<pAttribute>(AttCase_attributes(ss,"convergence operator"),std::back_inserter(cnvrg_atts));
