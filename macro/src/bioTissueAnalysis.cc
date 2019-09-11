@@ -161,6 +161,8 @@ namespace bio
       {
         completed = true;
         std::cerr << "ERROR: Step " << stp << " failed to converge!" << std::endl;
+        // broadcast step complete to the microscale so that it sends current data:
+        tssu->stepCompleted();
       }
       logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,stp,tssu->getUField());
       logForces(frc_itms.begin(),frc_itms.end(),frcs,stp,tssu);

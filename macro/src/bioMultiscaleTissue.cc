@@ -300,6 +300,12 @@ namespace bio
     }
     apf_mesh->end(it);
   }
+  void MultiscaleTissue::stepCompleted()
+  {
+    amsi::ControlService * cs = amsi::ControlService::Instance();
+    bool completed = true;
+    cs->scaleBroadcast(M2m_id, &completed);
+  }
   amsi::ElementalSystem * MultiscaleTissue::getIntegrator(apf::MeshEntity * me, int ip)
   {
     int tp = apf::getScalar(crt_rve,me,ip);

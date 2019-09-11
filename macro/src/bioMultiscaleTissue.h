@@ -18,6 +18,7 @@ namespace bio
     int updateRVEType(apf::MeshEntity * me);
     void updateRVEExistence();
     virtual void recoverSecondaryVariables(int step);
+    virtual void stepCompleted();
   private:
     amsi::ElementalSystem * mltscl;
     apf::Field * crt_rve;
