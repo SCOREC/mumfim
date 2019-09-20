@@ -262,46 +262,53 @@ namespace bio
     // loop over all mesh regions
     apf::MeshIterator* it = apf_mesh->begin(analysis_dim);
     while (apf::MeshEntity* meshEnt = apf_mesh->iterate(it)) {
-      apf::MeshElement* mlm = apf::createMeshElement(apf_mesh, meshEnt);
-      int numIP = apf::countIntPoints(mlm, 1);
-      for (int ip = 0; ip < numIP; ++ip) {
-        micro_fo_step_result* stp_rslt = fo_cplg.getRVEStepResult(meshEnt, 0);
-        // this is kindof ugly due to repetitions, but it takes out some
-        // logic from the tight loop
-        if (compute_ornt_2D && compute_ornt_3D) {
-          apf::Matrix3x3 orn_tens_3D;
-          apf::Matrix3x3 orn_tens_2D;
-          for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-              orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
-              orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+      if(apf_mesh->isOwned(meshEnt))
+      {
+        apf::MeshElement* mlm = apf::createMeshElement(apf_mesh, meshEnt);
+        int numIP = apf::countIntPoints(mlm, 1);
+        for (int ip = 0; ip < numIP; ++ip) {
+          micro_fo_step_result* stp_rslt = fo_cplg.getRVEStepResult(meshEnt, 0);
+          // this is kindof ugly due to repetitions, but it takes out some
+          // logic from the tight loop
+          if (compute_ornt_2D && compute_ornt_3D) {
+            apf::Matrix3x3 orn_tens_3D;
+            apf::Matrix3x3 orn_tens_2D;
+            for (int i = 0; i < 3; ++i) {
+              for (int j = 0; j < 3; ++j) {
+                orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
+                orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+              }
             }
+            apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
+            apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
           }
-          apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
-          apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
-        }
-        else if (compute_ornt_3D) {
-          apf::Matrix3x3 orn_tens_3D;
-          for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-              orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
+          else if (compute_ornt_3D) {
+            apf::Matrix3x3 orn_tens_3D;
+            for (int i = 0; i < 3; ++i) {
+              for (int j = 0; j < 3; ++j) {
+                orn_tens_3D[i][j] = stp_rslt->data[i * 3 + j];
+              }
             }
+            apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
           }
-          apf::setMatrix(ornt_3D, meshEnt, ip, orn_tens_3D);
-        }
-        else if (compute_ornt_2D) {
-          apf::Matrix3x3 orn_tens_2D;
-          for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-              orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+          else if (compute_ornt_2D) {
+            apf::Matrix3x3 orn_tens_2D;
+            for (int i = 0; i < 3; ++i) {
+              for (int j = 0; j < 3; ++j) {
+                orn_tens_2D[i][j] = stp_rslt->data[9 + i * 3 + j];
+              }
             }
+            apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
           }
-          apf::setMatrix(ornt_2D, meshEnt, ip, orn_tens_2D);
         }
+        apf::destroyMeshElement(mlm);
       }
-      apf::destroyMeshElement(mlm);
     }
     apf_mesh->end(it);
+    if(compute_ornt_2D)
+      apf::synchronize(ornt_2D);
+    if(compute_ornt_3D)
+      apf::synchronize(ornt_3D);
   }
   void MultiscaleTissue::stepCompleted()
   {
