@@ -90,8 +90,8 @@ namespace bio
     std::ifstream strm(fnm.c_str());
     if (!strm.is_open())
     {
-      std::cerr << "Could not open parameter file" << fnm << " for reading.\n";
-      exit(1);
+      std::cerr << "Could not open parameter file " << fnm << " for reading.\n";
+      MPI_Abort(AMSI_COMM_WORLD, 1);
     }
     ParamLoader ldr(msh);
     ldr.fromStream(strm, rctns);

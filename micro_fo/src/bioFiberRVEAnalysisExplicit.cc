@@ -50,7 +50,7 @@ namespace bio
       es = createImplicitMicroElementalSystem(fn, getK(), getF());
       std::stringstream sout;
       int rnk = -1;
-      MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
+      MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
       std::string dir = amsi::fs ? amsi::fs->getResultsDir() : ".";

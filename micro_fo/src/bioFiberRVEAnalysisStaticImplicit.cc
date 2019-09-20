@@ -76,7 +76,7 @@ namespace bio
         an->getFn()->getUNumbering(), an->getFn()->getUField(), s, 0, &fr_acm)
         .run();
     ops->restore(an->getU(), s);
-    BIO_V2(int rank = -1; MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    BIO_V2(int rank = -1; MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
            std::cout << "RVE: " << an->getFn()->getRVEType() << " Iter: "
                      << this->iteration() << " Rank: " << rank << "\n";)
     Iteration::iterate();
@@ -84,7 +84,7 @@ namespace bio
   bool FiberRVEAnalysisSImplicit::run(const DeformationGradient & dfmGrd)
   {
     int rank = -1;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
     unsigned int maxMicroAttempts = 0;   // parameter
     unsigned int microAttemptCutFactor;  // parameter
     bool solveSuccess = false;

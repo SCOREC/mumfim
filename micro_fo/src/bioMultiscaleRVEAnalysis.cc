@@ -252,7 +252,7 @@ namespace bio
     }
     PCU_Switch_Comm(AMSI_COMM_SCALE);
     int rank = -1;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
     std::stringstream ss;
     ss << amsi::fs->getResultsDir() << "/rve_tp." << rank << ".log";
     std::ofstream rve_tp_lg_fs(ss.str().c_str(), (std::ios::out | std::ios::app));
@@ -277,7 +277,7 @@ namespace bio
         std::vector<micro_fo_result> results(data.size());
         PCU_Switch_Comm(MPI_COMM_SELF);
         int rank = -1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
         int ii = 0;
         BIO_V1(double t0 = MPI_Wtime();)
         for (auto rve = ans.begin(); rve != ans.end(); ++rve)
@@ -310,7 +310,7 @@ namespace bio
             // if the rve didn't work, crash the analysis
             // use MPI abort, so that we don't wait for networks to complete if one
             // has failed.
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            MPI_Abort(AMSI_COMM_WORLD, 1);
           }
           // we've converged and have not reset the state of the vectors,
           // matrices, and buffers the inversion of the tangent stiffness matrix
@@ -357,7 +357,7 @@ namespace bio
       {
         std::stringstream sout;
         int rnk = -1;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rnk);
+        MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
         int ii = 0;
         sout << "rnk_" << rnk << "_fn_" << (*rve)->getFn()->getRVEType()
              << "_step_" << macro_step << "_iter_" << macro_iter;
