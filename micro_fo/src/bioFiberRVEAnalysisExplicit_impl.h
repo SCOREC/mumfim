@@ -509,7 +509,7 @@ namespace bio
     void updateAccelVel(int ndof, double dt, D_RODA mass_matrix, D_RODA f,
                         D_RWDA a, D_RWDA v)
     {
-      static_cast<T &>(*this).updateAccelVel(ndof, dt, mass_matrix, f, a, v);
+      static_cast<T &>(*this).updateAccelVel_(ndof, dt, mass_matrix, f, a, v);
     }
     void applyDispBC(int nfixed,
                      double prev_t,
@@ -993,6 +993,18 @@ namespace bio
         v[i] = v[i] + dt * a[i];
       }
     }
+    void updateAccelVel_(int ndof, double dt, const double * mass_matrix, const double* f, 
+                         double * a, double * v)
+    {
+      // 2*ndof loads, 2*ndof writes
+      // 2*ndof multiply, 2*ndof divide
+      for(int i=0; i<ndof; ++i)
+      {
+        double a_local = (1.0 / mass_matrix[i / 3]) * f[i];  
+        a[i] = a_local;
+        v[i] += dt * a_local;
+      }
+    }
     void updateDisplacement_(int ndof,
                              const double * v,
                              double dt,
@@ -1308,7 +1320,7 @@ namespace bio
       Kokkos::parallel_for("updateVelocity", ndof,
                            KOKKOS_LAMBDA(std::size_t i) { v(i) += dt * a(i); });
     }
-    void updateAccelVel(int ndof, double dt, KKD_RODA mass_matrix, KKD_RODA f, KKD_RWDA a, KKD_RWDA v)
+    void updateAccelVel_(int ndof, double dt, KKD_RODA mass_matrix, KKD_RODA f, KKD_RWDA a, KKD_RWDA v)
     {
       // 2*ndof loads, 2*ndof writes
       // 2*ndof multiply, 2*ndof divide
