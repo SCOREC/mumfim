@@ -28,6 +28,7 @@ set(biotissue_src_files
   bioLinearTissue.cc
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
+  bioRVECoupling.cc
   bioStiffnessVariation.cc
   bioTissueAnalysis.cc
   bioTissueMultiscaleAnalysis.cc

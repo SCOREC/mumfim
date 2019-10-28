@@ -15,10 +15,9 @@ namespace bio
     void initMicro();
     void updateMicro();
     void updateRVETypes();
-    int updateRVEType(apf::MeshEntity * me);
+    MicroscaleType updateRVEType(apf::MeshEntity * me);
     void updateRVEExistence();
     virtual void recoverSecondaryVariables(int step);
-    virtual void stepCompleted();
   private:
     amsi::ElementalSystem * mltscl;
     apf::Field * crt_rve;

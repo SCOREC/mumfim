@@ -21,6 +21,7 @@ namespace bio
     , ucnt(0)
     , tp(FiberMember::truss)
     , rve_tp(0)
+    , scale_factor(1)
   {
     assert(mesh);
     du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
@@ -80,6 +81,7 @@ namespace bio
     vdof = net.vdof; 
     adof = net.adof;
     fdof = net.fdof;
+    scale_factor = net.scale_factor;
   }
   FiberNetwork::~FiberNetwork()
   {

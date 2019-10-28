@@ -16,7 +16,7 @@
 #include "bioMultiscaleMicroFOParams.h"
 #include <fstream>
 #include <sstream>
-//#include "bioRVEVolumeTerms.h"
+#include "bioNeoHookeanRVEAnalysis.h"
 namespace bio
 {
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis()
@@ -28,7 +28,7 @@ namespace bio
     }
     for (auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
-      destroyAnalysis(*rve);
+      delete *rve;
       (*rve) = NULL;
     }
     assert(fns.size() == sprs.size() && fns.size() == dofs_cnt.size());
@@ -186,11 +186,14 @@ namespace bio
     }
     PCU_Switch_Comm(AMSI_COMM_SCALE);
 #ifdef MICRO_USING_SPARSKIT
-    assert(nnz_max > 0);
-    assert(dof_max > 0);
-    // magic number that doesn't seem to require much rescaling
-    // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
-    bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
+    if(num_rve_tps >0)
+    {
+      assert(nnz_max > 0);
+      assert(dof_max > 0);
+      // magic number that doesn't seem to require much rescaling
+      // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
+      bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
+    }
 #endif
   }
   void MultiscaleRVEAnalysis::updateCoupling()
@@ -232,22 +235,36 @@ namespace bio
         micro_fo_init_data & dat = inis[ii];
         micro_fo_solver & slvr_prm = slvr_prms[ii];
         micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
-        int tp = hdr.data[RVE_TYPE];
-        int rnd = rand() % rve_tp_cnt[tp];
-        apf::Mesh * msh_cpy =
-            apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
-        FiberNetwork * fn = new FiberNetwork(msh_cpy);
-        fn->setFiberReactions(fns[tp][rnd]->rctns);
-        vecs.push_back(
-            createLinearStructs(dofs_cnt[tp][rnd],slvr_prm.data[MICRO_SOLVER_TOL] ,sprs[tp][rnd], bfrs));
-        *rve = initFromMultiscale(
-            fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
-        fn->setRVEType(ii);
-        BIO_V2(
-            // print the list of fiber network names to file
-            amsi::log(rve_tp_lg)
-                << ii << " " << fns[tp][rnd]->fileName << std::endl;)
-        ++ii;
+        MicroscaleType micro_tp = static_cast<MicroscaleType>(hdr.data[RVE_TYPE]);
+        if(micro_tp == MicroscaleType::FIBER_ONLY)
+        {
+          int tp = hdr.data[RVE_DIR_TYPE];
+          int rnd = rand() % rve_tp_cnt[tp];
+          apf::Mesh * msh_cpy =
+              apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
+          FiberNetwork * fn = new FiberNetwork(msh_cpy);
+          fn->setFiberReactions(fns[tp][rnd]->rctns);
+          vecs.push_back(
+              createLinearStructs(dofs_cnt[tp][rnd],slvr_prm.data[MICRO_SOLVER_TOL] ,sprs[tp][rnd], bfrs));
+          *rve = initFiberRVEAnalysisFromMultiscale(
+              fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
+          fn->setRVEType(ii);
+          BIO_V2(
+              // print the list of fiber network names to file
+              amsi::log(rve_tp_lg)
+                  << ii << " " << fns[tp][rnd]->fileName << std::endl;)
+          ++ii;
+        }
+        else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
+        {
+          *rve = initNeoHookeanRVEAnalysisFromMultiscale(prm);
+          assert(*rve);
+        }
+        else
+        {
+          std::cerr<<"The Microscale/RVE type is not valid"<<std::endl;
+          MPI_Abort(AMSI_COMM_WORLD, 1);
+        }
       }
     }
     PCU_Switch_Comm(AMSI_COMM_SCALE);
@@ -282,6 +299,9 @@ namespace bio
         BIO_V1(double t0 = MPI_Wtime();)
         for (auto rve = ans.begin(); rve != ans.end(); ++rve)
         {
+          double * sigma = &(results[ii].data[0]);
+          double * avgVolStress = &(results[ii].data[6]);
+          double * matStiffMatrix = &(results[ii].data[9]);
           // TODO this is somewhat inefficient and will not be needed when we
           // directly communicate the DeformationGradient type
           DeformationGradient dfmGrd;
@@ -289,7 +309,8 @@ namespace bio
           {
             dfmGrd[jj] = data[ii].data[jj];
           }
-          bool result = (*rve)->run(dfmGrd);
+          bool result = (*rve)->run(dfmGrd, sigma, true);
+          // if the rve didn't work, crash the analysis
           if (!result)
           {
             std::cerr << "Failed during  Macro Step " << macro_step
@@ -300,31 +321,31 @@ namespace bio
                         std::cerr<<dfmGrd[i]<<" ";
                       }
                       std::cerr<<std::endl;
-            // write the fiber network out if we fail, so we can test externally
-            std::stringstream sout;
-            sout << amsi::fs->getResultsDir() << "/"
-                 << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
-                 << "_step_" << macro_step << "_iter_" << macro_iter;
-            apf::writeVtkFiles(
-                sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
-            // if the rve didn't work, crash the analysis
             // use MPI abort, so that we don't wait for networks to complete if one
             // has failed.
             MPI_Abort(AMSI_COMM_WORLD, 1);
           }
-          // we've converged and have not reset the state of the vectors,
-          // matrices, and buffers the inversion of the tangent stiffness matrix
-          // IF the code is modified so this is no longer the case you must
-          // update calcdx_fn_dx_rve to compute the the ilut (code for this is in
-          // comment of that function)
-          recoverMultiscaleResults(*rve, &results[ii]);
+          //recoverMultiscaleResults(*rve, &results[ii]);
+          (*rve)->computeAvgVolStress(avgVolStress);
+          (*rve)->computeMaterialStiffness(matStiffMatrix);
+          FiberRVEAnalysis* FRveAns = dynamic_cast<FiberRVEAnalysis *>(*rve);
+          if(FRveAns)
+            convertStressQuantities(FRveAns, sigma, matStiffMatrix);
           ii++;
 #ifdef WRITE_MICRO_PER_ITER
-          std::stringstream sout;
-          sout << "rnk_" << rank << "_fn_" << (*rve)->getFn()->getRVEType()
-               << "_step_" << macro_step << "_iter_" << macro_iter;
-          apf::writeVtkFiles(
-              sout.str().c_str(), (*rve)->getFn()->getNetworkMesh(), 1);
+          FiberRVEAnalysis * FNRve = dynamic_cast<FiberRVEAnalysis *>(*rve);
+          if(FNRve)
+          {
+            std::stringstream sout;
+            sout << "rnk_" << rank << "_fn_" << (*FNRve)->getFn()->getFNRveType()
+                 << "_step_" << macro_step << "_iter_" << macro_iter;
+            apf::writeVtkFiles(
+                sout.str().c_str(), (*FNRve)->getFn()->getNetworkMesh(), 1);
+          }
+          else
+          {
+            std::cerr<<"Not Writing microscale to output per iteration since this RVE type has no mesh representation"<<std::endl;
+          }
 #endif
         }
         BIO_V1(double t1 = MPI_Wtime();)
@@ -355,15 +376,23 @@ namespace bio
 #ifdef WRITE_MICRO_PER_STEP
       for (auto rve = ans.begin(); rve != ans.end(); ++rve)
       {
-        std::stringstream sout;
-        int rnk = -1;
-        MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
-        int ii = 0;
-        sout << "rnk_" << rnk << "_fn_" << (*rve)->getFn()->getRVEType()
-             << "_step_" << macro_step << "_iter_" << macro_iter;
-        apf::writeVtkFiles(sout.str().c_str(), (*rve)->fn->getNetworkMesh(), 1);
-        sout.str("");
-        ii++;
+        FiberRVEAnalysis * FNRve2 = dynamic_cast<FiberRVEAnalysis *>(*rve);
+        if(FNRve2)
+        {
+          std::stringstream sout;
+          int rnk = -1;
+          MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
+          int ii = 0;
+          sout << "rnk_" << rnk << "_fn_" << (*FNRve2)->getFn()->getRVEType()
+               << "_step_" << macro_step << "_iter_" << macro_iter;
+          apf::writeVtkFiles(sout.str().c_str(), (*FNRve2)->fn->getNetworkMesh(), 1);
+          sout.str("");
+          ii++;
+        }
+        else
+        {
+          std::cerr<<"Not Writing microscale to output per iteration since this RVE type has no mesh representation"<<std::endl;
+        }
       }
 #endif
       macro_iter = 0;

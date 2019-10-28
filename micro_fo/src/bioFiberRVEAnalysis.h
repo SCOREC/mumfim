@@ -6,9 +6,10 @@
 #include "bioFiberNetwork.h"
 #include "bioMassIntegrator.h"
 #include "bioMicroFOParams.h"
-#include "bioMultiscaleRVE.h"
 #include "bioRVE.h"
 #include "bioTrussIntegrator.h"
+#include "bioMultiscaleMicroFOParams.h"
+#include "bioRVEAnalysis.h"
 namespace bio
 {
   /*
@@ -61,21 +62,17 @@ namespace bio
     las::Vec * f;
     las::Solve * slv;
   };
-  class FiberRVEAnalysis
+  class FiberRVEAnalysis : public RVEAnalysis
   {
     protected:
     FiberNetwork * fn;
+    RVE * rve;
+    virtual void computeCauchyStress(double sigma[6]);
 
     public:
-    // FIXME move this out of here! requires coupling data structures as currently
-    // written hmmm...
-    MultiscaleRVE * multi;
-    RVE * rve;
     std::vector<apf::MeshEntity *> bnd_nds[RVE::side::all + 1];
     apf::Integrator * es;
-    apf::DynamicMatrix dx_fn_dx_rve;
     LinearStructs<las::MICRO_BACKEND> * vecs;
-    bool dx_fn_dx_rve_set;
     double solver_eps;
     double prev_itr_factor;
     int max_cut_attempt;
@@ -96,25 +93,36 @@ namespace bio
     // solve is needed for computing derivs
     las::Solve * getSlv() const { return vecs->slv; }
     FiberNetwork * getFn() const { return fn; }
-    virtual bool run(const DeformationGradient & dfmGrd) = 0;
+    RVE * getRVE() const { return rve; }
+    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
     virtual FiberRVEAnalysisType getAnalysisType() = 0;
     // these functions need to be implemented by any classes
     // that use alternative storage to the las vec, or don't explicitly
     // compute the stiffness matrix.
-    virtual void copyForceDataToForceVec() {};
-    virtual void copyDispDataToDispVec() {};
-    virtual void computeStiffnessMatrix() { es->process(getFn()->getNetworkMesh(), 1); }
+    virtual void computeStiffnessMatrix()
+    {
+      auto ops = las::getLASOps<las::MICRO_BACKEND>();
+      ops->zero(getK());
+      ops->zero(getF());
+      es->process(getFn()->getNetworkMesh(), 1);
+      // finalize the vectors so we can set boundary condition
+      // values
+      las::finalizeMatrix<las::MICRO_BACKEND>(getK());
+      las::finalizeVector<las::MICRO_BACKEND>(getF());
+    }
   };
   class FiberRVEAnalysisSImplicit : public FiberRVEAnalysis
   {
     protected:
+    virtual void computeCauchyStress(double sigma[6]) final;
+
     public:
     // constructors
     explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
     FiberRVEAnalysisSImplicit(FiberNetwork * fn,
                               LinearStructs<las::MICRO_BACKEND> * vecs,
                               const MicroSolutionStrategy & ss);
-    virtual bool run(const DeformationGradient & dfmGrd);
+    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
     virtual FiberRVEAnalysisType getAnalysisType()
     {
       return FiberRVEAnalysisType::StaticImplicit;
@@ -130,7 +138,7 @@ namespace bio
       LinearStructs<las::MICRO_BACKEND> * vecs,
       const MicroSolutionStrategy & ss,
       FiberRVEAnalysisType type = FiberRVEAnalysisType::StaticImplicit);
-  FiberRVEAnalysis * initFromMultiscale(
+  FiberRVEAnalysis * initFiberRVEAnalysisFromMultiscale(
       FiberNetwork * fn,
       LinearStructs<las::MICRO_BACKEND> * vecs,
       micro_fo_header & hdr,
@@ -138,7 +146,6 @@ namespace bio
       micro_fo_init_data & ini,
       micro_fo_solver & slvr,
       micro_fo_int_solver & slvr_int);
-  void destroyAnalysis(FiberRVEAnalysis *);
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
       int ndofs,
       double solver_tol,
@@ -178,7 +185,6 @@ namespace bio
    */
   // template <typename I>
   // void freeeRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * num);
-  void calcStress(FiberRVEAnalysis * fra, apf::Matrix3x3 & sigma);
   // TODO Move this to the implicit analysis since this only makes sense
   // when working with implicit solves
   void applyGuessSolution(FiberRVEAnalysis * ans,

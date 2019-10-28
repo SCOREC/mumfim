@@ -16,13 +16,7 @@ namespace bio
     amsi::LAS * las;
   public:
   TissueIteration(NonlinearTissue* t, amsi::LAS* l) : tssu(t), las(l) {}
-  virtual void iterate()
-  {
-    LinearSolver(tssu, las);
-    tssu->iter();
-    las->iter();
-    amsi::Iteration::iterate();
-    }
+  virtual void iterate();
   };
   class TissueAnalysis
   {

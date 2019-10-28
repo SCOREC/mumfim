@@ -13,9 +13,9 @@ set(micro_fo_public_headers
   bioMultiscaleCoupling.h
   bioMultiscaleMicroFOParams.h
   bioMultiscaleRVEAnalysis.h
-  bioMultiscaleRVE.h
+  bioNeoHookeanRVEAnalysis.h
   bioRVE.h
-  bioRVEVolumeTerms.h
+  bioRVEAnalysis.h
   bioTrussIntegrator.h
   bioUtil.h
   bioUtil_impl.h
@@ -23,21 +23,21 @@ set(micro_fo_public_headers
 
 set(micro_fo_src_files
   bioExplicitOutputWriter.cc
-  bioRVE.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO.cc
   bioFiberReactions.cc
   bioFiberRVEAnalysis.cc
   bioFiberRVEAnalysisCreation.cc
-  bioFiberRVEAnalysisStaticImplicit.cc
   bioFiberRVEAnalysisExplicit.cc
-  bioAlignFiberNetwork.cc
+  bioFiberRVEAnalysisStaticImplicit.cc
   bioMassIntegrator.cc
   bioMicroFOParams.cc
   bioMultiscaleCoupling.cc
   bioMultiscaleMicroFOParams.cc
   bioMultiscaleRVEAnalysis.cc
-  bioMultiscaleRVE.cc
+  bioNeoHookeanRVEAnalysis.cc
+  bioRVE.cc
+  bioRVEAnalysis.cc
   bioTrussIntegrator.cc
   bioUtil.cc)
 

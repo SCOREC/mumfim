@@ -42,7 +42,7 @@ type "shear modulus" : tensor0 1 E 1 d < 1000000.0 >;
 type "poisson ratio" : tensor0 1 E 1 d < 0.3 >;
 
 # types of continuum models which can be used
-image "isotropic_neohookian" : "continuum model" {
+image "isotropic_neohookean" : "continuum model" {
   R "youngs modulus";
   R "poisson ratio";
 };
@@ -85,8 +85,9 @@ type "fiber specification" : void e < r > {
   R "volume fraction";
 };
 
-type "multiscale model" : void e < r > {
-#  R type "fiber specifications" : list reference "fiber specification";
+type "multiscale model" : void A;
+
+image "fiber only" : "multiscale model" {
   R type "directory" : string;
   R type "prefix" : string;
   R type "count" : int;
@@ -94,6 +95,11 @@ type "multiscale model" : void e < r > {
   R "force reaction";
   R "radius";
   R "volume fraction";
+};
+
+image "isotropic_neohookean" : "multiscale model" {
+  R "youngs modulus";
+  R "poisson ratio";
 };
 
 type "material model" : void e < r > {

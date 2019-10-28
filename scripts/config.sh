@@ -51,18 +51,20 @@ else
       -DBUILD_TESTS:BOOL=ON \
       -DCMAKE_C_COMPILER=$CC \
       -DCMAKE_CXX_COMPILER=$CXX \
-      -DLOGRUN=1 \
+      -DLOGRUN=OFF \
       -DENABLE_WRITE_MICRO_PER_ITER=OFF \
       -DENABLE_WRITE_MICRO_PER_STEP=OFF \
       -DCMAKE_INSTALL_PREFIX=$DEVROOT/install/bio/$BUILD_TYPE \
       -DCMAKE_PREFIX_PATH="$DEVROOT/install/amsi/$BUILD_TYPE/lib/cmake/amsi/" \
-      -DSCOREC_DIR=$DEVROOT/install/core/$BUILD_TYPE/lib/cmake/SCOREC \
+      -DSCOREC_DIR=$PUMI_ROOT \
       -DKokkos_DIR="/lore/mersoj/kokkos/install/lib/CMake/Kokkos" \
       -Dlas_DIR=$DEVROOT/install/las/RelWithDebugInfo/lib/cmake \
       -Dlas_core_DIR=$DEVROOT/install/las/RelWithDebugInfo/lib/cmake \
       -DENABLE_VERBOSITY=$VERBOSITY_LEVEL \
+      -DENABLE_KOKKOS=OFF \
       -DCMAKE_CXX_STANDARD=11 \
       -DCMAKE_CXX_FLAGS="-Wno-unused-variable -Wno-unused-but-set-variable" \
+      -Dyaml-cpp_DIR=/lore/mersoj/biotissue/install/yaml-cpp/0.3.0/lib/pkgconfig/ \
       ..
 fi
       # -DMEMORYCHECK_SUPPRESSIONS_FILE=$DEVROOT/install/openmpi/1.10.7/share/openmpi/openmpi-valgrind.supp \

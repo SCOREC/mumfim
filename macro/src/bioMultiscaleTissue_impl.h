@@ -41,9 +41,12 @@ namespace bio
       int ng = apf::countIntPoints(mlm,getOrder(mlm));
       for(int ip = 0; ip < ng; ++ip)
       {
-        int crt = apf::getScalar(crt_rve,rgn,ip);
-        int prv = apf::getScalar(prv_rve,rgn,ip);
-        if((crt == FIBER_ONLY && prv != FIBER_ONLY) || all) // if the RVE is new
+        MicroscaleType crt = static_cast<MicroscaleType>(apf::getScalar(crt_rve,rgn,ip));
+        MicroscaleType prv = static_cast<MicroscaleType>(apf::getScalar(prv_rve,rgn,ip));
+        // if the RVE is new
+        if((crt == MicroscaleType::FIBER_ONLY && prv != MicroscaleType::FIBER_ONLY) ||
+           (crt == MicroscaleType::ISOTROPIC_NEOHOOKEAN && prv != MicroscaleType::ISOTROPIC_NEOHOOKEAN)
+            || all) 
         {
           micro_fo_header hdr;
           micro_fo_params prm;
@@ -80,8 +83,8 @@ namespace bio
       int ng = apf::countIntPoints(mlm,getOrder(mlm));
       for(int ip = 0; ip < ng; ++ip)
       {
-        int crt = apf::getScalar(crt_rve,rgn,ip);
-        if(crt == FIBER_ONLY)
+        MicroscaleType crt = static_cast<MicroscaleType>(apf::getScalar(crt_rve,rgn,ip));
+        if(crt != MicroscaleType::NONE)
         {
           apf::Matrix3x3 F;
           apf::Vector3 p;
@@ -105,7 +108,8 @@ namespace bio
     pGEntity rgn = reinterpret_cast<pGEntity>(ent);
     pAttribute mdl = GEN_attrib(rgn,"material model");
     pAttribute sm = Attribute_childByType(mdl,"multiscale model");
-    if(sm)
+    MicroscaleType micro_tp = getMicroscaleType(sm);
+    if(micro_tp == MicroscaleType::FIBER_ONLY)
     {
       pAttributeString dir  = (pAttributeString)Attribute_childByType(sm,"directory");
       pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");

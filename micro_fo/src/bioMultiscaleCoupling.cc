@@ -4,364 +4,69 @@
 #include <cassert>
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
-#include "bioRVEVolumeTerms.h"
 #include "bioUtil.h"
+//#include "bioFiberNetwork.h"
+#include <numeric>
 namespace bio
 {
-  // TODO This can be turned into a kokkos kernel
-  void recoverMicroscaleStress(FiberRVEAnalysis * ans, double * stress)
+  static double calcRVEDimensionality(FiberNetwork * fn,
+                               double fbr_area,
+                               double fbr_vl_frc)
   {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    int dim = ans->getFn()->getNetworkMesh()->getDimension();
-    apf::Field * xpu = ans->getFn()->getXpUField();
-    apf::Vector3 xpu_val;
-    apf::Vector3 f_val;
-    apf::Numbering * num = ans->getFn()->getUNumbering();
-    int dofs[3];
-    double * f = NULL;
-    ops->get(ans->getF(), f);
-    apf::Matrix3x3 strs(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    for (auto nd = ans->bnd_nds[RVE::all].begin();
-         nd != ans->bnd_nds[RVE::all].end();
-         ++nd)
-    {
-      apf::getVector(xpu, *nd, 0, xpu_val);
-      for (int ii = 0; ii < ans->getFn()->getDim(); ++ii)
-        dofs[ii] = apf::getNumber(num, *nd, 0, ii);
-      strs[0][0] += xpu_val[0] * f[dofs[0]];
-      strs[0][1] += xpu_val[1] * f[dofs[0]];
-      strs[0][2] += xpu_val[2] * f[dofs[0]];
-      strs[1][0] += xpu_val[0] * f[dofs[1]];
-      strs[1][1] += xpu_val[1] * f[dofs[1]];
-      strs[1][2] += xpu_val[2] * f[dofs[1]];
-      strs[2][0] += xpu_val[0] * f[dofs[2]];
-      strs[2][1] += xpu_val[1] * f[dofs[2]];
-      strs[2][2] += xpu_val[2] * f[dofs[2]];
-    }
-    // take the symmetric part of the current stress matrix
-    apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
-    amsi::mat2VoigtVec(dim, sym_strs, &stress[0]);
+    std::vector<double> lngths;
+    apf::Mesh * fn_msh = fn->getNetworkMesh();
+    calcDimMeasures(fn_msh,1,std::back_inserter(lngths));
+    double ttl_fbr_lngth = std::accumulate(lngths.begin(),lngths.end(),0.0);
+    return sqrt(ttl_fbr_lngth * fbr_area / fbr_vl_frc);
   }
-  void convertStress(FiberRVEAnalysis * ans, double * stress)
+  double calcScaleConversion(FiberNetwork * fn, double fbr_area, double fbr_vol_frc)
+  {
+    double rve_dim = calcRVEDimensionality(fn, fbr_area, fbr_vol_frc);
+    double conversion_factor = 1/(rve_dim*rve_dim);
+    return conversion_factor;
+  }
+  void convertStressQuantities(FiberRVEAnalysis * ans, double * stress, double * C)
   {
     int dim = ans->getFn()->getNetworkMesh()->getDimension();
     int sigma_length = dim == 3 ? 6 : 3;
+    int mat_stiff_length = dim == 3 ? 36 : 9;
     // convert to a macro-scale term
-    double vol = ans->rve->measureDu();
-    double scale_conversion = ans->multi->getScaleConversion();
+    double vol = ans->getRVE()->measureDu();
+    double scale_conversion = ans->getFn()->getScaleConversion();
     for (int ii = 0; ii < sigma_length; ++ii)
       stress[ii] *= scale_conversion / vol;
+    for (int ii = 0; ii < mat_stiff_length; ++ii)
+      C[ii] *= scale_conversion / vol;
   }
-  void recoverAvgVolStress(FiberRVEAnalysis * ans, double * Q)
-  {
-    // Q terms
-    (void)ans;
-    (void)Q;
-  }
-  void dsdxrve_2_dSdxrve(const apf::DynamicMatrix & ds_dx_rve,
-                         const apf::DynamicVector & strs,
-                         const apf::DynamicVector & dV_dx_rve,
-                         double vol,
-                         double cnv,
-                         apf::DynamicMatrix & dS_dx_rve)
-  {
-    int rve_dof_cnt = ds_dx_rve.getColumns();
-    int sigma_length = ds_dx_rve.getRows();
-    dS_dx_rve.setSize(sigma_length, rve_dof_cnt);
-    apf::DynamicVector col(sigma_length);
-    for (int rve_dof = 0; rve_dof < rve_dof_cnt; ++rve_dof)
-    {
-      apf::DynamicVector sig(strs);
-      ds_dx_rve.getColumn(rve_dof, col);
-      col /= vol;
-      sig *= (dV_dx_rve[rve_dof]);
-      sig *= 1 / (vol * vol);
-      col -= sig;
-      col *= cnv;
-      dS_dx_rve.setColumn(rve_dof, col);
-    }
-  }
-  void calcdRdx_rve_term(apf::DynamicMatrix & dRdx_rve,
-                         FiberNetwork * fn,
-                         RVE * rve,
-                         apf::MeshEntity * sd_ent,
-                         apf::MeshEntity * vrt,
-                         int plnr_dim,
-                         double a)
-  {
-    int dim = rve->getDim();
-    apf::Vector3 crd;
-    fn->getNetworkMesh()->getPoint(vrt, 0, crd);
-    int vrt_cnt = dim == 3 ? 4 : 2;
-    apf::MeshEntity * sd_vrts[vrt_cnt];
-    rve->getMesh()->getDownward(sd_ent, 0, &sd_vrts[0]);
-    apf::NewArray<int> rve_dof_ids(vrt_cnt * dim);
-    apf::getElementNumbers(rve->getNumbering(), sd_ent, rve_dof_ids);
-    apf::NewArray<int> fn_dof_ids(dim);
-    apf::getElementNumbers(fn->getUNumbering(), vrt, fn_dof_ids);
-    // iterate over the line/face (dep on dim)
-    // assumes dim = 3
-    // get the vert opposite the current vert on the face, which is what the
-    //  value given by the calculation below is applicable to,
-    //  we are basically calculating barycentric coordinates using
-    //  the fact the RVE is unit cube as a huge shortcut rather than
-    //  inverting the fe mapping
-    int opp_vrt[] = {2, 3, 0, 1};
-    for (int ci = 0; ci < vrt_cnt; ++ci)
-    {
-      apf::Vector3 ci_crd;
-      rve->getMesh()->getPoint(sd_vrts[ci], 0, ci_crd);
-      // this method of calculating the area/length associated
-      //  with the vertex is only valid on the reference domain
-      //  as it depends on the verts of a face/edge being both
-      //  coplanar and axis-aligned
-      apf::Vector3 spn = ci_crd - crd;
-      double ai = 1.0;
-      for (int ii = 0; ii < dim; ++ii)
-        ai *= ii == plnr_dim ? 1.0 : spn[ii];
-      ai = fabs(ai / a);
-      // iterate over the dim
-      for (int ej = 0; ej < dim; ++ej)
-        dRdx_rve(fn_dof_ids[ej], rve_dof_ids[opp_vrt[ci] * dim + ej]) = ai;
-    }
-  }
-  // wierd area term matrix
-  // this is calculated on the reference domain and makes assumptions based on
-  // that fact
-  void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve, FiberRVEAnalysis * ans)
-  {
-    int dim = ans->rve->getDim();
-    int fn_dof_cnt = ans->getFn()->getDofCount();
-    int rve_dof_cnt = ans->rve->numNodes() * dim;
-    dRdx_rve.setSize(fn_dof_cnt, rve_dof_cnt);
-    dRdx_rve.zero();
-    // this assumes 3d, use dim to change the sides we iterate over
-    int sds[] = {RVE::side::top,
-                 RVE::side::bot,
-                 RVE::side::lft,
-                 RVE::side::rgt,
-                 RVE::side::bck,
-                 RVE::side::frt};
-    for (int sd_idx = 0; sd_idx != RVE::side::all; ++sd_idx)
-    {
-      int sd = sds[sd_idx];
-      RVE::side rve_sd = static_cast<RVE::side>(sd);
-      apf::MeshEntity * sd_ent = ans->rve->getSide(rve_sd);
-      double a = apf::measure(ans->rve->getMesh(), sd_ent);
-      // also assuming 3d
-      int plnr_dim =
-          (sd == RVE::side::rgt || sd == RVE::side::lft)
-              ? 0
-              : (sd == RVE::side::bot || sd == RVE::side::top) ? 1 : 2;
-      for (auto vrt = ans->bnd_nds[sd].begin(); vrt != ans->bnd_nds[sd].end();
-           ++vrt)
-        calcdRdx_rve_term(
-            dRdx_rve, ans->getFn(), ans->rve, sd_ent, *vrt, plnr_dim, a);
-    }
-  }
-  // ans->k needs to be modified during calculation ofr dS_dx_fn prior to
-  // calling this
-  void calcdx_fn_dx_rve(apf::DynamicMatrix & dx_fn_dx_rve,
-                        FiberRVEAnalysis * ans,
-                        apf::DynamicMatrix & dR_dx_rve)
-  {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    int dim = ans->rve->getDim();
-    int fn_dof_cnt = ans->getFn()->getDofCount();
-    int rve_dof_cnt = ans->rve->numNodes() * dim;
-    apf::DynamicVector f(fn_dof_cnt);
-    apf::DynamicVector u(fn_dof_cnt);
-    auto vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
-    //las::Vec * skt_f = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
-    //las::Vec * skt_u = vb->create(fn_dof_cnt, LAS_IGNORE, MPI_COMM_SELF);
-    las::Vec * skt_f = vb->createRHS(ans->getK());
-    las::Vec * skt_u = vb->createLHS(ans->getK());
-#if defined MICRO_USING_SPARSKIT
-    las::Solve * iluslv = las::createSparskitLUSolve(ans->getSlv(), 0.0);
-    las::Solve * qslv = las::createSparskitQuickLUSolve(iluslv, 0.0);
-#elif defined MICRO_USING_PETSC
-    // FIXME Don't want to do a complete solve every timestep...
-    las::Solve * iluslv = las::createPetscLUSolve(MPI_COMM_SELF);
-    las::Solve * qslv = las::createPetscQuickLUSolve(iluslv);
-#endif
-    dx_fn_dx_rve.setSize(fn_dof_cnt, rve_dof_cnt);
-    double * fptr = NULL;
-    double * uptr = NULL;
-    for (int ii = 0; ii < rve_dof_cnt; ++ii)
-    {
-      las::Solve * slv = ii == 0 ? iluslv : qslv;
-      dR_dx_rve.getColumn(ii, f);
-      ops->get(skt_f, fptr);
-      std::copy(f.begin(), f.end(), fptr);
-      slv->solve(ans->getK(), skt_u, skt_f);
-      ops->get(skt_u, uptr);
-      std::copy(uptr, uptr + fn_dof_cnt, u.begin());
-      dx_fn_dx_rve.setColumn(ii, u);
-    }
-    vb->destroy(skt_f);
-    vb->destroy(skt_u);
-    delete qslv;
-    delete iluslv;
-  }
-  // setup additional solves with the rows of dR_dx_rve as the force vector
-  // need to modify matrix as done in calc_precond in old code prior to these
-  // solves, this also produces dS_dx_fn the change of the stresses on the
-  // boundary of the RVE w.r.t. the fiber network coordinates
-  void calcds_dx_fn(apf::DynamicMatrix & ds_dx_fn, FiberRVEAnalysis * ans)
-  {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    int dim = ans->rve->getDim();
-    int sigma_length = dim == 3 ? 6 : 3;
-    int fn_dof_cnt = ans->getFn()->getDofCount();
-    ds_dx_fn.setSize(sigma_length, fn_dof_cnt);
-    ds_dx_fn.zero();
-    apf::Numbering * dofs = ans->getFn()->getUNumbering();
-    double * F = NULL;
-    ops->get(ans->getF(), F);
-    double zero[1] = {0.0};
-    double one[1] = {1.0};
-    // iterate over all fibers with a node on the boundary
-    for (auto vrt = ans->bnd_nds[RVE::all].begin();
-         vrt != ans->bnd_nds[RVE::all].end();
-         ++vrt)
-    {
-      apf::Mesh * fn_msh = ans->getFn()->getNetworkMesh();
-      assert(fn_msh->countUpward(*vrt) == 1);
-      apf::Vector3 Nx;
-      // need the displaced node coordinates, not the reference coords
-      apf::getVector(ans->getFn()->getXpUField(), *vrt, 0, Nx);
-      // fn_msh->getPoint(*vrt,0,Nx);
-      apf::MeshEntity * edg = fn_msh->getUpward(*vrt, 0);
-      apf::MeshEntity * vrts[2];
-      fn_msh->getDownward(edg, 0, &vrts[0]);
-      int bnd_dofs[dim];
-      for (int dd = 0; dd < dim; ++dd)
-        bnd_dofs[dd] = apf::getNumber(dofs, *vrt, 0, dd);
-      for (int vrt = 0; vrt < 2; ++vrt)
-      {
-        for (int dd = 0; dd < dim; ++dd)
-        {
-          int dof[1] = {apf::getNumber(dofs, vrts[vrt], 0, dd)};
-          apf::Vector3 ks;
-          ks.zero();
-          las::finalizeMatrix<las::MICRO_BACKEND>(ans->getK());
-          for (int ii = 0; ii < dim; ++ii)
-          {
-            double * ks_vls;
-            ops->get(ans->getK(), 1, &bnd_dofs[ii], 1, &dof[0], &ks_vls);
-            ks[ii] = ks_vls[0];
-            ks[ii] *= -1.0;
-            delete [] ks_vls;
-          }
-          apf::Vector3 delta;
-          for (int ii = 0; ii < dim; ++ii)
-            delta[ii] = (dof[0] == bnd_dofs[ii] ? 1.0 : 0.0);
-          for (int i = dim; i < 3; ++i)
-            delta[i] = -1;
-          apf::Vector3 fs;
-          for (int ii = 0; ii < dim; ++ii)
-            fs[ii] = F[bnd_dofs[ii]];
-          apf::Matrix3x3 m =
-              apf::tensorProduct(ks, Nx) + apf::tensorProduct(delta, fs);
-          apf::Matrix3x3 ms = amsi::symmetricPart(m);
-          apf::DynamicVector vls(sigma_length);
-          amsi::mat2VoigtVec(dim, ms, &vls(0));
-          for (int ii = 0; ii < sigma_length; ++ii)
-            ds_dx_fn(ii, dof[0]) += vls(ii);
-          for (int ii = 0; ii < dim; ++ii)
-            ops->set(ans->getK(), 1, &bnd_dofs[ii], 1 , &dof[0], &zero[0]);
-        }
-      }
-      for (int ii = 0; ii < dim; ++ii)
-        ops->set(ans->getK(), 1, &bnd_dofs[ii], 1 , &bnd_dofs[ii], &one[0]);
-    }
-  }
-  void recoverStressDerivs(FiberRVEAnalysis * ans,
-                           double * sigma,
-                           double * dstrss_drve)
-  {
-    int dim = ans->rve->getDim();
-    // int fn_dof_cnt = ans->getFn()->getDofCount();
-    int sigma_length = dim == 3 ? 6 : 3;
-    apf::DynamicMatrix dR_dx_rve;
-    calcdR_dx_rve(dR_dx_rve, ans);
-    apf::DynamicMatrix ds_dx_fn;
-    calcds_dx_fn(ds_dx_fn, ans);
-    // zero rows in the matrix w/ boundary conditions
-    // this effects the force vector which is used in the calculation of
-    // dS_dx_fn above so we must do it after.
-    applyRVEBC(ans->bnd_nds[RVE::all].begin(),
-               ans->bnd_nds[RVE::all].end(),
-               ans->getFn()->getUNumbering(),
-               ans->getK(),
-               ans->getF());
-    calcdx_fn_dx_rve(ans->dx_fn_dx_rve, ans, dR_dx_rve);
-    apf::DynamicMatrix ds_dx_rve;
-    apf::multiply(ds_dx_fn, ans->dx_fn_dx_rve, ds_dx_rve);
-    ans->dx_fn_dx_rve_set = true;
-    // calculate volume derivative
-    apf::DynamicVector dV_dx_rve;
-    CalcdV_dx_rve calcdv_dx_rve(
-        2, ans->rve->getUField(), ans->rve->getNumbering());
-    apf::MeshElement * mlm =
-        apf::createMeshElement(ans->rve->getXpUField(), ans->rve->getMeshEnt());
-    calcdv_dx_rve.process(mlm);
-    calcdv_dx_rve.getdVdxrve(dV_dx_rve);
-    apf::destroyMeshElement(mlm);
-    apf::DynamicVector stress(sigma_length);
-    memcpy(&stress[0], sigma, sizeof(double) * sigma_length);
-    // FIXME Error Seems to be here somewhere...
-    apf::DynamicMatrix dS_dx_rve;
-    dsdxrve_2_dSdxrve(ds_dx_rve,
-                      stress,
-                      dV_dx_rve,
-                      ans->rve->measureDu(),
-                      ans->multi->getScaleConversion(),
-                      dS_dx_rve);
-    apf::DynamicMatrix dx_rve_dx_fe;
-    ans->multi->calcdRVEdFE(dx_rve_dx_fe);
-    apf::DynamicMatrix dS_dx;
-    apf::multiply(dS_dx_rve, dx_rve_dx_fe, dS_dx);
-    amsi::mat2Array(dS_dx, dstrss_drve);
-  }
-  void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data)
-  {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    // rebuild everything since we want the force vector without
-    // boundary conditions anyway
-    ops->zero(ans->getK());
-    ops->zero(ans->getF());
-    apf::Mesh * fn = ans->getFn()->getNetworkMesh();
-    ans->es->process(fn, 1);
-    double * S = &data->data[0];
-    recoverMicroscaleStress(ans, S);
-    double * Q = &data->data[6];
-    recoverAvgVolStress(ans, Q);
-    double * dS_dx_fe = &data->data[9];
-    // calculate macroscale stress derivs
-    // requires microscale stress
-    recoverStressDerivs(ans, S, dS_dx_fe);
-    // convert microscale stress to macroscale
-    convertStress(ans, S);
-  }
-  void recoverMultiscaleStepResults(FiberRVEAnalysis * ans,
+  void recoverMultiscaleStepResults(RVEAnalysis * ans,
                                     micro_fo_header & hdr,
                                     micro_fo_params & prm,
                                     micro_fo_step_result * data)
   {
-    double * ornt_3d = &data->data[0];
-    double * ornt_2d = &data->data[9];
-    double n[3];
-    n[0] = prm.data[ORIENTATION_AXIS_X];
-    n[1] = prm.data[ORIENTATION_AXIS_Y];
-    n[2] = prm.data[ORIENTATION_AXIS_Z];
-    if (hdr.data[COMPUTE_ORIENTATION_3D])
+    FiberRVEAnalysis* FRveAns = dynamic_cast<FiberRVEAnalysis *>(ans);
+    // if this if a fiber rve analysis set the orientation tensor
+    if(FRveAns)
     {
-      get3DOrientationTensor(ans->getFn(), ornt_3d);
+      double * ornt_3d = &data->data[0];
+      double * ornt_2d = &data->data[9];
+      double n[3];
+      n[0] = prm.data[ORIENTATION_AXIS_X];
+      n[1] = prm.data[ORIENTATION_AXIS_Y];
+      n[2] = prm.data[ORIENTATION_AXIS_Z];
+      if (hdr.data[COMPUTE_ORIENTATION_3D])
+      {
+        get3DOrientationTensor(FRveAns->getFn(), ornt_3d);
+      }
+      if (hdr.data[COMPUTE_ORIENTATION_2D])
+      {
+        get2DOrientationTensor(FRveAns->getFn(), n, ornt_2d);
+      }
     }
-    if (hdr.data[COMPUTE_ORIENTATION_2D])
+    // otherwise set the orientation tensor to 0 (since it has no meaning)
+    else
     {
-      get2DOrientationTensor(ans->getFn(), n, ornt_2d);
+      for(int i=0; i<18; ++i)
+        data->data[i] = 0;
     }
   }
 }  // namespace bio

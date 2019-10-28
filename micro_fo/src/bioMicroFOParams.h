@@ -48,6 +48,11 @@ namespace bio
       }
       return dg;
     }
+    DeformationGradient& operator=(DeformationGradient dfmGrd)
+    {
+      std::swap(data, dfmGrd.data);
+      return *this;
+    }
   };
   struct Axis
   {

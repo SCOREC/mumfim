@@ -55,6 +55,7 @@ namespace bio
   MultiscaleTissue::~MultiscaleTissue()
   {
     delete mltscl;
+    // destroying these fields causes segfult...needs investigation
     apf::destroyField(crt_rve);
     apf::destroyField(prv_rve);
     apf::destroyField(ornt_3D);
@@ -169,70 +170,29 @@ namespace bio
       for(int ii = 0; ii < ip; ++ii)
       {
         apf::setScalar(prv_rve,me,ii,apf::getScalar(crt_rve,me,ii));
-        int nw_tp = updateRVEType(me);
-        apf::setScalar(crt_rve,me,ii,nw_tp);
-        if(nw_tp == FIBER_ONLY)
+        MicroscaleType nw_tp = updateRVEType(me);
+        apf::setScalar(crt_rve,me,ii,static_cast<int>(nw_tp));
+        if(nw_tp == MicroscaleType::FIBER_ONLY)
           nm_rves++;
       }
       apf::destroyMeshElement(mlm);
     }
     apf_mesh->end(it);
   }
-  int MultiscaleTissue::updateRVEType(apf::MeshEntity * me)
+  MicroscaleType MultiscaleTissue::updateRVEType(apf::MeshEntity * me)
   {
     // TODO: Use error estimate as determination of microscale TYPE
     //apf::MeshElement * me = apf::createMeshElement(apf_mesh,m_ent);
     //apf::Element * err_elmt = apf::createElement(apf_size_field,me);
     // get value of size field on element
     // if value is ?less? than some threshold, FIBER_ONLY, otherwise constitutive
-    /*
-      apf::NewArray<apf::Vector3> init_coords;
-      apf::getVectorNodes(e_init_coords,init_coords);
-      double x0 = 3.5;
-      double pi = 4.0*atan(1.0);
-      double x1 = 7.5 + 2*sin( 0.25*pi*(load_step+2) ) ;
-      bool initial = (x0 < init_coords[0][0] && init_coords[0][0] < x1);
-    */
-    // Compute strain magnitude
-    /*
-      apf::Matrix3x3 eps;
-      apf::getMatrix(strn,m_ent,0,eps);
-      double strainMag = sqrt( pow(eps[0][0],2.0) +
-      pow(eps[1][1],2.0) +
-      pow(eps[2][2],2.0) +
-      pow(eps[0][1],2.0) +
-      pow(eps[1][2],2.0) +
-      pow(eps[0][2],2.0) );
-      if( false strainMag > 0.02 )
-      {
-      return FIBER_ONLY;
-      }
-      else
-      {
-      return NONE;
-      }
-    */
-    apf::Matrix3x3 F;
-    apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,me);
-    apf::Element * e = apf::createElement(apf_primary_field,mlm);
-    apf::Vector3 pcoords;
-    int pt_num = 0; // assuming element with one integration point.
-    apf::getIntPoint(mlm,1,pt_num,pcoords); // assume polynomial order of accuracy = 1.
-    amsi::deformationGradient(e,pcoords,F);
-    apf::destroyElement(e);
-    apf::destroyMeshElement(mlm);
-    /*
-      if (detF > 0.6)
-      return FIBER_ONLY;
-      else
-      return NONE;
-    */
+    //
     // multiscale based purely off of simmodeler specification, no adaptivity, need differentiate between initialization and updating
     pEntity snt = reinterpret_cast<pEntity>(me);
     pGEntity gsnt = EN_whatIn(snt);
     pAttribute mm = GEN_attrib(gsnt,"material model");
     pAttribute sm = Attribute_childByType(mm,"multiscale model");
-    return  (sm ? FIBER_ONLY : NONE);
+    return getMicroscaleType(sm);
   }
   void MultiscaleTissue::updateRVEExistence()
   {
@@ -310,23 +270,20 @@ namespace bio
     if(compute_ornt_3D)
       apf::synchronize(ornt_3D);
   }
-  void MultiscaleTissue::stepCompleted()
-  {
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    bool completed = true;
-    cs->scaleBroadcast(M2m_id, &completed);
-  }
   amsi::ElementalSystem * MultiscaleTissue::getIntegrator(apf::MeshEntity * me, int ip)
   {
-    int tp = apf::getScalar(crt_rve,me,ip);
+    MicroscaleType tp = static_cast<MicroscaleType>(apf::getScalar(crt_rve,me,ip));
     switch(tp)
     {
-     case NONE:
+     case MicroscaleType::NONE:
        return constitutives[R_whatIn((pRegion)me)];
-     case FIBER_ONLY:
+     case MicroscaleType::FIBER_ONLY:
+       return mltscl;
+     case MicroscaleType::ISOTROPIC_NEOHOOKEAN:
        return mltscl;
      default:
-       return NULL;
+       std::cerr<<"Applying a macroscale integrator. We should not expect to get here.";
+       return constitutives[R_whatIn((pRegion)me)];
     }
   }
   void MultiscaleTissue::loadRVELibraryInfo()
@@ -337,7 +294,8 @@ namespace bio
     {
       pAttribute mdl = GEN_attrib(rgn,"material model");
       pAttribute sm = Attribute_childByType(mdl, "multiscale model");
-      if(sm)
+      MicroscaleType micro_tp = getMicroscaleType(sm);
+      if(micro_tp == MicroscaleType::FIBER_ONLY)
       {
         pAttributeString dir = (pAttributeString)Attribute_childByType(sm,"directory");
         pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
@@ -364,29 +322,44 @@ namespace bio
     pGEntity smdl_ent = EN_whatIn(reinterpret_cast<pEntity>(ent));
     pAttribute mm = GEN_attrib(smdl_ent, "material model");
     pAttribute sm = Attribute_childByType(mm, "multiscale model");
-    assert(sm);
-    pAttributeTensor0 fbr_rd =
-        (pAttributeTensor0)Attribute_childByType(sm, "radius");
-    pAttributeTensor0 vl_frc =
-        (pAttributeTensor0)Attribute_childByType(sm, "volume fraction");
-    pAttribute prms = Attribute_childByType(sm, "force reaction");
-    pAttributeTensor0 yngs =
-        (pAttributeTensor0)Attribute_childByType(prms, "youngs modulus");
-    pAttributeTensor0 nnlr = (pAttributeTensor0)Attribute_childByType(
-        prms, "nonlinearity parameter");
-    pAttributeTensor0 lntr =
-        (pAttributeTensor0)Attribute_childByType(prms, "linear transition");
-    // get properties for output orienation tensor
-    hdr.data[COMPUTE_ORIENTATION_3D] = compute_ornt_3D;
-    hdr.data[COMPUTE_ORIENTATION_2D] = compute_ornt_2D;
-    prm.data[ORIENTATION_AXIS_X] = ornt_2D_axis[0];
-    prm.data[ORIENTATION_AXIS_Y] = ornt_2D_axis[1];
-    prm.data[ORIENTATION_AXIS_Z] = ornt_2D_axis[2];
-    prm.data[FIBER_RADIUS] = AttributeTensor0_value(fbr_rd);
-    prm.data[VOLUME_FRACTION] = AttributeTensor0_value(vl_frc);
-    prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
-    prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
-    prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
+    MicroscaleType micro_tp = getMicroscaleType(sm);
+    hdr.data[RVE_TYPE] = static_cast<int>(micro_tp);
+    if(micro_tp == MicroscaleType::FIBER_ONLY)
+    {
+      pAttributeTensor0 fbr_rd =
+          (pAttributeTensor0)Attribute_childByType(sm, "radius");
+      pAttributeTensor0 vl_frc =
+          (pAttributeTensor0)Attribute_childByType(sm, "volume fraction");
+      pAttribute prms = Attribute_childByType(sm, "force reaction");
+      pAttributeTensor0 yngs =
+          (pAttributeTensor0)Attribute_childByType(prms, "youngs modulus");
+      pAttributeTensor0 nnlr = (pAttributeTensor0)Attribute_childByType(
+          prms, "nonlinearity parameter");
+      pAttributeTensor0 lntr =
+          (pAttributeTensor0)Attribute_childByType(prms, "linear transition");
+      // get properties for output orienation tensor
+      hdr.data[COMPUTE_ORIENTATION_3D] = compute_ornt_3D;
+      hdr.data[COMPUTE_ORIENTATION_2D] = compute_ornt_2D;
+      prm.data[ORIENTATION_AXIS_X] = ornt_2D_axis[0];
+      prm.data[ORIENTATION_AXIS_Y] = ornt_2D_axis[1];
+      prm.data[ORIENTATION_AXIS_Z] = ornt_2D_axis[2];
+      prm.data[FIBER_RADIUS] = AttributeTensor0_value(fbr_rd);
+      prm.data[VOLUME_FRACTION] = AttributeTensor0_value(vl_frc);
+      prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
+      prm.data[NONLINEAR_PARAM] = nnlr ? AttributeTensor0_value(nnlr) : 0.0;
+      prm.data[LINEAR_TRANSITION] = lntr ? AttributeTensor0_value(lntr) : 0.0;
+    }
+    else if(micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
+    {
+      pAttributeTensor0 yngs =
+          (pAttributeTensor0)Attribute_childByType(sm, "youngs modulus");
+      pAttributeTensor0 poisson =
+          (pAttributeTensor0)Attribute_childByType(sm, "poisson ratio");
+      prm.data[YOUNGS_MODULUS] = AttributeTensor0_value(yngs);
+      // to avoid adding extra communication we use the nonlinear parameters
+      // slot in the parameter pack
+      prm.data[NONLINEAR_PARAM] = AttributeTensor0_value(poisson);
+    }
     pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
     // Attributes used by bot implicit and explicit
     pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
@@ -557,7 +530,7 @@ namespace bio
                                             micro_fo_init_data & dat)
   {
     apf::ModelEntity * mnt = reinterpret_cast<apf::ModelEntity*>(EN_whatIn(reinterpret_cast<pEntity>(rgn)));
-    hdr.data[RVE_TYPE]     = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),mnt);
+    hdr.data[RVE_DIR_TYPE] = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),mnt);
     hdr.data[FIELD_ORDER]  = apf::getShape(delta_u)->getOrder();
     hdr.data[ELEMENT_TYPE] = apf_mesh->getType(rgn);
     hdr.data[GAUSS_ID]     = -1; // needs to be set for each IP

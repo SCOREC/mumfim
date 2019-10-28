@@ -9,6 +9,12 @@
 namespace bio {
   // Parameters from V. Lai et al. Journal of Biomechanical Engineering, Vol
   // 135, 071007 (2013)
+  //
+  // The Voigt notation in this integrator are NOT consistent
+  // (in different portions of the integrator)!
+  // Fortunately, we are OK because this is an isotropic material,
+  // but for consistency (with the rest of the code) 
+  // we should use 1->11, 2->22, 3->33, 4->23, 5->13, 6->12
   class NeoHookeanIntegrator : public amsi::ElementalSystem {
     public:
     NeoHookeanIntegrator(NonlinearTissue *n,

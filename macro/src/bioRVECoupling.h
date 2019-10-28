@@ -1,15 +1,14 @@
 #ifndef BIO_RVE_COUPLING_H_
 #define BIO_RVE_COUPLING_H_
 #include <bioMultiscaleMicroFOParams.h>
+#include <SimAttribute.h>
+#include <apf.h>
+#include <amsiMultiscale.h>
+#include <apfMesh.h>
 namespace bio
 {
-  enum MicroscaleType
-  {
-    NONE = 0,
-    FIBER_ONLY = 1,
-    FIBER_MATRIX = 2,
-    MICROSCALE_TYPE_COUNT = 3
-  };
+  MicroscaleType getMicroscaleType(pAttribute multiscale_model);
+
   class RVECoupling
   {
   private:
@@ -127,7 +126,8 @@ namespace bio
       apf::MeshElement * mlm = apf::createMeshElement(msh,me);
       int ng = apf::countIntPoints(mlm,fld_ord);
       for(int ip = 0; ip < ng; ++ip)
-        if(apf::getScalar(crt_rve,me,ip) == FIBER_ONLY)
+        if(static_cast<MicroscaleType>(apf::getScalar(crt_rve,me,ip)) == 
+           MicroscaleType::FIBER_ONLY)
           ++cnt;
       apf::destroyMeshElement(mlm);
       return cnt;
@@ -143,9 +143,9 @@ namespace bio
         int ng = apf::countIntPoints(mlm,getOrder(mlm));
         for(int ip = 0; ip < ng; ++ip)
         {
-          int crt = apf::getScalar(crt_rve,rgn,ip);
-          int prv = apf::getScalar(prv_rve,rgn,ip);
-          if((crt == NONE && prv != NONE) || all)
+          MicroscaleType crt = static_cast<MicroscaleType>(apf::getScalar(crt_rve,rgn,ip));
+          MicroscaleType prv = static_cast<MicroscaleType>(apf::getScalar(prv_rve,rgn,ip));
+          if((crt == MicroscaleType::NONE && prv != MicroscaleType::NONE) || all)
             out++ = iid; // hacky id method, why?
           iid++;
         }

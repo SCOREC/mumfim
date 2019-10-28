@@ -13,17 +13,6 @@ namespace bio
   // TODO : pull calculation of dV_dx_rve in here since the term is derived entirely from RVE values
   class RVE
   {
-  public:
-    enum side // [ -y -z x z -x y]
-    {
-      bot = 0,
-      frt = 1,
-      rgt = 2,
-      bck = 3,
-      lft = 4,
-      top = 5,
-      all = 6
-    };
   protected:
     int dim;
     double crd;
@@ -39,6 +28,20 @@ namespace bio
     RVE(double cr = 0.5, int d = 3);
     RVE(const RVE & rve);
     ~RVE();
+    /// This is an enum of the sides of the RVE
+    enum side // [ -y -z x z -x y]
+    {
+      bot = 0,  ///< bottom face
+      frt = 1,  ///< front face
+      rgt = 2,  ///< right face
+      bck = 3,  ///< back face
+      lft = 4,  ///< left face
+      top = 5,  ///< top face
+      all = 6   ///< all faces
+    };
+    /*
+     * Returns all mesh entities on a specific side.
+     */
     apf::MeshEntity * getSide(side sd) const;
     /**
      * Get the number of nodes for the RVE
@@ -132,19 +135,6 @@ namespace bio
     apf::Field * getXpUField() const { return cbe_xpu; }
   };
   /**
-   * Calculate the position of the corner nodes of the square/cube enclosing the RVE
-   *  in the cartesian space of the problem.
-   * @param rve_crds The coordinates of the 8 vertices of the RVE (using the standard
-   *                 finite element ordering) in the macro-scale coordinate system.
-   * @param rve_dim The dimensionality of the RVE in the macro-scale coordinate
-   *                system, using calculated by calling calcRVEDimensionality().
-   * @param gbl_gss The macro-scale coordinate at the center of the RVE
-   */
-  void calcGlobalRVECoords(const RVE * rve,
-                           apf::DynamicArray<apf::Vector3> & rve_crds,
-                           double rve_dim,
-                           const apf::Vector3 & gbl_gss);
-  /**
    * Compile a list of MeshEntities in the fiber network which have at least a single
    * node classified 'on' the boundary of the RVE.
    */
@@ -164,10 +154,7 @@ namespace bio
   void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0);
   void getRVECoords(RVE * rve, apf::DynamicVector & xyz);
   //
-  void alignFiberNetwork(RVE * rve, FiberNetwork * fn, const double align_vec[3]);
-  void affineDeformation(RVE * rve, FiberNetwork * fn, const double disp[6]);
   void updateRVEBounds(RVE * rve, FiberNetwork * fn, const double disp[6]);
-  double calcFiberDensity(RVE * rve,FiberNetwork * fn);
 }
 #include <bioRVE_impl.h>
 #endif

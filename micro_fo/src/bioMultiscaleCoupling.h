@@ -7,26 +7,28 @@ namespace apf
 }  // namespace apf
 namespace bio
 {
-  class FiberRVEAnalysis;
+  class RVEAnalysis;
   class micro_fo_data;
   class micro_fo_result;
   class micro_fo_header;
   class micro_fo_params;
   class micro_fo_step_result;
-  void recoverMultiscaleResults(FiberRVEAnalysis * ans, micro_fo_result * data);
-  void recoverMultiscaleStepResults(FiberRVEAnalysis * ans,
+  class FiberNetwork;
+  class DeformationGradient;
+  class FiberRVEAnalysis;
+  void recoverMultiscaleStepResults(RVEAnalysis * ans,
                                     micro_fo_header & hdr,
                                     micro_fo_params & prm,
                                     micro_fo_step_result * data);
-  void dsdxrve_2_dSdxrve(const apf::DynamicMatrix & ds_dx_rve,
-                         const apf::DynamicVector & strs,
-                         const apf::DynamicVector & dV_dx_rve,
-                         double vol,
-                         double cnv,
-                         apf::DynamicMatrix & dS_dx_rve);
-  void calcdR_dx_rve(apf::DynamicMatrix & dRdx_rve, FiberRVEAnalysis * ans);
-  void calcdx_fn_dx_rve(apf::DynamicMatrix & dx_fn_dx_rve,
-                        FiberRVEAnalysis * ans,
-                        apf::DynamicMatrix & dR_dx_rve);
+  /*
+   * \brief computes RVE scaling factor
+   * Computes the scaling factor. This correlates to the RVE side length in "physical space"
+   * \param fn a pointer to the fiber network data structure
+   * \param fbr_area fiber cross-sectional area (from experiment)
+   * \fbr_vol_frc volume fraction of the fiber network (from experiment)
+   * \warning This function assumes that all of the fibers have the same cross-sectional area
+   */
+  double calcScaleConversion(FiberNetwork * fn, double fbr_area, double fbr_vol_frc);
+  void convertStressQuantities(FiberRVEAnalysis * ans, double * stress, double * C);
 }  // namespace bio
 #endif

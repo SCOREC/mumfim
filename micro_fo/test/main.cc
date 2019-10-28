@@ -14,6 +14,18 @@
 #ifdef ENABLE_KOKKOS
 #include <Kokkos_Core.hpp>
 #endif
+void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
+{
+  stress[0][0] = stress_arr[0];
+  stress[1][1] = stress_arr[1];
+  stress[2][2] = stress_arr[2];
+  stress[1][2] = stress_arr[3];
+  stress[2][1] = stress_arr[3];
+  stress[0][2] = stress_arr[4];
+  stress[2][0] = stress_arr[4];
+  stress[0][1] = stress_arr[5];
+  stress[1][0] = stress_arr[5];
+}
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
@@ -71,12 +83,22 @@ int main(int argc, char * argv[])
     an = bio::createFiberRVEAnalysis(
         fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::Explicit);
   }
-  assert(an->multi == NULL);
-  apf::Matrix3x3 strss;
   an->computeStiffnessMatrix();
-  calcStress(an, strss);
+  double stress[6];
+  apf::Matrix3x3 strss;
+#ifdef ENABLE_KOKKOS
+  Kokkos::Timer timer;
+  double time = timer.seconds();
+  timer.reset();
+#endif
+  bool result = an->run(cases[0].pd.deformationGradient, stress);
+  std::cout<<"Stress from run"<<std::endl;
+  stressToMat(stress, strss);
   std::cout<<strss<<std::endl;
-  bool result = an->run(cases[0].pd.deformationGradient);
+#ifdef ENABLE_KOKKOS
+  double time2 = timer.seconds();
+  std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
+#endif
   if (!result)
   {
     std::cerr << "The microscale analysis failed to converge" << std::endl;
@@ -84,16 +106,6 @@ int main(int argc, char * argv[])
   std::stringstream sout;
   sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
-  std::cout<<"Computing the Stress"<<std::endl;
-  an->copyForceDataToForceVec();
-  apf::Matrix3x3 sigma;
-  calcStress(an, sigma);
-  printf("%0.16e\n",sigma[0][0]);
-  std::cout<<sigma<<std::endl;
-  std::cout<<"Computing stiffness matrix"<<std::endl;
-  an->computeStiffnessMatrix();
-  calcStress(an, sigma);
-  std::cout<<sigma<<std::endl;
   las::destroySparsity<las::MICRO_BACKEND>(sprs);
 #ifdef ENABLE_KOKKOS
   }

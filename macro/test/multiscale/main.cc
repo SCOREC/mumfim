@@ -119,8 +119,6 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
     an.init();
     an.run();
     amsi::freeCase(cs);
-    GM_release(mdl);
-    M_release(msh);
   } catch (pSimError err) {
     std::cout << "Simmetrix error caught: " << std::endl
               << "  Code  : " << SimError_code(err) << std::endl
@@ -140,6 +138,8 @@ int run_macro(int & argc, char ** & argv, MPI_Comm cm)
   }
 # endif
   try {
+    GM_release(mdl);
+    M_release(msh);
     AMSI_DEBUG(Sim_logOff());
     amsi::freeAnalysis();
   }

@@ -32,7 +32,7 @@ namespace bio
     std::vector<micro_fo_solver> slvr_prms;
     std::vector<micro_fo_int_solver> slvr_int_prms;
     std::vector<las::Sparsity **> sprs;
-    std::vector<FiberRVEAnalysis *> ans;
+    std::vector<RVEAnalysis *> ans;
     las::SparskitBuffers * bfrs;
     std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
     // a vector that stores the dof number for each type of network

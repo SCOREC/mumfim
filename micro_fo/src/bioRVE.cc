@@ -134,43 +134,6 @@ namespace bio
     }
     return rslt;
   }
-  // this should prooooobably be in bioMultiscaleRVE.cc
-  void calcGlobalRVECoords(const RVE * rve,
-                           apf::DynamicArray<apf::Vector3> & rve_crds,
-                           double rve_dim,
-                           const apf::Vector3 & gbl_gss)
-  {
-    int dim = rve->getDim();
-    int nen = rve->numNodes();
-    double hd = 0.5 * rve_dim;
-    rve_crds.setSize(nen);
-    /*
-    apf::NewArray<int> dofs;
-    apf::getElementNumbers(rve->getNumbering(),
-                           rve->getMeshEnt(),
-                           dofs);
-    */
-    apf::NewArray<apf::Vector3> crds;
-    apf::MeshElement * rve_mlmt = apf::createMeshElement(rve->getMesh(),
-                                                        rve->getMeshEnt());
-    apf::Element * rve_lmt = apf::createElement(rve->getMesh()->getCoordinateField(),
-                                                rve_mlmt);
-    apf::getVectorNodes(rve_lmt,crds);
-    apf::destroyElement(rve_lmt);
-    apf::destroyMeshElement(rve_mlmt);
-    // this requires the RVE cube is origin-centered
-    for(int nd = 0 ; nd < nen ; ++nd)
-    {
-      for(int dd = 0 ; dd < dim; ++dd)
-      {
-        double crd = crds[nd][dd];
-        // sign function
-        crd = (0.0 < crd) - (crd < 0.0);
-        //int nd_dof = dofs[nd*dim] / dim;
-        rve_crds[nd][dd] = gbl_gss[dd] + (crd * hd);
-      }
-    }
-  }
   void displaceRVE(RVE * rve,const apf::DynamicVector & du)
   {
     ApplySolution(rve->getUField(), rve->getNumbering(),&du[0],0,true).run();

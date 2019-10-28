@@ -1,7 +1,15 @@
 #include "bioTissueAnalysis.h"
 #include "bioAnalysisIO.h"
+#include <iostream>
 namespace bio
 {
+  void TissueIteration::iterate()
+  {
+    LinearSolver(tssu, las);
+    tssu->iter();
+    las->iter();
+    amsi::Iteration::iterate();
+  }
   TissueAnalysis::TissueAnalysis(pGModel md, pParMesh ms, pACase ca, MPI_Comm c)
     : cm(c)
     , mdl(md)
@@ -161,8 +169,7 @@ namespace bio
       {
         completed = true;
         std::cerr << "ERROR: Step " << stp << " failed to converge!" << std::endl;
-        // broadcast step complete to the microscale so that it sends current data:
-        tssu->stepCompleted();
+        finalizeStep();
       }
       logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,stp,tssu->getUField());
       logForces(frc_itms.begin(),frc_itms.end(),frcs,stp,tssu);
@@ -215,6 +222,7 @@ namespace bio
   }
   void TissueAnalysis::deinit()
   {
+#ifdef LOGRUN
     int rnk = -1;
     MPI_Comm_rank(cm,&rnk);
     if(rnk == 0)
@@ -226,5 +234,6 @@ namespace bio
       amsi::deleteLog(constraints);
     }
     amsi::deleteLog(state);
+#endif
   }
 }

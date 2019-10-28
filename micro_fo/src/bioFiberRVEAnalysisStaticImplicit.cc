@@ -46,15 +46,8 @@ namespace bio
   void FiberRVEIterationSImplicit::iterate()
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    ops->zero(an->getK());
-    ops->zero(an->getU());
-    ops->zero(an->getF());
-    apf::Mesh * fn = an->getFn()->getNetworkMesh();
-    an->es->process(fn, 1);
-    // finalize the vectors so we can set boundary condition
-    // values
-    las::finalizeMatrix<las::MICRO_BACKEND>(an->vecs->getK());
-    las::finalizeVector<las::MICRO_BACKEND>(an->vecs->getF());
+    //ops->zero(an->getU());
+    an->computeStiffnessMatrix();
     applyRVEBC(an->bnd_nds[RVE::all].begin(),
                an->bnd_nds[RVE::all].end(),
                an->getFn()->getUNumbering(),
@@ -81,7 +74,7 @@ namespace bio
                      << this->iteration() << " Rank: " << rank << "\n";)
     Iteration::iterate();
   }
-  bool FiberRVEAnalysisSImplicit::run(const DeformationGradient & dfmGrd)
+  bool FiberRVEAnalysisSImplicit::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {
     int rank = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
@@ -153,9 +146,24 @@ namespace bio
       if (microIterSolveSuccess)
       {
         solveSuccess = true;
-        // note that the destructor for *this should get called automatically
-        *this = *tmpRVE;
-        tmpRVE = NULL;
+        // compute the stress with the update coords and force vectors
+        tmpRVE->computeCauchyStress(sigma);
+        // if we want to update the coords/fields then we set the current RVE to the tmpRVE
+        // otherwise we just don't update the RVE which will remove any side effects from the
+        // run function
+        if(update_coords)
+        {
+          tmpRVE->curDfmGrd = dfmGrd;
+          for(int i=0; i<6; ++i)
+            tmpRVE->curStress[i] = sigma[i];
+          // note that the destructor for *this should get called automatically
+          *this = *tmpRVE;
+        }
+        else
+        {
+          delete tmpRVE;
+          tmpRVE = NULL;
+        }
       }
       ++microAttemptCount;
     } while (solveSuccess == false && (microAttemptCount <= maxMicroAttempts));
@@ -168,4 +176,9 @@ namespace bio
     }
     return true;
   }
+    void FiberRVEAnalysisSImplicit::computeCauchyStress(double sigma[6])
+    {
+      computeStiffnessMatrix();
+      FiberRVEAnalysis::computeCauchyStress(sigma);
+    }
 }  // namespace bio

@@ -74,20 +74,14 @@ namespace bio
       assert(fiber_density > 0);
       assert(fiber_area > 0);
       assert(fiber_elastic_modulus > 0);
+      old_u = std::vector<double>();
     }
   // FIXME Note this is the same as a single implicit iteration...
   // we should probably use the same function call that is there if this works
   void FiberRVEAnalysisExplicit::relaxSystem() {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    ops->zero(this->getK());
     ops->zero(this->getU());
-    ops->zero(this->getF());
-    apf::Mesh * fn = this->getFn()->getNetworkMesh();
-    this->es->process(fn, 1);
-    // finalize the vectors so we cthis set boundary condition
-    // values
-    las::finalizeMatrix<las::MICRO_BACKEND>(this->vecs->getK());
-    las::finalizeVector<las::MICRO_BACKEND>(this->vecs->getF());
+    computeStiffnessMatrix();
     applyRVEBC(this->bnd_nds[RVE::all].begin(),
                this->bnd_nds[RVE::all].end(),
                this->getFn()->getUNumbering(),
@@ -110,7 +104,7 @@ namespace bio
         .run();
     ops->restore(this->getU(), s);
   }
-  bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd)
+  bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {
     BIO_V3(
     std::cout << "F=[";
@@ -121,6 +115,14 @@ namespace bio
     );
     computeDisplcamentBC(dfmGrd);
     apf::Mesh * mesh = getFn()->getNetworkMesh();
+    if(!update_coords)
+    {
+      unsigned int num_dofs = getFn()->getDofCount();
+      if(old_u.size() != num_dofs)
+        old_u.resize(num_dofs);
+      amsi::WriteOp wrt;
+      amsi::ToArray(getFn()->getUNumbering(), getFn()->getUField(), &old_u[0], 0, &wrt).run();
+    }
     // we do look for the field because if a previous analysis
     // was run, then we need to let the ETFEM code know
     apf::Field * massField = mesh->findField("nodalMass");
@@ -175,6 +177,18 @@ namespace bio
       system_initialized = true;
     }
 #endif
+    computeCauchyStress(sigma);
+    if(!update_coords)
+    {
+      amsi::WriteOp wrt;
+      amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(), &old_u[0], 0, &wrt).run();
+    }
+    else
+    {
+      curDfmGrd = dfmGrd;
+      for(int i=0; i<6; ++i)
+        curStress[i] = sigma[i];
+    }
     // delete the boundary condition data
     // TODO fix this so we aren't newing and deleting these arrays every iteration
     delete [] disp_bound_dof;
@@ -230,16 +244,20 @@ namespace bio
   void FiberRVEAnalysisExplicit::copyForceDataToForceVec()
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    apf::freeze(getFn()->getFField());
-    double * f_arr = apf::getArrayData(getFn()->getFField());
-    ops->set(getF(), f_arr);
+    unsigned int num_dofs = getFn()->getDofCount();
+    double * s = new double[num_dofs];
+    amsi::WriteOp wrt;
+    amsi::ToArray(getFn()->getFNumbering(), getFn()->getFField(), &s[0], 0, &wrt).run();
+    ops->set(getF(), s);
   }
   void FiberRVEAnalysisExplicit::copyDispDataToDispVec()
   {
     auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    apf::freeze(getFn()->getUField());
-    double * u_arr = apf::getArrayData(getFn()->getUField());
-    ops->set(getU(), u_arr);
+    unsigned int num_dofs = getFn()->getDofCount();
+    double * s = new double[num_dofs];
+    amsi::WriteOp wrt;
+    amsi::ToArray(getFn()->getUNumbering(), getFn()->getUField(), &s[0], 0, &wrt).run();
+    ops->set(getU(), s);
   }
   void FiberRVEAnalysisExplicit::computeStiffnessMatrix()
   {
@@ -249,6 +267,15 @@ namespace bio
     apf::Integrator * es =
         createImplicitMicroElementalSystem(getFn(), getK(), getF());
     es->process(getFn()->getNetworkMesh(), 1);
+    // finalize the vectors so we cthis set boundary condition
+    // values
+    las::finalizeMatrix<las::MICRO_BACKEND>(this->vecs->getK());
+    las::finalizeVector<las::MICRO_BACKEND>(this->vecs->getF());
     delete es;
+  }
+  void FiberRVEAnalysisExplicit::computeCauchyStress(double sigma[6])
+  {
+    copyForceDataToForceVec();
+    FiberRVEAnalysis::computeCauchyStress(sigma);
   }
 }  // namespace bio

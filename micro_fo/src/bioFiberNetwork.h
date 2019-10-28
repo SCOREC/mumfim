@@ -39,6 +39,7 @@ namespace bio
     std::vector<FiberReaction *> rctns;
     // the rve filename map
     int rve_tp;
+    double scale_factor;
 
     public:
     /**
@@ -49,6 +50,18 @@ namespace bio
     FiberNetwork(apf::Mesh * f);
     FiberNetwork(const FiberNetwork & fn);
     ~FiberNetwork();
+    /*
+     * returns the scale factor for this network...
+     * \note This is only relevant for a multiscale analysis, and should
+     * possibly be moved to a multiscale fiber network which sublcasses from here?
+     */
+    double getScaleConversion() const { return scale_factor;}
+    /*
+     * sets the scale conversion factor (default 1). Typically this is
+     * done in the multiscale initialization phase
+     * \param sf scale factor
+     */
+    void setScaleConversion(double sf) { scale_factor = sf; }
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)

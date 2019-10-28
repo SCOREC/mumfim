@@ -3,19 +3,28 @@
 #include <amsiMPI.h>
 namespace bio
 {
+  enum class MicroscaleType
+  {
+    NONE,
+    FIBER_ONLY,
+    FIBER_MATRIX,
+    ISOTROPIC_NEOHOOKEAN,
+    MICROSCALE_TYPE_COUNT
+  };
   // TODO move orientation tensor fields to own structs
   // fiber_reaction is obsolete, remove it
   // keep the 2d orientation as a separate param because we might want to compute
   // multiple 2d orientations in the future
   enum header_fields
   {
-    RVE_TYPE = 0,
-    FIELD_ORDER = 1,
-    ELEMENT_TYPE = 2,
-    GAUSS_ID = 3,
-    COMPUTE_ORIENTATION_3D = 4,
-    COMPUTE_ORIENTATION_2D = 5,
-    NUM_HEADER_FIELDS = 6
+    RVE_TYPE,
+    RVE_DIR_TYPE,
+    FIELD_ORDER,
+    ELEMENT_TYPE,
+    GAUSS_ID,
+    COMPUTE_ORIENTATION_3D,
+    COMPUTE_ORIENTATION_2D,
+    NUM_HEADER_FIELDS
   };
   struct micro_fo_header
   {
@@ -23,15 +32,15 @@ namespace bio
   };
   enum fiber_param_fields
   {
-    FIBER_RADIUS = 0,
-    VOLUME_FRACTION = 1,
-    YOUNGS_MODULUS = 2,
-    NONLINEAR_PARAM = 3,
-    LINEAR_TRANSITION = 4,
-    ORIENTATION_AXIS_X = 5,
-    ORIENTATION_AXIS_Y = 6,
-    ORIENTATION_AXIS_Z = 7,
-    NUM_PARAM_FIELDS = 8
+    FIBER_RADIUS,
+    VOLUME_FRACTION,
+    YOUNGS_MODULUS,
+    NONLINEAR_PARAM,
+    LINEAR_TRANSITION,
+    ORIENTATION_AXIS_X,
+    ORIENTATION_AXIS_Y,
+    ORIENTATION_AXIS_Z,
+    NUM_PARAM_FIELDS
   };
   enum micro_solver_fields
   {
@@ -82,9 +91,10 @@ namespace bio
   };
   struct micro_fo_result
   {
-    // 8 * 3 * 6 + 9 = 153 (magic number, 8 verts in 'largest' element type)
-    // +9 at end to store orientation tensor information.
-    double data[4 * 3 * 6 + 9 + 9]; // 6 sigma values for each vertex 3 q values, assuming tets atm
+    // 6 components of symmetric stress +
+    // 3 components of Q + 
+    // 36 components of stiffness (stress and strain symmetric)
+    double data[6 + 3 + 36]; 
   };
   // data communicated at each step
   struct micro_fo_step_result

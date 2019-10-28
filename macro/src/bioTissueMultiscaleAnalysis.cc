@@ -44,8 +44,7 @@ namespace bio
     pACase pd = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::PROBLEM_DEFINITION));
     pACase ss = (pACase)AttNode_childByType((pANode)cs,amsi::getSimCaseAttributeDesc(amsi::SOLUTION_STRATEGY));
     // analysis params
-    MultiscaleTissue * mt = NULL;
-    tssu = mt = new MultiscaleTissue(mdl,msh,pd,ss,cm);
+    tssu = new MultiscaleTissue(mdl,msh,pd,ss,cm);
     mx_stp = AttInfoInt_value((pAttInfoInt)AttNode_childByType((pANode)ss,"num timesteps"));
     dt = (double)1.0/(double)mx_stp;
     std::vector<pANode> trk_vols;

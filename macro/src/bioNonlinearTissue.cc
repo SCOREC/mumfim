@@ -89,7 +89,7 @@ namespace bio
       char* img_cls = Attribute_imageClass(cm);
       int cnst_type = getConstitutiveTypeFromString(img_cls);
       Sim_deleteString(img_cls);
-      if (cnst_type == isotropic_neohookian)  // push evaluation inside of
+      if (cnst_type == isotropic_neohookean)  // push evaluation inside of
                                               // elemental system constructor?
       {
         // should check to make sure the continuum model is iso lin ela for init

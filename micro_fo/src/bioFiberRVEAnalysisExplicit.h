@@ -19,7 +19,7 @@ namespace bio
       delete writer;
       delete amp;
     }
-    virtual bool run(const DeformationGradient & dfmGrd);
+    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
     virtual FiberRVEAnalysisType getAnalysisType()
     {
       return FiberRVEAnalysisType::Explicit;
@@ -52,11 +52,13 @@ namespace bio
     bool system_initialized;
     unsigned long itr_prev;
     void computeDisplcamentBC(const DeformationGradient & dfmGrd);
-    virtual void copyForceDataToForceVec();
-    virtual void copyDispDataToDispVec();
-    virtual void computeStiffnessMatrix();
+    void copyForceDataToForceVec();
+    void copyDispDataToDispVec();
+    virtual void computeStiffnessMatrix() final;
     void relaxSystem();
     ExplicitOutputWriter * writer; 
+    std::vector<double> old_u;
+    virtual void computeCauchyStress(double sigma[6]) final;
   };
 }  // namespace bio
 #endif
