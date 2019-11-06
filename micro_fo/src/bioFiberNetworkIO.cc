@@ -3,6 +3,7 @@
 #include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
 #include <apfMeshUtil.h>
+#include <apfMDS.h>
 #include <PCU.h>
 #include <cassert>
 #include <fstream>
@@ -80,6 +81,7 @@ namespace bio
     //apf::printStats(msh);
     assert(nn == vrt_cnt);
     assert(ne == edg_cnt);
+    apf::deriveMdsModel(msh);
     return msh;
   }
   void NetworkLoader::processVertLine(std::istream & is)

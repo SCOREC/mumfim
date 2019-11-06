@@ -242,6 +242,7 @@ namespace bio
           int rnd = rand() % rve_tp_cnt[tp];
           apf::Mesh * msh_cpy =
               apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
+          // Fiber network takes ownership of the mesh copy
           FiberNetwork * fn = new FiberNetwork(msh_cpy);
           fn->setFiberReactions(fns[tp][rnd]->rctns);
           vecs.push_back(

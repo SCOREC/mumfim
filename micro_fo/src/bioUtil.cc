@@ -4,8 +4,9 @@ namespace bio
   apf::Matrix3x3 eye()
   {
     apf::Matrix3x3 rslt;
-    for(int ii = 0; ii < 3; ii++)
-      rslt[ii][ii] = 1.0;
+    for (int i=0; i<3; ++i)
+      for(int j=0; j<3; ++j)
+        rslt[i][j] = (i==j) ? 1.0 : 0;
     return rslt;
   }
   apf::Matrix3x3 ones()
