@@ -178,6 +178,7 @@ namespace bio
       t += dt;
       tssu->setSimulationTime(t);
       std::cout<<"checkpointing (macro)"<<std::endl;
+      tssu->recoverSecondaryVariables(stp);
       checkpoint();
       std::cout<<"Finalizing step (macro)"<<std::endl;
       finalizeStep();
@@ -206,15 +207,17 @@ namespace bio
     std::ofstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(state,st_fs);
 #endif
-    tssu->recoverSecondaryVariables(stp);
     // write mesh to file
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
-    std::string msh_prfx("msh_stp_");
+    int iteration = itr->iteration();
+    std::cout<<"ITERATION: " << iteration;
     std::stringstream cnvrt;
-    cnvrt << stp;
-    apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + msh_prfx + cnvrt.str()).c_str(),tssu->getMesh());
-    amsi::writePvdFile(pvd,msh_prfx,stp);
+    cnvrt <<"msh_stp_" << stp << "_iter_";
+    amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);
+    cnvrt << iteration;
+    apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + cnvrt.str()).c_str(),
+        tssu->getMesh());
   }
   void TissueAnalysis::revert()
   {

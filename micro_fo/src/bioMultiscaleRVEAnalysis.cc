@@ -238,7 +238,7 @@ namespace bio
         if(micro_tp == MicroscaleType::FIBER_ONLY)
         {
           int tp = hdr.data[RVE_DIR_TYPE];
-          int rnd = rand() % rve_tp_cnt[tp];
+          int rnd = 0;//rand() % rve_tp_cnt[tp];
           apf::Mesh * msh_cpy =
               apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
           // Fiber network takes ownership of the mesh copy
