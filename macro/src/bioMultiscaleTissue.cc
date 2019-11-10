@@ -148,7 +148,6 @@ namespace bio
       cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,tp->c_str(),tp->size()+1);
       rve_cnts[ii++] = rve_dir_cnts[std::distance(rve_dirs.begin(),tp)];
     }
-    //std::vector<MPI_Request> hdr_rqst;
     cs->aSendBroadcast(std::back_inserter(rqsts),M2m_id,&rve_cnts[0],num_rve_tps);
     // wait for the sends to complete if we don't do this it can cause
     // a crash on systems without hardware MPI buffers

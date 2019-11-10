@@ -38,7 +38,6 @@ namespace bio
     }
     amsi::mat2VoigtVec(3, Cauchy, sigma);
   }
-  /*
   void NeoHookeanRVEAnalysis::computeMaterialStiffness(double C[36])
   {
     detF = apf::getDeterminant(F);
@@ -61,15 +60,14 @@ namespace bio
     double Ctest[36];
     for(int i=0; i<6; ++i)
       for(int j=0; j<6; ++j)
-        Ctest[i*6+j]= D(i,j);
+        C[i*6+j]= D(i,j);
         //C[i*6+j]= D(i,j);
-   RVEAnalysis::computeMaterialStiffness(C);
-   for(int i=0; i<36; ++i)
-     std::cout<<fabs(Ctest[i] -C[i])<<" ";
-   std::cout<<std::endl;
+   //RVEAnalysis::computeMaterialStiffness(C);
+   //for(int i=0; i<36; ++i)
+   //  std::cout<<fabs(Ctest[i] -C[i])<<" ";
+   //std::cout<<std::endl;
    
   }
-  */
   NeoHookeanRVEAnalysis * initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm)
   {
     double youngs_modulus = prm.data[YOUNGS_MODULUS];

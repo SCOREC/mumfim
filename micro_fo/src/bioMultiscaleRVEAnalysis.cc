@@ -120,7 +120,7 @@ namespace bio
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(M2m_id, &num_rve_tps);
     char ** rve_tp_dirs = new char *[num_rve_tps];
-    MPI_Request rqsts[num_rve_tps];
+    std::vector<MPI_Request> rqsts;
     // the order of receipt might be non-deterministic. need to handle that
     for (int ii = 0; ii < num_rve_tps; ++ii)
     {
@@ -131,15 +131,14 @@ namespace bio
       rve_tp_dirs[ii] = new char[cnt];
       // don't have to block to wait since we know the message was available for
       // size info
-      cs->aRecvBroadcast(&rqsts[ii], M2m_id, &rve_tp_dirs[ii][0], cnt);
+      cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_dirs[ii][0], cnt);
     }
-    MPI_Status stss[num_rve_tps];
-    MPI_Waitall(num_rve_tps, &rqsts[0], &stss[0]);
-    MPI_Request hdr_rqst;
     rve_tp_cnt.resize(num_rve_tps);
-    cs->aRecvBroadcast(&hdr_rqst, M2m_id, &rve_tp_cnt[0], num_rve_tps);
-    MPI_Status hdr_sts;
-    MPI_Waitall(1, &hdr_rqst, &hdr_sts);
+    cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_cnt[0], num_rve_tps);
+    //assert(rqsts.size() == num_rve_tps);
+    // note rather than waiting for all of the communication, we can interleave
+    // creating some of the new structures with some of the communication
+    MPI_Waitall(rqsts.size(), &rqsts[0], MPI_STATUSES_IGNORE);
     // Read in all the fiber network meshes and reactions
     for (int ii = 0; ii < num_rve_tps; ++ii)
     {
