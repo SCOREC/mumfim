@@ -134,6 +134,8 @@ namespace bio
         // cutIterations are successful
         microIterSolveSuccess =
             (amsi::numericalSolve(&itr, &cnvrg) && microIterSolveSuccess);
+        // reset the iteration for the next solve step
+        itr.reset();
         // cleanup the oscillation detection memory
         delete osc_itr;
         // don't bother computing the rest of the attempt if any

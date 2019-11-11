@@ -20,6 +20,19 @@
 #include <fstream>
 namespace bio
 {
+  class TissueCheckpointIteration : public amsi::Iteration
+  {
+  protected:
+    TissueAnalysis * tssu;
+  public:
+  TissueCheckpointIteration(TissueAnalysis* t) : tssu(t) {}
+  virtual void iterate()
+  {
+    std::cout<<"Checkpointing iteration: "<<this->iteration()<<std::endl;
+    tssu->checkpoint();
+    amsi::Iteration::iterate();
+    }
+  };
   void MultiscaleTissueIteration::iterate()
   {
     if(!PCU_Comm_Self())
@@ -59,6 +72,8 @@ namespace bio
     }
     // compute the multiscale tissue iteration after the volumes have been computed
     itr_stps.push_back(new MultiscaleTissueIteration(static_cast<MultiscaleTissue*>(tssu),las));
+    // checkpoint after performing an iteration (this way numbering lines up properly)
+    itr_stps.push_back(new TissueCheckpointIteration(this));
     itr = new amsi::MultiIteration(itr_stps.begin(), itr_stps.end());
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));

@@ -9,15 +9,6 @@ namespace bio
     void buildLASConvergenceOperators(pACase ss, amsi::MultiIteration * it, amsi::LAS * las, O out);
   template <typename I, typename O>
     void buildVolumeConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::Field * u, O out);
-  class TissueIteration : public amsi::Iteration
-  {
-  protected:
-    NonlinearTissue * tssu;
-    amsi::LAS * las;
-  public:
-  TissueIteration(NonlinearTissue* t, amsi::LAS* l) : tssu(t), las(l) {}
-  virtual void iterate();
-  };
   class TissueAnalysis
   {
   public:
@@ -69,6 +60,21 @@ namespace bio
     std::vector<apf::ModelEntity*> frc_itms;
     std::vector<apf::ModelEntity*> dsp_itms;
     std::vector<apf::ModelEntity*> vol_itms;
+  };
+  class TissueIteration : public amsi::Iteration
+  {
+  protected:
+    NonlinearTissue * tssu;
+    amsi::LAS * las;
+  public:
+  TissueIteration(NonlinearTissue* t, amsi::LAS* l) : tssu(t), las(l) {}
+  virtual void iterate()
+  {
+    LinearSolver(tssu, las);
+    tssu->iter();
+    las->iter();
+    amsi::Iteration::iterate();
+    }
   };
 }
 #include "bioTissueAnalysis_impl.h"

@@ -3,13 +3,6 @@
 #include <iostream>
 namespace bio
 {
-  void TissueIteration::iterate()
-  {
-    LinearSolver(tssu, las);
-    tssu->iter();
-    las->iter();
-    amsi::Iteration::iterate();
-  }
   TissueAnalysis::TissueAnalysis(pGModel md, pParMesh ms, pACase ca, MPI_Comm c)
     : cm(c)
     , mdl(md)
@@ -174,12 +167,16 @@ namespace bio
       logDisps(dsp_itms.begin(),dsp_itms.end(),dsps,stp,tssu->getUField());
       logForces(frc_itms.begin(),frc_itms.end(),frcs,stp,tssu);
       logVolumes(vol_itms.begin(),vol_itms.end(),vols,stp,tssu->getUField());
+      std::cout<<"checkpointing (macro)"<<std::endl;
+      std::cout<<"Rewriting at end of load step to include orientation data"<<std::endl;
+      tssu->recoverSecondaryVariables(stp);
+      checkpoint();
+      // reset the iteration from the numerical solve after checkpointing which records
+      // iteration information
+      itr->reset();
       stp++;
       t += dt;
       tssu->setSimulationTime(t);
-      std::cout<<"checkpointing (macro)"<<std::endl;
-      tssu->recoverSecondaryVariables(stp);
-      checkpoint();
       std::cout<<"Finalizing step (macro)"<<std::endl;
       finalizeStep();
     }
@@ -210,11 +207,11 @@ namespace bio
     // write mesh to file
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
-    int iteration = itr->iteration();
-    std::cout<<"ITERATION: " << iteration;
+    int iteration = itr->iteration()-1;
+    std::cout<<"ITERATION: " << iteration<<std::endl;
     std::stringstream cnvrt;
     cnvrt <<"msh_stp_" << stp << "_iter_";
-    amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);
+    //amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);
     cnvrt << iteration;
     apf::writeVtkFiles(std::string(amsi::fs->getResultsDir() + "/" + cnvrt.str()).c_str(),
         tssu->getMesh());
