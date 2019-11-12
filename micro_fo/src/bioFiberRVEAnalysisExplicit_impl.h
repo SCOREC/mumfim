@@ -78,6 +78,7 @@ namespace bio
     public:
     bool run(unsigned long & itr_prev)
     {
+      double residual = 1.0;
       // optimization to only compute the mass matrix 1
       // if(!mass_field_initialized)
       computeMassMatrix(nnds, mesh, nodalMass, fiber_density, fiber_area);
@@ -120,7 +121,7 @@ namespace bio
       dt_crit = getForces(nelem, ndof, l0_d, l_d, v_d, current_coords_d,
                           connectivity_d, mass_matrix_d, visc_damp_coeff,
                           f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
-                          f_damp_d, f_damp_last_d, f_d);
+                          f_damp_d, f_damp_last_d, f_d, residual);
       // else
       BIO_V3(std::cout << "The initial timestep is dt=" << dt_crit
                        << ".\nIf the analysis continues with a comprable dt "
@@ -148,11 +149,11 @@ namespace bio
         dt_nphalf = crit_time_scale_factor * dt_crit;
         t_npone = current_time + dt_nphalf;
         // make sure the last time step is at the requested time
-        if (t_npone > total_time)
-        {
-          t_npone = total_time;
-          dt_nphalf = total_time - current_time;
-        }
+        //if (t_npone > total_time)
+        //{
+        //  t_npone = total_time;
+        //  dt_nphalf = total_time - current_time;
+        //}
         t_nphalf = 0.5 * (current_time + t_npone);
         updateVelocity(ndof, a_d, (t_nphalf - current_time), v_d);
         // we don't really need to apply the velocity boundary condition
@@ -170,25 +171,11 @@ namespace bio
         dt_crit = getForces(nelem, ndof, l0_d, l_d, v_d, current_coords_d,
                             connectivity_d, mass_matrix_d, visc_damp_coeff,
                             f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
-                            f_damp_d, f_damp_last_d, f_d);
+                            f_damp_d, f_damp_last_d, f_d, residual);
         updateAccelVel(ndof, t_npone-t_nphalf, mass_matrix_d, f_d, a_d, v_d);
-        /*
-        updateAcceleration(ndof, mass_matrix_d, f_d, a_d);
-        updateVelocity(ndof, a_d, t_npone - t_nphalf, v_d);
-        */
         applyAccelVelBC(disp_nfixed, t_npone, visc_damp_coeff, disp_boundary_dof_d,
                         disp_boundary_values_d, mass_matrix_d, amp, a_d, v_d,
                         f_int_d, f_ext_d, f_damp_d, f_d);
-        /*
-        applyAccelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
-                     disp_boundary_values_d, amp, a_d);
-        applyVelBC(disp_nfixed, t_npone, disp_boundary_dof_d,
-                   disp_boundary_values_d, amp, v_d);
-        // we need to update all of the forces on the boundary, so our energy
-        // computation is correct (set f_ext=f_int+f_ma+f_damp on boundary)
-        fixBoundaryForces(disp_nfixed, disp_boundary_dof_d, mass_matrix_d, a_d,
-                          f_int_d, f_ext_d, f_damp_d, f_d);
-        */
         computeEnergies(ndof, du_d, f_int_last_d, f_int_d, f_ext_last_d,
                         f_ext_d, f_damp_last_d, f_damp_d, W_int, W_ext, W_damp);
         W_kin = computeKineticEnergy(ndof, mass_matrix_d, v_d);
@@ -240,7 +227,9 @@ namespace bio
         {
           writer->writeHistoryData(itr_prev + n_step, W_int, W_ext, W_damp, W_kin, current_time);
         }
-      } while (current_time < total_time);
+        //if((current_time > total_time) && (n_step%1000 == 0))
+        //  std::cout<<residual<<std::endl;
+      } while ((current_time < total_time) || (residual > 1E-6));
       // if we didn't already write the last frame
       if (print_field_frequency && !print_field_by_num_frames &&
           (n_step % print_field_frequency))
@@ -491,12 +480,13 @@ namespace bio
                      D_RWDA f_ext_last,
                      D_RWDA f_damp,
                      D_RWDA f_damp_last,
-                     D_RWDA f)
+                     D_RWDA f,
+                     double & residual)
     {
       return static_cast<T &>(*this).getForces_(
           nelem, ndof, fiber_elastic_modulus, fiber_area, fiber_density, l0, l,
           v, current_coords, connectivity, mass_matrix, visc_damp_coeff, f_int,
-          f_int_last, f_ext, f_ext_last, f_damp, f_damp_last, f);
+          f_int_last, f_ext, f_ext_last, f_damp, f_damp_last, f, residual);
     }
     void updateAcceleration(int ndof, D_RODA mass_matrix, D_RODA f, D_RWDA a)
     {
@@ -923,7 +913,8 @@ namespace bio
                       double * f_ext_last,
                       double * f_damp,
                       double * f_damp_last,
-                      double * f)
+                      double * f,
+                      double & residual)
     {
       double dt = std::numeric_limits<double>::max();
       double frc;
@@ -970,10 +961,15 @@ namespace bio
           dt = dt_crit_elem;
         }
       }
+      residual = 0;
       for (int i = 0; i < ndof; ++i)
       {
-        f[i] = f_ext[i] - (f_int[i] + f_damp[i]);
+        double local_residual = f_ext[i]-f_int[i];
+        residual +=  local_residual*local_residual;
+        //f[i] = f_ext[i] - (f_int[i] + f_damp[i]);
+        f[i] = local_residual - f_damp[i];
       }
+      residual = sqrt(residual);
       return dt;
     }
     void updateAcceleration_(int ndof,
@@ -1250,11 +1246,13 @@ namespace bio
                       KKD_RWDA f_ext_last,
                       KKD_RWDA f_damp,
                       KKD_RWDA f_damp_last,
-                      KKD_RWDA f)
+                      KKD_RWDA f,
+                      double & residual)
     {
       double dt = std::numeric_limits<double>::max();
       // element normal vectors
       double sound_speed = sqrt(fiber_elastic_modulus / fiber_density);
+      residual = 0;
       // swap force arrays and zero internal forces
       Kokkos::parallel_for(
           "getFoces--Loop1", ndof, KOKKOS_LAMBDA(std::size_t i) {
@@ -1299,10 +1297,15 @@ namespace bio
             min_reducer.join(dt_crit_elem, local_l / sound_speed);
           },
           min_reducer);
+      std::cerr<<"convert this parallel for to parallel reduce to get the residual!"<<std::endl;
+      std::abort();
       Kokkos::parallel_for("getForces-Loop3", ndof,
                            KOKKOS_LAMBDA(std::size_t i) {
+                             local_residual = f_ext(i) - f_int(i);
+                             residual += local_residual*local_residual;
                              f(i) = f_ext(i) - (f_int(i) + f_damp(i));
                            });
+      residual = sqrt(residual)/ndof;
       return dt;
     }
     void updateAcceleration_(int ndof,

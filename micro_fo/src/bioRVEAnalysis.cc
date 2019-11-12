@@ -21,7 +21,8 @@ namespace bio
                 curDfmGrd[6], curDfmGrd[7], curDfmGrd[8]);
     std::vector<std::vector<int>> idx = {{0,0},{1,1},{2,2},{1,2},{0,2},{0,1}};
     double sigma1[6];
-    double h = 1E-8;
+    //double h = 1E-8;
+    double h = 1E-5;
     // assume 3D
     for(int i=0; i<6; ++i)
     {

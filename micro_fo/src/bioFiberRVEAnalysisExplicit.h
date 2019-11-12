@@ -59,6 +59,9 @@ namespace bio
     ExplicitOutputWriter * writer; 
     std::vector<double> old_u;
     virtual void computeCauchyStress(double sigma[6]) final;
+    // this is inherited here as a hacky way to provide a short load time
+    // for finite differencing
+    virtual void computeMaterialStiffness(double C[36]) final;
   };
 }  // namespace bio
 #endif

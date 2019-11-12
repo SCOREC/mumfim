@@ -133,13 +133,7 @@ namespace bio
     apf::Field * f_ext_field = getFn()->getdUField();
     apf::zeroField(getFn()->getVField());
     apf::zeroField(getFn()->getAField());
-    //apf::zeroField(getFn()->getFField());
-    //apf::zeroField(getFn()->getdUField());
-    //apf::zeroField(getFn()->getUField());
-    //apf::freeze(getFn()->getUField());
     apf::Field * coords = getFn()->getNetworkMesh()->getCoordinateField(); 
-    apf::freeze(getFn()->getUField());
-    double * u_arr = apf::getArrayData(getFn()->getUField());
     bool rtn;
 #ifdef ENABLE_KOKKOS 
     if (this->getFn()->getDofCount() < serial_gpu_cutoff)
@@ -197,12 +191,6 @@ namespace bio
     disp_bound_vals=NULL;
     delete [] disp_bound_init_vals;
     disp_bound_init_vals = NULL;
-    // accumulate the du from the explicit analysis into the u field
-    //apf::freeze(getFn()->getdUField());
-    //double * du = apf::getArrayData(getFn()->getdUField());
-    //amsi::AccumOp acm;
-    //amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(),  du, 0, &acm).run();
-    //relaxSystem();
     return rtn;
   }
   void FiberRVEAnalysisExplicit::computeDisplcamentBC(
@@ -276,6 +264,28 @@ namespace bio
   void FiberRVEAnalysisExplicit::computeCauchyStress(double sigma[6])
   {
     copyForceDataToForceVec();
+    //computeStiffnessMatrix();
     FiberRVEAnalysis::computeCauchyStress(sigma);
+  }
+  void FiberRVEAnalysisExplicit::computeMaterialStiffness(double C[36])
+  {
+    //double diff_load_time = 2.0;
+    //double diff_total_time = 2.5;
+    ////double diff visc_damp_coeff = 0.6;
+    //Amplitude * old_amp = amp;
+    //double old_load_time = load_time;
+    //double old_total_time = total_time;
+    //// set values before computing finite difference
+    //load_time = diff_load_time;
+    //total_time = diff_total_time;
+    //amp = new SmoothAmpHold(diff_load_time,diff_total_time);
+    // compute material stiffness with default finite difference formulation
+    RVEAnalysis::computeMaterialStiffness(C);
+    // reset variables for the explicit class, so we don't "feel" the effects
+    // from changing them when we do our full runs.
+    //delete amp;
+    //amp = old_amp;
+    //total_time = old_total_time;
+    //load_time = old_total_time;
   }
 }  // namespace bio
