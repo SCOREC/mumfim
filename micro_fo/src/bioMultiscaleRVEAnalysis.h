@@ -37,13 +37,21 @@ namespace bio
     std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
     // a vector that stores the dof number for each type of network
     std::vector<int *> dofs_cnt;
+    //  an vector that holds the names of the rve types
+    std::vector<char*> rve_tp_dirs;
     int macro_iter;
     int macro_step;
+    // we keep this as a class scope variable since we want the nnz_max
+    // to be maximum number of nonzeros in all loaded networks.
+    int nnz_max;
     // funcs
     void initLogging();
     void initCoupling();
     void initAnalysis();
     void updateCoupling();
+    // this function loads
+    void loadNetworkIntoLibrary(const std::string & network_name, size_t net_type, size_t net_id,
+                                int & num_dofs, int & nnz);
 
     public:
     MultiscaleRVEAnalysis();

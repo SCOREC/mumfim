@@ -36,9 +36,13 @@ int main(int argc, char * argv[])
   Kokkos::initialize(argc, argv);
   {
 #endif
+  if(argc != 2)
+  {
+    std::cerr<<"Usage: "<<argv[0]<<" job.yaml"<<std::endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(
-      "/lore/mersoj/biotissue/biotissue/micro_fo/test/fiber_only.yaml", cases);
+  bio::loadMicroFOFromYamlFile(argv[1], cases);
   bio::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;

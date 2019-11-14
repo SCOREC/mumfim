@@ -19,6 +19,33 @@
 #include "bioNeoHookeanRVEAnalysis.h"
 namespace bio
 {
+  void MultiscaleRVEAnalysis::loadNetworkIntoLibrary(const std::string & network_name,
+      size_t net_type, size_t net_id, int & num_dofs, int & nnz)
+  {
+      MPI_Comm comm = PCU_Get_Comm();
+      PCU_Switch_Comm(MPI_COMM_SELF);
+      FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
+      meshes[net_type][net_id] = loadFromFile(network_name);
+      apf::Mesh2 * fn = meshes[net_type][net_id];
+      fn_rctns->fileName = network_name;
+      loadParamsFromFile(fn, network_name+".params", std::back_inserter(fn_rctns->rctns));
+      fns[net_type][net_id] = fn_rctns;
+      apf::Field * u = apf::createLagrangeField(fn, "u", apf::VECTOR, 1);
+      apf::zeroField(u);
+      apf::Numbering * n = apf::createNumbering(u);
+      num_dofs = apf::NaiveOrder(n);
+      dofs_cnt[net_type][net_id] = num_dofs;
+      //apf::NaiveOrder(n);
+#if defined MICRO_USING_SPARSKIT
+      sprs[net_type][net_id] = las::createCSR(n, num_dofs);
+      nnz = ((las::CSR*)sprs[net_type][net_id])->getNumNonzero();
+#elif defined MICRO_USING_PETSC
+      sprs[net_type][net_id] = las::createPetscSparsity(n, num_dofs, PCU_Get_Comm());
+#endif
+      apf::destroyNumbering(n);
+      apf::destroyField(u);
+      PCU_Switch_Comm(comm);
+  }
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis()
   {
     delete bfrs;
@@ -49,11 +76,13 @@ namespace bio
       delete[] fns[i];
       delete[] sprs[i];
       delete[] dofs_cnt[i];
+      delete[] rve_tp_dirs[i];
       delete[] meshes[i];
     }
     fns.clear();
     sprs.clear();
     dofs_cnt.clear();
+    rve_tp_dirs.clear();
     vecs.clear();
     meshes.clear();
   }
@@ -77,8 +106,10 @@ namespace bio
       , bfrs(NULL)
       , vecs()
       , dofs_cnt()
+      , rve_tp_dirs()
       , macro_iter(0)
       , macro_step(0)
+      , nnz_max(-1)
   {
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
                                  amsi::getScaleManager(),
@@ -119,7 +150,7 @@ namespace bio
     int num_rve_tps = 0;
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(M2m_id, &num_rve_tps);
-    char ** rve_tp_dirs = new char *[num_rve_tps];
+    rve_tp_dirs.resize(num_rve_tps);
     std::vector<MPI_Request> rqsts;
     // the order of receipt might be non-deterministic. need to handle that
     for (int ii = 0; ii < num_rve_tps; ++ii)
@@ -147,53 +178,17 @@ namespace bio
       dofs_cnt.push_back(new int[rve_tp_cnt[ii]]);
       meshes.push_back(new apf::Mesh2 *[rve_tp_cnt[ii]]);
     }
-#ifdef MICRO_USING_SPARSKIT
-    int dof_max = -1;
-    int nnz_max = -1;
-#endif
-    PCU_Switch_Comm(MPI_COMM_SELF);
     for (int ii = 0; ii < num_rve_tps; ii++)
     {
       for (int jj = 0; jj < rve_tp_cnt[ii]; ++jj)
       {
-        std::stringstream fl;
-        fl << rve_tp_dirs[ii] << jj + 1 << ".txt";
-        FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
-        meshes[ii][jj] = loadFromFile(fl.str());
-        apf::Mesh2 * fn = meshes[ii][jj];
-        fn_rctns->fileName = fl.str();
-        fl << ".params";
-        loadParamsFromFile(fn, fl.str(), std::back_inserter(fn_rctns->rctns));
-        fns[ii][jj] = fn_rctns;
-        apf::Field * u = apf::createLagrangeField(fn, "u", apf::VECTOR, 1);
-        apf::zeroField(u);
-        apf::Numbering * n = apf::createNumbering(u);
-        int dofs = apf::NaiveOrder(n);
-        dofs_cnt[ii][jj] = dofs;
-        //apf::NaiveOrder(n);
-#if defined MICRO_USING_SPARSKIT
-        sprs[ii][jj] = las::createCSR(n, dofs);
-        int nnz = ((las::CSR*)sprs[ii][jj])->getNumNonzero();
-        dof_max = dofs > dof_max ? dofs : dof_max;
-        nnz_max = nnz > nnz_max ? nnz : nnz_max;
-#elif defined MICRO_USING_PETSC
-        sprs[ii][jj] = las::createPetscSparsity(n, dofs, PCU_Get_Comm());
-#endif
-        apf::destroyNumbering(n);
-        apf::destroyField(u);
+        // initialize the library to all 0/NULL
+        fns[ii][jj] = NULL;
+        sprs[ii][jj] = NULL;
+        dofs_cnt[ii][jj] = 0;
+        meshes[ii][jj] = NULL;
       }
     }
-    PCU_Switch_Comm(AMSI_COMM_SCALE);
-#ifdef MICRO_USING_SPARSKIT
-    if(num_rve_tps >0)
-    {
-      assert(nnz_max > 0);
-      assert(dof_max > 0);
-      // magic number that doesn't seem to require much rescaling
-      // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
-      bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
-    }
-#endif
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {
@@ -225,6 +220,15 @@ namespace bio
                     amsi::mpi_type<bio::micro_fo_int_solver>());
     PCU_Switch_Comm(MPI_COMM_SELF);
     int ii = 0;
+#ifdef MICRO_USING_SPARSKIT
+    // resize the sparskit buffers
+    if(rve_tp_cnt.size() >0)
+    {
+      // make minimum size buffer so that we can get a pointer.
+      // this will be resized after all of the relevant meshes are loaded
+      bfrs = new las::SparskitBuffers(1);
+    }
+#endif
     for (auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       if (*rve == NULL)
@@ -239,6 +243,18 @@ namespace bio
         {
           int tp = hdr.data[RVE_DIR_TYPE];
           int rnd = 0;//rand() % rve_tp_cnt[tp];
+          // load the mesh into the library if it hasn't already been loaded
+          if(meshes[tp][rnd] == NULL)
+          {
+            std::stringstream fl;
+            fl << rve_tp_dirs[tp] << rnd + 1 << ".txt";
+            int num_dofs, nnz = 0;
+            loadNetworkIntoLibrary(fl.str(), tp, rnd, num_dofs, nnz);
+            // if the network is already loaded into the library, then comparing
+            // its nnz against nnz_max cannot increase nnz_max, so only setting nnz_max here
+            // should be safe
+            nnz_max = (nnz>nnz_max) ? nnz : nnz_max;
+          }
           apf::Mesh * msh_cpy =
               apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
           // Fiber network takes ownership of the mesh copy
@@ -267,6 +283,20 @@ namespace bio
         }
       }
     }
+#ifdef MICRO_USING_SPARSKIT
+    // resize the sparskit buffers
+    // the max nnz will be negative 1 on any subsequent load steps
+    if(rve_tp_cnt.size() > 0)
+    {
+      assert(nnz_max > 0);
+      assert(dof_max > 0);
+      // magic number that doesn't seem to require much rescaling
+      // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
+      bfrs->resizeMatrixBuffer(nnz_max*100);
+      //bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
+    }
+#endif
+    // resize sparskit buffers to max size here.
     PCU_Switch_Comm(AMSI_COMM_SCALE);
     int rank = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
