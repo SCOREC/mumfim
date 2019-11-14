@@ -51,7 +51,7 @@ namespace bio
     // a single iteration
     bool system_initialized;
     unsigned long itr_prev;
-    void computeDisplcamentBC(const DeformationGradient & dfmGrd);
+    void computeDisplacementBC(const DeformationGradient & dfmGrd);
     void copyForceDataToForceVec();
     void copyDispDataToDispVec();
     virtual void computeStiffnessMatrix() final;

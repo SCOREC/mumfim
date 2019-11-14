@@ -113,7 +113,13 @@ namespace bio
     std::cout << dfmGrd[6] << " " << dfmGrd[7] << " " << dfmGrd[8];
     std::cout << "]\n";
     );
-    computeDisplcamentBC(dfmGrd);
+    // see what happens when we initially apply affine solution
+    computeDisplacementBC(dfmGrd);
+    applyGuessSolution(this, dfmGrd);
+    // since for debugging use we are putting the external forces into the du field
+    // we need to zero that field after apply the guess solution...otherwise we apply
+    // external forces at every point in the field which is bad...
+    apf::zeroField(getFn()->getdUField());
     apf::Mesh * mesh = getFn()->getNetworkMesh();
     if(!update_coords)
     {
@@ -193,7 +199,7 @@ namespace bio
     disp_bound_init_vals = NULL;
     return rtn;
   }
-  void FiberRVEAnalysisExplicit::computeDisplcamentBC(
+  void FiberRVEAnalysisExplicit::computeDisplacementBC(
       const DeformationGradient & dfmGrd)
   {
     disp_bound_nfixed = 3 * bnd_nds[RVE::all].size();
