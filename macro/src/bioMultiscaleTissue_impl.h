@@ -90,7 +90,11 @@ namespace bio
           apf::Vector3 p;
           apf::getIntPoint(mlm,1,ip,p);
           amsi::deformationGradient(e,p,F);
+          apf::Vector3 du;
+          apf::getVector(e, p, du);
           micro_fo_data data;
+          std::cout<<F<<std::endl;
+          std::cout<<du<<std::endl;
           for(int ii = 0; ii < 3; ++ii)
             for(int jj = 0; jj < 3; ++jj)
               data.data[ii*3 + jj] = F[ii][jj];

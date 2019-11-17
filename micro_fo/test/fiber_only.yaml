@@ -1,9 +1,10 @@
 - Case: Case 1
   Problem Definition:
     #Mesh: /lore/mersoj/ETFEM/networksForAnalysis/Network_2_7.txt
-    Mesh: /lore/mersoj/ETFEM/networksForAnalysis/Network_2_9.txt
-    #Deformation Gradient: [1.01, 0, 0, 0, 0.99503, 0, 0, 0, .99503]
-    Deformation Gradient: [2, 1, 0, 0, 0.5, 0, 0, 0, 1]
+    Mesh: /gpfs/u/home/PASC/PASCmrsn/scratch/fcl_new/fiber_networks/fcl/networks-1/fcl_net_1.txt
+    #Deformation Gradient: [1.001, 0, 0, 0, 1, 0, 0, 0, 1]
+    #Deformation Gradient: [2, 1, 0, .7, 0.5, .1, 0, -.2, 1]
+    Deformation Gradient: [0.999819, -0.000293362, 0.000371752, 0.000360323, 1.01319, 0.000355325, -0.000570166,0.000635382, 0.999488]
   Solution Strategy:
     #Solver Type: Implicit
     Solver Type: Explicit
@@ -11,11 +12,11 @@
     Convergence Tolerance: 1E-6
     Solver Tolerance: 1E-6 # only modify this if you know what you are doing!!
     # Explicit Solver parameters
-    Load Time: 1
+    Load Time: 10
     Amplitude Type: Smooth Step
-    Viscous Damping Factor: 0
+    Viscous Damping Factor: 10
     Print History Frequency: 1000
-    Print Field Frequency: 10000000
+    Print Field Frequency: 1000
     Print Field By Num Frames: false
     Critical Time Scale Factor: 0.8
     Energy Check Epsilon: 1E-2

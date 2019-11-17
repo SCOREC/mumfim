@@ -89,6 +89,7 @@ int main(int argc, char * argv[])
   }
   an->computeStiffnessMatrix();
   double stress[6];
+  double C[36];
   apf::Matrix3x3 strss;
 #ifdef ENABLE_KOKKOS
   Kokkos::Timer timer;
@@ -96,9 +97,19 @@ int main(int argc, char * argv[])
   timer.reset();
 #endif
   bool result = an->run(cases[0].pd.deformationGradient, stress);
+  an->computeMaterialStiffness(C);
   std::cout<<"Stress from run"<<std::endl;
   stressToMat(stress, strss);
   std::cout<<strss<<std::endl;
+  for(int i=0; i<6; ++i)
+  {
+    for(int j=0; j<6; ++j)
+    {
+      std::cout<<C[i*6+j]<<" ";
+    }
+    std::cout<<"\n";
+  }
+  std::cout<<std::endl;
 #ifdef ENABLE_KOKKOS
   double time2 = timer.seconds();
   std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
