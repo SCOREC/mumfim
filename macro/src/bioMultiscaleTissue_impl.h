@@ -78,8 +78,10 @@ namespace bio
     apf::MeshEntity * rgn = NULL;
     for(auto * it = apf_mesh->begin(3); (rgn = apf_mesh->iterate(it)); )
     {
-      apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
-      apf::Element * e = apf::createElement(apf_primary_field,mlm);
+      //apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
+      //apf::Element * e = apf::createElement(apf_primary_field,mlm);
+      apf::MeshElement * mlm = apf::createMeshElement(prev_coords,rgn);
+      apf::Element * e = apf::createElement(delta_u,mlm);
       int ng = apf::countIntPoints(mlm,getOrder(mlm));
       for(int ip = 0; ip < ng; ++ip)
       {
@@ -90,11 +92,8 @@ namespace bio
           apf::Vector3 p;
           apf::getIntPoint(mlm,1,ip,p);
           amsi::deformationGradient(e,p,F);
-          apf::Vector3 du;
-          apf::getVector(e, p, du);
-          micro_fo_data data;
           std::cout<<F<<std::endl;
-          std::cout<<du<<std::endl;
+          micro_fo_data data;
           for(int ii = 0; ii < 3; ++ii)
             for(int jj = 0; jj < 3; ++jj)
               data.data[ii*3 + jj] = F[ii][jj];

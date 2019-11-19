@@ -110,6 +110,23 @@ int main(int argc, char * argv[])
     std::cout<<"\n";
   }
   std::cout<<std::endl;
+  // DEBUG
+  bio::DeformationGradient dg(1,0,0,0,1,0,0,0,1);
+  result = an->run(dg, stress);
+  an->computeMaterialStiffness(C);
+  std::cout<<"Stress from run"<<std::endl;
+  stressToMat(stress, strss);
+  std::cout<<strss<<std::endl;
+  for(int i=0; i<6; ++i)
+  {
+    for(int j=0; j<6; ++j)
+    {
+      std::cout<<C[i*6+j]<<" ";
+    }
+    std::cout<<"\n";
+  }
+  std::cout<<std::endl;
+  // end DEBUG
 #ifdef ENABLE_KOKKOS
   double time2 = timer.seconds();
   std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
@@ -122,6 +139,8 @@ int main(int argc, char * argv[])
   sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
   las::destroySparsity<las::MICRO_BACKEND>(sprs);
+  delete an;
+  delete bfrs;
 #ifdef ENABLE_KOKKOS
   }
   Kokkos::finalize();

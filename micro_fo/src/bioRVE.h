@@ -24,6 +24,7 @@ namespace bio
     amsi::XpYFunc * xpufnc;
     apf::Field * cbe_xpu;
     apf::Numbering * cbe_dof;
+    int cbe_dof_cnt;
   public:
     RVE(double cr = 0.5, int d = 3);
     RVE(const RVE & rve);
@@ -48,6 +49,10 @@ namespace bio
      * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
      */
     int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
+    /*
+     * Return the number of degrees of freedom in the rve cube
+     */
+    int getDofCount() const { return cbe_dof_cnt; }
     /*
      * Get the dimensionality of the RVE
      */

@@ -754,6 +754,8 @@ namespace bio
     ~ExplicitAnalysisBase() {
       if(own_writer)
        delete writer; 
+      delete [] coords_arr;
+      delete [] connectivity_arr;
     }
     friend T;
   };

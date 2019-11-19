@@ -113,22 +113,26 @@ namespace bio
     std::cout << dfmGrd[6] << " " << dfmGrd[7] << " " << dfmGrd[8];
     std::cout << "]\n";
     );
+    if(!update_coords)
+    {
+      old_u.resize(getFn()->getDofCount());
+      old_rve_u.resize(getRVE()->getDofCount());
+      old_rve_du.resize(getRVE()->getDofCount());
+      amsi::WriteOp wrt;
+      // for the fiber network only bother save the U field since we don't currently use the
+      // dU field (other than for debugging purposes)
+      amsi::ToArray(getFn()->getUNumbering(), getFn()->getUField(), &old_u[0], 0, &wrt).run();
+      amsi::ToArray(getRVE()->getNumbering(), getRVE()->getUField(), &old_rve_u[0], 0, &wrt).run();
+      amsi::ToArray(getRVE()->getNumbering(), getRVE()->getdUField(), &old_rve_du[0], 0, &wrt).run();
+    }
     // see what happens when we initially apply affine solution
-    computeDisplacementBC(dfmGrd);
     applyGuessSolution(this, dfmGrd);
+    computeDisplacementBC(dfmGrd);
     // since for debugging use we are putting the external forces into the du field
     // we need to zero that field after apply the guess solution...otherwise we apply
     // external forces at every point in the field which is bad...
     apf::zeroField(getFn()->getdUField());
     apf::Mesh * mesh = getFn()->getNetworkMesh();
-    if(!update_coords)
-    {
-      unsigned int num_dofs = getFn()->getDofCount();
-      if(old_u.size() != num_dofs)
-        old_u.resize(num_dofs);
-      amsi::WriteOp wrt;
-      amsi::ToArray(getFn()->getUNumbering(), getFn()->getUField(), &old_u[0], 0, &wrt).run();
-    }
     // we do look for the field because if a previous analysis
     // was run, then we need to let the ETFEM code know
     apf::Field * massField = mesh->findField("nodalMass");
@@ -182,10 +186,11 @@ namespace bio
     {
       amsi::WriteOp wrt;
       amsi::ApplyVector(getFn()->getUNumbering(), getFn()->getUField(), &old_u[0], 0, &wrt).run();
+      amsi::ApplyVector(getRVE()->getNumbering(), getRVE()->getUField(), &old_rve_u[0], 0, &wrt).run();
+      amsi::ApplyVector(getRVE()->getNumbering(), getRVE()->getdUField(), &old_rve_du[0], 0, &wrt).run();
     }
     else
     {
-      curDfmGrd = dfmGrd;
       for(int i=0; i<6; ++i)
         curStress[i] = sigma[i];
     }
@@ -199,6 +204,7 @@ namespace bio
     disp_bound_init_vals = NULL;
     return rtn;
   }
+  /*
   void FiberRVEAnalysisExplicit::computeDisplacementBC(
       const DeformationGradient & dfmGrd)
   {
@@ -222,6 +228,7 @@ namespace bio
       disp_bound_dof[i * 3] = node_num[0];
       disp_bound_dof[i * 3 + 1] = node_num[1];
       disp_bound_dof[i * 3 + 2] = node_num[2];
+     // version 1
       disp_bound_vals[i * 3] = (dfmGrd[0] - 1) * coords[0] +
                                dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2]-disp[0];
       disp_bound_vals[i * 3 + 1] = dfmGrd[3] * coords[0] +
@@ -230,9 +237,49 @@ namespace bio
       disp_bound_vals[i * 3 + 2] = dfmGrd[6] * coords[0] +
                                    dfmGrd[7] * coords[1] +
                                    (dfmGrd[8] - 1) * coords[2]-disp[2];
+     // Version 2
+      //disp_bound_vals[i * 3] = (dfmGrd[0] - 1) * coords[0] +
+      //                         dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2];
+      //disp_bound_vals[i * 3 + 1] = dfmGrd[3] * coords[0] +
+      //                             (dfmGrd[4] - 1) * coords[1] +
+      //                             dfmGrd[5] * coords[2];
+      //disp_bound_vals[i * 3 + 2] = dfmGrd[6] * coords[0] +
+      //                             dfmGrd[7] * coords[1] +
+      //                             (dfmGrd[8] - 1) * coords[2];
       disp_bound_init_vals[i*3] = disp[0];
       disp_bound_init_vals[i*3+1] = disp[1];
       disp_bound_init_vals[i*3+2] = disp[2];
+    }
+  }
+  */
+  void FiberRVEAnalysisExplicit::computeDisplacementBC(
+      const DeformationGradient & dfmGrd)
+  {
+    disp_bound_nfixed = 3 * bnd_nds[RVE::all].size();
+    disp_bound_dof = new int[disp_bound_nfixed];
+    disp_bound_vals = new double[disp_bound_nfixed];
+    disp_bound_init_vals = new double[disp_bound_nfixed];
+    apf::Field * du_field = getFn()->getdUField();
+    apf::Field * disp_field = getFn()->getUField();
+    apf::Vector3 du, disp;
+    int node_num[3];
+    for (std::size_t i = 0; i < bnd_nds[RVE::all].size(); ++i)
+    {
+      apf::MeshEntity * nd = bnd_nds[RVE::all][i];
+      apf::getVector(du_field, nd, 0, du);
+      apf::getVector(disp_field, nd, 0, disp);
+      node_num[0] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 0);
+      node_num[1] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 1);
+      node_num[2] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 2);
+      disp_bound_dof[i * 3] = node_num[0];
+      disp_bound_dof[i * 3 + 1] = node_num[1];
+      disp_bound_dof[i * 3 + 2] = node_num[2];
+      disp_bound_vals[i * 3] = du[0];
+      disp_bound_vals[i * 3 + 1] = du[1];
+      disp_bound_vals[i * 3 + 2] = du[2];
+      disp_bound_init_vals[i*3] = disp[0]-du[0];
+      disp_bound_init_vals[i*3+1] = disp[1]-du[1];
+      disp_bound_init_vals[i*3+2] = disp[2]-du[2];
     }
   }
   void FiberRVEAnalysisExplicit::copyForceDataToForceVec()

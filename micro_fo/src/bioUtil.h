@@ -5,6 +5,7 @@
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <cassert>
+#include <iostream>
 namespace bio
 {
   /**
@@ -192,6 +193,86 @@ namespace bio
         apply(ent_bgn, ent_end, u);
       else
         apply(u);
+    }
+  };
+  class ApplyIncrementalDeformationGradient : public amsi::FieldOp
+  {
+    protected:
+    apf::Field * xyz;
+    apf::Field * du;
+    apf::Field * u;
+    apf::MeshEntity * ent;
+    apf::Matrix3x3 FmI;
+    std::vector<apf::MeshEntity *>::iterator ent_bgn;
+    std::vector<apf::MeshEntity *>::iterator ent_end;
+    apf::Vector3 nd_xyz;
+    bool hasEntList; // bool is true if the iterators to a list are passed in
+    void init(apf::Mesh * msh, const apf::Matrix3x3 & F)
+    {
+      int d = msh->getDimension();
+      for (int ii = 0; ii < d; ++ii)
+        for (int jj = 0; jj < d; ++jj)
+          FmI[ii][jj] = F[ii][jj] - (ii == jj ? 1.0 : 0.0);
+    }
+
+    public:
+    ApplyIncrementalDeformationGradient(apf::Matrix3x3 F,
+                             apf::Mesh * msh,
+                             apf::Field * du_,
+                             apf::Field * u_)
+        : xyz(msh->getCoordinateField())
+        , du(du_)
+        , u(u_)
+        , ent(NULL)
+        , hasEntList(false)
+    {
+      init(msh, F);
+    }
+    ApplyIncrementalDeformationGradient(std::vector<apf::MeshEntity *>::iterator ent_bgn,
+                             std::vector<apf::MeshEntity *>::iterator ent_end,
+                             apf::Matrix3x3 F,
+                             apf::Mesh * msh,
+                             apf::Field * du_,
+                             apf::Field * u_)
+        : xyz(msh->getCoordinateField())
+        , du(du_)
+        , u(u_)
+        , ent(NULL)
+        , ent_bgn(ent_bgn)
+        , ent_end(ent_end)
+        , hasEntList(true)
+    {
+      init(msh, F);
+    }
+    virtual bool inEntity(apf::MeshEntity * m)
+    {
+      ent = m;
+      return true;
+    }
+    virtual void outEntity() {}
+    virtual void atNode(int nd)
+    {
+      apf::Vector3 nd_u_old;
+      // the xyz coordinates in the original frame
+      apf::getVector(xyz, ent, nd, nd_xyz);
+      apf::getVector(u, ent, nd, nd_u_old);
+      // the increment in displacemnt is the increment in displacement gradient
+      // multiplied by the current coordinate
+      apf::Vector3 nd_du = FmI * (nd_xyz+nd_u_old);
+      // the current displacement is the original displacement
+      // plus the increment in affine displacement
+      apf::Vector3 nd_u = nd_du+nd_u_old;
+      //std::cout<<nd_xyz[0]-nd_u[0]<<" "<<nd_xyz[1]-nd_u[0]<<" "<<nd_xyz[2]-nd_u[0]<<" ";
+      apf::setVector(u, ent, nd, nd_u);
+      apf::setVector(du, ent, nd, nd_du);
+    }
+    void run()
+    {
+      if (hasEntList)
+        apply(ent_bgn, ent_end, u);
+      else
+        apply(u);
+      //std::cout<<"\n";
     }
   };
 }

@@ -49,6 +49,8 @@ namespace bio
     }
     bool includesBodyForces() { return true; }
     // after the refactor, the micro-scale and macro-scale stress tesnors are indexed identically
+    // Note that the system is processed using the current coordinate field. I.E. the volume,
+    // and gradients of the default element are updated to the current iteration
     void atPoint(apf::Vector3 const &p, double w, double dV)
     {
       apf::MeshEntity * m = apf::getMeshEntity(me);
@@ -130,18 +132,6 @@ namespace bio
       apf::transpose(BNL, BNLT);
       apf::multiply(BNLT, tau, BNLTxtau);
       apf::multiply(BNLTxtau, BNL, K1);
-      //apf::DynamicMatrix BNL(3,nen); //nonlinear strain disp
-      //apf::DynamicMatrix BNLT(nen,3);
-      //apf::DynamicMatrix BNLTxCauchyxBNL(nen,nen);
-      //BNL.zero();
-      //for (int i = 0; i < nen; ++i) {
-      //  BNL(0, i) = grads[i][0];
-      //  BNL(1, i) = grads[i][1];
-      //  BNL(2, i) = grads[i][2];
-      //}
-      //apf::transpose(BNL, BNLT);
-      //apf::multiply(fromMatrix(Cauchy), BNL, tmp);
-      //apf::multiply(BNLT, tmp, BNLTxCauchyxBNL);
       // for force vector calculation
       apf::DynamicMatrix BLTxSV(nedof,1);
       BLTxSV.zero();

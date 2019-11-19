@@ -163,6 +163,9 @@ namespace bio
     apf::Vector3 xpu_val;
     apf::Vector3 f_val;
     apf::Numbering * num = this->getFn()->getUNumbering();
+    apf::Vector3 coord, U;
+    apf::Field* coord_field = this->getFn()->getNetworkMesh()->getCoordinateField();
+    apf::Field* u_field = this->getFn()->getUField();
     int dofs[3];
     double * f = NULL;
     ops->get(this->getF(), f);
@@ -171,6 +174,8 @@ namespace bio
          nd != this->bnd_nds[RVE::all].end();
          ++nd)
     {
+      apf::getVector(u_field, *nd, 0, U);
+      apf::getVector(coord_field, *nd, 0, coord);
       apf::getVector(xpu, *nd, 0, xpu_val);
       for (int ii = 0; ii < this->getFn()->getDim(); ++ii)
         dofs[ii] = apf::getNumber(num, *nd, 0, ii);
@@ -273,11 +278,12 @@ namespace bio
     apf::Field * rve_du = ans->getRVE()->getdUField();
     apf::Field * rve_u = ans->getRVE()->getUField();
     // apply deformation gradient to the rve cube
-    ApplyDeformationGradient(F, rve_msh, rve_du, rve_u).run();
+    ApplyIncrementalDeformationGradient(F, rve_msh, rve_du, rve_u).run();
     apf::Mesh * fn_msh = ans->getFn()->getNetworkMesh();
     apf::Field * fn_du = ans->getFn()->getdUField();
     apf::Field * fn_u = ans->getFn()->getUField();
     // apply deformation gradient to the fiber network mesh
-    ApplyDeformationGradient(F, fn_msh, fn_du, fn_u).run();
+    //ApplyDeformationGradient(F, fn_msh, fn_du, fn_u).run();
+    ApplyIncrementalDeformationGradient(F, fn_msh, fn_du, fn_u).run();
   }
 };  // namespace bio

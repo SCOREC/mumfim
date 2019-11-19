@@ -44,10 +44,17 @@ namespace bio
     delta_u = apf::createLagrangeField(apf_mesh, "displacement_delta",
                                        apf::VECTOR, 1);
     apf::zeroField(delta_u);
+    apf_primary_delta_field = delta_u;
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
     xpyfnc = new amsi::XpYFunc(apf_mesh->getCoordinateField(),apf_primary_field);
     // user field is not zeroed because it is the sum of two other fields
-    current_coords = apf::createUserField(apf_mesh, "current_coordinates", apf::VECTOR, apf::getLagrange(1), xpyfnc);
+    current_coords = apf::createUserField(apf_mesh, "current_coordinates",
+                                          apf::VECTOR, apf::getLagrange(1), xpyfnc);
+    // take the current coordinate field, and subtract increment in displacement to
+    // get the coords at the previous increment (this is sorta hacky but it should work)
+    prv_crd_fnc = new amsi::XpYFunc(current_coords, delta_u, 1, -1);
+    prev_coords = apf::createUserField(apf_mesh, "previous_coordinates",
+                                       apf::VECTOR, apf::getLagrange(1), prv_crd_fnc);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     strs = apf::createIPField(apf_mesh, "stress", apf::MATRIX, 1);
     apf::zeroField(strs);
@@ -136,6 +143,8 @@ namespace bio
   {
     delete xpyfnc;
     apf::destroyField(current_coords);
+    delete prv_crd_fnc;
+    apf::destroyField(prev_coords);
     // destroying this field currently throws an error
     // most likely because it is zeroed and core does not
     // properly deal with this...
@@ -156,22 +165,15 @@ namespace bio
   }
   void NonlinearTissue::ApplyBC_Dirichlet()
   {
-    // apf::Field * nw_dlta_u =
-    // apf::createLagrangeField(apf_mesh,"tmp_delta_u",apf::VECTOR,1);
-    // apf::copyData(nw_dlta_u,apf_primary_field);
-    // amsi::PrintField(delta_u,std::cout).run();
     // amsi::PrintField(apf_primary_field,std::cout).run();
     // apply the new dirichlet bcs to the primary field
+    // 1) get U(0) on Dirichlet BCs
+    // fixed_dofs (in FEA class in analysis/amsiFEA.h)
+    // 2) compute the new U on the dirichlet BCs
+    std::cout<<"Setting Dirichlet BCs in bioNonlinearTissue"<<std::endl;
     amsi::apfSimFEA::ApplyBC_Dirichlet();
-    // amsi::PrintField(apf_primary_field,std::cout).run();
-    // subtract the current accumulated field (with new dirichlet bcs) from the
-    // old field to get new deltas
-    // apf::axpy(-1.0,apf_primary_field,nw_dlta_u); // new - old = new_delta
-    // amsi::PrintField(nw_dlta_u,std::cout).run();
-    // amsi::WriteNZOp wrtr(1e-6);
-    // amsi::MergeFields(delta_u,nw_dlta_u,&wrtr).run();
-    // amsi::PrintField(delta_u,std::cout).run();
-    // apf::destroyField(nw_dlta_u);
+    // 3) get U(1) on the Dirichlet BCs
+    // 4) set du=U(1)-U(0)
   }
   void NonlinearTissue::step()
   {

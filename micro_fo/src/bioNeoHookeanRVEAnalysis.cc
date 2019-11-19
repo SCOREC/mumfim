@@ -20,7 +20,6 @@ namespace bio
       F = F_old;
     else
     {
-      curDfmGrd = dfmGrd;
       for(int i=0; i<6; ++i)
         curStress[i] = sigma[i];
     }

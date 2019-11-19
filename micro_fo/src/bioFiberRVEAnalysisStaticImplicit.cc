@@ -155,7 +155,6 @@ namespace bio
         // run function
         if(update_coords)
         {
-          tmpRVE->curDfmGrd = dfmGrd;
           for(int i=0; i<6; ++i)
             tmpRVE->curStress[i] = sigma[i];
           // note that the destructor for *this should get called automatically

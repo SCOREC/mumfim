@@ -7,7 +7,6 @@ namespace bio
   {
     protected:
     // this state should be updated in the run functions
-    DeformationGradient curDfmGrd;
     double curStress[6];
 
     public:

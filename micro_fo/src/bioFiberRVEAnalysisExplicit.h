@@ -58,6 +58,8 @@ namespace bio
     void relaxSystem();
     ExplicitOutputWriter * writer; 
     std::vector<double> old_u;
+    std::vector<double> old_rve_u;
+    std::vector<double> old_rve_du;
     virtual void computeCauchyStress(double sigma[6]) final;
     // this is inherited here as a hacky way to provide a short load time
     // for finite differencing

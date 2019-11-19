@@ -39,20 +39,24 @@ namespace bio
     apf::Field * previous_rve;
     apf::Field * stf_vrtn;
     apf::Field * axl_yngs_mod;
+    apf::Field * prev_coords;
+    amsi::XpYFunc * prv_crd_fnc;
     double dv_prev;
     int load_step;
     int iteration;
+    std::vector<double> old_fixed_u;
+    std::vector<double> cur_fixed_u;
     public:
     NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, pACase ss,
                     MPI_Comm cm = AMSI_COMM_SCALE);
     virtual ~NonlinearTissue();
     void computeInitGuess(amsi::LAS* las);
-    virtual void ApplyBC_Dirichlet();
+    virtual void ApplyBC_Dirichlet() override;
     void getLoadOn(pGEntity ent, double* frc);
     void step();
     void iter();
-    virtual void Assemble(amsi::LAS* las);
-    virtual void UpdateDOFs(const double*);
+    virtual void Assemble(amsi::LAS* las) override;
+    virtual void UpdateDOFs(const double*) override;
     void UpdateLambda();
     void UpdateBeta(double);
     void setBeta(double);
