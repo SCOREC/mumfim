@@ -291,7 +291,6 @@ namespace bio
     if(rve_tp_cnt.size() > 0)
     {
       assert(nnz_max > 0);
-      assert(dof_max > 0);
       // magic number that doesn't seem to require much rescaling
       // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
       bfrs->resizeMatrixBuffer(nnz_max*100);

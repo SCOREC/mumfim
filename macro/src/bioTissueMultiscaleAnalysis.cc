@@ -20,19 +20,6 @@
 #include <fstream>
 namespace bio
 {
-  class TissueCheckpointIteration : public amsi::Iteration
-  {
-  protected:
-    TissueAnalysis * tssu;
-  public:
-  TissueCheckpointIteration(TissueAnalysis* t) : tssu(t) {}
-  virtual void iterate()
-  {
-    std::cout<<"Checkpointing iteration: "<<this->iteration()<<std::endl;
-    tssu->checkpoint();
-    amsi::Iteration::iterate();
-    }
-  };
   void MultiscaleTissueIteration::iterate()
   {
     if(!PCU_Comm_Self())

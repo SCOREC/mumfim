@@ -76,6 +76,19 @@ namespace bio
     amsi::Iteration::iterate();
     }
   };
+  class TissueCheckpointIteration : public amsi::Iteration
+  {
+  protected:
+    TissueAnalysis * tssu;
+  public:
+  TissueCheckpointIteration(TissueAnalysis* t) : tssu(t) {}
+  virtual void iterate()
+  {
+    std::cout<<"Checkpointing iteration: "<<this->iteration()<<std::endl;
+    tssu->checkpoint();
+    amsi::Iteration::iterate();
+    }
+  };
 }
 #include "bioTissueAnalysis_impl.h"
 #endif

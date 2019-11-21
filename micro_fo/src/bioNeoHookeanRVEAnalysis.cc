@@ -6,9 +6,12 @@ namespace bio
   {
     if (!update_coords)
       F_old = F;
-    F = apf::Matrix3x3(dfmGrd[0], dfmGrd[1], dfmGrd[2],
-                  dfmGrd[3], dfmGrd[4], dfmGrd[5],
-                  dfmGrd[6], dfmGrd[7], dfmGrd[8]);
+    // incremental deformation gradient
+    apf::Matrix3x3 Finc(dfmGrd[0], dfmGrd[1], dfmGrd[2],
+                       dfmGrd[3], dfmGrd[4], dfmGrd[5],
+                       dfmGrd[6], dfmGrd[7], dfmGrd[8]);
+    // deformation gradients are multiplicitive
+    F = Finc*F;
     // compute the left cauchy green deformation tensor
     leftCauchyGreen = apf::DynamicMatrix(3, 3);   // leftCauchyGreen.zero();
     apf::DynamicMatrix FT(3, 3);
@@ -56,16 +59,9 @@ namespace bio
     D(3, 3) = mu_prime;
     D(4, 4) = mu_prime;
     D(5, 5) = mu_prime;
-    double Ctest[36];
     for(int i=0; i<6; ++i)
       for(int j=0; j<6; ++j)
         C[i*6+j]= D(i,j);
-        //C[i*6+j]= D(i,j);
-   //RVEAnalysis::computeMaterialStiffness(C);
-   //for(int i=0; i<36; ++i)
-   //  std::cout<<fabs(Ctest[i] -C[i])<<" ";
-   //std::cout<<std::endl;
-   
   }
   NeoHookeanRVEAnalysis * initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm)
   {

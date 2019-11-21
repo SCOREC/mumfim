@@ -27,6 +27,9 @@ namespace bio
     double ornt_2D_axis[3];
     apf::Field * ornt_3D;
     apf::Field * ornt_2D;
+    // DEBUG
+    apf::Field * test_inc_dfm;
+    //END DEBUG
     RVECoupling fo_cplg;
     int nm_rves;
     //int nm_rve_rgns;

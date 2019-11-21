@@ -44,24 +44,16 @@ namespace bio
     double dv_prev;
     int load_step;
     int iteration;
-    std::vector<double> old_fixed_u;
-    std::vector<double> cur_fixed_u;
     public:
     NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, pACase ss,
                     MPI_Comm cm = AMSI_COMM_SCALE);
     virtual ~NonlinearTissue();
     void computeInitGuess(amsi::LAS* las);
-    virtual void ApplyBC_Dirichlet() override;
     void getLoadOn(pGEntity ent, double* frc);
     void step();
     void iter();
     virtual void Assemble(amsi::LAS* las) override;
     virtual void UpdateDOFs(const double*) override;
-    void UpdateLambda();
-    void UpdateBeta(double);
-    void setBeta(double);
-    void setLambda(double);
-    void computeDispL2Norm(double&);
     virtual void recoverSecondaryVariables(int);
     void storeStress(apf::MeshElement* me, double* stress);
     void storeStress(apf::MeshElement* me, apf::Matrix3x3 eps);
@@ -69,7 +61,7 @@ namespace bio
     void storeStrain(apf::MeshElement* me, apf::Matrix3x3 eps);
     int getIteration() { return iteration; }
     apf::Numbering* getNumbering() { return apf_primary_numbering; }
-    apf::Field* getdUField() { return delta_u; }
+    //apf::Field* getdUField() { return delta_u; }
     apf::Field* getUField() { return apf_primary_field; }
     apf::Mesh* getMesh() { return apf_mesh; }
     // void logCnstrntParams(int ldstp, int iteration, int rnk);

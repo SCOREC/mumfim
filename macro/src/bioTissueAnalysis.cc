@@ -81,6 +81,7 @@ namespace bio
     }
     // We want to do the tissue iteration after we compute the volumes
     itr_stps.push_back(new TissueIteration(tssu,las));
+    itr_stps.push_back(new TissueCheckpointIteration(this));
     itr = new amsi::MultiIteration(itr_stps.begin(), itr_stps.end());
     buildLASConvergenceOperators(ss,itr,las,std::back_inserter(cvg_stps));
     buildVolConvergenceOperators(ss,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));

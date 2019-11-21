@@ -163,18 +163,6 @@ namespace bio
     apf::copyData(delta_u, lt.getField());
     apf::copyData(apf_primary_field, lt.getField());
   }
-  void NonlinearTissue::ApplyBC_Dirichlet()
-  {
-    // amsi::PrintField(apf_primary_field,std::cout).run();
-    // apply the new dirichlet bcs to the primary field
-    // 1) get U(0) on Dirichlet BCs
-    // fixed_dofs (in FEA class in analysis/amsiFEA.h)
-    // 2) compute the new U on the dirichlet BCs
-    std::cout<<"Setting Dirichlet BCs in bioNonlinearTissue"<<std::endl;
-    amsi::apfSimFEA::ApplyBC_Dirichlet();
-    // 3) get U(1) on the Dirichlet BCs
-    // 4) set du=U(1)-U(0)
-  }
   void NonlinearTissue::step()
   {
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
@@ -240,34 +228,6 @@ namespace bio
     // amsi::PrintField(delta_u,std::cout).run();
     apf::synchronize(apf_primary_field);
     apf::synchronize(delta_u);
-  }
-  // this is just a field op... should be replacable with what we currently
-  // provide in amsi
-  void NonlinearTissue::computeDispL2Norm(double& norm)
-  {
-    norm = 0.0;
-    double sqrtnorm;
-    // iterate over all mesh entities, from vertices up.. (if needed)
-    int field_components = apf::countComponents(apf_primary_field);
-    for (int ii = 0; ii < 3; ii++) {
-      apf::FieldShape* fs = apf::getShape(apf_primary_field);
-      if (!fs->hasNodesIn(ii)) break;
-      apf::MeshIterator* it = apf_mesh->begin(ii);
-      while (apf::MeshEntity* me = apf_mesh->iterate(it)) {
-        apf::Vector3 incr_disp;
-        int num_nodes = fs->countNodesOn(apf_mesh->getType(me));
-        for (int jj = 0; jj < num_nodes; jj++) {
-          apf::getVector(delta_u, me, jj, incr_disp);
-          for (int kk = 0; kk < field_components; kk++) {
-            // Norm is sum of incremental displacements
-            sqrtnorm = incr_disp[kk];
-            norm += sqrtnorm * sqrtnorm;
-          }
-        }
-      }
-    }
-    // Compute norm over all local processes
-    norm = sqrt(amsi::comm_sum(norm));
   }
   void NonlinearTissue::getLoadOn(pGEntity ent, double* frc)
   {

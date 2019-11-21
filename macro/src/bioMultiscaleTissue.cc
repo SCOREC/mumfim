@@ -30,6 +30,9 @@ namespace bio
     apf::zeroField(ornt_2D);
     apf::zeroField(crt_rve);
     apf::zeroField(prv_rve);
+    // DEBUG
+    test_inc_dfm = apf::createIPField(apf_mesh, "inc_F", apf::MATRIX, 1);
+    //END DEBUG
     // get properties for output orienation tensor
     pAttribute ornt_tens = GM_attrib(g, "output orientation tensor");
     pAttribute ornt_tens_3D = NULL;
@@ -530,7 +533,7 @@ namespace bio
   {
     apf::ModelEntity * mnt = reinterpret_cast<apf::ModelEntity*>(EN_whatIn(reinterpret_cast<pEntity>(rgn)));
     hdr.data[RVE_DIR_TYPE] = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),mnt);
-    hdr.data[FIELD_ORDER]  = apf::getShape(delta_u)->getOrder();
+    hdr.data[FIELD_ORDER]  = apf::getShape(apf_primary_field)->getOrder();
     hdr.data[ELEMENT_TYPE] = apf_mesh->getType(rgn);
     hdr.data[GAUSS_ID]     = -1; // needs to be set for each IP
     apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);

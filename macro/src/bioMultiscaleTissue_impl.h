@@ -78,10 +78,21 @@ namespace bio
     apf::MeshEntity * rgn = NULL;
     for(auto * it = apf_mesh->begin(3); (rgn = apf_mesh->iterate(it)); )
     {
-      //apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
-      //apf::Element * e = apf::createElement(apf_primary_field,mlm);
-      apf::MeshElement * mlm = apf::createMeshElement(prev_coords,rgn);
-      apf::Element * e = apf::createElement(delta_u,mlm);
+      apf::MeshElement * mlm;
+      apf::Element * e;
+      // on the first time through use the total deformation gradient
+      // to capture any deformation from initialization/guess phase of
+      // solution which has not been applied to the microscale yet
+      if(load_step == 0 && iteration == 0)
+      {
+        mlm = apf::createMeshElement(apf_mesh,rgn);
+        e = apf::createElement(apf_primary_field,mlm);
+      }
+      else
+      {
+        mlm = apf::createMeshElement(prev_coords,rgn);
+        e = apf::createElement(delta_u,mlm);
+      }
       int ng = apf::countIntPoints(mlm,getOrder(mlm));
       for(int ip = 0; ip < ng; ++ip)
       {
@@ -92,7 +103,18 @@ namespace bio
           apf::Vector3 p;
           apf::getIntPoint(mlm,1,ip,p);
           amsi::deformationGradient(e,p,F);
-          std::cout<<F<<std::endl;
+          // DEBUG
+          if(load_step == 0 && iteration == 0)
+          {
+            apf::setMatrix(test_inc_dfm, rgn, ip, F);
+          }
+          else
+          {
+            apf::Matrix3x3 prv_F;
+            apf::getMatrix(test_inc_dfm, rgn, ip, prv_F);
+            apf::setMatrix(test_inc_dfm, rgn, ip, F*prv_F);
+          }
+          // DEBUG
           micro_fo_data data;
           for(int ii = 0; ii < 3; ++ii)
             for(int jj = 0; jj < 3; ++jj)
