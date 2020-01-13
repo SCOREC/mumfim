@@ -141,6 +141,11 @@ namespace bio
   }
   NonlinearTissue::~NonlinearTissue()
   {
+    // clean up constitutive properties
+    for(auto it=constitutives.begin(); it!=constitutives.end(); ++it)
+    {
+      delete it->second;
+    }
     delete xpyfnc;
     apf::destroyField(current_coords);
     delete prv_crd_fnc;

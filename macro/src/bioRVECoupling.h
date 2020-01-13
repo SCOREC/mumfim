@@ -47,6 +47,7 @@ namespace bio
         for(int ip = 0; ip < nip; ++ip)
           apf::setScalar(rst_fst,me,ip,ip_id++);
       }
+      m->end(it);
     }
     ~RVECoupling()
     {

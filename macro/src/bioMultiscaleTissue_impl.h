@@ -34,8 +34,8 @@ namespace bio
                                              O5 new_int_slvr_prms, bool all)
   {
     apf::MeshEntity * rgn = NULL;
-    apf::MeshIterator * it = NULL;
-    for(it = apf_mesh->begin(3); (rgn = apf_mesh->iterate(it));)
+    apf::MeshIterator * it = apf_mesh->begin(3);
+    while(rgn = apf_mesh->iterate(it))
     {
       apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
       int ng = apf::countIntPoints(mlm,getOrder(mlm));

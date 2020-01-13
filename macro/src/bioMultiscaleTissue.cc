@@ -77,7 +77,8 @@ namespace bio
 #endif
     apfSimFEA::ApplyBC_Neumann(las);
     apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
-    for(apf::MeshEntity * me = NULL; (me = apf_mesh->iterate(it));)
+    apf::MeshEntity * me = NULL;
+    while((me = apf_mesh->iterate(it)))
     {
       apf::MeshElement * mlm = apf::createMeshElement(current_coords,me);
       amsi::ElementalSystem * sys = getIntegrator(me,0); // ERROR: assumes 1 type per ent
@@ -314,6 +315,7 @@ namespace bio
         Sim_deleteString(tp_str);
       }
     }
+    GRIter_delete(ri);
   }
   void MultiscaleTissue::getExternalRVEData(apf::MeshEntity* ent,
                                             micro_fo_header& hdr,

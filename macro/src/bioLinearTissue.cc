@@ -7,6 +7,7 @@ namespace bio
 {
   LinearTissue::LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, pACase iss, MPI_Comm cm)
     : FEA(cm)
+    , constitutives()
     , amsi::apfSimFEA(imdl,imsh,ipd,iss,cm)
   {
     apf_primary_field = apf::createLagrangeField(apf_mesh,"linear_displacement",apf::VECTOR,1);
@@ -22,8 +23,9 @@ namespace bio
       pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
       double E = AttributeTensor0_value(yngs);
       double v = AttributeTensor0_value(psn);
-      elemental_system = new amsi::LinearElasticIntegrator(apf_primary_field,1,E,v);
+      constitutives[rgn] = new amsi::LinearElasticIntegrator(apf_primary_field,1,E,v);
     }
+    GRIter_delete(ri);
     int dir_tps[] = {amsi::FieldUnit::displacement};
     amsi::buildSimBCQueries(ipd,amsi::BCType::dirichlet,&dir_tps[0],(&dir_tps[0])+1,std::back_inserter(dir_bcs));
     int neu_tps[] = {amsi::NeuBCType::traction,amsi::NeuBCType::pressure};
@@ -33,6 +35,14 @@ namespace bio
       amsi::buildSimFiniteElementIntegrators(pd,&feis[0],(&feis[0])+1),std::back_inserter(feis));
     */
   }
+  LinearTissue::~LinearTissue()
+  {
+    // clean up the elemental systems stored in constitutives
+    for(auto it=constitutives.begin(); it!=constitutives.end(); ++it)
+    {
+      delete it->second;
+    }
+  }
   void LinearTissue::UpdateDOFs(const double * sl)
   {
     amsi::WriteOp wrop;
@@ -40,6 +50,30 @@ namespace bio
     amsi::ApplyVector(apf_primary_numbering,apf_primary_field,sl,first_local_dof,&frop).run();
     apf::synchronize(apf_primary_field);
   }
-  apf::Field * LinearTissue::getField()
-  { return apf_primary_field; }
+  void LinearTissue::Assemble(amsi::LAS* las)
+  {
+    ApplyBC_Neumann(las);
+    apf::MeshEntity* me = NULL;
+    auto it = apf_mesh->begin(analysis_dim);
+    // FIXME shouldn't we skip non-owned elements similar to
+    // apf::integrator::process(apf::Mesh*)?
+    while ((me = apf_mesh->iterate(it))) {
+      amsi::ElementalSystem* constitutive =
+          constitutives[R_whatIn((pRegion)me)];
+      apf::MeshElement* mlmt = apf::createMeshElement(apf_mesh, me);
+      apf::Element * elm = apf::createElement(constitutive->getField(), mlmt);
+      constitutive->process(mlmt);
+      apf::NewArray<apf::Vector3> dofs;
+      apf::getVectorNodes(elm, dofs);
+      apf::NewArray<int> ids;
+      apf::getElementNumbers(apf_primary_numbering, me, ids);
+      AssembleDOFs(las, constitutive->numElementalDOFs(), &ids[0], &dofs[0],
+                   &constitutive->getKe()(0, 0), &constitutive->getfe()(0),
+                   constitutive->includesBodyForces());
+      apf::destroyElement(elm);
+      apf::destroyMeshElement(mlmt);
+    }
+    apf_mesh->end(it);
+  }
+  
 }

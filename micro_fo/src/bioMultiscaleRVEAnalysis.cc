@@ -190,6 +190,16 @@ namespace bio
         meshes[ii][jj] = NULL;
       }
     }
+#ifdef MICRO_USING_SPARSKIT
+    // resize the sparskit buffers
+    if(rve_tp_cnt.size() > 0)
+    {
+      assert(bfrs == NULL);
+      // make minimum size buffer so that we can get a pointer.
+      // this will be resized after all of the relevant meshes are loaded
+      bfrs = new las::SparskitBuffers(1);
+    }
+#endif
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {
@@ -221,15 +231,6 @@ namespace bio
                     amsi::mpi_type<bio::micro_fo_int_solver>());
     PCU_Switch_Comm(MPI_COMM_SELF);
     int ii = 0;
-#ifdef MICRO_USING_SPARSKIT
-    // resize the sparskit buffers
-    if(rve_tp_cnt.size() >0)
-    {
-      // make minimum size buffer so that we can get a pointer.
-      // this will be resized after all of the relevant meshes are loaded
-      bfrs = new las::SparskitBuffers(1);
-    }
-#endif
     for (auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       if (*rve == NULL)

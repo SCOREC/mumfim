@@ -5,10 +5,14 @@ namespace bio
 {
   class LinearTissue : public amsi::apfSimFEA
   {
-  public:
+    protected:
+    std::map<pGEntity, amsi::ElementalSystem*> constitutives;
+    public:
     LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, pACase iss, MPI_Comm cm);
-    virtual void UpdateDOFs(const double * sol);
-    apf::Field * getField();
+    ~LinearTissue();
+    virtual void UpdateDOFs(const double * sol) override;
+    virtual void Assemble(amsi::LAS * las) override;
+    apf::Field * getField(){ return apf_primary_field; }
   };
 }
 #endif
