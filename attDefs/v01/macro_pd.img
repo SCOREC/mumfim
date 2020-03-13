@@ -76,13 +76,20 @@ type "volume fraction" : tensor0 1 d < 0.003 >;
 
 type "fiber type" : int r mapped <<0 "primary"> <1 "support">>;
 
-# types of multiscale models which can be used
-type "fiber specification" : void e < r > {
-  R "fiber type";
-  R "structural member";
-  R "force reaction";
-  R "radius";
-  R "volume fraction";
+type "alignment field" : void {
+  R type "filename" : string;
+  R type "number of bins" : int d < 1 >;
+};
+
+type "orientation field" : void {
+  R type "filename" : string;
+  R type "number of bins" : int d < 1 >;
+};
+
+#type "stochastic field" : void e < r > {
+type "stochastic field" : void {
+  R "alignment field";
+  R "orientation field";
 };
 
 type "multiscale model" : void A;
@@ -95,6 +102,7 @@ image "fiber only" : "multiscale model" {
   R "force reaction";
   R "radius";
   R "volume fraction";
+  O "stochastic field";
 };
 
 image "isotropic_neohookean" : "multiscale model" {

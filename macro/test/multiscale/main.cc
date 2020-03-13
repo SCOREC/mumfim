@@ -158,8 +158,8 @@ int main(int argc, char **argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if(parse_options(argc,argv))
   {
-    MPI_Init(&argc, &argv);
-    PCU_Comm_Init();
+    //MPI_Init(&argc, &argv);
+    //PCU_Comm_Init();
     amsi::initMultiscale(argc,argv,MPI_COMM_WORLD);
 #   ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");

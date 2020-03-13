@@ -127,23 +127,77 @@ namespace bio
     }
   }
   template <typename I>
-    int getRVEDirectoryIndex(I tp_bgn, I tp_end, apf::ModelEntity * ent)
+    int getRVEDirectoryIndex(I tp_bgn, I tp_end, apf::MeshEntity * ent,
+                             StochasticFieldMap & stochastic_field_map)
   {
+    // FIXME: this is just here for testing untill
+    // the stochastic field data is put into the att defs
+    apf::ModelEntity * gEnt = reinterpret_cast<apf::ModelEntity*>(EN_whatIn(reinterpret_cast<pEntity>(ent)));
     int ii = -1;
-    pGEntity rgn = reinterpret_cast<pGEntity>(ent);
+    double glbPnt[3];
+    pGEntity rgn = reinterpret_cast<pGEntity>(gEnt);
     pAttribute mdl = GEN_attrib(rgn,"material model");
     pAttribute sm = Attribute_childByType(mdl,"multiscale model");
+    pAttribute sf = Attribute_childByType(sm, "stochastic field");
     MicroscaleType micro_tp = getMicroscaleType(sm);
+    std::string(tp);
     if(micro_tp == MicroscaleType::FIBER_ONLY)
     {
       pAttributeString dir  = (pAttributeString)Attribute_childByType(sm,"directory");
       pAttributeString prfx = (pAttributeString)Attribute_childByType(sm,"prefix");
       char * dir_str = AttributeString_value(dir);
       char * tp_str  = AttributeString_value(prfx);
-      std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
+      if(sf)
+      {
+        auto af = Attribute_childByType(sf, "alignment field");
+        auto afn = (pAttributeString)Attribute_childByType(af, "filename");
+        auto anb = (pAttributeInt)Attribute_childByType(af, "number of bins");
+        char* sim_alignment_file_name = AttributeString_value(afn);
+        std::string alignment_field_name = sim_alignment_file_name;
+        Sim_deleteString(sim_alignment_file_name);
+        int num_alignment_bins = AttributeInt_value(anb);
+
+        auto of = Attribute_childByType(sf, "orientation field");
+        auto ofn = (pAttributeString)Attribute_childByType(of, "filename");
+        auto onb = (pAttributeInt)Attribute_childByType(of, "number of bins");
+        char* sim_orientation_file_name = AttributeString_value(ofn);
+        std::string orientation_field_name = sim_orientation_file_name;
+        Sim_deleteString(sim_orientation_file_name);
+        int num_orientation_bins = AttributeInt_value(onb);
+        auto search_alignment = stochastic_field_map.find(alignment_field_name);
+        if(search_alignment == stochastic_field_map.end())
+        {
+          std::cerr<<"Alignment field "<< alignment_field_name << " should be loaded in the loadRVELibraryInfo function"<<std::endl;
+          std::abort();
+        }
+        auto search_orientation = stochastic_field_map.find(orientation_field_name);
+        if(search_orientation == stochastic_field_map.end())
+        {
+          std::cerr<<"Alignment field "<< alignment_field_name << " should be loaded in the loadRVELibraryInfo function"<<std::endl;
+          std::abort();
+        }
+        EN_centroid(reinterpret_cast<pEntity>(ent), glbPnt);
+        std::string prefix = getNetworkSuffix(*(search_alignment->second),
+                                              *(search_orientation->second),
+                                              std::string(tp_str), glbPnt[0],
+                                              glbPnt[1], glbPnt[2],num_alignment_bins,
+                                              num_orientation_bins);
+        tp = std::string(std::string(dir_str) + std::string("/") + prefix);
+      }
+      else
+      {
+        tp = std::string(std::string(dir_str) + std::string("/") + std::string(tp_str));
+      }
       auto fnd = std::find(tp_bgn,tp_end,tp);
       if(fnd != tp_end)
+      {
         ii = std::distance(tp_bgn,fnd);
+      }
+      else
+      {
+        std::cerr<<"network directory name not found in library"<<std::endl;
+        std::abort();
+      }
       Sim_deleteString(dir_str);
       Sim_deleteString(tp_str);
     }

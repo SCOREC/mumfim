@@ -4,6 +4,9 @@
 #include <amsiControlService.h> // amsi
 #include <amsiDetectOscillation.h>
 #include "bioMicroFOParams.h"
+#include <map>
+#include <string>
+
 namespace bio
 {
   MultiscaleTissue::MultiscaleTissue(pGModel g, pParMesh m, pACase pd,
@@ -291,12 +294,28 @@ namespace bio
   }
   void MultiscaleTissue::loadRVELibraryInfo()
   {
+    std::map<pGRegion,std::vector<pRegion>> revCls;
     pGEntity rgn = NULL;
+    pRegion mRgn = NULL;
+    double glbPnt[3] = {0,0,0};
+    // get the reverse classification (since the classified region iter
+    // using the PM_mesh function segfaults
+    // Note: we only really need to do this if the model has a stochastic
+    // field, so we could potentially check if any model regions have
+    // a stochastic field before we do this
+    auto mRgnItr = PM_allEntProcIter(mesh, Tregion);
+    while((mRgn = (pRegion)AllEntProcIter_next(mRgnItr)))
+    {
+      revCls[R_whatIn(mRgn)].push_back(mRgn);
+    }
+    AllEntProcIter_delete(mRgnItr);
+
     GRIter ri = GM_regionIter(model);
     while((rgn = (pGEntity)GRIter_next(ri)))
     {
       pAttribute mdl = GEN_attrib(rgn,"material model");
       pAttribute sm = Attribute_childByType(mdl, "multiscale model");
+      pAttribute sf = Attribute_childByType(sm, "stochastic field");
       MicroscaleType micro_tp = getMicroscaleType(sm);
       if(micro_tp == MicroscaleType::FIBER_ONLY)
       {
@@ -305,11 +324,66 @@ namespace bio
         pAttributeInt cnt = (pAttributeInt)Attribute_childByType(sm,"count");
         char * dir_str = AttributeString_value(dir);
         char * tp_str = AttributeString_value(prfx);
-        std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
-        if(std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
+        // if using random field
+        if(sf)
         {
-          rve_dirs.push_back(tp);
-          rve_dir_cnts.push_back(AttributeInt_value(cnt));
+          auto af = Attribute_childByType(sf, "alignment field");
+          auto afn = (pAttributeString)Attribute_childByType(af, "filename");
+          auto anb = (pAttributeInt)Attribute_childByType(af, "number of bins");
+          char* sim_alignment_file_name = AttributeString_value(afn);
+          std::string alignment_field_name = sim_alignment_file_name;
+          Sim_deleteString(sim_alignment_file_name);
+          int num_alignment_bins = AttributeInt_value(anb);
+
+          auto of = Attribute_childByType(sf, "orientation field");
+          auto ofn = (pAttributeString)Attribute_childByType(of, "filename");
+          auto onb = (pAttributeInt)Attribute_childByType(of, "number of bins");
+          char* sim_orientation_file_name = AttributeString_value(ofn);
+          std::string orientation_field_name = sim_orientation_file_name;
+          Sim_deleteString(sim_orientation_file_name);
+          int num_orientation_bins = AttributeInt_value(onb);
+
+
+
+          auto search_alignment = stochastic_field_map.find(alignment_field_name);
+          if(search_alignment == stochastic_field_map.end())
+          {
+            stochastic_field_map[alignment_field_name] = std::shared_ptr<GridData>(new GridData(alignment_field_name.c_str()));
+          }
+          auto search_orientation = stochastic_field_map.find(orientation_field_name);
+          if(search_orientation == stochastic_field_map.end())
+          {
+            stochastic_field_map[orientation_field_name] = std::shared_ptr<GridData>(new GridData(orientation_field_name.c_str()));
+          }
+          auto orientation_field = stochastic_field_map[orientation_field_name];
+          auto alignment_field = stochastic_field_map[alignment_field_name];
+          auto mshElmnItr = revCls.find(static_cast<pGRegion>(rgn));
+          if(mshElmnItr != revCls.end())
+          {
+            for (auto&& mshElmn : (mshElmnItr->second))
+            {
+              EN_centroid(mshElmn, glbPnt);
+              std::string prefix = getNetworkSuffix(*alignment_field,*orientation_field,
+                                                    std::string(tp_str), glbPnt[0],
+                                                    glbPnt[1], glbPnt[2],num_alignment_bins,
+                                                    num_orientation_bins);
+              std::string tp(std::string(dir_str) + std::string("/") + prefix);
+              if(std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
+              {
+                rve_dirs.push_back(tp);
+                rve_dir_cnts.push_back(AttributeInt_value(cnt));
+              }
+            }
+          }
+        }
+        else
+        {
+          std::string tp(std::string(dir_str) + std::string("/") + std::string(tp_str));
+          if(std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
+          {
+            rve_dirs.push_back(tp);
+            rve_dir_cnts.push_back(AttributeInt_value(cnt));
+          }
         }
         Sim_deleteString(dir_str);
         Sim_deleteString(tp_str);
@@ -365,6 +439,11 @@ namespace bio
       prm.data[NONLINEAR_PARAM] = AttributeTensor0_value(poisson);
     }
     pAttribute micro_cnvg = AttCase_attrib(solution_strategy, "microscale convergence operator");
+    if(!micro_cnvg)
+    {
+      std::cerr<<"A microscale convergence operator is required! Please fix the problem defintion."<<std::endl;
+      std::abort();
+    }
     // Attributes used by bot implicit and explicit
     pAttribute micro_slvr_tol = Attribute_childByType(micro_cnvg, "micro solver tolerance");
     slvr.data[MICRO_SOLVER_TOL] =
@@ -533,8 +612,8 @@ namespace bio
                                             micro_fo_params & ,
                                             micro_fo_init_data & dat)
   {
-    apf::ModelEntity * mnt = reinterpret_cast<apf::ModelEntity*>(EN_whatIn(reinterpret_cast<pEntity>(rgn)));
-    hdr.data[RVE_DIR_TYPE] = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),mnt);
+    int idx = getRVEDirectoryIndex(rve_dirs.begin(),rve_dirs.end(),rgn,stochastic_field_map);
+    hdr.data[RVE_DIR_TYPE] = idx;
     hdr.data[FIELD_ORDER]  = apf::getShape(apf_primary_field)->getOrder();
     hdr.data[ELEMENT_TYPE] = apf_mesh->getType(rgn);
     hdr.data[GAUSS_ID]     = -1; // needs to be set for each IP

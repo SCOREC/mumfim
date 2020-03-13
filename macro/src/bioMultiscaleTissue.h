@@ -2,8 +2,14 @@
 #define BIO_MULTISCALE_TISSUE_H_
 #include "bioNonlinearTissue.h"
 #include "bioRVECoupling.h"
+#include "bioMultiscaleTissue.h"
+#include "bioReadStochasticField.h"
+#include <unordered_map>
+#include <memory>
+
 namespace bio
 {
+  using StochasticFieldMap = std::map<std::string, std::shared_ptr<GridData> >;
   // refactor so this is only dealing with a single type of RVE
   class MultiscaleTissue : public NonlinearTissue
   {
@@ -32,6 +38,7 @@ namespace bio
     //END DEBUG
     RVECoupling fo_cplg;
     int nm_rves;
+    StochasticFieldMap stochastic_field_map;
     //int nm_rve_rgns;
     // multiscale coupling communication stuff
     enum PATTERN
@@ -72,7 +79,7 @@ namespace bio
    *  simmodeler data for the ModelEntity ent.
    */
   template <typename I>
-    int getRVEDirectoryIndex(I tp_bgn, I tp_end, apf::ModelEntity * ent);
+    int getRVEDirectoryIndex(I tp_bgn, I tp_end, apf::MeshEntity * ent,StochasticFieldMap & StochasticFieldMap);
 
 }
 #include "bioMultiscaleTissue_impl.h"

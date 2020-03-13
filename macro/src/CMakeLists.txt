@@ -12,6 +12,7 @@ set(biotissue_public_headers
   bioNonlinearTissue.h
   bioStiffnessVariation.h
   bioStiffnessVariation_impl.h
+  bioReadStochasticField.h
   bioTissueAnalysis.h
   bioTissueAnalysis.h
   bioTissueAnalysis_impl.h
@@ -28,6 +29,7 @@ set(biotissue_src_files
   bioLinearTissue.cc
   bioMultiscaleTissue.cc
   bioNonlinearTissue.cc
+  bioReadStochasticField.cc
   bioRVECoupling.cc
   bioStiffnessVariation.cc
   bioTissueAnalysis.cc
