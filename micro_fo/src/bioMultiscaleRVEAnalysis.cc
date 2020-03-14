@@ -244,7 +244,6 @@ namespace bio
         if(micro_tp == MicroscaleType::FIBER_ONLY)
         {
           int tp = hdr.data[RVE_DIR_TYPE];
-          //int rnd = 0;//rand() % rve_tp_cnt[tp];
           int rnd = rand() % rve_tp_cnt[tp];
           // load the mesh into the library if it hasn't already been loaded
           if(meshes[tp][rnd] == NULL)
@@ -313,6 +312,27 @@ namespace bio
   void MultiscaleRVEAnalysis::run()
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
+    if (macro_step == 0 && macro_iter == 0)
+    {
+      updateCoupling();
+      // send the initial step result data to the macroscale to output
+      // get the size of the step results vector
+      std::vector<micro_fo_step_result> step_results(hdrs.size());
+      // recover step results and set the step results vector
+      int i = 0;
+      PCU_Switch_Comm(MPI_COMM_SELF);
+      for (auto rve = ans.begin(); rve != ans.end(); ++rve)
+      {
+        micro_fo_header & hdr = hdrs[i];
+        micro_fo_params & prm = prms[i];
+        recoverMultiscaleStepResults(*rve, hdr, prm, &step_results[i]);
+        ++i;
+      }
+      PCU_Switch_Comm(AMSI_COMM_SCALE);
+      // communicate the step results back to the macro scale
+      cs->Communicate(
+          send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
+    }
     bool sim_complete = false;
     while (!sim_complete)
     {
@@ -321,6 +341,7 @@ namespace bio
       {
         // migration
         if (macro_iter == 0) updateCoupling();
+        // send the initial microscale rve states back to the macroscale
         std::vector<micro_fo_data> data;
         cs->Communicate(recv_ptrn, data, amsi::mpi_type<micro_fo_data>());
         std::vector<micro_fo_result> results(data.size());
@@ -402,7 +423,6 @@ namespace bio
       }
       PCU_Switch_Comm(AMSI_COMM_SCALE);
       // communicate the step results back to the macro scale
-      amsi::ControlService * cs = amsi::ControlService::Instance();
       cs->Communicate(
           send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
 #ifdef WRITE_MICRO_PER_STEP

@@ -115,6 +115,10 @@ namespace bio
   }
   void TissueAnalysis::run()
   {
+    tssu->preRun();
+    tssu->recoverSecondaryVariables(stp);
+    checkpoint();
+    // write the initial state of everything
     t += dt;
     tssu->setSimulationTime(t);
     logVolumes(vol_itms.begin(),vol_itms.end(), vols, stp, tssu->getUField());
@@ -132,6 +136,10 @@ namespace bio
       if (!PCU_Comm_Self()) std::cout << "Load step = " << stp << std::endl;
       if(amsi::numericalSolve(itr,cvg))
       {
+        // checkpoint the initial state
+        // note this is not actually the initial state
+        // since we have already applied our guess solution
+        //if(stp == 0 && itr->iteration() == 0)
 #ifdef LOGRUN
         amsi::log(state) << stp << ", "
                          << itr->iteration() << ", "

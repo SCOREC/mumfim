@@ -55,6 +55,7 @@ namespace bio
     virtual void Assemble(amsi::LAS* las) override;
     virtual void UpdateDOFs(const double*) override;
     virtual void recoverSecondaryVariables(int);
+    virtual void preRun() {};
     void storeStress(apf::MeshElement* me, double* stress);
     void storeStress(apf::MeshElement* me, apf::Matrix3x3 eps);
     void storeStrain(apf::MeshElement* me, double* strain);
