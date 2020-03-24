@@ -6,6 +6,7 @@
 #include <cassert>
 #include <limits>
 #include <bioReadStochasticField.h>
+#include <cmath>
 
 
 namespace bio {
@@ -19,6 +20,7 @@ static int readRFGrid(const char * RFGFileName, double & x0, double & y0, double
   if(!RFGFile.is_open())
   {
     std::cerr<<"Could not open "<<RFGFileName<<std::endl;
+    std::abort();
     return 1;
   }
   std::string line,tmp;

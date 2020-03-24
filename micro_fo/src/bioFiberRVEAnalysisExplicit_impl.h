@@ -1305,15 +1305,16 @@ namespace bio
             min_reducer.join(dt_crit_elem, local_l / sound_speed);
           },
           min_reducer);
-      std::cerr<<"convert this parallel for to parallel reduce to get the residual!"<<std::endl;
-      std::abort();
-      Kokkos::parallel_for("getForces-Loop3", ndof,
-                           KOKKOS_LAMBDA(std::size_t i) {
-                             local_residual = f_ext(i) - f_int(i);
-                             residual += local_residual*local_residual;
-                             f(i) = f_ext(i) - (f_int(i) + f_damp(i));
-                           });
-      residual = sqrt(residual)/ndof;
+
+      residual = 0;
+      Kokkos::parallel_reduce("getForces-Loop3",
+                              Kokkos::RangePolicy<exe_space>(0,ndof),
+                              KOKKOS_LAMBDA(std::size_t i, double & residual_update) {
+        double local_residual = f_ext(i)-f_int(i);
+        residual_update += local_residual*local_residual;
+        f(i) = local_residual - f_damp(i);
+      }, residual);
+      residual = sqrt(residual);
       return dt;
     }
     void updateAcceleration_(int ndof,

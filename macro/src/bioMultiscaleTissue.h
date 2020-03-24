@@ -16,14 +16,14 @@ namespace bio
   public:
     MultiscaleTissue(pGModel g, pParMesh m, pACase pd, pACase ss, MPI_Comm cm);
     ~MultiscaleTissue();
-    virtual void Assemble(amsi::LAS * las);
+    virtual void Assemble(amsi::LAS * las) override;
     void computeRVEs();
     void initMicro();
     void updateMicro();
     void updateRVETypes();
     MicroscaleType updateRVEType(apf::MeshEntity * me);
     void updateRVEExistence();
-    virtual void recoverSecondaryVariables(int step);
+    virtual void recoverSecondaryVariables(int step) override;
     virtual void preRun() override { updateMicro(); }
   private:
     amsi::ElementalSystem * mltscl;
