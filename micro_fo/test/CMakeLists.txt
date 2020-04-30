@@ -29,3 +29,13 @@ file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/fiber_networks
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
 
 
+# new unit tests require catch 2
+find_package(Catch2 REQUIRED)
+include(ParseAndAddCatchTests)
+
+set(TEST_SOURCES test_main.cc
+                 test_kokkos_view_of_views.cc
+   )
+add_executable(unit_tests ${TEST_SOURCES})
+target_link_libraries(unit_tests PUBLIC Catch2::Catch2 micro_fo)
+ParseAndAddCatchTests(unit_tests)

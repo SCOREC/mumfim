@@ -19,6 +19,7 @@ set(micro_fo_public_headers
   bioTrussIntegrator.h
   bioUtil.h
   bioUtil_impl.h
+  bioViewOfView.h
   bioVerbosity.h)
 
 set(micro_fo_src_files
