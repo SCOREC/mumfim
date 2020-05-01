@@ -1,0 +1,52 @@
+Case: Case 1
+Problem Definition
+	/lore/mersoj/ETFEM/networksForAnalysis/Network_2_7.txt
+	F=[0.999819 -0.000293362 0.000371752; 0.000360323 1.01319 0.000355325; -0.000570166 0.000635382 0.999488]
+Solution Strategy
+	Convergence Tolerance: 1e-06
+	Solver Tolerance: 1e-06
+	Solver Type: Explicit
+		Load Time: 10
+		Amplitude Type: Smooth Step
+		Viscous Damping Factor: 100
+		Print History Frequency: 0
+		Print Field Frequency: 0
+		Print Field By Num Frames: false
+		Critical Time Scale Factor: 0.8
+		Energy Check Epsilon: 0.01
+		Serial GPU Cutoff: 0
+	Detect Oscillation Type: Iteration Only
+	Max Cut Attempts: 5
+	Attempt Cut Factor: 2
+	Max Iterations: 200
+	Previous Norm Factor: 1
+Output
+	Output 3D Orientation Tensor: true
+	Output 2D Orientation Tensor: true [ 1 0 0 ]
+
+Problem has 1008 degrees of freedom
+Stress from run
+0.0916816 -0.0076566 -0.00295296 
+-0.0076566 0.280579 0.0115406 
+-0.00295296 0.0115406 0.0501759 
+
+22.0731 7.70746 4.54671 0.087937 -0.226291 0.144889 
+7.72221 22.82 4.50786 0.450911 -0.11954 -0.631819 
+4.52215 4.47156 11.1051 0.0813264 -0.0715026 0.0523838 
+0.0844422 0.453916 0.0801945 6.05721 -0.151111 -0.225462 
+-0.240067 -0.13903 -0.0624895 -0.163642 5.76765 0.143791 
+0.124791 -0.62839 0.0507132 -0.236151 0.163151 8.82326 
+
+Stress from run
+0.0916816 -0.0076566 -0.00295296 
+-0.0076566 0.280579 0.0115406 
+-0.00295296 0.0115406 0.0501759 
+
+22.0805 7.7083 4.5512 0.100238 -0.235197 0.183017 
+7.71241 22.8173 4.50676 0.472868 -0.134624 -0.628964 
+4.53353 4.50415 11.0687 0.0873734 -0.074685 0.0565431 
+0.0686049 0.444746 0.104217 6.04835 -0.145147 -0.187424 
+-0.249933 -0.145368 -0.0557542 -0.175591 5.76354 0.13213 
+0.142043 -0.644839 0.0452778 -0.22893 0.145241 8.82024 
+
+Took: 9.87915 seconds.

@@ -1,0 +1,219 @@
+Case: Case 1
+Problem Definition
+	/lore/mersoj/ETFEM/networksForAnalysis/Network_2_7.txt
+	F=[0.999819 -0.000293362 0.000371752; 0.000360323 1.01319 0.000355325; -0.000570166 0.000635382 0.999488]
+Solution Strategy
+	Convergence Tolerance: 1e-06
+	Solver Tolerance: 1e-06
+	Solver Type: Implicit
+	Detect Oscillation Type: Iteration Only
+	Max Cut Attempts: 5
+	Attempt Cut Factor: 2
+	Max Iterations: 200
+	Previous Norm Factor: 1
+Output
+	Output 3D Orientation Tensor: true
+	Output 2D Orientation Tensor: true [ 1 0 0 ]
+
+Problem has 1008 degrees of freedom
+convergence criteria: 
+	0.860934 < 1e-06 * 1
+	0.860934 < 1e-06
+	FALSE
+convergence criteria: 
+	0.109623 < 1e-06 * 1
+	0.109623 < 1e-06
+	FALSE
+convergence criteria: 
+	0.0276701 < 1e-06 * 1
+	0.0276701 < 1e-06
+	FALSE
+convergence criteria: 
+	0.00173534 < 1e-06 * 1
+	0.00173534 < 1e-06
+	FALSE
+convergence criteria: 
+	3.70648e-05 < 1e-06 * 1
+	3.70648e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	8.99116e-09 < 1e-06 * 1
+	8.99116e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999886 < 1e-06 * 1
+	0.999886 < 1e-06
+	FALSE
+convergence criteria: 
+	0.000113523 < 1e-06 * 1
+	0.000113523 < 1e-06
+	FALSE
+convergence criteria: 
+	3.67319e-08 < 1e-06 * 1
+	3.67319e-08 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999895 < 1e-06 * 1
+	0.999895 < 1e-06
+	FALSE
+convergence criteria: 
+	0.000105013 < 1e-06 * 1
+	0.000105013 < 1e-06
+	FALSE
+convergence criteria: 
+	6.92251e-09 < 1e-06 * 1
+	6.92251e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999906 < 1e-06 * 1
+	0.999906 < 1e-06
+	FALSE
+convergence criteria: 
+	9.41399e-05 < 1e-06 * 1
+	9.41399e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	4.94005e-09 < 1e-06 * 1
+	4.94005e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999944 < 1e-06 * 1
+	0.999944 < 1e-06
+	FALSE
+convergence criteria: 
+	5.61248e-05 < 1e-06 * 1
+	5.61248e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	2.08996e-09 < 1e-06 * 1
+	2.08996e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999945 < 1e-06 * 1
+	0.999945 < 1e-06
+	FALSE
+convergence criteria: 
+	5.53275e-05 < 1e-06 * 1
+	5.53275e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	7.31535e-10 < 1e-06 * 1
+	7.31535e-10 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999942 < 1e-06 * 1
+	0.999942 < 1e-06
+	FALSE
+convergence criteria: 
+	5.78615e-05 < 1e-06 * 1
+	5.78615e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	2.3577e-09 < 1e-06 * 1
+	2.3577e-09 < 1e-06
+	TRUE
+Stress from run
+0.0916817 -0.00765667 -0.00295308 
+-0.00765667 0.280579 0.0115406 
+-0.00295308 0.0115406 0.0501758 
+
+22.0569 7.7043 4.53813 0.0778326 -0.232064 0.14743 
+7.70433 22.8198 4.4963 0.444899 -0.134152 -0.629876 
+4.53809 4.49629 11.0817 0.0964603 -0.0551993 0.0543236 
+0.0777798 0.444687 0.0963028 6.04465 -0.162193 -0.209149 
+-0.23229 -0.134229 -0.0553321 -0.162196 5.76795 0.160264 
+0.147155 -0.63016 0.0542795 -0.209154 0.16027 8.83438 
+
+convergence criteria: 
+	1 < 1e-06 * 1
+	1 < 1e-06
+	FALSE
+convergence criteria: 
+	9.96447e-15 < 1e-06 * 1
+	9.96447e-15 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999886 < 1e-06 * 1
+	0.999886 < 1e-06
+	FALSE
+convergence criteria: 
+	0.000113523 < 1e-06 * 1
+	0.000113523 < 1e-06
+	FALSE
+convergence criteria: 
+	3.67319e-08 < 1e-06 * 1
+	3.67319e-08 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999895 < 1e-06 * 1
+	0.999895 < 1e-06
+	FALSE
+convergence criteria: 
+	0.000105013 < 1e-06 * 1
+	0.000105013 < 1e-06
+	FALSE
+convergence criteria: 
+	6.92251e-09 < 1e-06 * 1
+	6.92251e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999906 < 1e-06 * 1
+	0.999906 < 1e-06
+	FALSE
+convergence criteria: 
+	9.41399e-05 < 1e-06 * 1
+	9.41399e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	4.94005e-09 < 1e-06 * 1
+	4.94005e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999944 < 1e-06 * 1
+	0.999944 < 1e-06
+	FALSE
+convergence criteria: 
+	5.61248e-05 < 1e-06 * 1
+	5.61248e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	2.08996e-09 < 1e-06 * 1
+	2.08996e-09 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999945 < 1e-06 * 1
+	0.999945 < 1e-06
+	FALSE
+convergence criteria: 
+	5.53275e-05 < 1e-06 * 1
+	5.53275e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	7.31534e-10 < 1e-06 * 1
+	7.31534e-10 < 1e-06
+	TRUE
+convergence criteria: 
+	0.999942 < 1e-06 * 1
+	0.999942 < 1e-06
+	FALSE
+convergence criteria: 
+	5.78615e-05 < 1e-06 * 1
+	5.78615e-05 < 1e-06
+	FALSE
+convergence criteria: 
+	2.35771e-09 < 1e-06 * 1
+	2.35771e-09 < 1e-06
+	TRUE
+Stress from run
+0.0916817 -0.00765667 -0.00295308 
+-0.00765667 0.280579 0.0115406 
+-0.00295308 0.0115406 0.0501758 
+
+22.0569 7.7043 4.53813 0.0778326 -0.232064 0.14743 
+7.70433 22.8198 4.4963 0.444899 -0.134152 -0.629876 
+4.53809 4.49629 11.0817 0.0964603 -0.0551993 0.0543236 
+0.0777798 0.444687 0.0963028 6.04465 -0.162193 -0.209149 
+-0.23229 -0.134229 -0.0553321 -0.162196 5.76795 0.160264 
+0.147155 -0.63016 0.0542795 -0.209154 0.16027 8.83438 
+
+Took: 0.548968 seconds.
