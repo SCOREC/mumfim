@@ -81,6 +81,9 @@ int main(int argc, char * argv[])
       std::abort();
     }
     las::Mat * readMat = las::readSparskitMat(in, las::PrintType::mmarket);
+    // multiply matrix by -1 since the sign convention for the test data is opposite
+    auto smm = las::getScalarMatMult<las::MICRO_BACKEND>();
+    smm->exec(-1, readMat, &readMat);
     in.close();
     std::size_t found = file_name.find_last_of("/");
     std::size_t found_dot = file_name.find_last_of(".");

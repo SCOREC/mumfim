@@ -3,16 +3,17 @@
 #include <apf.h>
 #include <lasCSRCore.h>
 #include <mpi.h>
+#include <cmath>
 #include <iostream>
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
-#include <cmath>
 // see python implementation...
-bool isclose(double a, double b, double rel_tol=1E-5, double abs_tol=1E-8) {
-  return fabs(a-b) <= fmax(rel_tol * fmax(fabs(a), fabs(b)), abs_tol);
+bool isclose(double a, double b, double rel_tol = 1E-5, double abs_tol = 1E-8)
+{
+  return fabs(a - b) <= fmax(rel_tol * fmax(fabs(a), fabs(b)), abs_tol);
 }
 class TrussIntegratorElemStiff : public bio::TrussIntegrator
 {
@@ -27,17 +28,20 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
                              1)
   {
   }
-  virtual void outElement(){
-    std::cout<<"Stiffness Element: "<<id<<"\n";
-    for(int i=0;i<6;++i){
-      for(int j=0; j<6;++j) {
-        std::cout<<es->ke(i, j)<<" ";
+  virtual void outElement()
+  {
+    std::cout << "Stiffness Element: " << id << "\n";
+    for (int i = 0; i < 6; ++i)
+    {
+      for (int j = 0; j < 6; ++j)
+      {
+        std::cout << es->ke(i, j) << " ";
         // gaurantee that the elemental stiffness matrix is diagonal
-        assert(isclose(es->ke(i,j), es->ke(j,i)));
+        assert(isclose(es->ke(i, j), es->ke(j, i)));
       }
-      std::cout<<"\n";
+      std::cout << "\n";
     }
-    std::cout<<"\n\n";
+    std::cout << "\n\n";
     bio::TrussIntegrator::outElement();
   }
 };
@@ -45,8 +49,7 @@ int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(
-      "/lore/mersoj/biotissue/biotissue/micro_fo/test/fiber_only.yaml", cases);
+  bio::loadMicroFOFromYamlFile(argv[1], cases);
   bio::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
@@ -78,10 +81,11 @@ int main(int argc, char * argv[])
   ops->zero(vecs->getU());
   ops->zero(vecs->getF());
   // apf::Mesh * fn = an.getFn()->getNetworkMesh();
-  //apf::Integrator * truss_es =
+  // apf::Integrator * truss_es =
   //    bio::createMicroElementalSystem(fn, vecs->getK(), vecs->getF());
-  apf::Integrator * truss_es = new TrussIntegratorElemStiff(fn, vecs->getK(), vecs->getF());
-  //truss_es->process(fn_msh);
+  apf::Integrator * truss_es =
+      new TrussIntegratorElemStiff(fn, vecs->getK(), vecs->getF());
+  // truss_es->process(fn_msh);
   apf::MeshEntity * me = NULL;
   apf::MeshIterator * itr = fn_msh->begin(1);
   int ii = 0;
@@ -93,7 +97,7 @@ int main(int argc, char * argv[])
     ++ii;
   }
   fn_msh->end(itr);
-  //las::printSparskitMat(std::cout, vecs->getK());
+  // las::printSparskitMat(std::cout, vecs->getK());
   delete vecs;
   delete bfrs;
   las::destroySparsity<las::CSR *>(sprs);
