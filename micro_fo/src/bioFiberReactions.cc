@@ -1,4 +1,5 @@
 #include "bioFiberReactions.h"
+#include <vector>
 namespace bio
 {
   std::pair<double, double> LinearReaction::forceReaction(double orig_length,

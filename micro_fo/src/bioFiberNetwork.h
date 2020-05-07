@@ -4,41 +4,98 @@
 #include <apfFunctions.h>  // amsi
 #include <apfMesh2.h>
 #include <apfNumbering.h>
+#include <memory>
 #include <string>
 #include <vector>
+#include "bioApfPointers.h"
 #include "bioFiber.h"
 #include "bioFiberReactions.h"
+// forward definition for the las sparsity structures
+namespace las
+{
+  class Sparsity;
+  class CSR;
+}
 namespace bio
 {
-  struct FiberNetworkReactions
+  class FiberNetworkReactions
   {
-    std::vector<FiberReaction *> rctns;
-    std::string fileName;
+    public:
+    FiberNetworkReactions(apf::Mesh2 * msh, std::istream & strm);
+    ~FiberNetworkReactions();
+    FiberReaction & operator[](size_t idx);
+    //const FiberReaction & operator[](size_t idx) const;
+
+    private:
+    std::vector<FiberReaction *> mReactionsList;
+  };
+  class FiberNetworkBase
+  {
+    public:
+    using mesh_ptr_type = bio::mesh_unique_ptr_type;
+    using reaction_ptr_type = std::shared_ptr<FiberNetworkReactions>;
+    FiberNetworkBase(mesh_ptr_type mesh, reaction_ptr_type reactions);
+    FiberNetworkBase(const FiberNetworkBase & other);
+    // FiberNetworkBase() : fn(nullptr) {};
+    virtual int getDofCount() const {return 0;}
+    virtual ~FiberNetworkBase();
+    // TODO this should be made const, but it will take some refactor work
+    // in the Truss integrator
+    const FiberReaction & getFiberReaction(size_t idx) { return (*rctns)[idx]; }
+    reaction_ptr_type getFiberReactions() { return rctns; }
+    int getNumNonZero();
+    /*
+     * returns the type of rve (e.g. filename as an integer)
+     * the mapping between this integer and the filename can
+     * be found in the rve_tp log
+     */
+    int getRVEType() const { return rve_type; }
+    void setRVEType(int rve_t) { rve_type = rve_t; }
+    protected:
+    // FIXME we can't have a shared pointer of an incomplete type in the implementation
+    // this shows part of the limitation of using the las interface
+#if defined MICRO_USING_SPARSKIT
+    using sparsity_type = std::shared_ptr<las::CSR>;
+#else
+    using sparsity_type = std::shared_ptr<las::Sparsity>;
+#endif
+    // FIXME rename to mMesh
+    mesh_ptr_type fn;
+    // FIXME rename to mReactions
+    reaction_ptr_type rctns;
+    // each fiber network of the same type shares the
+    // same sparsity pattern
+    sparsity_type sparsity;
+    int rve_type;
   };
   /**
    * Responsible for managing the internal state of a single fiber-network
-   *  quasistatics simulation.
+   * FIXME this class has a lot of state which is not needed ...
+   * We don't necessarily need all of these fields in every type of analysis
+   * especially for the explicit analysis I'd like to get away from having any
+   * apf mesh stored since we never really want to deal with the data in that
+   * format since it is incompatible with the GPU, and we should probably be
+   * using an alternative output format which doesn't require the conversion.
+   * Possibly Adios2 which allows us to write a vtk file as part of its binary
+   * files.
    */
-  class FiberNetwork
+  class FiberNetwork : public FiberNetworkBase
   {
     protected:
-    apf::Mesh * fn;
-    apf::Field * u;
+    apf::Field * u;  // displacement field
     amsi::XpYFunc * xpufnc;
     apf::Field * xpu;
     apf::Field * du;
-    apf::Field * v; // velocity field
-    apf::Field * a; // acceleration field
-    apf::Field * f; // force field
+    apf::Field * v;  // velocity field
+    apf::Field * a;  // acceleration field
+    apf::Field * f;  // force field
     apf::Numbering * udof;
     apf::Numbering * vdof;
     apf::Numbering * adof;
     apf::Numbering * fdof;
     int ucnt;
     FiberMember tp;
-    std::vector<FiberReaction *> rctns;
     // the rve filename map
-    int rve_tp;
     double scale_factor;
 
     public:
@@ -47,15 +104,16 @@ namespace bio
      * @param f A pointer to a fiber network mesh (contains only vertices and
      * edges) typically loaded using the NetworkLoader classes
      */
-    FiberNetwork(apf::Mesh * f);
+    FiberNetwork(mesh_ptr_type mesh, reaction_ptr_type reactions);
     FiberNetwork(const FiberNetwork & fn);
-    ~FiberNetwork();
+    virtual ~FiberNetwork();
     /*
      * returns the scale factor for this network...
      * \note This is only relevant for a multiscale analysis, and should
-     * possibly be moved to a multiscale fiber network which sublcasses from here?
+     * possibly be moved to a multiscale fiber network which sublcasses from
+     * here?
      */
-    double getScaleConversion() const { return scale_factor;}
+    double getScaleConversion() const { return scale_factor; }
     /*
      * sets the scale conversion factor (default 1). Typically this is
      * done in the multiscale initialization phase
@@ -67,16 +125,13 @@ namespace bio
      *  @return the dimensionality of the fiber network (2 or 3)
      */
     int getDim() const { return fn->getDimension(); }
-    int getDofCount() const { return ucnt; }
-    /*
-     * returns the type of rve (e.g. filename as an integer)
-     * the mapping between this integer and the filename can
-     * be found in the rve_tp log
+    /**
+     * @return the number of degrees of freedom in the fiber
+     * network
      */
-    int getRVEType() const { return rve_tp; }
-    void setRVEType(int rve_t) { rve_tp = rve_t; }
+    virtual int getDofCount() const override { return ucnt; }
     FiberMember getFiberMember() const { return tp; }
-    apf::Mesh * getNetworkMesh() const { return fn; }
+    apf::Mesh * getNetworkMesh() const { return fn.get(); }
     apf::Field * getUField() const { return u; }
     apf::Field * getdUField() const { return du; }
     apf::Field * getXpUField() const { return xpu; }
@@ -87,15 +142,8 @@ namespace bio
     // velocity numbering
     apf::Numbering * getVNumbering() const { return vdof; }
     // acceleration numbering
-    apf::Numbering * getANumbering() const {return adof; }
-    apf::Numbering * getFNumbering() const {return fdof; }
-    // TODO this should be made const, but it will take some refactor work
-    // in the Truss integrator
-    std::vector<FiberReaction *> & getFiberReactions() { return rctns; }
-    void setFiberReactions(std::vector<FiberReaction *> & frns)
-    {
-      rctns = frns;
-    }
+    apf::Numbering * getANumbering() const { return adof; }
+    apf::Numbering * getFNumbering() const { return fdof; }
   };
   /**
    * get the mean orientation vector of the rve

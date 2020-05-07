@@ -4,12 +4,9 @@
 #include <amsiNonlinearAnalysis.h>
 #include <apfFEA.h>  // amsi
 #include <apfMDS.h>
-//#include <apfMatrixUtil.h>    //amsi
 #include <apfMeshIterator.h>  // amsi
 #include <bioVerbosity.h>
 #include <gmi.h>
-#include <lasCSRCore.h>
-#include <lasCorePETSc.h>
 #include <cassert>
 #include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
@@ -17,74 +14,16 @@
 #include <fstream>
 #include <sstream>
 #include "bioNeoHookeanRVEAnalysis.h"
+#include "bioFiberNetworkLibrary.h"
 namespace bio
 {
-  void MultiscaleRVEAnalysis::loadNetworkIntoLibrary(const std::string & network_name,
-      size_t net_type, size_t net_id, int & num_dofs, int & nnz)
-  {
-      MPI_Comm comm = PCU_Get_Comm();
-      PCU_Switch_Comm(MPI_COMM_SELF);
-      FiberNetworkReactions * fn_rctns = new FiberNetworkReactions;
-      meshes[net_type][net_id] = loadFromFile(network_name);
-      apf::Mesh2 * fn = meshes[net_type][net_id];
-      fn_rctns->fileName = network_name;
-      loadParamsFromFile(fn, network_name+".params", std::back_inserter(fn_rctns->rctns));
-      fns[net_type][net_id] = fn_rctns;
-      apf::Field * u = apf::createLagrangeField(fn, "u", apf::VECTOR, 1);
-      apf::zeroField(u);
-      apf::Numbering * n = apf::createNumbering(u);
-      num_dofs = apf::NaiveOrder(n);
-      dofs_cnt[net_type][net_id] = num_dofs;
-      //apf::NaiveOrder(n);
-#if defined MICRO_USING_SPARSKIT
-      sprs[net_type][net_id] = las::createCSR(n, num_dofs);
-      nnz = ((las::CSR*)sprs[net_type][net_id])->getNumNonzero();
-#elif defined MICRO_USING_PETSC
-      sprs[net_type][net_id] = las::createPetscSparsity(n, num_dofs, PCU_Get_Comm());
-#endif
-      apf::destroyNumbering(n);
-      apf::destroyField(u);
-      PCU_Switch_Comm(comm);
-  }
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis()
   {
-    delete bfrs;
-    for (auto v = vecs.begin(); v != vecs.end(); ++v)
-    {
-      delete (*v);
-    }
     for (auto rve = ans.begin(); rve != ans.end(); ++rve)
     {
       delete *rve;
       (*rve) = NULL;
     }
-    assert(fns.size() == sprs.size() && fns.size() == dofs_cnt.size());
-    // need to delete any fns that were not used as part of an analysis
-    for (std::size_t i = 0; i < fns.size(); ++i)
-    {
-      for (int j = 0; j < rve_tp_cnt[i]; ++j)
-      {
-        delete fns[i][j];
-        las::destroySparsity<las::MICRO_BACKEND>(sprs[i][j]);
-        if (meshes[i][j])
-        {
-          meshes[i][j]->destroyNative();
-          apf::destroyMesh(meshes[i][j]);
-          meshes[i][j] = NULL;
-        }
-      }
-      delete[] fns[i];
-      delete[] sprs[i];
-      delete[] dofs_cnt[i];
-      delete[] rve_tp_dirs[i];
-      delete[] meshes[i];
-    }
-    fns.clear();
-    sprs.clear();
-    dofs_cnt.clear();
-    rve_tp_dirs.clear();
-    vecs.clear();
-    meshes.clear();
   }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
       : eff()
@@ -95,21 +34,15 @@ namespace bio
       , rve_dd(NULL)
       , M2m_id()
       , m2M_id()
-      //    , dat_tp()
       , rve_tp_cnt(0)
-      , fns()
       , hdrs()
       , prms()
       , slvr_prms()
       , slvr_int_prms()
-      , sprs()
-      , bfrs(NULL)
-      , vecs()
-      , dofs_cnt()
       , rve_tp_dirs()
+      , network_library()
       , macro_iter(0)
       , macro_step(0)
-      , nnz_max(-1)
   {
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
                                  amsi::getScaleManager(),
@@ -171,35 +104,6 @@ namespace bio
     // note rather than waiting for all of the communication, we can interleave
     // creating some of the new structures with some of the communication
     MPI_Waitall(rqsts.size(), &rqsts[0], MPI_STATUSES_IGNORE);
-    // Read in all the fiber network meshes and reactions
-    for (int ii = 0; ii < num_rve_tps; ++ii)
-    {
-      fns.push_back(new FiberNetworkReactions *[rve_tp_cnt[ii]]);
-      sprs.push_back(new las::Sparsity *[rve_tp_cnt[ii]]);
-      dofs_cnt.push_back(new int[rve_tp_cnt[ii]]);
-      meshes.push_back(new apf::Mesh2 *[rve_tp_cnt[ii]]);
-    }
-    for (int ii = 0; ii < num_rve_tps; ii++)
-    {
-      for (int jj = 0; jj < rve_tp_cnt[ii]; ++jj)
-      {
-        // initialize the library to all 0/NULL
-        fns[ii][jj] = NULL;
-        sprs[ii][jj] = NULL;
-        dofs_cnt[ii][jj] = 0;
-        meshes[ii][jj] = NULL;
-      }
-    }
-#ifdef MICRO_USING_SPARSKIT
-    // resize the sparskit buffers
-    if(rve_tp_cnt.size() > 0)
-    {
-      assert(bfrs == NULL);
-      // make minimum size buffer so that we can get a pointer.
-      // this will be resized after all of the relevant meshes are loaded
-      bfrs = new las::SparskitBuffers(1);
-    }
-#endif
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {
@@ -209,9 +113,7 @@ namespace bio
     cs->RemoveData(recv_ptrn, to_delete);
     for (auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
     {
-      // FIXME need to clear out LinearStructs,
-      // sparsity, dofs_cnt, etc here.
-      // We also cannot just destroy the analysis w/o removing the corresponding
+      // FIXME cannot just destroy the analysis w/o removing the corresponding
       // terms from the ans vector see vector erase
       // destroyAnalysis(ans[*idx]);
     }
@@ -229,6 +131,10 @@ namespace bio
                     amsi::mpi_type<bio::micro_fo_solver>());
     cs->Communicate(recv_init_ptrn, slvr_int_prms,
                     amsi::mpi_type<bio::micro_fo_int_solver>());
+    // store the current communicator which should be AMSI_COMM_SCALE
+    MPI_Comm comm = PCU_Get_Comm();
+    // All of the APF mesh operations need to have the PCU communicator
+    // set to self, otherwise it will try to do things in parallel
     PCU_Switch_Comm(MPI_COMM_SELF);
     int ii = 0;
     for (auto rve = ans.begin(); rve != ans.end(); ++rve)
@@ -237,40 +143,56 @@ namespace bio
       {
         micro_fo_header & hdr = hdrs[ii];
         micro_fo_params & prm = prms[ii];
-        micro_fo_init_data & dat = inis[ii];
-        micro_fo_solver & slvr_prm = slvr_prms[ii];
-        micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
+        //micro_fo_init_data & dat = inis[ii];
+        //micro_fo_solver & slvr_prm = slvr_prms[ii];
+        //micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
         MicroscaleType micro_tp = static_cast<MicroscaleType>(hdr.data[RVE_TYPE]);
         if(micro_tp == MicroscaleType::FIBER_ONLY)
         {
           int tp = hdr.data[RVE_DIR_TYPE];
           int rnd = rand() % rve_tp_cnt[tp];
-          // load the mesh into the library if it hasn't already been loaded
-          if(meshes[tp][rnd] == NULL)
-          {
-            std::stringstream fl;
-            fl << rve_tp_dirs[tp] << rnd + 1 << ".txt";
-            int num_dofs, nnz = 0;
-            loadNetworkIntoLibrary(fl.str(), tp, rnd, num_dofs, nnz);
-            // if the network is already loaded into the library, then comparing
-            // its nnz against nnz_max cannot increase nnz_max, so only setting nnz_max here
-            // should be safe
-            nnz_max = (nnz>nnz_max) ? nnz : nnz_max;
-          }
-          apf::Mesh * msh_cpy =
-              apf::createMdsMesh(gmi_load(".null"), meshes[tp][rnd]);
-          // Fiber network takes ownership of the mesh copy
-          FiberNetwork * fn = new FiberNetwork(msh_cpy);
-          fn->setFiberReactions(fns[tp][rnd]->rctns);
-          vecs.push_back(
-              createLinearStructs(dofs_cnt[tp][rnd],slvr_prm.data[MICRO_SOLVER_TOL] ,sprs[tp][rnd], bfrs));
+          std::string fiber_network_file =
+              rve_tp_dirs[tp] + std::to_string(rnd + 1) + ".txt";
+          network_library.load(fiber_network_file,
+                               fiber_network_file + ".params", tp, rnd);
+          auto fn = network_library.getCopy(tp, rnd);
+
+          // FIXME the question is...who wons the sprs structure and the bfrs structure
+          //
+          // FIXME The sprs structure should be a member of the FiberNetworkBase
+          // (eventually moved to ImplicitFiberNetwork)
+          //
+          //FIXME The bfrs oject can be stored in the MultiscaleRVEAnalysis, but it should
+          // be lazily initialized by the implicit analysis
+          // so we have something like FiberRVEAnalysis(... bfrsptr& bfrs)
+          // the analysis will create a new buffer if bfrs is nullptr, and
+          // grow the existing bfrs if not
+          // this way the explicit analysis doesn't need to initialize these
+          // and the user can use them for other calculations if they like
+
+
+          // FIXME this can directly get created in FiberRVEAnalysisSImplicit create
+          // linear structs seems to require information about the sparsity
+          // patterns, and the solver information.
+          // We modify this so that we pass the buffers as a pointer &, lifetime
+          // of bfrs is managed by the multiscale analysis (since the microscale
+          // analysis always has a shorter lifetime than the multiscale
+          // analysis. Intitially we pass a nullptr initially, and let the
+          // RVEAnalysis manage creation and resizing. Note this method won't be
+          // thread safe...(but neither is the current method)
+          //vecs.push_back(createLinearStructs(dofs_cnt[tp][rnd],
+          //                                  slvr_prm.data[MICRO_SOLVER_TOL],
+          //                                   sprs[tp][rnd], bfrs));
+          // FIXME ideally, we have here the following simplified call...
+          // here it is obvious that we have decided to deserialize the
+          // data before initializing things..
+          // note that currently we just deserialize things in the createFiberRVEAnalysis
+          // function which doesn't make much sense...why is the single scale function
+          // deserializing multiscale data?!
+          // *rve = initFiberRVEAnalysisFromMultiscale(fn, MicroSolutionStrategy)
           *rve = initFiberRVEAnalysisFromMultiscale(
               fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
           fn->setRVEType(ii);
-          BIO_V2(
-              // print the list of fiber network names to file
-              amsi::log(rve_tp_lg)
-                  << ii << " " << fns[tp][rnd]->fileName << std::endl;)
           ++ii;
         }
         else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
@@ -285,20 +207,9 @@ namespace bio
         }
       }
     }
-#ifdef MICRO_USING_SPARSKIT
-    // resize the sparskit buffers
-    // the max nnz will be negative 1 on any subsequent load steps
-    if(rve_tp_cnt.size() > 0)
-    {
-      assert(nnz_max > 0);
-      // magic number that doesn't seem to require much rescaling
-      // if this buffer size doesn't work we can try nnz_max*10*log(nnz_max)
-      bfrs->resizeMatrixBuffer(nnz_max*100);
-      //bfrs = new las::SparskitBuffers(dof_max, nnz_max*100);
-    }
-#endif
-    // resize sparskit buffers to max size here.
-    PCU_Switch_Comm(AMSI_COMM_SCALE);
+    // reset the PCU communictor back to its original state so that
+    // our scale wide communications can proceed
+    PCU_Switch_Comm(comm);
     int rank = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
     std::stringstream ss;
@@ -452,4 +363,29 @@ namespace bio
       cs->scaleBroadcast(M2m_id, &sim_complete);
     }
   }
+  std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(micro_fo_solver & slvr, micro_fo_int_solver & slvr_int)
+  {
+    MicroSolutionStrategyExplicit ss;
+    ss.cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
+    ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
+    ss.total_time = slvr.data[LOAD_TIME]+slvr.data[HOLD_TIME];
+    ss.load_time = slvr.data[LOAD_TIME];
+    ss.crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
+    ss.visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
+    ss.energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
+    ss.slvrType = static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
+    ss.ampType = static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
+
+    ss.print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
+    ss.print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
+    ss.print_field_by_num_frames = slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
+    ss.serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
+    ss.oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
+    ss.oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
+    ss.oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
+    ss.oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
+        slvr_int.data[DETECT_OSCILLATION_TYPE]);
+    ss.oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
+  }
+ 
 }  // namespace bio

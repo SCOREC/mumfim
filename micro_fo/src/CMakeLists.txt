@@ -1,3 +1,6 @@
+# FIXME pull out anything which is not actually a public header
+# to reduce the size of the interface that we are passing along
+# and installing
 set(micro_fo_public_headers
   bioExplicitAmplitude.h
   bioExplicitOutputWriter.h
@@ -7,6 +10,7 @@ set(micro_fo_public_headers
   bioFiberRVEAnalysis_impl.h
   bioFiberRVEAnalysisExplicit.h
   bioFiberRVEAnalysisExplicit_impl.h
+  bioFiberRVEAnalysisStaticImplicit.h
   bioMassIntegrator.h
   bioMicroFOConfig.h
   bioMicroFOParams.h
@@ -20,7 +24,9 @@ set(micro_fo_public_headers
   bioUtil.h
   bioUtil_impl.h
   bioViewOfView.h
-  bioVerbosity.h)
+  bioVerbosity.h
+  bioFiberNetworkLibrary.h
+  bioApfPointers.h)
 
 set(micro_fo_src_files
   bioExplicitOutputWriter.cc
@@ -40,7 +46,9 @@ set(micro_fo_src_files
   bioRVE.cc
   bioRVEAnalysis.cc
   bioTrussIntegrator.cc
-  bioUtil.cc)
+  bioUtil.cc
+  bioFiberNetworkLibrary.cc
+  bioApfPointers.cc)
 
 find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
 find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
@@ -126,6 +134,8 @@ elseif(MICRO_BACKEND STREQUAL "petsc")
 else()
   message(FATAL_ERROR "You have incorrectly set MICRO_BACKEND=${MICRO_BACKEND}.\n Balid options are sparskit, petsc")
 endif()
+
+target_include_directories(micro_fo SYSTEM PRIVATE $ENV{INCLUDE})
 
 install(TARGETS micro_fo
         EXPORT biotissueTargets

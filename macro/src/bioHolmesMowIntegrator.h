@@ -305,29 +305,28 @@ namespace bio
     double PoissonsRatio;
     int ToVoigt(int i,int j)
     {
-      int a = 0;
       if (i==0 && j==0)
-        return a = 0;
+        return 0;
       else if (i==1 && j==1)
-        return a = 1;
+        return 1;
       else if (i==2 && j==2)
-        return a = 2;
+        return 2;
       else if (i==0 && j==1)
-        return a = 3;
+        return 3;
       else if (i==1 && j==0)
-        return a = 3;
+        return 3;
       else if (i==1 && j==2)
-        return a = 4;
+        return 4;
       else if (i==2 && j==1)
-        return a = 4;
+        return 4;
       else if (i==0 && j==2)
-        return a = 5;
+        return 5;
       else if (i==2 && j==0)
-        return a = 5;
+        return 5;
       else
       {
         std::cout<<"invalid indices in ToVoigt!"<<std::endl;
-        return a = -1;
+        return -1;
       }
     }
   };

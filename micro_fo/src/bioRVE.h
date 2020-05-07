@@ -10,7 +10,6 @@
 namespace bio
 {
   class FiberNetwork;
-  // TODO : pull calculation of dV_dx_rve in here since the term is derived entirely from RVE values
   class RVE
   {
   protected:

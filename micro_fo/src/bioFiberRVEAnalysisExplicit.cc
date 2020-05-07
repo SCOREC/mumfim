@@ -28,26 +28,25 @@ namespace bio
                              LinearStructs<las::MICRO_BACKEND> * vecs,
                              const MicroSolutionStrategyExplicit & ss)
         : FiberRVEAnalysis(fn, vecs, static_cast<MicroSolutionStrategy>(ss))
+        , serial_gpu_cutoff(ss.serial_gpu_cutoff)
+        , total_time(ss.total_time)
+        , load_time(ss.load_time)
+        , fiber_elastic_modulus(fn->getFiberReaction(0).E)
+        , fiber_area(fn->getFiberReaction(0).fiber_area)
+        , fiber_density(fn->getFiberReaction(0).fiber_density)
+        , amp(NULL)
         , visc_damp_coeff(ss.visc_damp_coeff)
         , print_history_frequency(ss.print_history_frequency)
         , print_field_frequency(ss.print_field_frequency)
         , print_field_by_num_frames(ss.print_field_by_num_frames)
-        , total_time(ss.total_time)
-        , load_time(ss.load_time)
-        , serial_gpu_cutoff(ss.serial_gpu_cutoff)
         , crit_time_scale_factor(ss.crit_time_scale_factor)
         , energy_check_eps(ss.energy_check_eps)
         , disp_bound_nfixed(0)
         , disp_bound_dof(NULL)
         , disp_bound_vals(NULL)
-        , fiber_elastic_modulus(fn->getFiberReactions()[0]->E)
-        , fiber_area(fn->getFiberReactions()[0]->fiber_area)
-        , fiber_density(fn->getFiberReactions()[0]->fiber_density)
-        , amp(NULL)
         , system_initialized(false)
         , itr_prev(0)
     {
-      es = createImplicitMicroElementalSystem(fn, getK(), getF());
       std::stringstream sout;
       int rnk = -1;
       MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
@@ -76,34 +75,6 @@ namespace bio
       assert(fiber_elastic_modulus > 0);
       old_u = std::vector<double>();
     }
-  // FIXME Note this is the same as a single implicit iteration...
-  // we should probably use the same function call that is there if this works
-  void FiberRVEAnalysisExplicit::relaxSystem() {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    ops->zero(this->getU());
-    computeStiffnessMatrix();
-    applyRVEBC(this->bnd_nds[RVE::all].begin(),
-               this->bnd_nds[RVE::all].end(),
-               this->getFn()->getUNumbering(),
-               this->getK(),
-               this->getF());
-    this->getSlv()->solve(this->getK(), this->getU(), this->getF());
-    //amsi::SubtractOp acm;
-    //amsi::WriteScalarMultOp mlt(-1.0);
-    amsi::WriteOp wrt;
-    amsi::AccumOp acm;
-    amsi::FreeApplyOp fr_mlt(this->getFn()->getUNumbering(), &wrt);
-    amsi::FreeApplyOp fr_acm(this->getFn()->getUNumbering(), &acm);
-    double * s = NULL;
-    ops->get(this->getU(), s);
-    amsi::ApplyVector(
-        this->getFn()->getUNumbering(), this->getFn()->getdUField(), s, 0, &fr_mlt)
-        .run();
-    amsi::ApplyVector(
-        this->getFn()->getUNumbering(), this->getFn()->getUField(), s, 0, &fr_acm)
-        .run();
-    ops->restore(this->getU(), s);
-  }
   bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {
     BIO_V3(
@@ -300,24 +271,9 @@ namespace bio
     amsi::ToArray(getFn()->getUNumbering(), getFn()->getUField(), &s[0], 0, &wrt).run();
     ops->set(getU(), s);
   }
-  void FiberRVEAnalysisExplicit::computeStiffnessMatrix()
-  {
-    auto ops = las::getLASOps<las::MICRO_BACKEND>();
-    ops->zero(getK());
-    ops->zero(getF());
-    apf::Integrator * es =
-        createImplicitMicroElementalSystem(getFn(), getK(), getF());
-    es->process(getFn()->getNetworkMesh(), 1);
-    // finalize the vectors so we cthis set boundary condition
-    // values
-    las::finalizeMatrix<las::MICRO_BACKEND>(this->vecs->getK());
-    las::finalizeVector<las::MICRO_BACKEND>(this->vecs->getF());
-    delete es;
-  }
   void FiberRVEAnalysisExplicit::computeCauchyStress(double sigma[6])
   {
     copyForceDataToForceVec();
-    //computeStiffnessMatrix();
     FiberRVEAnalysis::computeCauchyStress(sigma);
   }
   void FiberRVEAnalysisExplicit::computeMaterialStiffness(double C[36])

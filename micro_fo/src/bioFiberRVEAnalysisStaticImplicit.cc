@@ -1,4 +1,4 @@
-#include "bioFiberRVEAnalysis.h"
+#include "bioFiberRVEAnalysisStaticImplicit.h"
 #include "bioVerbosity.h"
 namespace bio
 {

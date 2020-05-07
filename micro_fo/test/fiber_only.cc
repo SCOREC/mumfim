@@ -47,12 +47,11 @@ int main(int argc, char * argv[])
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  std::stringstream prm_name_ss;
-  prm_name_ss << file_name << ".params";
-  bio::FiberNetworkReactions rctns;
-  apf::Mesh2 * fn_msh = bio::loadFromFile(file_name);
-  bio::loadParamsFromFile(fn_msh, prm_name_ss.str(),
-                          std::back_inserter(rctns.rctns));
+  bio::FiberNetworkLibrary network_library;
+  network_library.load(file_name,file_name+".params",0,0);
+  auto fiber_network = network_library.getOriginalNetwork(0,0);
+
+/*
   apf::Field * u = apf::createLagrangeField(fn_msh, "u", apf::VECTOR, 1);
   apf::Numbering * n = apf::createNumbering(u);
   int ndofs = apf::NaiveOrder(n);
@@ -87,7 +86,8 @@ int main(int argc, char * argv[])
     an = bio::createFiberRVEAnalysis(
         fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::Explicit);
   }
-  an->computeStiffnessMatrix();
+  */
+  auto an = bio::createFiberRVEAnalysis(fn.get(), *cases[0].ss);
   double stress[6];
   double C[36];
   apf::Matrix3x3 strss;

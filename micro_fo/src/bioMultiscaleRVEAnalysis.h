@@ -6,11 +6,12 @@
 #include <vector>
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
+#include "bioFiberNetworkLibrary.h"
 namespace bio
 {
   class MultiscaleRVEAnalysis
   {
-    protected:
+    private:
     // logging
     amsi::Log eff;
     amsi::Log wgt;
@@ -22,36 +23,34 @@ namespace bio
     amsi::DataDistribution * rve_dd;
     size_t M2m_id;
     size_t m2M_id;
-    // MicroFODatatypes dat_tp;
-    // analysis
+   
+    // number of different RVE realizations of a given type
+    // each different type (physical set of parameters) is
+    // stored in a different folder.
     std::vector<int> rve_tp_cnt;
-    std::vector<FiberNetworkReactions **> fns;
-    std::vector<apf::Mesh2 **> meshes;
+
     std::vector<micro_fo_header> hdrs;
     std::vector<micro_fo_params> prms;
     std::vector<micro_fo_solver> slvr_prms;
     std::vector<micro_fo_int_solver> slvr_int_prms;
-    std::vector<las::Sparsity **> sprs;
+
     std::vector<RVEAnalysis *> ans;
-    las::SparskitBuffers * bfrs;
+    // FIXME remove this from here
     std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
-    // a vector that stores the dof number for each type of network
-    std::vector<int *> dofs_cnt;
-    //  an vector that holds the names of the rve types
+    //  an vector that holds the names of the rve physical
+    //  types. Here a type would refer to a set of networks
+    //  with the same set of statistical properties i.e. density
     std::vector<char*> rve_tp_dirs;
+    FiberNetworkLibrary network_library;
+   
     int macro_iter;
     int macro_step;
-    // we keep this as a class scope variable since we want the nnz_max
-    // to be maximum number of nonzeros in all loaded networks.
-    int nnz_max;
     // funcs
     void initLogging();
     void initCoupling();
     void initAnalysis();
     void updateCoupling();
-    // this function loads
-    void loadNetworkIntoLibrary(const std::string & network_name, size_t net_type, size_t net_id,
-                                int & num_dofs, int & nnz);
+
 
     public:
     MultiscaleRVEAnalysis();
@@ -59,5 +58,8 @@ namespace bio
     virtual void init();
     virtual void run();
   };
+
+  std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(micro_fo_solver & slvr, micro_fo_int_solver &slvr_int);
+
 }  // namespace bio
 #endif

@@ -8,29 +8,106 @@
 #include <apfConvert.h>
 #include <apfMeshUtil.h> // amsi::makeNullMdlEmptyMesh()
 #include <gmi.h>
+#include <cstdlib>
+#include <memory>
+#include "bioFiberNetworkIO.h"
+// FIXME...fix this filenaming in petsc!
+#include <lasCSRCore.h>
+#include <lasCorePETSc.h>
+#include <lasCSR.h>
 
 namespace bio
 {
-  FiberNetwork::FiberNetwork(apf::Mesh * mesh)
-    : fn(mesh)
-    , u(NULL)
-    , xpufnc(NULL)
-    , xpu(NULL)
-    , du(NULL)
-    , udof(NULL)
-    , ucnt(0)
-    , tp(FiberMember::truss)
-    , rve_tp(0)
-    , scale_factor(1)
+  FiberNetworkReactions::FiberNetworkReactions(apf::Mesh2 * msh, std::istream & strm)
   {
-    assert(mesh);
-    du = apf::createLagrangeField(fn,"du",apf::VECTOR,1);
-    u  = apf::createLagrangeField(fn,"u",apf::VECTOR,1);
-    v  = apf::createLagrangeField(fn,"v",apf::VECTOR,1);
-    a  = apf::createLagrangeField(fn,"a",apf::VECTOR,1);
-    f  = apf::createLagrangeField(fn,"f",apf::VECTOR,1);
-    xpufnc = new amsi::XpYFunc(fn->getCoordinateField(),u);
-    xpu = apf::createUserField(fn,"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
+    mReactionsList = {};
+    loadParamsFromStream(msh, strm, std::back_inserter(mReactionsList));
+  }
+  FiberNetworkReactions::~FiberNetworkReactions()
+  {
+    for(auto & reaction : mReactionsList)
+    {
+      delete reaction;
+      reaction = nullptr;
+    }
+  }
+  FiberReaction &  FiberNetworkReactions::operator[](size_t idx)
+    {
+      return *(mReactionsList[idx]);
+    }
+  //const FiberReaction & FiberNetworkReactions::operator[](size_t idx) const
+  //{
+  //  return *(mReactionsList[idx]);
+  //}
+  FiberNetworkBase::FiberNetworkBase(mesh_ptr_type mesh,
+                                     reaction_ptr_type reactions)
+      : fn(std::move(mesh)), rctns(std::move(reactions)), rve_type(0)
+  {
+    if (mesh == nullptr || reactions == nullptr)
+    {
+      std::cerr << "Attempting to create a fiber network with a null mesh, or "
+                   "no reactions!";
+      std::cerr << "This is invalid.\n";
+      std::exit(EXIT_FAILURE);
+    }
+    else
+    {
+      auto temp_field = apf::createLagrangeField(mesh.get(), "temp", apf::VECTOR, 1);
+      auto temp_numbering = apf::createNumbering(temp_field);
+      auto num_dofs = apf::NaiveOrder(temp_numbering);
+      // FIXME this sparsity stuff should have a unified interface,
+      // the las should deal with the different backends
+#if defined MICRO_USING_SPARSKIT
+      sparsity = sparsity_type{
+        reinterpret_cast<las::CSR*>(
+        las::createCSR(temp_numbering, num_dofs))};
+#elif defined MICRO_USING_PETSC
+      sparsity = sparsity_type(las::createPetscSparsity(temp_numbering, num_dofs, PCU_Get_Comm()));
+#endif
+      apf::destroyField(temp_field);
+      apf::destroyNumbering(temp_numbering);
+    }
+  }
+  FiberNetworkBase::FiberNetworkBase(const FiberNetworkBase & other) : 
+    fn(bio::make_unique(apf::createMdsMesh(gmi_load(".null") , other.fn.get()))),
+    rctns(other.rctns), sparsity(other.sparsity), rve_type(other.rve_type) 
+  {
+  }
+  FiberNetworkBase::~FiberNetworkBase() { };
+  int FiberNetworkBase::getNumNonZero() {
+    // if the sparsity doesn't exist, then there can be
+    // no nonzeros in the system
+    if(sparsity == nullptr)
+    {
+      return 0;
+    }
+
+    // FIXME this is pretty hacky, but the nnz is only used set the buffer size
+    // and we really have never touched the petsc backed (and it isn't really tested)
+#if defined MICRO_USING_SPARSKIT
+    return reinterpret_cast<las::CSR*>(sparsity.get())->getNumNonzero();
+#elif defined MICRO_USING_PETSC
+    return 0;
+#endif
+  }
+  FiberNetwork::FiberNetwork(mesh_ptr_type mesh, reaction_ptr_type reactions)
+      : FiberNetworkBase(std::move(mesh), std::move(reactions))
+      , u(nullptr)
+      , xpufnc(nullptr)
+      , xpu(nullptr)
+      , du(nullptr)
+      , udof(nullptr)
+      , ucnt(0)
+      , tp(FiberMember::truss)
+      , scale_factor(1)
+  {
+    u  = apf::createLagrangeField(fn.get(),"u",apf::VECTOR,1);
+    du = apf::createLagrangeField(fn.get(),"du",apf::VECTOR,1);
+    v  = apf::createLagrangeField(fn.get(),"v",apf::VECTOR,1);
+    a  = apf::createLagrangeField(fn.get(),"a",apf::VECTOR,1);
+    f  = apf::createLagrangeField(fn.get(),"f",apf::VECTOR,1);
+    xpufnc = new amsi::XpYFunc(fn.get()->getCoordinateField(),u);
+    xpu = apf::createUserField(fn.get(),"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
     apf::zeroField(du);
     apf::zeroField(u);
     // FIXME...we have to zero the field here or we run into problems copying an
@@ -54,11 +131,9 @@ namespace bio
     apf::NaiveOrder(adof);
     apf::NaiveOrder(fdof);
   }
-  FiberNetwork::FiberNetwork(const FiberNetwork& net)
+  FiberNetwork::FiberNetwork(const FiberNetwork& net) : FiberNetworkBase(net)
   {
     assert(net.fn);
-    // note model is deleted with the native mesh
-    fn = apf::createMdsMesh(gmi_load(".null") , net.fn);
     u = fn->findField(apf::getName(net.u));
     du = fn->findField(apf::getName(net.du));
     a = fn->findField(apf::getName(net.a));
@@ -73,10 +148,7 @@ namespace bio
     assert(udof);
     assert(apf::getField(udof));
     tp = net.tp;
-    rve_tp = net.rve_tp;
     // ordering of reactions should be same in copy
-    rctns.resize(net.rctns.size());
-    std::copy(net.rctns.begin(), net.rctns.end(), rctns.begin());
     ucnt = net.ucnt;
     vdof = net.vdof; 
     adof = net.adof;
@@ -86,18 +158,15 @@ namespace bio
   FiberNetwork::~FiberNetwork()
   {
     apf::destroyNumbering(udof);
-    udof = NULL;
+    udof = nullptr;
     apf::destroyField(xpu);
-    xpu = NULL;
+    xpu = nullptr;
     delete xpufnc;
-    xpufnc = NULL;
+    xpufnc = nullptr;
     apf::destroyField(u);
-    u = NULL;
+    u = nullptr;
     //apf::destroyField(du);
-    du = NULL;
-    fn->destroyNative();
-    apf::destroyMesh(fn);
-    fn = NULL;
+    du = nullptr;
   }
   // TODO this function will need to be updated if we ever use partitioned mesh
   // at the microscale

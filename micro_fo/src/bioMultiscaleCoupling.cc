@@ -19,6 +19,8 @@ namespace bio
     double ttl_fbr_lngth = std::accumulate(lngths.begin(),lngths.end(),0.0);
     return sqrt(ttl_fbr_lngth * fbr_area / fbr_vl_frc);
   }
+  // FIXME the fiber area is the mean fiber area which isn't really a parameter (since
+  // it is included in the mesh, and each fiber can have a different area)
   double calcScaleConversion(FiberNetwork * fn, double fbr_area, double fbr_vol_frc)
   {
     double rve_dim = calcRVEDimensionality(fn, fbr_area, fbr_vol_frc);

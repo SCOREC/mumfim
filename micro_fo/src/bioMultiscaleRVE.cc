@@ -6,6 +6,7 @@
 #include <cmath> // M_PI
 #include <numeric>
 #include <cassert>
+#include <vector>
 namespace bio
 {
   double calcRVEDimensionality(FiberNetwork * fn,

@@ -45,23 +45,24 @@ namespace bio
     double lo;
     apf::Vector3 spans_l;
     int dim;
-    FiberReaction ** frs;
-    FiberReaction * fr;
+    FiberNetwork::reaction_ptr_type frs;
+    // the integer tag that corresponds to the fiber reaction
+    int tg;
     apf::MeshTag * rct_tg;
     las::Mat * k;
     las::Vec * f;
     int id;
     public:
     TrussIntegrator(apf::Numbering * n,
-                    apf::Field * u_,
-                    apf::Field * xu_,
-                    FiberReaction ** frs_,
-                    las::Mat * k_,
-                    las::Vec * f_,
+                    apf::Field * u,
+                    apf::Field * xu,
+                    FiberNetwork::reaction_ptr_type frs,
+                    las::Mat * k,
+                    las::Vec * f,
                     int o)
         : apf::Integrator(o)
-        , u(u_)
-        , xu(xu_)
+        , u(u)
+        , xu(xu)
         , msh(apf::getMesh(u))
         , id_tg(msh->findTag("id"))
         , nm(n)
@@ -73,11 +74,10 @@ namespace bio
         , lo(0.0)
         , spans_l()
         , dim()
-        , frs(frs_)
-        , fr()
+        , frs(frs)
         , rct_tg(msh->findTag("fiber_reaction"))
-        , k(k_)
-        , f(f_)
+        , k(k)
+        , f(f)
         , id(-1)
     {
     }

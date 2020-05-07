@@ -12,17 +12,6 @@
 #include "bioRVEAnalysis.h"
 namespace bio
 {
-  /*
-   * Analysis type enum describes how the solver should function, e.g.
-   * defaul explicit or implicit types. In the future this could select
-   * between different subtypes as well e.g. ImplicitNewton and
-   * ImplicitContinuation
-   */
-  enum class FiberRVEAnalysisType
-  {
-    StaticImplicit,      ///< Newton implicit solver
-    Explicit  ///< Central difference explicit solver
-  };
   /* \brief create the elemental system integrator
    */
   apf::Integrator * createImplicitMicroElementalSystem(
@@ -33,6 +22,8 @@ namespace bio
   // here we have a helper class that owns the las vectors and matricies.
   // This lets us share the memory between multiple FiberRVEAnalysis instances
   // (especially copies)
+  //
+  // FIXME move this class to the static analysis class since it is not needed in the general case!
   template <typename T>
   class LinearStructs
   {
@@ -44,8 +35,8 @@ namespace bio
     LinearStructs(int ndofs,
                   double solver_tol,
                   las::Sparsity * csr,
-                  void * bfrs = NULL,
-                  las::Sparsity * massCsr = NULL);
+                  void * bfrs = nullptr,
+                  las::Sparsity * massCsr = nullptr);
     las::Mat * getK() const { return k; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
@@ -84,6 +75,13 @@ namespace bio
                      LinearStructs<las::MICRO_BACKEND> * vecs,
                      const MicroSolutionStrategy & ss);
     virtual ~FiberRVEAnalysis();
+    FiberNetwork * getFn() const { return fn; }
+    RVE * getRVE() const { return rve; }
+    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
+    virtual FiberRVEAnalysisType getAnalysisType() = 0;
+
+    // FIXME move these functions related to linear vectors to Static class since they are not needed in
+    // the explicit case
     // get the global stiffness matrix
     las::Mat * getK() const { return vecs->k; }
     // get the global displacement vector
@@ -92,82 +90,26 @@ namespace bio
     las::Vec * getF() const { return vecs->f; }
     // solve is needed for computing derivs
     las::Solve * getSlv() const { return vecs->slv; }
-    FiberNetwork * getFn() const { return fn; }
-    RVE * getRVE() const { return rve; }
-    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
-    virtual FiberRVEAnalysisType getAnalysisType() = 0;
-    // these functions need to be implemented by any classes
-    // that use alternative storage to the las vec, or don't explicitly
-    // compute the stiffness matrix.
-    virtual void computeStiffnessMatrix()
-    {
-      auto ops = las::getLASOps<las::MICRO_BACKEND>();
-      ops->zero(getK());
-      ops->zero(getF());
-      es->process(getFn()->getNetworkMesh(), 1);
-      // finalize the vectors so we can set boundary condition
-      // values
-      las::finalizeMatrix<las::MICRO_BACKEND>(getK());
-      las::finalizeVector<las::MICRO_BACKEND>(getF());
-    }
   };
-  class FiberRVEAnalysisSImplicit : public FiberRVEAnalysis
-  {
-    protected:
-    virtual void computeCauchyStress(double sigma[6]) final;
-
-    public:
-    // constructors
-    explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
-    FiberRVEAnalysisSImplicit(FiberNetwork * fn,
-                              LinearStructs<las::MICRO_BACKEND> * vecs,
-                              const MicroSolutionStrategy & ss);
-    virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
-    virtual FiberRVEAnalysisType getAnalysisType()
-    {
-      return FiberRVEAnalysisType::StaticImplicit;
-    }
-  };
-  FiberRVEAnalysis * createFiberRVEAnalysis(
+  std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       FiberNetwork * fn,
-      LinearStructs<las::MICRO_BACKEND> * vecs,
-      micro_fo_solver & slvr,
-      micro_fo_int_solver & slvr_int);
-  FiberRVEAnalysis * createFiberRVEAnalysis(
-      FiberNetwork * fn,
-      LinearStructs<las::MICRO_BACKEND> * vecs,
       const MicroSolutionStrategy & ss,
-      FiberRVEAnalysisType type = FiberRVEAnalysisType::StaticImplicit);
+      void* bfrs=nullptr);
+  // FIXME move to bioMultiscaleRVEAnalysis
   FiberRVEAnalysis * initFiberRVEAnalysisFromMultiscale(
       FiberNetwork * fn,
-      LinearStructs<las::MICRO_BACKEND> * vecs,
       micro_fo_header & hdr,
       micro_fo_params & prm,
-      micro_fo_init_data & ini,
-      micro_fo_solver & slvr,
-      micro_fo_int_solver & slvr_int);
+      std::unique_ptr<MicroSolutionStrategy> ss);
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
       int ndofs,
       double solver_tol,
       las::Sparsity * csr,
-      void * bfrs = NULL,
-      las::Sparsity * massSprs = NULL);
+      void * bfrs = nullptr,
+      las::Sparsity * massSprs = nullptr);
   void destroyFiberRVEAnalysisLinearStructs(
       LinearStructs<las::MICRO_BACKEND> * vecs);
-  /*
-   * perform a deep copy of the fiber rve analysis
-   */
-  // FiberRVEAnalysis * copyAnalysis(FiberRVEAnalysis * an);
 
-  class FiberRVEIterationSImplicit : public amsi::Iteration
-  {
-    protected:
-    FiberRVEAnalysisSImplicit * an;
-
-    public:
-    FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a);
-    void iterate();
-  };
   /**
    * Fix the boundary dofs and set the
    *  rows in the mat/vec corresponing

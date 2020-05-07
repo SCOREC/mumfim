@@ -54,8 +54,6 @@ namespace bio
     void computeDisplacementBC(const DeformationGradient & dfmGrd);
     void copyForceDataToForceVec();
     void copyDispDataToDispVec();
-    virtual void computeStiffnessMatrix() final;
-    void relaxSystem();
     ExplicitOutputWriter * writer; 
     std::vector<double> old_u;
     std::vector<double> old_rve_u;

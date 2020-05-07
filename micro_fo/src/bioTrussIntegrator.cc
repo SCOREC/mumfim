@@ -15,7 +15,6 @@ namespace bio
     es->zero();
     int tg = -1;
     msh->getIntTag(ent, rct_tg, &tg);
-    fr = frs[tg];
     dim = msh->getDimension();
     apf::MeshEntity * vs[2];
     msh->getDownward(ent, 0, &vs[0]);
@@ -31,7 +30,7 @@ namespace bio
   }
   void TrussIntegrator::atPoint(const apf::Vector3 &, double, double)
   {
-    auto f_dfdl = fr->forceReaction(lo, l);
+    auto f_dfdl = (*frs)[tg].forceReaction(lo, l);
     double f = f_dfdl.first;
     // the scalar version of the force derivative
     double dfdl = f_dfdl.second;
