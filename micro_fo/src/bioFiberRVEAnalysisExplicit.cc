@@ -24,23 +24,22 @@
 #endif
 namespace bio
 {
-  FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(FiberNetwork * fn,
-                             LinearStructs<las::MICRO_BACKEND> * vecs,
-                             const MicroSolutionStrategyExplicit & ss)
-        : FiberRVEAnalysis(fn, vecs, static_cast<MicroSolutionStrategy>(ss))
-        , serial_gpu_cutoff(ss.serial_gpu_cutoff)
-        , total_time(ss.total_time)
-        , load_time(ss.load_time)
-        , fiber_elastic_modulus(fn->getFiberReaction(0).E)
-        , fiber_area(fn->getFiberReaction(0).fiber_area)
-        , fiber_density(fn->getFiberReaction(0).fiber_density)
+  FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
+                             std::unique_ptr<MicroSolutionStrategy> ss)
+        : FiberRVEAnalysis(std::move(fn),std::move(ss))
+        , serial_gpu_cutoff(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->serial_gpu_cutoff)
+        , total_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->total_time)
+        , load_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->load_time)
+        , fiber_elastic_modulus(mFiberNetwork->getFiberReaction(0).E)
+        , fiber_area(mFiberNetwork->getFiberReaction(0).fiber_area)
+        , fiber_density(mFiberNetwork->getFiberReaction(0).fiber_density)
         , amp(NULL)
-        , visc_damp_coeff(ss.visc_damp_coeff)
-        , print_history_frequency(ss.print_history_frequency)
-        , print_field_frequency(ss.print_field_frequency)
-        , print_field_by_num_frames(ss.print_field_by_num_frames)
-        , crit_time_scale_factor(ss.crit_time_scale_factor)
-        , energy_check_eps(ss.energy_check_eps)
+        , visc_damp_coeff(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->visc_damp_coeff)
+        , print_history_frequency(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->print_history_frequency)
+        , print_field_frequency(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->print_field_frequency)
+        , print_field_by_num_frames(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->print_field_by_num_frames)
+        , crit_time_scale_factor(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->crit_time_scale_factor)
+        , energy_check_eps(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->energy_check_eps)
         , disp_bound_nfixed(0)
         , disp_bound_dof(NULL)
         , disp_bound_vals(NULL)
@@ -53,20 +52,20 @@ namespace bio
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
       std::string dir = amsi::fs ? amsi::fs->getResultsDir() : ".";
-      writer = new ExplicitOutputWriter(fn->getNetworkMesh(),
+      writer = new ExplicitOutputWriter(mFiberNetwork->getNetworkMesh(),
                  (dir + "/" + analysis_name).c_str(),
                  (analysis_name + ".pvd").c_str());
-      if(ss.ampType == AmplitudeType::SmoothStep)
+      if(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->ampType == AmplitudeType::SmoothStep)
       {
         amp = new SmoothAmp(total_time);
       }
-      else if(ss.ampType == AmplitudeType::SmoothStepHold)
+      else if(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->ampType == AmplitudeType::SmoothStepHold)
       {
         amp = new SmoothAmpHold(load_time,total_time);
       }
       else
       {
-        std::cerr<<"Incorrect Amplitude type selected ("<<static_cast<int>(ss.ampType)<<")"<<std::endl;
+        std::cerr<<"Incorrect Amplitude type selected ("<<static_cast<int>(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->ampType)<<")"<<std::endl;
         std::abort();
       }
       //amp = new SmoothAmpHold(1.0, total_time);

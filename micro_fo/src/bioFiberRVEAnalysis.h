@@ -56,14 +56,16 @@ namespace bio
   class FiberRVEAnalysis : public RVEAnalysis
   {
     protected:
-    FiberNetwork * fn;
+    std::unique_ptr<FiberNetwork> mFiberNetwork;
+    std::unique_ptr<MicroSolutionStrategy> mSolutionStrategy;
     RVE * rve;
     virtual void computeCauchyStress(double sigma[6]);
+    // FIXME make this into a unique_ptr
+    LinearStructs<las::MICRO_BACKEND> * vecs;
 
     public:
     std::vector<apf::MeshEntity *> bnd_nds[RVE::side::all + 1];
     apf::Integrator * es;
-    LinearStructs<las::MICRO_BACKEND> * vecs;
     double solver_eps;
     double prev_itr_factor;
     int max_cut_attempt;
@@ -71,14 +73,13 @@ namespace bio
     int max_itrs;
     amsi::DetectOscillationType detect_osc_type;
     FiberRVEAnalysis(const FiberRVEAnalysis & an);
-    FiberRVEAnalysis(FiberNetwork * fn,
-                     LinearStructs<las::MICRO_BACKEND> * vecs,
-                     const MicroSolutionStrategy & ss);
+    FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
+                     std::unique_ptr<MicroSolutionStrategy> ss);
     virtual ~FiberRVEAnalysis();
-    FiberNetwork * getFn() const { return fn; }
+    FiberNetwork * getFn() const { return mFiberNetwork.get(); }
     RVE * getRVE() const { return rve; }
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
-    virtual FiberRVEAnalysisType getAnalysisType() = 0;
+    virtual SolverType getAnalysisType() = 0;
 
     // FIXME move these functions related to linear vectors to Static class since they are not needed in
     // the explicit case
@@ -92,15 +93,14 @@ namespace bio
     las::Solve * getSlv() const { return vecs->slv; }
   };
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
-      FiberNetwork * fn,
-      const MicroSolutionStrategy & ss,
-      void* bfrs=nullptr);
+      std::unique_ptr<FiberNetwork> fiber_network,
+      std::unique_ptr<MicroSolutionStrategy> solution_strategy);
   // FIXME move to bioMultiscaleRVEAnalysis
-  FiberRVEAnalysis * initFiberRVEAnalysisFromMultiscale(
-      FiberNetwork * fn,
+  std::unique_ptr<FiberRVEAnalysis> initFiberRVEAnalysisFromMultiscale(
+      std::unique_ptr<FiberNetwork> fiber_network,
       micro_fo_header & hdr,
       micro_fo_params & prm,
-      std::unique_ptr<MicroSolutionStrategy> ss);
+      std::unique_ptr<MicroSolutionStrategy> solution_strategy);
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
       int ndofs,
       double solver_tol,

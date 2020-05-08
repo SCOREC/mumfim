@@ -9,6 +9,7 @@
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
+#include <bioFiberRVEAnalysisStaticImplicit.h>
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
@@ -22,46 +23,28 @@ int main(int argc, char * argv[])
     std::string file_name = cases[i].pd.meshFile;
     int rank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::cout<<"Reading network"<<std::endl;
-    std::stringstream prm_name_ss;
-    prm_name_ss << file_name << ".params";
-    bio::FiberNetworkReactions rctns;
-    apf::Mesh2 * fn_msh = bio::loadFromFile(file_name);
-    bio::loadParamsFromFile(fn_msh, prm_name_ss.str(),
-                            std::back_inserter(rctns.rctns));
-    apf::Field * u = apf::createLagrangeField(fn_msh, "u", apf::VECTOR, 1);
-    apf::Numbering * n = apf::createNumbering(u);
-    int ndofs = apf::NaiveOrder(n);
-    // do we need to zero field? if this assert fails we need to zero the field.
-    std::cout << "Problem has " << ndofs << " degrees of freedom" << std::endl;
-    assert(ndofs > 0);
-    std::cout<<"Constructing sparsity pattern"<<std::endl;
-    las::Sparsity * sprs = las::createCSR(n, ndofs);
-    int nnz = ((las::CSR*)sprs)->getNumNonzero();
-    std::cout<<"NNZ: "<<nnz<<std::endl;
-    // clean up the un-needed field and numbering
-    apf::destroyField(u);
-    apf::destroyNumbering(n);
-    std::cout<<"Constructing buffers"<<std::endl;
-    las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs, nnz);
-    std::cout<<"createing fiber network class"<<std::endl;
-    bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
-    fn->setFiberReactions(rctns.rctns);
-    std::cout<<"creating sparskit linear structures"<<std::endl;
-    bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-        bio::createLinearStructs(ndofs, cases[i].ss->slvrTolerance, sprs, bfrs);
-    std::cout<<"Zeroing sparkit data"<<std::endl;
-    // get the stiffness matrix
-    auto ops = las::getLASOps<las::sparskit>();
-    ops->zero(vecs->getK());
-    ops->zero(vecs->getU());
-    ops->zero(vecs->getF());
-    // apf::Mesh * fn = an.getFn()->getNetworkMesh();
-    std::cout<<"Constructing the elemental stiffness integrator"<<std::endl;
-    apf::Integrator * truss_es =
-        bio::createImplicitMicroElementalSystem(fn, vecs->getK(), vecs->getF());
-    std::cout<<"Computing the  global stiffness matrix"<<std::endl;
-    truss_es->process(fn_msh, 1);
+
+
+    bio::FiberNetworkLibrary network_library;
+    network_library.load(file_name,file_name+".params",0,0);
+    auto fiber_network = network_library.getOriginalNetwork(0,0);
+    auto solution_strategy = std::unique_ptr<bio::MicroSolutionStrategy>{};
+    // set the solution strategy to give me an implicit run so that I can get
+    // the stiffness matrix. All the other parameters don't matter...
+    solution_strategy->slvrType = bio::SolverType::Implicit;
+    // well this is a mess...
+    auto an = 
+      std::unique_ptr<bio::FiberRVEAnalysisSImplicit>{
+        dynamic_cast<bio::FiberRVEAnalysisSImplicit*>(
+      bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy)).get())
+      };
+    if(an == nullptr)
+    {
+      std::cerr<<"Something went wrong, the analysis doesn't exist!"<<std::endl;
+      std::abort();
+    }
+
+
     std::ofstream out("GlobalKMatrix.mtx");
     if (!out.is_open())
     {
@@ -70,7 +53,7 @@ int main(int argc, char * argv[])
     }
     // we write the matrix to output to apply output filtering
     std::cout << "Writing matrix" << std::endl;
-    las::printSparskitMat(out, vecs->getK(), las::PrintType::mmarket, true);
+    las::printSparskitMat(out, an->getK(), las::PrintType::mmarket, true);
     out.close();
 
     std::cout<<"Reading biotissue matrix"<<std::endl;
@@ -108,13 +91,6 @@ int main(int argc, char * argv[])
     las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
     mb->destroy(readMat);
     mb->destroy(readMat2);
-    delete vecs;
-    vecs = NULL;
-    delete bfrs;
-    bfrs = NULL;
-    las::destroySparsity<las::CSR *>(sprs);
-    delete fn;
-    delete truss_es;
   }
   las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
   delete mb;

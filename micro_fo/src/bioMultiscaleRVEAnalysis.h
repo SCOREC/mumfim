@@ -34,7 +34,7 @@ namespace bio
     std::vector<micro_fo_solver> slvr_prms;
     std::vector<micro_fo_int_solver> slvr_int_prms;
 
-    std::vector<RVEAnalysis *> ans;
+    std::vector<std::unique_ptr<RVEAnalysis>> ans;
     // FIXME remove this from here
     std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
     //  an vector that holds the names of the rve physical

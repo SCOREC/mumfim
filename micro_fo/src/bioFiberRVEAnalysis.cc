@@ -86,15 +86,15 @@ namespace bio
   FiberRVEAnalysis::FiberRVEAnalysis(const FiberRVEAnalysis & an)
     : RVEAnalysis(an)
   {
-    fn = new FiberNetwork(*an.fn);
+    mFiberNetwork = std::unique_ptr<FiberNetwork>(new FiberNetwork(*an.mFiberNetwork));
     rve = new RVE(*an.rve);
     // you must recompute the boundary nodes to get the correct mesh entities
-    auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(), 0);
-    decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
+    auto bgn = amsi::apfMeshIterator(mFiberNetwork->getNetworkMesh(), 0);
+    decltype(bgn) end = amsi::apfEndIterator(mFiberNetwork->getNetworkMesh());
     for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
     {
       getBoundaryVerts(this->rve,
-                       this->fn->getNetworkMesh(),
+                       this->mFiberNetwork->getNetworkMesh(),
                        bgn,
                        end,
                        static_cast<RVE::side>(sd),
@@ -112,37 +112,33 @@ namespace bio
     detect_osc_type = an.detect_osc_type;
   }
   // TODO determine rve size from input
-  FiberRVEAnalysis::FiberRVEAnalysis(FiberNetwork * fn,
-                                     LinearStructs<las::MICRO_BACKEND> * vecs,
-                                     const MicroSolutionStrategy & ss)
-      : fn(fn)
-      , rve(new RVE(0.5, fn->getDim()))
-      , vecs(vecs)
-      , solver_eps(ss.cnvgTolerance)
-      , prev_itr_factor(ss.oscPrms.prevNormFactor)
-      , max_cut_attempt(ss.oscPrms.maxMicroCutAttempts)
-      , attempt_cut_factor(ss.oscPrms.microAttemptCutFactor)
-      , max_itrs(ss.oscPrms.maxIterations)
-      , detect_osc_type(ss.oscPrms.oscType)
+  FiberRVEAnalysis::FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
+                                     std::unique_ptr<MicroSolutionStrategy> ss)
+      : mFiberNetwork(std::move(fn)), mSolutionStrategy(std::move(ss))
+      , rve(new RVE(0.5, mFiberNetwork->getDim()))
+      , solver_eps(mSolutionStrategy->cnvgTolerance)
+      , prev_itr_factor(mSolutionStrategy->oscPrms.prevNormFactor)
+      , max_cut_attempt(mSolutionStrategy->oscPrms.maxMicroCutAttempts)
+      , attempt_cut_factor(mSolutionStrategy->oscPrms.microAttemptCutFactor)
+      , max_itrs(mSolutionStrategy->oscPrms.maxIterations)
+      , detect_osc_type(mSolutionStrategy->oscPrms.oscType)
   {
-    auto bgn = amsi::apfMeshIterator(fn->getNetworkMesh(), 0);
-    decltype(bgn) end = amsi::apfEndIterator(fn->getNetworkMesh());
+    auto bgn = amsi::apfMeshIterator(mFiberNetwork->getNetworkMesh(), 0);
+    decltype(bgn) end = amsi::apfEndIterator(mFiberNetwork->getNetworkMesh());
     for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
     {
       getBoundaryVerts(this->rve,
-                       this->fn->getNetworkMesh(),
+                       this->mFiberNetwork->getNetworkMesh(),
                        bgn,
                        end,
                        static_cast<RVE::side>(sd),
                        std::back_inserter(this->bnd_nds[sd]));
     }
-    apf::Numbering * udofs = fn->getUNumbering();
+    apf::Numbering * udofs = mFiberNetwork->getUNumbering();
     apf::NaiveOrder(udofs);
   }
   FiberRVEAnalysis::~FiberRVEAnalysis()
   {
-    delete fn;
-    fn = NULL;
     delete rve;
     rve = NULL;
     delete es;
@@ -193,8 +189,7 @@ namespace bio
     apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
     amsi::mat2VoigtVec(dim, sym_strs, &sigma[0]);
   }
-  FiberRVEAnalysis * initFiberRVEAnalysisFromMultiscale(FiberNetwork * fn,
-                                        LinearStructs<las::MICRO_BACKEND> * vecs,
+  std::unique_ptr<FiberRVEAnalysis> initFiberRVEAnalysisFromMultiscale(std::unique_ptr<FiberNetwork> fiber_network,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         std::unique_ptr<MicroSolutionStrategy> ss)
@@ -202,10 +197,10 @@ namespace bio
     double pi = 4*atan(1);
     double fbr_area = pi*prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS];
     double fbr_vol_frc = prm.data[VOLUME_FRACTION];
-    double scale_factor = calcScaleConversion(fn, fbr_area, fbr_vol_frc);
-    //fn->setScaleConversion(scale_factor)
-    FiberRVEAnalysis * rve = createFiberRVEAnalysis(fn, vecs, std::move(ss));
-    return rve;
+    double scale_factor = calcScaleConversion(fiber_network->getNetworkMesh(), fbr_area, fbr_vol_frc);
+    fiber_network->setScaleConversion(scale_factor);
+    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss));
+    return analysis;
   }
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,double solver_tol,
                                       las::Sparsity * csr,

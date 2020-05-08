@@ -11,6 +11,7 @@
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
 #include "bioMicroFOConfig.h"
+#include "bioFiberNetworkLibrary.h"
 #ifdef ENABLE_KOKKOS
 #include <Kokkos_Core.hpp>
 #endif
@@ -50,44 +51,9 @@ int main(int argc, char * argv[])
   bio::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
   auto fiber_network = network_library.getOriginalNetwork(0,0);
+  // I'm not confident that the move thing here works as intended
+  auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
 
-/*
-  apf::Field * u = apf::createLagrangeField(fn_msh, "u", apf::VECTOR, 1);
-  apf::Numbering * n = apf::createNumbering(u);
-  int ndofs = apf::NaiveOrder(n);
-  // do we need to zero field? if this assert fails we need to zero the field.
-  std::cout << "Problem has " << ndofs << " degrees of freedom" << std::endl;
-  assert(ndofs > 0);
-  las::Sparsity * massSparsity = NULL;
-#if defined MICRO_USING_SPARSKIT
-  las::Sparsity * sprs = las::createCSR(n, ndofs);
-  massSparsity = las::createIdentityCSR(ndofs);
-#elif defined MICRO_USING_PETSC
-  las::Sparsity * sprs = las::createPetscSparsity(n, ndofs, MPI_COMM_SELF);
-#endif
-  // clean up the un-needed field and numbering
-  apf::destroyField(u);
-  apf::destroyNumbering(n);
-#if defined MICRO_USING_SPARSKIT
-  las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs);
-#elif defined MICRO_USING_PETSC
-  void * bfrs = NULL;
-#endif
-  bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
-  fn->setFiberReactions(rctns.rctns);
-  bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-      bio::createLinearStructs(ndofs, cases[0].ss->slvrTolerance, sprs, bfrs, massSparsity);
-  bio::FiberRVEAnalysis * an = NULL;
-  if(cases[0].ss->slvrType == bio::SolverType::Implicit) {
-    an = bio::createFiberRVEAnalysis(
-        fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::StaticImplicit);
-  }
-  else if (cases[0].ss->slvrType == bio::SolverType::Explicit) {
-    an = bio::createFiberRVEAnalysis(
-        fn, vecs, *cases[0].ss, bio::FiberRVEAnalysisType::Explicit);
-  }
-  */
-  auto an = bio::createFiberRVEAnalysis(fn.get(), *cases[0].ss);
   double stress[6];
   double C[36];
   apf::Matrix3x3 strss;
@@ -138,9 +104,6 @@ int main(int argc, char * argv[])
   std::stringstream sout;
   sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
-  las::destroySparsity<las::MICRO_BACKEND>(sprs);
-  delete an;
-  delete bfrs;
 #ifdef ENABLE_KOKKOS
   }
   Kokkos::finalize();

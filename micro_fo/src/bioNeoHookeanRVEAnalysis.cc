@@ -63,7 +63,7 @@ namespace bio
       for(int j=0; j<6; ++j)
         C[i*6+j]= D(i,j);
   }
-  NeoHookeanRVEAnalysis * initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm)
+  std::unique_ptr<NeoHookeanRVEAnalysis> initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm)
   {
     double youngs_modulus = prm.data[YOUNGS_MODULUS];
     double poisson_ratio = prm.data[NONLINEAR_PARAM];
@@ -72,6 +72,6 @@ namespace bio
       std::cerr<<"Poisson ratio must be less than 0.5"<<std::endl;
       MPI_Abort(AMSI_COMM_SCALE, 1);
     }
-    return new NeoHookeanRVEAnalysis(youngs_modulus, poisson_ratio);
+    return std::unique_ptr<NeoHookeanRVEAnalysis>{new NeoHookeanRVEAnalysis(youngs_modulus, poisson_ratio)};
   }
 }

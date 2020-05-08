@@ -17,14 +17,7 @@
 #include "bioFiberNetworkLibrary.h"
 namespace bio
 {
-  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis()
-  {
-    for (auto rve = ans.begin(); rve != ans.end(); ++rve)
-    {
-      delete *rve;
-      (*rve) = NULL;
-    }
-  }
+  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() { }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
       : eff()
       , wgt()
@@ -144,8 +137,8 @@ namespace bio
         micro_fo_header & hdr = hdrs[ii];
         micro_fo_params & prm = prms[ii];
         //micro_fo_init_data & dat = inis[ii];
-        //micro_fo_solver & slvr_prm = slvr_prms[ii];
-        //micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
+        micro_fo_solver & slvr_prm = slvr_prms[ii];
+        micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
         MicroscaleType micro_tp = static_cast<MicroscaleType>(hdr.data[RVE_TYPE]);
         if(micro_tp == MicroscaleType::FIBER_ONLY)
         {
@@ -156,19 +149,6 @@ namespace bio
           network_library.load(fiber_network_file,
                                fiber_network_file + ".params", tp, rnd);
           auto fn = network_library.getCopy(tp, rnd);
-
-          // FIXME the question is...who wons the sprs structure and the bfrs structure
-          //
-          // FIXME The sprs structure should be a member of the FiberNetworkBase
-          // (eventually moved to ImplicitFiberNetwork)
-          //
-          //FIXME The bfrs oject can be stored in the MultiscaleRVEAnalysis, but it should
-          // be lazily initialized by the implicit analysis
-          // so we have something like FiberRVEAnalysis(... bfrsptr& bfrs)
-          // the analysis will create a new buffer if bfrs is nullptr, and
-          // grow the existing bfrs if not
-          // this way the explicit analysis doesn't need to initialize these
-          // and the user can use them for other calculations if they like
 
 
           // FIXME this can directly get created in FiberRVEAnalysisSImplicit create
@@ -190,9 +170,10 @@ namespace bio
           // function which doesn't make much sense...why is the single scale function
           // deserializing multiscale data?!
           // *rve = initFiberRVEAnalysisFromMultiscale(fn, MicroSolutionStrategy)
-          *rve = initFiberRVEAnalysisFromMultiscale(
-              fn, vecs[ii], hdr, prm, dat, slvr_prm, slvr_int_prm);
+          auto solution_strategy = serializeSolutionStrategy(slvr_prm,slvr_int_prm);
           fn->setRVEType(ii);
+          *rve = std::move(initFiberRVEAnalysisFromMultiscale(
+              std::move(fn), hdr, prm, std::move(solution_strategy)));
           ++ii;
         }
         else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
@@ -236,7 +217,7 @@ namespace bio
       {
         micro_fo_header & hdr = hdrs[i];
         micro_fo_params & prm = prms[i];
-        recoverMultiscaleStepResults(*rve, hdr, prm, &step_results[i]);
+        recoverMultiscaleStepResults(rve->get(), hdr, prm, &step_results[i]);
         ++i;
       }
       PCU_Switch_Comm(AMSI_COMM_SCALE);
@@ -292,7 +273,7 @@ namespace bio
           //recoverMultiscaleResults(*rve, &results[ii]);
           (*rve)->computeAvgVolStress(avgVolStress);
           (*rve)->computeMaterialStiffness(matStiffMatrix);
-          FiberRVEAnalysis* FRveAns = dynamic_cast<FiberRVEAnalysis *>(*rve);
+          FiberRVEAnalysis* FRveAns = dynamic_cast<FiberRVEAnalysis *>(rve->get());
           if(FRveAns)
             convertStressQuantities(FRveAns, sigma, matStiffMatrix);
           ii++;
@@ -329,7 +310,7 @@ namespace bio
       {
         micro_fo_header & hdr = hdrs[i];
         micro_fo_params & prm = prms[i];
-        recoverMultiscaleStepResults(*rve, hdr, prm, &step_results[i]);
+        recoverMultiscaleStepResults(rve->get(), hdr, prm, &step_results[i]);
         ++i;
       }
       PCU_Switch_Comm(AMSI_COMM_SCALE);
@@ -365,27 +346,47 @@ namespace bio
   }
   std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(micro_fo_solver & slvr, micro_fo_int_solver & slvr_int)
   {
-    MicroSolutionStrategyExplicit ss;
-    ss.cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
-    ss.slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
-    ss.total_time = slvr.data[LOAD_TIME]+slvr.data[HOLD_TIME];
-    ss.load_time = slvr.data[LOAD_TIME];
-    ss.crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
-    ss.visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
-    ss.energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
-    ss.slvrType = static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
-    ss.ampType = static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
-
-    ss.print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
-    ss.print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
-    ss.print_field_by_num_frames = slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
-    ss.serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
-    ss.oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
-    ss.oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
-    ss.oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
-    ss.oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
-        slvr_int.data[DETECT_OSCILLATION_TYPE]);
-    ss.oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
+    auto solver_type = static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
+    auto solution_strategy = std::unique_ptr<MicroSolutionStrategy>{nullptr};
+    if(solver_type == SolverType::Explicit)
+    {
+      solution_strategy.reset(new MicroSolutionStrategyExplicit);
+      auto sse = static_cast<MicroSolutionStrategyExplicit*>(solution_strategy.get());
+      sse->total_time = slvr.data[LOAD_TIME]+slvr.data[HOLD_TIME];
+      sse->load_time = slvr.data[LOAD_TIME];
+      sse->crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
+      sse->visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
+      sse->energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
+      sse->ampType = static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
+      sse->print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
+      sse->print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
+      sse->print_field_by_num_frames = slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
+      sse->serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
+    }
+    else if (solver_type == SolverType::Implicit)
+    {
+      solution_strategy.reset(new MicroSolutionStrategy);
+    }
+    else
+    {
+      std::cerr<<"Attempting to use a type of solver which has not been implemented yet.\n";
+      std::cerr<<"This is most likely configuration error, but it could also happen if there";
+      std::cerr<<" is an MPI communication error"<<std::endl;
+      std::abort();
+    }
+    // set the combined solver parameters
+    if(solution_strategy != nullptr)
+    {
+      solution_strategy->cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
+      solution_strategy->slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
+      solution_strategy->oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
+      solution_strategy->oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
+      solution_strategy->oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
+      solution_strategy->oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
+          slvr_int.data[DETECT_OSCILLATION_TYPE]);
+      solution_strategy->oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
+    }
+    return solution_strategy;
   }
  
 }  // namespace bio

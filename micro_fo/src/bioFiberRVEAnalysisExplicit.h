@@ -11,18 +11,17 @@ namespace bio
   class FiberRVEAnalysisExplicit : public FiberRVEAnalysis
   {
     public:
-    FiberRVEAnalysisExplicit(FiberNetwork * fn,
-                             LinearStructs<las::MICRO_BACKEND> * vecs,
-                             const MicroSolutionStrategyExplicit & ss);
+    FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
+                             std::unique_ptr<MicroSolutionStrategy> ss);
     ~FiberRVEAnalysisExplicit()
     {
       delete writer;
       delete amp;
     }
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
-    virtual FiberRVEAnalysisType getAnalysisType()
+    virtual SolverType getAnalysisType()
     {
-      return FiberRVEAnalysisType::Explicit;
+      return SolverType::Explicit;
     }
     protected:
     // This parameters gives the number of fibers under which the serial

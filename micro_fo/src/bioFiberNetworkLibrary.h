@@ -7,7 +7,7 @@
 #include <utility>
 namespace bio
 {
-  class FiberNetworkBase;
+  class FiberNetwork;
   class FiberNetworkLibrary
   {
     public:
@@ -17,9 +17,9 @@ namespace bio
               std::istream & params_istream,
               size_t net_type,
               size_t net_id);
-    std::unique_ptr<FiberNetworkBase> getCopy(size_t net_type, size_t net_id);
+    std::unique_ptr<FiberNetwork> getCopy(size_t net_type, size_t net_id);
     // this extracts the original network from the library
-    std::unique_ptr<FiberNetworkBase> getOriginalNetwork(size_t net_type, size_t net_id);
+    std::unique_ptr<FiberNetwork> getOriginalNetwork(size_t net_type, size_t net_id);
     FiberNetworkLibrary();
     ~FiberNetworkLibrary();
     private:
@@ -32,7 +32,7 @@ namespace bio
     // terrible. transitioning to an unordered map requires writing a hash
     // function for the pair.
     using LibType = typename std::map<
-        std::pair<size_t, size_t>, std::unique_ptr<FiberNetworkBase>>;
+        std::pair<size_t, size_t>, std::unique_ptr<FiberNetwork>>;
     LibType mLibrary;
     int mNonZeroMax;
   };

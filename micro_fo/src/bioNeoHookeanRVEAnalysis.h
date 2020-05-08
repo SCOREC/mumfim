@@ -28,7 +28,7 @@ class NeoHookeanRVEAnalysis : public RVEAnalysis
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
     virtual void computeMaterialStiffness(double C[36]) final;
 };
-  NeoHookeanRVEAnalysis * initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm);
+  std::unique_ptr<NeoHookeanRVEAnalysis> initNeoHookeanRVEAnalysisFromMultiscale(micro_fo_params & prm);
 }
 
 #endif

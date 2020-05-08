@@ -1,7 +1,9 @@
 find_package(amsi COMPONENTS multiscale REQUIRED)
 
-add_mpi_test(csr test_csr.cc 1)
-target_link_libraries(csr micro_fo)
+# This test should be moved to las! not sure why bio specific stuff is used here
+# we don't actually check anything in this test anyways!
+#add_mpi_test(csr test_csr.cc 1)
+#target_link_libraries(csr micro_fo)
 
 add_mpi_test(rve test_rve.cc 1)
 target_link_libraries(rve micro_fo)

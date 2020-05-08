@@ -38,6 +38,7 @@ namespace bio
     FiberNetworkBase(const FiberNetworkBase & other);
     // FiberNetworkBase() : fn(nullptr) {};
     virtual int getDofCount() const {return 0;}
+    apf::Mesh * getNetworkMesh() const { return fn.get(); }
     virtual ~FiberNetworkBase();
     // TODO this should be made const, but it will take some refactor work
     // in the Truss integrator
@@ -131,7 +132,6 @@ namespace bio
      */
     virtual int getDofCount() const override { return ucnt; }
     FiberMember getFiberMember() const { return tp; }
-    apf::Mesh * getNetworkMesh() const { return fn.get(); }
     apf::Field * getUField() const { return u; }
     apf::Field * getdUField() const { return du; }
     apf::Field * getXpUField() const { return xpu; }

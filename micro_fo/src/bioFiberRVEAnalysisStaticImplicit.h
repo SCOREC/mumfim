@@ -11,14 +11,14 @@ namespace bio {
 
     public:
     // constructors
-    explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
-    FiberRVEAnalysisSImplicit(FiberNetwork * fn,
-                              LinearStructs<las::MICRO_BACKEND> * vecs,
-                              const MicroSolutionStrategy & ss);
+    //explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
+    FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
+                              std::unique_ptr<MicroSolutionStrategy> ss);
+    FiberRVEAnalysisSImplicit(FiberRVEAnalysisSImplicit && an) = default;
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
-    virtual FiberRVEAnalysisType getAnalysisType()
+    virtual SolverType getAnalysisType()
     {
-      return FiberRVEAnalysisType::StaticImplicit;
+      return SolverType::Implicit;
     }
     virtual void computeStiffnessMatrix()
     {

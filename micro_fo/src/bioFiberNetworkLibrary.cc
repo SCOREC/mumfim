@@ -12,6 +12,7 @@ namespace bio
   FiberNetworkLibrary::FiberNetworkLibrary() : mLibrary(LibType()), mNonZeroMax(0)
   {
   }
+  FiberNetworkLibrary::~FiberNetworkLibrary(){};
   void FiberNetworkLibrary::load(const std::string & network_name,
                                 const std::string & params_name,
                                 size_t net_type,
@@ -44,26 +45,26 @@ namespace bio
     if (libIt == std::end(mLibrary))
     {
       auto mesh = bio::make_unique(loadFromStream(network_stream));
-      FiberNetworkBase::reaction_ptr_type reactions(
+      FiberNetwork::reaction_ptr_type reactions(
           new FiberNetworkReactions(static_cast<apf::Mesh2*>(mesh.get()), params_stream));
-      auto network = std::unique_ptr<FiberNetworkBase>{new FiberNetworkBase(std::move(mesh),std::move(reactions))};
+      auto network = std::unique_ptr<FiberNetwork>{new FiberNetwork(std::move(mesh),std::move(reactions))};
       int nnz = network->getNumNonZero();
       mNonZeroMax = mNonZeroMax < nnz ? nnz : mNonZeroMax;
       mLibrary[network_key] = std::move(network);
     }
   }
-  std::unique_ptr<FiberNetworkBase> FiberNetworkLibrary::getCopy(size_t net_type, size_t net_id)
+  std::unique_ptr<FiberNetwork> FiberNetworkLibrary::getCopy(size_t net_type, size_t net_id)
   {
     auto libIt = mLibrary.find(std::make_pair(net_type, net_id));
     if (libIt != std::end(mLibrary))
     {
       auto fn = *((libIt->second).get());
-      return std::unique_ptr<FiberNetworkBase>{new FiberNetworkBase(fn)};
+      return std::unique_ptr<FiberNetwork>{new FiberNetwork(fn)};
     }
     // return a nullptr if the fiber network doesn't exist in the library
-    return std::unique_ptr<FiberNetworkBase>(nullptr);
+    return std::unique_ptr<FiberNetwork>(nullptr);
   }
-  std::unique_ptr<FiberNetworkBase> FiberNetworkLibrary::getOriginalNetwork(size_t net_type, size_t net_id)
+  std::unique_ptr<FiberNetwork> FiberNetworkLibrary::getOriginalNetwork(size_t net_type, size_t net_id)
   {
     auto libIt = mLibrary.find(std::make_pair(net_type, net_id));
     if (libIt != std::end(mLibrary))
@@ -75,6 +76,6 @@ namespace bio
       return network;
     }
     // return a nullptr if the fiber network doesn't exist in the library
-    return std::unique_ptr<FiberNetworkBase>(nullptr);
+    return std::unique_ptr<FiberNetwork>(nullptr);
   }
 }  // namespace bio

@@ -28,16 +28,15 @@ namespace bio
   {
     double operator()() { return 1.0; }
   };
-  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(
-      const FiberRVEAnalysisSImplicit & an)
-      : FiberRVEAnalysis(an)
-  {
-    es = createImplicitMicroElementalSystem(fn, getK(), getF());
-  }
-  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(FiberNetwork * fn,
-                              LinearStructs<las::MICRO_BACKEND> * vecs,
-                              const MicroSolutionStrategy & ss) : FiberRVEAnalysis(fn, vecs, ss) {
-    es = createImplicitMicroElementalSystem(fn, getK(), getF());
+  //FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(
+  //    const FiberRVEAnalysisSImplicit & an)
+  //    : FiberRVEAnalysis(an)
+  //{
+  //  es = createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF());
+  //}
+  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
+                              std::unique_ptr<MicroSolutionStrategy> ss) : FiberRVEAnalysis(std::move(fn), std::move(ss)) {
+    es = createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF());
   }
   FiberRVEIterationSImplicit::FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a)
       : amsi::Iteration(), an(a)
@@ -83,6 +82,11 @@ namespace bio
     bool solveSuccess = false;
     unsigned int microAttemptCount = 1;
     unsigned int attemptCutFactor;
+    std::cerr<<"This implementation has been temporarily diabled"<<std::endl;
+    // FIXME Updated copy and move constructors for the implicit case need to be implemented
+    // since I have started using unique pointers in the classes
+    std::abort();
+    /*
     do
     {
       // create a deep copy of the analysis
@@ -176,6 +180,7 @@ namespace bio
       return false;
     }
     return true;
+    */
   }
     void FiberRVEAnalysisSImplicit::computeCauchyStress(double sigma[6])
     {

@@ -22,7 +22,7 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
       : bio::TrussIntegrator(fn->getUNumbering(),
                              fn->getUField(),
                              fn->getXpUField(),
-                             &(fn->getFiberReactions()[0]),
+                             fn->getFiberReactions(),
                              k,
                              f,
                              1)
@@ -54,38 +54,14 @@ int main(int argc, char * argv[])
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  std::stringstream prm_name_ss;
-  prm_name_ss << file_name << ".params";
-  bio::FiberNetworkReactions rctns;
-  apf::Mesh2 * fn_msh = bio::loadFromFile(file_name);
-  bio::loadParamsFromFile(fn_msh, prm_name_ss.str(),
-                          std::back_inserter(rctns.rctns));
-  apf::Field * u = apf::createLagrangeField(fn_msh, "u", apf::VECTOR, 1);
-  apf::Numbering * n = apf::createNumbering(u);
-  int ndofs = apf::NaiveOrder(n);
-  // do we need to zero field? if this assert fails we need to zero the field.
-  std::cout << "Problem has " << ndofs << " degrees of freedom" << std::endl;
-  assert(ndofs > 0);
-  las::Sparsity * sprs = las::createCSR(n, ndofs);
-  // clean up the un-needed field and numbering
-  apf::destroyField(u);
-  apf::destroyNumbering(n);
-  las::SparskitBuffers * bfrs = new las::SparskitBuffers(ndofs);
-  bio::FiberNetwork * fn = new bio::FiberNetwork(fn_msh);
-  fn->setFiberReactions(rctns.rctns);
-  bio::LinearStructs<las::MICRO_BACKEND> * vecs =
-      bio::createLinearStructs(ndofs, cases[0].ss->slvrTolerance, sprs, bfrs);
-  // get the stiffness matrix
-  auto ops = las::getLASOps<las::sparskit>();
-  ops->zero(vecs->getK());
-  ops->zero(vecs->getU());
-  ops->zero(vecs->getF());
-  // apf::Mesh * fn = an.getFn()->getNetworkMesh();
-  // apf::Integrator * truss_es =
-  //    bio::createMicroElementalSystem(fn, vecs->getK(), vecs->getF());
+  bio::FiberNetworkLibrary network_library;
+  network_library.load(file_name,file_name+".params",0,0);
+  auto fiber_network = network_library.getOriginalNetwork(0,0);
+  // I'm not confident that the move thing here works as intended
+  auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
   apf::Integrator * truss_es =
-      new TrussIntegratorElemStiff(fn, vecs->getK(), vecs->getF());
-  // truss_es->process(fn_msh);
+      new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF());
+  auto fn_msh = an->getFn()->getNetworkMesh();
   apf::MeshEntity * me = NULL;
   apf::MeshIterator * itr = fn_msh->begin(1);
   int ii = 0;
@@ -97,10 +73,6 @@ int main(int argc, char * argv[])
     ++ii;
   }
   fn_msh->end(itr);
-  // las::printSparskitMat(std::cout, vecs->getK());
-  delete vecs;
-  delete bfrs;
-  las::destroySparsity<las::CSR *>(sprs);
   amsi::freeAnalysis();
   return 0;
 }
