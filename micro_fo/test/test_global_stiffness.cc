@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
     bio::FiberNetworkLibrary network_library;
     network_library.load(file_name,file_name+".params",0,0);
     auto fiber_network = network_library.getOriginalNetwork(0,0);
-    auto solution_strategy = std::unique_ptr<bio::MicroSolutionStrategy>{};
+    auto solution_strategy = std::unique_ptr<bio::MicroSolutionStrategy>{new bio::MicroSolutionStrategy};
     // set the solution strategy to give me an implicit run so that I can get
     // the stiffness matrix. All the other parameters don't matter...
     solution_strategy->slvrType = bio::SolverType::Implicit;
@@ -38,9 +38,15 @@ int main(int argc, char * argv[])
         dynamic_cast<bio::FiberRVEAnalysisSImplicit*>(
       bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy)).get())
       };
+    an->computeStiffnessMatrix();
     if(an == nullptr)
     {
       std::cerr<<"Something went wrong, the analysis doesn't exist!"<<std::endl;
+      std::abort();
+    }
+    if( an->getK() == nullptr)
+    {
+      std::cerr<<"Something went wrong! The stiffness matrix doesn't exist!"<<std::endl;
       std::abort();
     }
 

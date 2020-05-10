@@ -25,8 +25,9 @@
 namespace bio
 {
   FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
-                             std::unique_ptr<MicroSolutionStrategy> ss)
-        : FiberRVEAnalysis(std::move(fn),std::move(ss))
+                             std::unique_ptr<MicroSolutionStrategy> ss,
+                             las::SparskitBuffers * sparskit_workspace)
+        : FiberRVEAnalysis(std::move(fn),std::move(ss), sparskit_workspace)
         , serial_gpu_cutoff(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->serial_gpu_cutoff)
         , total_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->total_time)
         , load_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->load_time)

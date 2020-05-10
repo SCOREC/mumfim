@@ -9,7 +9,7 @@
 #include "bioFiberNetworkIO.h"
 namespace bio
 {
-  FiberNetworkLibrary::FiberNetworkLibrary() : mLibrary(LibType()), mNonZeroMax(0)
+  FiberNetworkLibrary::FiberNetworkLibrary() : mLibrary(LibType())
   {
   }
   FiberNetworkLibrary::~FiberNetworkLibrary(){};
@@ -48,8 +48,6 @@ namespace bio
       FiberNetwork::reaction_ptr_type reactions(
           new FiberNetworkReactions(static_cast<apf::Mesh2*>(mesh.get()), params_stream));
       auto network = std::unique_ptr<FiberNetwork>{new FiberNetwork(std::move(mesh),std::move(reactions))};
-      int nnz = network->getNumNonZero();
-      mNonZeroMax = mNonZeroMax < nnz ? nnz : mNonZeroMax;
       mLibrary[network_key] = std::move(network);
     }
   }

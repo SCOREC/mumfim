@@ -13,7 +13,8 @@ namespace bio {
     // constructors
     //explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
     FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
-                              std::unique_ptr<MicroSolutionStrategy> ss);
+                              std::unique_ptr<MicroSolutionStrategy> ss,
+                              las::SparskitBuffers* sparksit_workspace);
     FiberRVEAnalysisSImplicit(FiberRVEAnalysisSImplicit && an) = default;
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
     virtual SolverType getAnalysisType()
@@ -23,6 +24,11 @@ namespace bio {
     virtual void computeStiffnessMatrix()
     {
       auto ops = las::getLASOps<las::MICRO_BACKEND>();
+      if(getK() == nullptr || getF() == nullptr)
+      {
+        std::cerr<<"ERROR! The stiffness matrix, and force vector should not be null!"<<std::endl;
+        std::abort();
+      }
       ops->zero(getK());
       ops->zero(getF());
       es->process(getFn()->getNetworkMesh(), 1);

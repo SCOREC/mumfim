@@ -6,14 +6,20 @@
 namespace bio {
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fn,
-      std::unique_ptr<MicroSolutionStrategy> ss) {
+      std::unique_ptr<MicroSolutionStrategy> ss,
+      las::SparskitBuffers * sparskit_workspace) {
 
     auto analysis = std::unique_ptr<FiberRVEAnalysis>{nullptr};
-    if (ss->slvrType == SolverType::Implicit) {
-       analysis.reset(new FiberRVEAnalysisSImplicit(std::move(fn), std::move(ss)));
+    if(fn == nullptr || ss == nullptr)
+    {
+      std::cerr<<"You must pass in a valid fiber network and solution strategy poiter!"<<std::endl;
+      std::abort();
+    }
+    else if (ss->slvrType == SolverType::Explicit) {
+       analysis.reset(new FiberRVEAnalysisExplicit(std::move(fn), std::move(ss), sparskit_workspace));
     }
     else if (ss->slvrType == SolverType::Implicit) {
-      analysis.reset(new FiberRVEAnalysisExplicit(std::move(fn), std::move(ss)));
+      analysis.reset(new FiberRVEAnalysisSImplicit(std::move(fn), std::move(ss), sparskit_workspace));
     }
     else {
       std::cerr<<"Incorrect Analysis type chosen!"<<std::endl;

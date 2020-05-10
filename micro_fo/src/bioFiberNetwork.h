@@ -29,45 +29,45 @@ namespace bio
     private:
     std::vector<FiberReaction *> mReactionsList;
   };
+  // The fiber network base is an initial attempt to pull out the
+  // fundamental data that the fiber network will have. The FiberNetwork class
+  // should be split into FibetNetworkExplicit and FiberNetworkImplicit
   class FiberNetworkBase
   {
     public:
     using mesh_ptr_type = bio::mesh_unique_ptr_type;
     using reaction_ptr_type = std::shared_ptr<FiberNetworkReactions>;
-    FiberNetworkBase(mesh_ptr_type mesh, reaction_ptr_type reactions);
-    FiberNetworkBase(const FiberNetworkBase & other);
-    // FiberNetworkBase() : fn(nullptr) {};
-    virtual int getDofCount() const {return 0;}
-    apf::Mesh * getNetworkMesh() const { return fn.get(); }
-    virtual ~FiberNetworkBase();
-    // TODO this should be made const, but it will take some refactor work
-    // in the Truss integrator
-    const FiberReaction & getFiberReaction(size_t idx) { return (*rctns)[idx]; }
-    reaction_ptr_type getFiberReactions() { return rctns; }
-    int getNumNonZero();
-    /*
-     * returns the type of rve (e.g. filename as an integer)
-     * the mapping between this integer and the filename can
-     * be found in the rve_tp log
-     */
-    int getRVEType() const { return rve_type; }
-    void setRVEType(int rve_t) { rve_type = rve_t; }
-    protected:
     // FIXME we can't have a shared pointer of an incomplete type in the implementation
     // this shows part of the limitation of using the las interface
+    // FIXME ... sparsity is conceptually part of the analysis, not the fiber network
 #if defined MICRO_USING_SPARSKIT
     using sparsity_type = std::shared_ptr<las::CSR>;
 #else
     using sparsity_type = std::shared_ptr<las::Sparsity>;
 #endif
-    // FIXME rename to mMesh
-    mesh_ptr_type fn;
-    // FIXME rename to mReactions
-    reaction_ptr_type rctns;
+    FiberNetworkBase(mesh_ptr_type mesh, reaction_ptr_type reactions);
+    FiberNetworkBase(const FiberNetworkBase & other);
+    // FiberNetworkBase() : fn(nullptr) {};
+    virtual int getDofCount() const {return 0;}
+    apf::Mesh * getNetworkMesh() const { return mMesh.get(); }
+    virtual ~FiberNetworkBase();
+    // TODO this should be made const, but it will take some refactor work
+    // in the Truss integrator
+    const FiberReaction & getFiberReaction(size_t idx) { return (*mReactions)[idx]; }
+    reaction_ptr_type getFiberReactions() { return mReactions; }
+    /*
+     * returns the type of rve (e.g. filename as an integer)
+     * the mapping between this integer and the filename can
+     * be found in the rve_tp log
+     */
+    int getRVEType() const { return mRVEType; }
+    void setRVEType(int rve_t) { mRVEType = rve_t; }
+    protected:
+    mesh_ptr_type mMesh;
+    reaction_ptr_type mReactions;
     // each fiber network of the same type shares the
     // same sparsity pattern
-    sparsity_type sparsity;
-    int rve_type;
+    int mRVEType;
   };
   /**
    * Responsible for managing the internal state of a single fiber-network
@@ -125,7 +125,7 @@ namespace bio
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)
      */
-    int getDim() const { return fn->getDimension(); }
+    int getDim() const { return mMesh->getDimension(); }
     /**
      * @return the number of degrees of freedom in the fiber
      * network

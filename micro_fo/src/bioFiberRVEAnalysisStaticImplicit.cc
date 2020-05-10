@@ -1,5 +1,6 @@
 #include "bioFiberRVEAnalysisStaticImplicit.h"
 #include "bioVerbosity.h"
+#include <memory>
 namespace bio
 {
   struct val_gen
@@ -35,8 +36,11 @@ namespace bio
   //  es = createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF());
   //}
   FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
-                              std::unique_ptr<MicroSolutionStrategy> ss) : FiberRVEAnalysis(std::move(fn), std::move(ss)) {
-    es = createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF());
+                              std::unique_ptr<MicroSolutionStrategy> ss,
+                              las::SparskitBuffers * sparskit_workspace) :
+                              FiberRVEAnalysis(std::move(fn), std::move(ss), sparskit_workspace)
+  {
+    es = std::unique_ptr<apf::Integrator>{createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF())};
   }
   FiberRVEIterationSImplicit::FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a)
       : amsi::Iteration(), an(a)

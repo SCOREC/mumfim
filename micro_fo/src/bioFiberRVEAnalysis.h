@@ -37,7 +37,7 @@ namespace bio
                   las::Sparsity * csr,
                   void * bfrs = nullptr,
                   las::Sparsity * massCsr = nullptr);
-    las::Mat * getK() const { return k; }
+    las::Mat * getK() const {if (k == nullptr){std::cerr<<"K BROKE LS"<<std::endl; std::abort();} return k; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
     // swaps the vector pointers if zero is true the v2 vector
@@ -58,14 +58,12 @@ namespace bio
     protected:
     std::unique_ptr<FiberNetwork> mFiberNetwork;
     std::unique_ptr<MicroSolutionStrategy> mSolutionStrategy;
-    RVE * rve;
+    std::unique_ptr<RVE> rve;
     virtual void computeCauchyStress(double sigma[6]);
-    // FIXME make this into a unique_ptr
-    LinearStructs<las::MICRO_BACKEND> * vecs;
 
     public:
     std::vector<apf::MeshEntity *> bnd_nds[RVE::side::all + 1];
-    apf::Integrator * es;
+    std::unique_ptr<apf::Integrator> es;
     double solver_eps;
     double prev_itr_factor;
     int max_cut_attempt;
@@ -74,17 +72,18 @@ namespace bio
     amsi::DetectOscillationType detect_osc_type;
     FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
-                     std::unique_ptr<MicroSolutionStrategy> ss);
+                     std::unique_ptr<MicroSolutionStrategy> ss,
+                     las::SparskitBuffers * sparskit_workspace);
     virtual ~FiberRVEAnalysis();
     FiberNetwork * getFn() const { return mFiberNetwork.get(); }
-    RVE * getRVE() const { return rve; }
+    RVE * getRVE() const { return rve.get(); }
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
     virtual SolverType getAnalysisType() = 0;
 
-    // FIXME move these functions related to linear vectors to Static class since they are not needed in
-    // the explicit case
+    std::shared_ptr<LinearStructs<las::MICRO_BACKEND>> vecs;
+    //LinearStructs<las::MICRO_BACKEND> * vecs;
     // get the global stiffness matrix
-    las::Mat * getK() const { return vecs->k; }
+    las::Mat * getK() const { return vecs->getK(); }
     // get the global displacement vector
     las::Vec * getU() const { return vecs->u; }
     // get the global force vector
@@ -94,22 +93,21 @@ namespace bio
   };
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fiber_network,
-      std::unique_ptr<MicroSolutionStrategy> solution_strategy);
+      std::unique_ptr<MicroSolutionStrategy> solution_strategy,
+      las::SparskitBuffers * sparskitWorkspace = nullptr);
   // FIXME move to bioMultiscaleRVEAnalysis
-  std::unique_ptr<FiberRVEAnalysis> initFiberRVEAnalysisFromMultiscale(
+  std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysisFromMultiscale(
       std::unique_ptr<FiberNetwork> fiber_network,
       micro_fo_header & hdr,
       micro_fo_params & prm,
-      std::unique_ptr<MicroSolutionStrategy> solution_strategy);
+      std::unique_ptr<MicroSolutionStrategy> solution_strategy,
+      las::SparskitBuffers * sparskit_workspace = nullptr);
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
       int ndofs,
       double solver_tol,
       las::Sparsity * csr,
       void * bfrs = nullptr,
       las::Sparsity * massSprs = nullptr);
-  void destroyFiberRVEAnalysisLinearStructs(
-      LinearStructs<las::MICRO_BACKEND> * vecs);
-
   /**
    * Fix the boundary dofs and set the
    *  rows in the mat/vec corresponing

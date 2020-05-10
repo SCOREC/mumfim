@@ -35,8 +35,11 @@ namespace bio
     std::vector<micro_fo_int_solver> slvr_int_prms;
 
     std::vector<std::unique_ptr<RVEAnalysis>> ans;
-    // FIXME remove this from here
-    std::vector<LinearStructs<las::MICRO_BACKEND> *> vecs;
+    // FIXME (las) optimally, las should have a general idea of what a
+    // workspace is, and I shouldn't need to use something specific
+    // here. Note that for the implicit solve these buffers are shared
+    // by all analysis. (possibly this should be moved to implicit batched solver?)
+    std::unique_ptr<las::SparskitBuffers> mSparskitWorkspace;
     //  an vector that holds the names of the rve physical
     //  types. Here a type would refer to a set of networks
     //  with the same set of statistical properties i.e. density
@@ -45,12 +48,12 @@ namespace bio
    
     int macro_iter;
     int macro_step;
+    
     // funcs
     void initLogging();
     void initCoupling();
     void initAnalysis();
     void updateCoupling();
-
 
     public:
     MultiscaleRVEAnalysis();

@@ -14,6 +14,9 @@
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleMicroFOParams.h"
 #include <apfMatrixUtil.h>
+#include <lasCSR.h>
+#include <lasCSRCore.h>
+#include <lasSparskitExterns.h>
 namespace bio
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
@@ -37,9 +40,10 @@ namespace bio
                                void * bfrs,
                                las::Sparsity * massCsr)
   {
-    if(massCsr == NULL)
+    if(massCsr ==nullptr)
       massCsr = csr;
     las::SparskitBuffers * b = static_cast<las::SparskitBuffers *>(bfrs);
+    //if bfrs == n
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
     this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
@@ -48,6 +52,7 @@ namespace bio
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
     if (b == NULL) b = new las::SparskitBuffers(ndofs);
+    b->resizeMatrixBuffer(ndofs * 100);
     this->slv = las::createSparskitLUSolve(b, 1e-6);
   }
   template <>
@@ -87,13 +92,13 @@ namespace bio
     : RVEAnalysis(an)
   {
     mFiberNetwork = std::unique_ptr<FiberNetwork>(new FiberNetwork(*an.mFiberNetwork));
-    rve = new RVE(*an.rve);
+    rve = std::unique_ptr<RVE>(new RVE(*an.rve));
     // you must recompute the boundary nodes to get the correct mesh entities
     auto bgn = amsi::apfMeshIterator(mFiberNetwork->getNetworkMesh(), 0);
     decltype(bgn) end = amsi::apfEndIterator(mFiberNetwork->getNetworkMesh());
     for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
     {
-      getBoundaryVerts(this->rve,
+      getBoundaryVerts(this->rve.get(),
                        this->mFiberNetwork->getNetworkMesh(),
                        bgn,
                        end,
@@ -113,7 +118,8 @@ namespace bio
   }
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
-                                     std::unique_ptr<MicroSolutionStrategy> ss)
+                                     std::unique_ptr<MicroSolutionStrategy> ss,
+                                     las::SparskitBuffers * sparskit_workspace)
       : mFiberNetwork(std::move(fn)), mSolutionStrategy(std::move(ss))
       , rve(new RVE(0.5, mFiberNetwork->getDim()))
       , solver_eps(mSolutionStrategy->cnvgTolerance)
@@ -127,28 +133,27 @@ namespace bio
     decltype(bgn) end = amsi::apfEndIterator(mFiberNetwork->getNetworkMesh());
     for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
     {
-      getBoundaryVerts(this->rve,
+      getBoundaryVerts(this->rve.get(),
                        this->mFiberNetwork->getNetworkMesh(),
                        bgn,
                        end,
                        static_cast<RVE::side>(sd),
                        std::back_inserter(this->bnd_nds[sd]));
     }
-    apf::Numbering * udofs = mFiberNetwork->getUNumbering();
-    apf::NaiveOrder(udofs);
+    // TODO...We are using a backend specific interface to sparskit here, but
+    auto num_dofs = mFiberNetwork->getDofCount();
+    las::Sparsity * sparsity = nullptr;
+#ifdef MICRO_USING_SPARSKIT 
+    sparsity = las::createCSR(mFiberNetwork->getUNumbering(), num_dofs);
+#endif
+    vecs = std::shared_ptr<LinearStructs<las::MICRO_BACKEND>>{createLinearStructs(num_dofs,solver_eps, sparsity, sparskit_workspace)};
   }
   FiberRVEAnalysis::~FiberRVEAnalysis()
   {
-    delete rve;
-    rve = NULL;
-    delete es;
-    es = NULL;
-    // don't delete vecs because they are manage externally
-    vecs = NULL;
-    for (int i = 0; i < RVE::side::all + 1; ++i)
-    {
-      bnd_nds[i].clear();
-    }
+    //for (int i = 0; i < RVE::side::all + 1; ++i)
+    //{
+    //  bnd_nds[i].clear();
+    //}
   }
   // TODO This can be turned into a kokkos kernel
   void FiberRVEAnalysis::computeCauchyStress(double sigma[6])
@@ -189,17 +194,18 @@ namespace bio
     apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
     amsi::mat2VoigtVec(dim, sym_strs, &sigma[0]);
   }
-  std::unique_ptr<FiberRVEAnalysis> initFiberRVEAnalysisFromMultiscale(std::unique_ptr<FiberNetwork> fiber_network,
+  std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysisFromMultiscale(std::unique_ptr<FiberNetwork> fiber_network,
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
-                                        std::unique_ptr<MicroSolutionStrategy> ss)
+                                        std::unique_ptr<MicroSolutionStrategy> ss,
+                                        las::SparskitBuffers * sparskit_workspace)
   {
     double pi = 4*atan(1);
     double fbr_area = pi*prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS];
     double fbr_vol_frc = prm.data[VOLUME_FRACTION];
     double scale_factor = calcScaleConversion(fiber_network->getNetworkMesh(), fbr_area, fbr_vol_frc);
     fiber_network->setScaleConversion(scale_factor);
-    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss));
+    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss), sparskit_workspace);
     return analysis;
   }
   LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,double solver_tol,
@@ -209,12 +215,6 @@ namespace bio
   {
     return new LinearStructs<las::MICRO_BACKEND>(ndofs, solver_tol, csr, bfrs, massCsr);
   }
-  void destroyLinearStructs(LinearStructs<las::MICRO_BACKEND> * vecs)
-  {
-    delete vecs;
-    vecs = NULL;
-  }
-
   // since we no longer compute the corner derivatives we need to thing about how
   // to do first order continuation...
   void applyGuessSolution(FiberRVEAnalysis * ans, const DeformationGradient & dfmGrd)

@@ -11,10 +11,6 @@
 #include <cstdlib>
 #include <memory>
 #include "bioFiberNetworkIO.h"
-// FIXME...fix this filenaming in petsc!
-#include <lasCSRCore.h>
-#include <lasCorePETSc.h>
-#include <lasCSR.h>
 
 namespace bio
 {
@@ -41,9 +37,9 @@ namespace bio
   //}
   FiberNetworkBase::FiberNetworkBase(mesh_ptr_type mesh,
                                      reaction_ptr_type reactions)
-      : fn(std::move(mesh)), rctns(std::move(reactions)), rve_type(0)
+      : mMesh(std::move(mesh)), mReactions(std::move(reactions)), mRVEType(0)
   {
-    if (mesh == nullptr || reactions == nullptr)
+    if (mMesh == nullptr || mReactions == nullptr)
     {
       std::cerr << "Attempting to create a fiber network with a null mesh, or "
                    "no reactions!";
@@ -52,44 +48,14 @@ namespace bio
     }
     else
     {
-      auto temp_field = apf::createLagrangeField(mesh.get(), "temp", apf::VECTOR, 1);
-      auto temp_numbering = apf::createNumbering(temp_field);
-      auto num_dofs = apf::NaiveOrder(temp_numbering);
-      // FIXME this sparsity stuff should have a unified interface,
-      // the las should deal with the different backends
-#if defined MICRO_USING_SPARSKIT
-      sparsity = sparsity_type{
-        reinterpret_cast<las::CSR*>(
-        las::createCSR(temp_numbering, num_dofs))};
-#elif defined MICRO_USING_PETSC
-      sparsity = sparsity_type(las::createPetscSparsity(temp_numbering, num_dofs, PCU_Get_Comm()));
-#endif
-      apf::destroyField(temp_field);
-      apf::destroyNumbering(temp_numbering);
     }
   }
   FiberNetworkBase::FiberNetworkBase(const FiberNetworkBase & other) : 
-    fn(bio::make_unique(apf::createMdsMesh(gmi_load(".null") , other.fn.get()))),
-    rctns(other.rctns), sparsity(other.sparsity), rve_type(other.rve_type) 
+    mMesh(bio::make_unique(apf::createMdsMesh(gmi_load(".null") , other.mMesh.get()))),
+    mReactions(other.mReactions), mRVEType(other.mRVEType) 
   {
   }
   FiberNetworkBase::~FiberNetworkBase() { };
-  int FiberNetworkBase::getNumNonZero() {
-    // if the sparsity doesn't exist, then there can be
-    // no nonzeros in the system
-    if(sparsity == nullptr)
-    {
-      return 0;
-    }
-
-    // FIXME this is pretty hacky, but the nnz is only used set the buffer size
-    // and we really have never touched the petsc backed (and it isn't really tested)
-#if defined MICRO_USING_SPARSKIT
-    return reinterpret_cast<las::CSR*>(sparsity.get())->getNumNonzero();
-#elif defined MICRO_USING_PETSC
-    return 0;
-#endif
-  }
   FiberNetwork::FiberNetwork(mesh_ptr_type mesh, reaction_ptr_type reactions)
       : FiberNetworkBase(std::move(mesh), std::move(reactions))
       , u(nullptr)
@@ -101,13 +67,13 @@ namespace bio
       , tp(FiberMember::truss)
       , scale_factor(1)
   {
-    u  = apf::createLagrangeField(fn.get(),"u",apf::VECTOR,1);
-    du = apf::createLagrangeField(fn.get(),"du",apf::VECTOR,1);
-    v  = apf::createLagrangeField(fn.get(),"v",apf::VECTOR,1);
-    a  = apf::createLagrangeField(fn.get(),"a",apf::VECTOR,1);
-    f  = apf::createLagrangeField(fn.get(),"f",apf::VECTOR,1);
-    xpufnc = new amsi::XpYFunc(fn.get()->getCoordinateField(),u);
-    xpu = apf::createUserField(fn.get(),"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
+    u  = apf::createLagrangeField(mMesh.get(),"u",apf::VECTOR,1);
+    du = apf::createLagrangeField(mMesh.get(),"du",apf::VECTOR,1);
+    v  = apf::createLagrangeField(mMesh.get(),"v",apf::VECTOR,1);
+    a  = apf::createLagrangeField(mMesh.get(),"a",apf::VECTOR,1);
+    f  = apf::createLagrangeField(mMesh.get(),"f",apf::VECTOR,1);
+    xpufnc = new amsi::XpYFunc(mMesh.get()->getCoordinateField(),u);
+    xpu = apf::createUserField(mMesh.get(),"xpu",apf::VECTOR,apf::getShape(u),xpufnc);
     apf::zeroField(du);
     apf::zeroField(u);
     // FIXME...we have to zero the field here or we run into problems copying an
@@ -133,18 +99,18 @@ namespace bio
   }
   FiberNetwork::FiberNetwork(const FiberNetwork& net) : FiberNetworkBase(net)
   {
-    assert(net.fn);
-    u = fn->findField(apf::getName(net.u));
-    du = fn->findField(apf::getName(net.du));
-    a = fn->findField(apf::getName(net.a));
-    v = fn->findField(apf::getName(net.v));
-    f = fn->findField(apf::getName(net.f));
-    xpu = fn->findField(apf::getName(net.xpu));
-    xpufnc = new amsi::XpYFunc(fn->getCoordinateField(), u);
+    assert(net.mMesh);
+    u = mMesh->findField(apf::getName(net.u));
+    du = mMesh->findField(apf::getName(net.du));
+    a = mMesh->findField(apf::getName(net.a));
+    v = mMesh->findField(apf::getName(net.v));
+    f = mMesh->findField(apf::getName(net.f));
+    xpu = mMesh->findField(apf::getName(net.xpu));
+    xpufnc = new amsi::XpYFunc(mMesh->getCoordinateField(), u);
     apf::updateUserField(xpu, xpufnc);
     // not a clean way to do this...we can either assume that the naming scheme
     // of the numbering won't change, or that we always have the first numbering
-    udof = fn->findNumbering(apf::getName(net.udof));
+    udof = mMesh->findNumbering(apf::getName(net.udof));
     assert(udof);
     assert(apf::getField(udof));
     tp = net.tp;

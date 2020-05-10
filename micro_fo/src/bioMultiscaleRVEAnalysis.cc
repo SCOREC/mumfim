@@ -32,6 +32,7 @@ namespace bio
       , prms()
       , slvr_prms()
       , slvr_int_prms()
+      , mSparskitWorkspace(new las::SparskitBuffers(0))
       , rve_tp_dirs()
       , network_library()
       , macro_iter(0)
@@ -149,31 +150,10 @@ namespace bio
           network_library.load(fiber_network_file,
                                fiber_network_file + ".params", tp, rnd);
           auto fn = network_library.getCopy(tp, rnd);
-
-
-          // FIXME this can directly get created in FiberRVEAnalysisSImplicit create
-          // linear structs seems to require information about the sparsity
-          // patterns, and the solver information.
-          // We modify this so that we pass the buffers as a pointer &, lifetime
-          // of bfrs is managed by the multiscale analysis (since the microscale
-          // analysis always has a shorter lifetime than the multiscale
-          // analysis. Intitially we pass a nullptr initially, and let the
-          // RVEAnalysis manage creation and resizing. Note this method won't be
-          // thread safe...(but neither is the current method)
-          //vecs.push_back(createLinearStructs(dofs_cnt[tp][rnd],
-          //                                  slvr_prm.data[MICRO_SOLVER_TOL],
-          //                                   sprs[tp][rnd], bfrs));
-          // FIXME ideally, we have here the following simplified call...
-          // here it is obvious that we have decided to deserialize the
-          // data before initializing things..
-          // note that currently we just deserialize things in the createFiberRVEAnalysis
-          // function which doesn't make much sense...why is the single scale function
-          // deserializing multiscale data?!
-          // *rve = initFiberRVEAnalysisFromMultiscale(fn, MicroSolutionStrategy)
           auto solution_strategy = serializeSolutionStrategy(slvr_prm,slvr_int_prm);
           fn->setRVEType(ii);
-          *rve = std::move(initFiberRVEAnalysisFromMultiscale(
-              std::move(fn), hdr, prm, std::move(solution_strategy)));
+          *rve = createFiberRVEAnalysisFromMultiscale(
+              std::move(fn), hdr, prm, std::move(solution_strategy), mSparskitWorkspace.get());
           ++ii;
         }
         else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)

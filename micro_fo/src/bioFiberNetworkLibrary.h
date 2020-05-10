@@ -34,7 +34,6 @@ namespace bio
     using LibType = typename std::map<
         std::pair<size_t, size_t>, std::unique_ptr<FiberNetwork>>;
     LibType mLibrary;
-    int mNonZeroMax;
   };
 }  // namespace bio
 #endif
