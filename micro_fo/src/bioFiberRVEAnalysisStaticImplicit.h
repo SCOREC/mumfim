@@ -8,20 +8,22 @@ namespace bio {
   {
     protected:
     virtual void computeCauchyStress(double sigma[6]) final;
+    std::unique_ptr<apf::Integrator> es;
 
     public:
     // constructors
-    //explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
+    explicit FiberRVEAnalysisSImplicit(const FiberRVEAnalysisSImplicit & an);
     FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
                               std::unique_ptr<MicroSolutionStrategy> ss,
-                              las::SparskitBuffers* sparksit_workspace);
-    FiberRVEAnalysisSImplicit(FiberRVEAnalysisSImplicit && an) = default;
+                              std::shared_ptr<void> workspace);
+    FiberRVEAnalysisSImplicit& operator=(FiberRVEAnalysisSImplicit && other);
+    //FiberRVEAnalysisSImplicit(FiberRVEAnalysisSImplicit && an) = default;
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) final;
     virtual SolverType getAnalysisType()
     {
       return SolverType::Implicit;
     }
-    virtual void computeStiffnessMatrix()
+    void computeStiffnessMatrix()
     {
       auto ops = las::getLASOps<las::MICRO_BACKEND>();
       if(getK() == nullptr || getF() == nullptr)

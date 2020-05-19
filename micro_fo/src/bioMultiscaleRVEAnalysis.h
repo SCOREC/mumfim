@@ -2,7 +2,6 @@
 #define BIO_MULTISCALE_RVE_ANALYSIS_H_
 #include <amsiMultiscale.h>
 #include <amsiReporter.h>
-#include <lasSparskit.h>
 #include <vector>
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
@@ -35,11 +34,10 @@ namespace bio
     std::vector<micro_fo_int_solver> slvr_int_prms;
 
     std::vector<std::unique_ptr<RVEAnalysis>> ans;
-    // FIXME (las) optimally, las should have a general idea of what a
-    // workspace is, and I shouldn't need to use something specific
-    // here. Note that for the implicit solve these buffers are shared
-    // by all analysis. (possibly this should be moved to implicit batched solver?)
-    std::unique_ptr<las::SparskitBuffers> mSparskitWorkspace;
+    // this is a workspace that the microscale solves can use.
+    // Note the current design is that all microscale solves
+    // share the same workspace
+    std::shared_ptr<void> mWorkspace;
     //  an vector that holds the names of the rve physical
     //  types. Here a type would refer to a set of networks
     //  with the same set of statistical properties i.e. density

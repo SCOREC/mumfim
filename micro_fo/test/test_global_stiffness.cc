@@ -1,7 +1,6 @@
 #include <amsiAnalysis.h>
 #include <amsiDetectOscillation.h>
 #include <apf.h>
-#include <lasCSRCore.h>
 #include <mpi.h>
 #include <iostream>
 #include "bioFiberNetworkIO.h"
@@ -16,6 +15,7 @@ int main(int argc, char * argv[])
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
       "./test_global_stiffness_data/global_stiffness.yaml", cases);
+  las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
   for (std::size_t i = 0; i < cases.size(); ++i)
   //for (std::size_t i = 0; i < 1; ++i)
   {
@@ -31,14 +31,21 @@ int main(int argc, char * argv[])
     auto solution_strategy = std::unique_ptr<bio::MicroSolutionStrategy>{new bio::MicroSolutionStrategy};
     // set the solution strategy to give me an implicit run so that I can get
     // the stiffness matrix. All the other parameters don't matter...
+    auto osc_prms = bio::DetectOscillationParams();
+    osc_prms.maxIterations = 10;
+    osc_prms.maxMicroCutAttempts = 2;
+    osc_prms.microAttemptCutFactor  = 2;
+    osc_prms.oscType = amsi::DetectOscillationType::IterationOnly;
+    osc_prms.prevNormFactor = 0.2;
+
     solution_strategy->slvrType = bio::SolverType::Implicit;
-    // well this is a mess...
-    auto an = 
-      std::unique_ptr<bio::FiberRVEAnalysisSImplicit>{
-        dynamic_cast<bio::FiberRVEAnalysisSImplicit*>(
-      bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy)).get())
-      };
-    an->computeStiffnessMatrix();
+    solution_strategy->slvrTolerance = 1E-6;
+    solution_strategy->cnvgTolerance = 1E-6;
+    solution_strategy->oscPrms = osc_prms;
+
+    auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy));
+    //auto an = bio::createF
+    dynamic_cast<bio::FiberRVEAnalysisSImplicit*>(an.get())->computeStiffnessMatrix();
     if(an == nullptr)
     {
       std::cerr<<"Something went wrong, the analysis doesn't exist!"<<std::endl;
@@ -94,11 +101,9 @@ int main(int argc, char * argv[])
          close ? "True" : "False";
     std::cout << "Matrix was close " << comp << std::endl;
     assert(close);
-    las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
     mb->destroy(readMat);
     mb->destroy(readMat2);
   }
-  las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
   delete mb;
   mb = NULL;
   amsi::freeAnalysis();

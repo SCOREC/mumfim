@@ -20,6 +20,8 @@ target_link_libraries(test_global_stiffness micro_fo)
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_global_stiffness_data" DESTINATION
           "${CMAKE_CURRENT_BINARY_DIR}/")
 
+# FIXME This test doesn't actually check anything...need to update this test case to make sure
+# that we actually test that the elemental stiffness matrix is getting computed properly!
 add_mpi_test(test_elemental_stiffness ./test_elemental_stiffness.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml)
 target_link_libraries(test_elemental_stiffness micro_fo)
 

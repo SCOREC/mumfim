@@ -11,10 +11,9 @@ namespace bio
   class FiberRVEAnalysisExplicit : public FiberRVEAnalysis
   {
     public:
-    // FIXME get rid of loading in the sparskit workspace since 
     FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
                              std::unique_ptr<MicroSolutionStrategy> ss,
-                             las::SparskitBuffers * sparskit_workspace);
+                             std::shared_ptr<void> workspace);
     ~FiberRVEAnalysisExplicit()
     {
       delete writer;

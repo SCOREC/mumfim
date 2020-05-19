@@ -16,6 +16,7 @@
 #include <apfMatrixUtil.h>
 #include <lasCSR.h>
 #include <lasCSRCore.h>
+#include <lasCorePETSc.h>
 #include <lasSparskitExterns.h>
 namespace bio
 {
@@ -34,44 +35,47 @@ namespace bio
     return es;
   }
   template <>
-  LinearStructs<las::sparskit>::LinearStructs(int ndofs,
+  LinearStructs<las::sparskit>::LinearStructs(
+                               FiberNetwork* fiber_network,
+                               int ndofs,
                                double solver_tol,
-                               las::Sparsity * csr,
-                               void * bfrs,
-                               las::Sparsity * massCsr)
+                               std::shared_ptr<void> bfrs)
+                              : mSparsity(las::createCSR(fiber_network->getUNumbering(), ndofs),&las::destroySparsity<las::MICRO_BACKEND>)
   {
-    if(massCsr ==nullptr)
-      massCsr = csr;
-    las::SparskitBuffers * b = static_cast<las::SparskitBuffers *>(bfrs);
-    //if bfrs == n
+    if (bfrs == nullptr)
+    {
+      mBuffers = std::shared_ptr<void>{
+        new las::SparskitBuffers(ndofs)};
+    }
+    else
+    {
+      mBuffers = bfrs;
+    }
+    auto buffer = static_cast<las::SparskitBuffers*>(mBuffers.get());
+
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    this->k = mb->create(ndofs, LAS_IGNORE, csr, MPI_COMM_SELF);
+    this->k = mb->create(ndofs, LAS_IGNORE, mSparsity.get(), MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
     this->u = vb->createLHS(this->k);
-    // FIXME memory leak (won't be hit in multi-scale)
-    // because we provide buffers
-    if (b == NULL) b = new las::SparskitBuffers(ndofs);
-    b->resizeMatrixBuffer(ndofs * 100);
-    this->slv = las::createSparskitLUSolve(b, 1e-6);
+    buffer->resizeMatrixBuffer(ndofs * 100);
+    this->slv = std::unique_ptr<las::Solve>(las::createSparskitLUSolve(buffer, 1e-6));
   }
   template <>
-  LinearStructs<las::petsc>::LinearStructs(int ndofs,
+  LinearStructs<las::petsc>::LinearStructs(FiberNetwork* fiber_network, int ndofs,
                                double solver_tol,
-                               las::Sparsity * sprs,
-                               void * bfrs,
-                               las::Sparsity * massSprs)
+                               std::shared_ptr<void> bfrs)
+                              : mSparsity(las::createPetscSparsity(fiber_network->getUNumbering(), ndofs, PCU_Get_Comm()),
+                                  &las::destroySparsity<las::MICRO_BACKEND>)
   {
-    if(massSprs == NULL)
-      massSprs = sprs;
     las::LasCreateVec * vb = las::getVecBuilder<las::MICRO_BACKEND>(0);
     las::LasCreateMat * mb = las::getMatBuilder<las::MICRO_BACKEND>(0);
-    this->k = mb->create(ndofs, 1, sprs, MPI_COMM_SELF);
+    this->k = mb->create(ndofs, 1, mSparsity.get(), MPI_COMM_SELF);
     this->f = vb->createRHS(this->k);
     this->u = vb->createLHS(this->k);
     // FIXME memory leak (won't be hit in multi-scale)
     // because we provide buffers
-    this->slv = las::createPetscLUSolve(MPI_COMM_SELF);
+    this->slv = std::unique_ptr<las::Solve>(las::createPetscLUSolve(MPI_COMM_SELF));
   }
   template <typename T>
   LinearStructs<T>::~LinearStructs()
@@ -81,7 +85,6 @@ namespace bio
     md->destroy(k);
     vd->destroy(u);
     vd->destroy(f);
-    delete slv;
   }
   // specifically instantiate linear structs for our
   // solver backends
@@ -119,7 +122,7 @@ namespace bio
   // TODO determine rve size from input
   FiberRVEAnalysis::FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
                                      std::unique_ptr<MicroSolutionStrategy> ss,
-                                     las::SparskitBuffers * sparskit_workspace)
+                                     std::shared_ptr<void> workspace)
       : mFiberNetwork(std::move(fn)), mSolutionStrategy(std::move(ss))
       , rve(new RVE(0.5, mFiberNetwork->getDim()))
       , solver_eps(mSolutionStrategy->cnvgTolerance)
@@ -140,13 +143,9 @@ namespace bio
                        static_cast<RVE::side>(sd),
                        std::back_inserter(this->bnd_nds[sd]));
     }
-    // TODO...We are using a backend specific interface to sparskit here, but
     auto num_dofs = mFiberNetwork->getDofCount();
-    las::Sparsity * sparsity = nullptr;
-#ifdef MICRO_USING_SPARSKIT 
-    sparsity = las::createCSR(mFiberNetwork->getUNumbering(), num_dofs);
-#endif
-    vecs = std::shared_ptr<LinearStructs<las::MICRO_BACKEND>>{createLinearStructs(num_dofs,solver_eps, sparsity, sparskit_workspace)};
+    //vecs = std::make_shared<LinearStructs<las::MICRO_BACKEND>>(createLinearStructs(mFiberNetwork.get(), num_dofs,solver_eps, workspace));
+    vecs = createLinearStructs(getFn(), num_dofs, solver_eps, workspace);
   }
   FiberRVEAnalysis::~FiberRVEAnalysis()
   {
@@ -154,6 +153,28 @@ namespace bio
     //{
     //  bnd_nds[i].clear();
     //}
+  }
+  FiberRVEAnalysis& FiberRVEAnalysis::operator=(FiberRVEAnalysis&& other)
+  {
+    RVEAnalysis::operator=(other);
+    mFiberNetwork = std::move(other.mFiberNetwork);
+    other.mFiberNetwork = nullptr;
+    rve = std::move(other.rve);
+    for (int sd = RVE::side::bot; sd <= RVE::side::all; ++sd)
+    {
+      bnd_nds[sd] = std::move(other.bnd_nds[sd]);
+    }
+    // We share the vecs across copies. k,u,f are zeroed in the
+    // FiberRVEIteration, so in current usage this is OK. The solver is just a
+    // set of buffers and a tolerance, so we should ok by copying the pointer
+    vecs = std::move(other.vecs);
+    solver_eps = other.solver_eps;
+    prev_itr_factor = other.prev_itr_factor;
+    max_cut_attempt = other.max_cut_attempt;
+    attempt_cut_factor = other.attempt_cut_factor;
+    max_itrs = other.max_itrs;
+    detect_osc_type = other.detect_osc_type;
+    return *this; 
   }
   // TODO This can be turned into a kokkos kernel
   void FiberRVEAnalysis::computeCauchyStress(double sigma[6])
@@ -198,22 +219,20 @@ namespace bio
                                         micro_fo_header & hdr,
                                         micro_fo_params & prm,
                                         std::unique_ptr<MicroSolutionStrategy> ss,
-                                        las::SparskitBuffers * sparskit_workspace)
+                                        std::shared_ptr<void> workspace)
   {
     double pi = 4*atan(1);
     double fbr_area = pi*prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS];
     double fbr_vol_frc = prm.data[VOLUME_FRACTION];
     double scale_factor = calcScaleConversion(fiber_network->getNetworkMesh(), fbr_area, fbr_vol_frc);
     fiber_network->setScaleConversion(scale_factor);
-    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss), sparskit_workspace);
+    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss), workspace);
     return analysis;
   }
-  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(int ndofs,double solver_tol,
-                                      las::Sparsity * csr,
-                                      void * bfrs, las::Sparsity * massCsr
-                                      )
+  std::unique_ptr<LinearStructs<las::MICRO_BACKEND>> createLinearStructs(FiberNetwork* fiber_network, int ndofs,double solver_tol,
+                                      std::shared_ptr<void> bfrs)
   {
-    return new LinearStructs<las::MICRO_BACKEND>(ndofs, solver_tol, csr, bfrs, massCsr);
+    return std::unique_ptr<LinearStructs<las::MICRO_BACKEND>>(new LinearStructs<las::MICRO_BACKEND>(fiber_network, ndofs, solver_tol, bfrs));
   }
   // since we no longer compute the corner derivatives we need to thing about how
   // to do first order continuation...

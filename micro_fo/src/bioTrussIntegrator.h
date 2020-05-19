@@ -75,6 +75,7 @@ namespace bio
         , spans_l()
         , dim()
         , frs(frs)
+        , tg(-1)
         , rct_tg(msh->findTag("fiber_reaction"))
         , k(k)
         , f(f)

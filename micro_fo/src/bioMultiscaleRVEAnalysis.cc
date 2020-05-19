@@ -32,12 +32,14 @@ namespace bio
       , prms()
       , slvr_prms()
       , slvr_int_prms()
-      , mSparskitWorkspace(new las::SparskitBuffers(0))
       , rve_tp_dirs()
       , network_library()
       , macro_iter(0)
       , macro_step(0)
   {
+#ifdef MICRO_USING_SPARSKIT
+  mWorkspace = std::shared_ptr<void>(new las::SparskitBuffers(0));
+#endif
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
                                  amsi::getScaleManager(),
                                  "macro",
@@ -153,7 +155,7 @@ namespace bio
           auto solution_strategy = serializeSolutionStrategy(slvr_prm,slvr_int_prm);
           fn->setRVEType(ii);
           *rve = createFiberRVEAnalysisFromMultiscale(
-              std::move(fn), hdr, prm, std::move(solution_strategy), mSparskitWorkspace.get());
+              std::move(fn), hdr, prm, std::move(solution_strategy), mWorkspace);
           ++ii;
         }
         else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)

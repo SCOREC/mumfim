@@ -13,7 +13,6 @@ namespace bio
     apf::destroyMeshElement(ume);
     es = amsi::buildApfElementalSystem(elmt, nm);
     es->zero();
-    int tg = -1;
     msh->getIntTag(ent, rct_tg, &tg);
     dim = msh->getDimension();
     apf::MeshEntity * vs[2];

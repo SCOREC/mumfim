@@ -29,18 +29,24 @@ namespace bio
   {
     double operator()() { return 1.0; }
   };
-  //FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(
-  //    const FiberRVEAnalysisSImplicit & an)
-  //    : FiberRVEAnalysis(an)
-  //{
-  //  es = createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF());
-  //}
-  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
-                              std::unique_ptr<MicroSolutionStrategy> ss,
-                              las::SparskitBuffers * sparskit_workspace) :
-                              FiberRVEAnalysis(std::move(fn), std::move(ss), sparskit_workspace)
+  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(
+      const FiberRVEAnalysisSImplicit & an)
+      : FiberRVEAnalysis(an)
   {
     es = std::unique_ptr<apf::Integrator>{createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF())};
+  }
+  FiberRVEAnalysisSImplicit::FiberRVEAnalysisSImplicit(std::unique_ptr<FiberNetwork> fn,
+                              std::unique_ptr<MicroSolutionStrategy> ss,
+                              std::shared_ptr<void> workspace) :
+                              FiberRVEAnalysis(std::move(fn), std::move(ss), workspace)
+  {
+    es = std::unique_ptr<apf::Integrator>{createImplicitMicroElementalSystem(mFiberNetwork.get(), getK(), getF())};
+  }
+  FiberRVEAnalysisSImplicit& FiberRVEAnalysisSImplicit::operator=(FiberRVEAnalysisSImplicit && other)
+  {
+    es = std::move(other.es);
+    FiberRVEAnalysis::operator=(std::move(other));
+    return *this;
   }
   FiberRVEIterationSImplicit::FiberRVEIterationSImplicit(FiberRVEAnalysisSImplicit * a)
       : amsi::Iteration(), an(a)
@@ -86,11 +92,6 @@ namespace bio
     bool solveSuccess = false;
     unsigned int microAttemptCount = 1;
     unsigned int attemptCutFactor;
-    std::cerr<<"This implementation has been temporarily diabled"<<std::endl;
-    // FIXME Updated copy and move constructors for the implicit case need to be implemented
-    // since I have started using unique pointers in the classes
-    std::abort();
-    /*
     do
     {
       // create a deep copy of the analysis
@@ -166,7 +167,7 @@ namespace bio
           for(int i=0; i<6; ++i)
             tmpRVE->curStress[i] = sigma[i];
           // note that the destructor for *this should get called automatically
-          *this = *tmpRVE;
+          *this = std::move(*tmpRVE);
         }
         else
         {
@@ -184,7 +185,6 @@ namespace bio
       return false;
     }
     return true;
-    */
   }
     void FiberRVEAnalysisSImplicit::computeCauchyStress(double sigma[6])
     {

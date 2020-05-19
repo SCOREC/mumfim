@@ -10,12 +10,6 @@
 #include "bioApfPointers.h"
 #include "bioFiber.h"
 #include "bioFiberReactions.h"
-// forward definition for the las sparsity structures
-namespace las
-{
-  class Sparsity;
-  class CSR;
-}
 namespace bio
 {
   class FiberNetworkReactions
@@ -37,14 +31,6 @@ namespace bio
     public:
     using mesh_ptr_type = bio::mesh_unique_ptr_type;
     using reaction_ptr_type = std::shared_ptr<FiberNetworkReactions>;
-    // FIXME we can't have a shared pointer of an incomplete type in the implementation
-    // this shows part of the limitation of using the las interface
-    // FIXME ... sparsity is conceptually part of the analysis, not the fiber network
-#if defined MICRO_USING_SPARSKIT
-    using sparsity_type = std::shared_ptr<las::CSR>;
-#else
-    using sparsity_type = std::shared_ptr<las::Sparsity>;
-#endif
     FiberNetworkBase(mesh_ptr_type mesh, reaction_ptr_type reactions);
     FiberNetworkBase(const FiberNetworkBase & other);
     // FiberNetworkBase() : fn(nullptr) {};
@@ -65,8 +51,6 @@ namespace bio
     protected:
     mesh_ptr_type mMesh;
     reaction_ptr_type mReactions;
-    // each fiber network of the same type shares the
-    // same sparsity pattern
     int mRVEType;
   };
   /**

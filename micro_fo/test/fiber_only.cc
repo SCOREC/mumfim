@@ -34,8 +34,7 @@ int main(int argc, char * argv[])
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
 #ifdef ENABLE_KOKKOS
-  Kokkos::initialize(argc, argv);
-  {
+  Kokkos::ScopeGuard(argc, argv);
 #endif
   if(argc != 2)
   {
@@ -104,10 +103,6 @@ int main(int argc, char * argv[])
   std::stringstream sout;
   sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
   apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
-#ifdef ENABLE_KOKKOS
-  }
-  Kokkos::finalize();
-#endif
 #ifdef MICRO_USING_PETSC
   las::finalizePETScLAS();
 #endif

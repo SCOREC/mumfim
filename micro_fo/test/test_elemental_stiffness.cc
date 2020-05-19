@@ -1,7 +1,6 @@
 #include <amsiAnalysis.h>
 #include <amsiDetectOscillation.h>
 #include <apf.h>
-#include <lasCSRCore.h>
 #include <mpi.h>
 #include <cmath>
 #include <iostream>
@@ -47,6 +46,7 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
 };
 int main(int argc, char * argv[])
 {
+  {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(argv[1], cases);
@@ -59,8 +59,7 @@ int main(int argc, char * argv[])
   auto fiber_network = network_library.getOriginalNetwork(0,0);
   // I'm not confident that the move thing here works as intended
   auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
-  apf::Integrator * truss_es =
-      new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF());
+  auto truss_es = std::unique_ptr<apf::Integrator>{new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF())};
   auto fn_msh = an->getFn()->getNetworkMesh();
   apf::MeshEntity * me = NULL;
   apf::MeshIterator * itr = fn_msh->begin(1);
@@ -74,5 +73,6 @@ int main(int argc, char * argv[])
   }
   fn_msh->end(itr);
   amsi::freeAnalysis();
+  }
   return 0;
 }

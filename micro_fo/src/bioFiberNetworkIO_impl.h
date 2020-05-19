@@ -46,13 +46,15 @@ namespace bio
     void applyReactionLabels()
     {
       apf::MeshEntity * me = NULL;
-      for (apf::MeshIterator * it = msh->begin(1); (me = msh->iterate(it));)
+      apf::MeshIterator * it = msh->begin(1);
+      while ((me = msh->iterate(it)))
       {
         long id = -1;
         msh->getLongTag(me, id_tg, &id);
         long rctn = fbr_2_rctn[id];
         msh->setLongTag(me, rct_tg, &rctn);
       }
+      msh->end(it);
     }
     public:
     ParamLoader(apf::Mesh2 * m)

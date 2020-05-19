@@ -2,6 +2,7 @@
 #define BIO_FIBER_RVE_ANALYSIS_H_
 #include <amsiNonlinearAnalysis.h>
 #include <lasSparskit.h>
+#include <lasSparskitExterns.h>
 #include <string>
 #include "bioFiberNetwork.h"
 #include "bioMassIntegrator.h"
@@ -32,17 +33,16 @@ namespace bio
     // consistent interface if we are using sparskit
     // the buffers should be a las::SparskitBuffers pointer
     // and they are not used for petsc, so it can be a nullptr
-    LinearStructs(int ndofs,
+    LinearStructs(FiberNetwork* fiber_network,
+                  int ndofs,
                   double solver_tol,
-                  las::Sparsity * csr,
-                  void * bfrs = nullptr,
-                  las::Sparsity * massCsr = nullptr);
+                  std::shared_ptr<void> bfrs = nullptr);
     las::Mat * getK() const {if (k == nullptr){std::cerr<<"K BROKE LS"<<std::endl; std::abort();} return k; }
     las::Vec * getU() const { return u; }
     las::Vec * getF() const { return f; }
     // swaps the vector pointers if zero is true the v2 vector
     // will be zero'd
-    las::Solve * getSlv() const { return slv; }
+    las::Solve * getSlv() const { return slv.get(); }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
     friend class FiberRVEAnalysis;
@@ -51,7 +51,15 @@ namespace bio
     las::Mat * k;
     las::Vec * u;
     las::Vec * f;
-    las::Solve * slv;
+    std::unique_ptr<las::Solve> slv;
+    //las::Solve * slv;
+    private:
+    // sparsity pattern of the network
+    // Eventually this may be promoted to a shared pointer
+    // because sparsity patterns are the same for all networks of the same type
+    using sparsity_ptr_type = std::unique_ptr<las::Sparsity, decltype(&las::destroySparsity<las::MICRO_BACKEND>)>;
+    sparsity_ptr_type mSparsity;
+    std::shared_ptr<void> mBuffers;
   };
   class FiberRVEAnalysis : public RVEAnalysis
   {
@@ -63,7 +71,6 @@ namespace bio
 
     public:
     std::vector<apf::MeshEntity *> bnd_nds[RVE::side::all + 1];
-    std::unique_ptr<apf::Integrator> es;
     double solver_eps;
     double prev_itr_factor;
     int max_cut_attempt;
@@ -73,8 +80,9 @@ namespace bio
     FiberRVEAnalysis(const FiberRVEAnalysis & an);
     FiberRVEAnalysis(std::unique_ptr<FiberNetwork> fn,
                      std::unique_ptr<MicroSolutionStrategy> ss,
-                     las::SparskitBuffers * sparskit_workspace);
+                     std::shared_ptr<void> workspace);
     virtual ~FiberRVEAnalysis();
+    FiberRVEAnalysis& operator=(FiberRVEAnalysis&& other);
     FiberNetwork * getFn() const { return mFiberNetwork.get(); }
     RVE * getRVE() const { return rve.get(); }
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
@@ -85,29 +93,29 @@ namespace bio
     // get the global stiffness matrix
     las::Mat * getK() const { return vecs->getK(); }
     // get the global displacement vector
-    las::Vec * getU() const { return vecs->u; }
+    las::Vec * getU() const { return vecs->getU(); }
     // get the global force vector
-    las::Vec * getF() const { return vecs->f; }
+    las::Vec * getF() const { return vecs->getF(); }
     // solve is needed for computing derivs
-    las::Solve * getSlv() const { return vecs->slv; }
+    las::Solve * getSlv() const { return vecs->getSlv(); }
   };
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fiber_network,
       std::unique_ptr<MicroSolutionStrategy> solution_strategy,
-      las::SparskitBuffers * sparskitWorkspace = nullptr);
+      std::shared_ptr<void> workspace = nullptr);
   // FIXME move to bioMultiscaleRVEAnalysis
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysisFromMultiscale(
       std::unique_ptr<FiberNetwork> fiber_network,
       micro_fo_header & hdr,
       micro_fo_params & prm,
       std::unique_ptr<MicroSolutionStrategy> solution_strategy,
-      las::SparskitBuffers * sparskit_workspace = nullptr);
-  LinearStructs<las::MICRO_BACKEND> * createLinearStructs(
+      std::shared_ptr<void> workspace = nullptr);
+  std::unique_ptr<LinearStructs<las::MICRO_BACKEND>>
+    createLinearStructs(
+      FiberNetwork * fiber_network,
       int ndofs,
       double solver_tol,
-      las::Sparsity * csr,
-      void * bfrs = nullptr,
-      las::Sparsity * massSprs = nullptr);
+      shared_ptr<void> bfrs = nullptr);
   /**
    * Fix the boundary dofs and set the
    *  rows in the mat/vec corresponing
