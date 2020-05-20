@@ -25,11 +25,7 @@ find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-option(ENABLE_KOKKOS "ENABLE KOKKOS GPU COMPUTATION" ON)
-configure_file(bioMicroFOConfig.h.in bioMicroFOConfig.h)
-if(ENABLE_KOKKOS)
-  find_package(Kokkos CONFIG REQUIRED)
-endif()
+find_package(Kokkos CONFIG REQUIRED)
 
 option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)
 if(ENABLE_WRITE_MICRO_PER_ITER)

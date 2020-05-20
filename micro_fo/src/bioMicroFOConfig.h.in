@@ -1,7 +1,0 @@
-#ifndef BIO_MICRO_FO_CONFIG_H_
-#define BIO_MICRO_FO_CONFIG_H_
-#cmakedefine ENABLE_KOKKOS
-#ifndef ENABLE_KOKKOS
-#define KOKKOS_INLINE_FUNCTION
-#endif
-#endif

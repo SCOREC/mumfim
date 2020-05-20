@@ -45,8 +45,8 @@ namespace bio
     las::Solve * getSlv() const { return slv.get(); }
     ~LinearStructs();
     // give direct access to buffers to avoid too much function call overhead
-    friend class FiberRVEAnalysis;
-    friend class FiberRVEAnalysisSImplicit;
+    // friend class FiberRVEAnalysis;
+    // friend class FiberRVEAnalysisSImplicit;
     protected:
     las::Mat * k;
     las::Vec * u;

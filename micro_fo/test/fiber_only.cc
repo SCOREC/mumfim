@@ -10,11 +10,8 @@
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleRVEAnalysis.h"
 #include "bioVerbosity.h"
-#include "bioMicroFOConfig.h"
 #include "bioFiberNetworkLibrary.h"
-#ifdef ENABLE_KOKKOS
 #include <Kokkos_Core.hpp>
-#endif
 void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
 {
   stress[0][0] = stress_arr[0];
@@ -33,9 +30,7 @@ int main(int argc, char * argv[])
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
-#ifdef ENABLE_KOKKOS
-  Kokkos::ScopeGuard(argc, argv);
-#endif
+  Kokkos::ScopeGuard kokkos(argc, argv);
   if(argc != 2)
   {
     std::cerr<<"Usage: "<<argv[0]<<" job.yaml"<<std::endl;
@@ -56,11 +51,9 @@ int main(int argc, char * argv[])
   double stress[6];
   double C[36];
   apf::Matrix3x3 strss;
-#ifdef ENABLE_KOKKOS
   Kokkos::Timer timer;
   double time = timer.seconds();
   timer.reset();
-#endif
   bool result = an->run(cases[0].pd.deformationGradient, stress);
   an->computeMaterialStiffness(C);
   std::cout<<"Stress from run"<<std::endl;
@@ -92,10 +85,8 @@ int main(int argc, char * argv[])
   }
   std::cout<<std::endl;
   // end DEBUG
-#ifdef ENABLE_KOKKOS
   double time2 = timer.seconds();
   std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
-#endif
   if (!result)
   {
     std::cerr << "The microscale analysis failed to converge" << std::endl;
