@@ -104,10 +104,6 @@ endif()
 target_include_directories(micro_fo SYSTEM PRIVATE $ENV{INCLUDE})
 
 install(TARGETS micro_fo
-        EXPORT biotissueTargets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         INCLUDES DESTINATION include/biotissue)
-
-install(FILES ${micro_fo_header_files} DESTINATION include/biotissue)
-

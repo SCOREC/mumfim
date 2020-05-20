@@ -25,5 +25,3 @@ target_include_directories(biotissue PUBLIC
                                      "$<INSTALL_INTERFACE:include/biotissue>")
 
 install(TARGETS biotissue DESTINATION lib)
-install(FILES ${biotissue_public_headers} DESTINATION include/biotissue)
-
