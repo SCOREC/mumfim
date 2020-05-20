@@ -1,33 +1,3 @@
-# FIXME pull out anything which is not actually a public header
-# to reduce the size of the interface that we are passing along
-# and installing
-set(micro_fo_public_headers
-  bioExplicitAmplitude.h
-  bioExplicitOutputWriter.h
-  bioFiberNetwork.h
-  bioFiberReactions.h
-  bioFiberRVEAnalysis.h
-  bioFiberRVEAnalysis_impl.h
-  bioFiberRVEAnalysisExplicit.h
-  bioFiberRVEAnalysisExplicit_impl.h
-  bioFiberRVEAnalysisStaticImplicit.h
-  bioMassIntegrator.h
-  bioMicroFOConfig.h
-  bioMicroFOParams.h
-  bioMultiscaleCoupling.h
-  bioMultiscaleMicroFOParams.h
-  bioMultiscaleRVEAnalysis.h
-  bioNeoHookeanRVEAnalysis.h
-  bioRVE.h
-  bioRVEAnalysis.h
-  bioTrussIntegrator.h
-  bioUtil.h
-  bioUtil_impl.h
-  bioViewOfView.h
-  bioVerbosity.h
-  bioFiberNetworkLibrary.h
-  bioApfPointers.h)
-
 set(micro_fo_src_files
   bioExplicitOutputWriter.cc
   bioFiberNetwork.cc
@@ -71,7 +41,7 @@ if(ENABLE_WRITE_MICRO_PER_STEP)
   set(VERBOSITY_FLAGS "${VERBOSITY_FLAGS} -DWRITE_MICRO_PER_STEP")
 endif()
 
-add_library(micro_fo ${micro_fo_src_files} ${micro_fo_public_headers})
+add_library(micro_fo ${micro_fo_src_files})
 set_property(TARGET micro_fo PROPERTY VERSION ${BIOTISSUE_VERSION})
 if(VERBOSITY_FLAGS)
     set_target_properties(micro_fo PROPERTIES COMPILE_FLAGS ${VERBOSITY_FLAGS})

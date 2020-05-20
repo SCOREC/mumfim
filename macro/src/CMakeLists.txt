@@ -1,29 +1,3 @@
-set(biotissue_public_headers
-  bioAnalysis.h
-  bioAnalysisIO.h
-  bioAnalysisIO_impl.h
-  bioBatheMultiscale.h
-  bioHolmesMowIntegrator.h
-  bioLinearTissue.h
-  bioMultiscaleConvergence.h
-  bioMultiscaleIntegrator.h
-  bioMultiscaleTissue.h
-  bioNeoHookeanIntegrator.h
-  bioNonlinearTissue.h
-  bioStiffnessVariation.h
-  bioStiffnessVariation_impl.h
-  bioReadStochasticField.h
-  bioTissueAnalysis.h
-  bioTissueAnalysis.h
-  bioTissueAnalysis_impl.h
-  bioTissueMultiscaleAnalysis.h
-  bioULMultiscaleHydrostaticPressureIntegrator.h
-  bioULMultiscaleIntegrator.h
-  bioVariableRecovery.h
-  bioVariableRecovery_impl.h
-  bioVolumeConstraint.h
-  bioVolumeConvergence.h)
-
 set(biotissue_src_files
   bioAnalysis.cc
   bioLinearTissue.cc
@@ -39,7 +13,7 @@ set(biotissue_src_files
 
 find_package(amsi COMPONENTS util analysis multiscale)
 
-add_library(biotissue ${biotissue_src_files} ${biotissue_public_headers})
+add_library(biotissue ${biotissue_src_files})
 target_link_libraries(biotissue
                       micro_fo
                       amsi::util
