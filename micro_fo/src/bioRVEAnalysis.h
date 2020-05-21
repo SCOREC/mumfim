@@ -1,14 +1,13 @@
 #ifndef BIO_RVE_ANALYSIS_H_
 #define BIO_RVE_ANALYSIS_H_
 #include "bioMicroFOParams.h"
-#include <array>
 namespace bio
 {
   class RVEAnalysis
   {
     protected:
     // this state should be updated in the run functions
-    std::array<double,6> curStress;
+    double curStress[6];
 
     public:
     virtual ~RVEAnalysis() {};
