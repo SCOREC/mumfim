@@ -1,10 +1,13 @@
+#ifndef BIO_VIEW_OF_VIEW_H__
+#define BIO_VIEW_OF_VIEW_H__
 #include <Kokkos_Core.hpp>
 #include <vector>
-#undef NDEBUG
 #include <cassert>
+#include "bioMicroTypeDefinitions.h"
 namespace bio
 {
   template <typename DataType,
+            typename LocalOrdinal=bio::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
   class ViewOfView
   {
@@ -14,21 +17,7 @@ namespace bio
     using dd_type = Kokkos::View<d_inner_type *, ExeSpace>;
     using dh_type = typename dd_type::HostMirror;
     using hh_type = typename Kokkos::View<h_inner_type *, ExeSpace>::HostMirror;
-    static_assert(
-        Kokkos::SpaceAccessibility<typename d_inner_type::memory_space,
-                                   Kokkos::CudaSpace>::accessible);
-    static_assert(
-        Kokkos::SpaceAccessibility<typename h_inner_type::memory_space,
-                                   Kokkos::HostSpace>::accessible);
-    static_assert(Kokkos::SpaceAccessibility<typename dh_type::memory_space,
-                                             Kokkos::HostSpace>::accessible);
-    static_assert(Kokkos::SpaceAccessibility<typename hh_type::memory_space,
-                                             Kokkos::HostSpace>::accessible);
-    static_assert(Kokkos::SpaceAccessibility<typename dd_type::memory_space,
-                                             Kokkos::CudaSpace>::accessible);
-    // static assert that the EXESpace is accessible from the devce memory space
-    // https://github.com/kokkos/kokkos/wiki/Kokkos%3A%3ASpaceAccessibility
-    // static assert that the host views are accessible from the host
+
     ViewOfView(std::vector<std::vector<DataType>> data)
     {
       dd_view = dd_type("dd", data.size());
@@ -47,6 +36,17 @@ namespace bio
         }
       }
       deep_copy(dd_view, dh_view);
+      syncToDevice();
+    }
+    // the default constructor creates a view
+    // with zero size for the device and the host
+    // this should help the user understand that
+    // there is nothing there if they try to take
+    // the extent
+    ViewOfView()
+    {
+      dd_view = dd_type("dd", 0);
+      hh_view = hh_type("hh", 0);
       syncToDevice();
     }
     void syncToDevice()
@@ -75,3 +75,4 @@ namespace bio
     dd_type dd_view;
   };
 }  // namespace bio
+#endif
