@@ -42,7 +42,6 @@ namespace bio
     double crit_time_scale_factor;
     double energy_check_eps;
     int disp_bound_nfixed;
-    int * disp_bound_nodes;
     int * disp_bound_dof;
     double * disp_bound_vals;
     double * disp_bound_init_vals;

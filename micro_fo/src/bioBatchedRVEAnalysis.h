@@ -24,7 +24,7 @@ namespace bio
     // computes the material stiffness tensor at the current deformation state
     // this should be dSigma/dE, where Sigma is the cauchy stress, and E is the
     // PK2 stress. This should have 36 components due to the symmetry in Sigma and E
-    virtual void computeMaterialStiffness(std::vector<Scalar[36]> C);
+    virtual void computeMaterialStiffness(std::vector<Scalar[36]> C)=0;
     virtual void computeAvgVolStress(double Q[3]) { Q[0] = Q[1] = Q[2] = 0; }
     //RVEAnalysis(const RVEAnalysis & an);
     //RVEAnalysis();
