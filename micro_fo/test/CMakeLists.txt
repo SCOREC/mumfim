@@ -11,6 +11,9 @@ target_link_libraries(rve micro_fo)
 add_mpi_test(fiber_only fiber_only.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml)
 target_link_libraries(fiber_only micro_fo)
 
+add_mpi_test(batched_fiber_only batched_fiber_only.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml)
+target_link_libraries(batched_fiber_only micro_fo)
+
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/fiber_only.yaml" DESTINATION
           "${CMAKE_CURRENT_BINARY_DIR}")
 

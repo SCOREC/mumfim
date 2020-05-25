@@ -1,283 +1,310 @@
 #ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_IMPL_H__
 #define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_IMPL_H__
+#include <apf.h>         // for extractCoordinateArray
+#include <apfConvert.h>  // for extractCoordinateArray
+#include <apfMesh2.h>    // for extractCoordinateArray
 #include <Kokkos_Core.hpp>
-#include <type_traits>
+#include <Kokkos_DualView.hpp>
+#include <limits>
 namespace bio
 {
-  namespace impl
+  /*
+  template<typename T,
+           typename=typename std::enable_if<std::is_floating_point<T>::value>::type>
+  KOKKOS_INLINE_FUNCTION
+  static bool isClose(T a,
+                      T b,
+                      T rtol = 1E-8,
+                      T atol = 1E-10)
   {
-    enum class BatchLoopType
+    return fabs(a - b) <= fmax(rtol * fmax(fabs(a), fabs(b)), atol);
+  }
+  */
+  
+  /*
+void destruct(Mesh2* m, int*& conn, int& nelem, int &etype, int cellDim)
+{
+  if(cellDim == -1) cellDim = m->getDimension();
+  //int dim = m->getDimension();
+  nelem = m->count(cellDim);
+  conn = 0;
+  GlobalNumbering* global = makeGlobal(numberOwnedNodes(m, "apf_destruct"));
+  synchronize(global);
+  MeshIterator* it = m->begin(cellDim);
+  MeshEntity* e;
+  int i = 0;
+  while ((e = m->iterate(it))) {
+    etype = m->getType(e);
+    Downward verts;
+    int nverts = m->getDownward(e, 0, verts);
+    if (!conn)
+      conn = new Gid[nelem * nverts];
+    for (int j = 0; j < nverts; ++j)
+      conn[i++] = getNumber(global, Node(verts[j], 0));
+  }
+  m->end(it);
+  destroyGlobalNumbering(global);
+}
+  static void extractCoordinateArray(apf::Mesh * m,
+                                     apf::Field * coord_field,
+                                     double *& coords,
+                                     int & nverts)
+  {
+    nverts = apf::countOwned(m, 0);
+    coords = new double[nverts * 3];
+    apf::MeshIterator * it = m->begin(0);
+    int i = 0;
+    while (apf::MeshEntity * v = m->iterate(it))
     {
-      SINGLE,
-      TEAM_OUTER_WHILE,
-      TEAM_INNER_WHILE
-    };
-    template <typename Scalar>
-    KOKKOS_INLINE_FUNCTION Scalar getLinearReactionForce(Scalar orig_length,
-                                                         Scalar length,
-                                                         Scalar elastic_modulus,
-                                                         Scalar area)
-    {
-      // abaqus ...
-      // double length_ratio = length / orig_length;
-      // double log_strain = log(length_ratio);
-      // return elastic_modulus * area * log_strain / length_ratio;
-      double length_ratio = length / orig_length;
-      double green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
-      return length_ratio * elastic_modulus * area * green_strain;
-    }
-    template <typename Scalar, typename LocalOrdinal, typename T1, typename T2>
-    KOKKOS_INLINE_FUNCTION Scalar getCurrentCoordinate(LocalOrdinal node_idx,
-                                                       LocalOrdinal direction,
-                                                       T1 coordinates,
-                                                       T2 displacements)
-    {
-      return coordinates(node_idx, direction) +
-             displacemens(node_idx, direction);
-    }
-    template <typename Scalar, typename LocalOrdinal, typename T1, typename T2>
-    KOKKOS_INLINE_FUNCTION Scalar getElementLength(LocalOrdinal element_idx,
-                                                   T1 connectivity,
-                                                   T2 coordinates)
-    {
-      auto n1 = connectivity(element_idx, 0);
-      auto n2 = connectivity(element_idx, 1);
-      auto x1 = coordinates(n2, 0) - coordinates(n1, 0);
-      auto x2 = coordinates(n2, 1) - coordinates(n1, 1);
-      auto x3 = coordinates(n2, 2) - coordinates(n1, 2);
-      return sqrt(x1 * x1 + x2 * x2 + x3 * x3);
-    }
-    template <typename LocalOrdinal, typename T1, typename T2, typename O1>
-    KOKKOS_INLINE_FUNCTION void updateAcceleration(LocalOrdinal node_idx,
-                                                   T1 mass,
-                                                   T2 force,
-                                                   O1 acceleration)
-    {
-      auto one_ovr_mass = 1.0 / mass(node_idx);
-      acceleration(node_idx, 0) = one_ovr_mass * force(node_idx, 0);
-      acceleration(node_idx, 1) = one_ovr_mass * force(node_idx, 1);
-      acceleration(node_idx, 2) = one_ovr_mass * force(node_idx, 2);
-    }
-    template <typename LocalOrdinal, typename Scalar, typename T1, typename O1>
-    KOKKOS_INLINE_FUNCTION void updateVelocity(LocalOrdinal node_idx,
-                                               Scalar dt,
-                                               T1 acceleration,
-                                               O1 velocity)
-    {
-      velocity(node_idx, 0) += dt * acceleration(node_idx, 0);
-      velocity(node_idx, 1) += dt * acceleration(node_idx, 1);
-      velocity(node_idx, 2) += dt * acceleration(node_idx, 2);
-    };
-    // we may want to add a displacement delta if we end up computing energies
-    template <typename LocalOrdinal, typename Scalar, typename T1, typename O1>
-    KOKKOS_INLINE_FUNCTION void updateDisplacement(LocalOrdinal node_idx,
-                                                   Scalar dt,
-                                                   T1 velocity,
-                                                   O1 displacement)
-    {
-      displacement(node_idx, 0) += dt * velocity(node_idx, 0);
-      displacement(node_idx, 1) += dt * velocity(node_idx, 1);
-      displacement(node_idx, 2) += dt * velocity(node_idx, 2);
-    };
-    template <typename LocalOrdinal,
-              typename Scalar,
-              typename T1,
-              typename O1,
-              typename O2>
-    KOKKOS_INLINE_FUNCTION void updateAccelerationVelocity(
-        LocalOrdinal node_idx,
-        Scalar dt,
-        T1 force,
-        O1 acceleration,
-        O2 velocity)
-    {
-      auto one_ovr_mass = 1.0 / mass(node_idx);
-      auto a_local_1 = one_ovr_mass * force(node_idx, 0);
-      auto a_local_2 = one_ovr_mass * force(node_idx, 1);
-      auto a_local_3 = one_ovr_mass * force(node_idx, 2);
-      acceleration(node_idx, 0) = a_local_1;
-      acceleration(node_idx, 1) = a_local_2;
-      acceleration(node_idx, 2) = a_local_3;
-      velocity(node_idx, 0) += dt * a_local_1;
-      velocity(node_idx, 1) += dt * a_local_2;
-      velocity(node_idx, 2) += dt * a_local_3;
-    };
-    // Note: applying all of the boundary conditions uses the same
-    // functional form, so we do not repeat these functions
-    // here we do the math to back out the the node idx and direction
-    // because this needs to move a smaller array to the GPU, and we are
-    // typically bandwith limited, not operation limited
-    template <typename LocalOrdinal,
-              typename Scalar,
-              typename T1,
-              typename T2,
-              typename O1>
-    KOKKOS_INLINE_FUNCTION void applyBC(LocalOrdinal fixed_idx,
-                                        Scalar amplitude,
-                                        T1 fixed_dofs,
-                                        T2 Fixed_value,
-                                        O1 update_value)
-    {
-      LocalOrdinal dof = fixed_dofs(fixed_idx);
-      // divide by 3 assumes we are using a three dimensional mesh
-      LocalOrdinal node_idx = dof / 3;
-      LocalOrdinal direction_idx = dof % 3;
-      update_value(node_idx, direction_idx) =
-          fixed_value(fixed_idx) * amplitude;
-    }
-    // simultaneously updates 2 BCs...This should save one memory load
-    template <typename LocalOrdinal,
-              typename Scalar,
-              typename T1,
-              typename T2,
-              typename T3,
-              typename O1,
-              typename O2>
-    KOKKOS_INLINE_FUNCTION void apply2BC(LocalOrdinal fixed_idx,
-                                         Scalar amplitude1,
-                                         Scalar amplitude2,
-                                         T1 fixed_dofs1,
-                                         T2 fixed_value1,
-                                         T3 fixed_value2,
-                                         O1 update_value1,
-                                         O2 update_value2)
-    {
-      LocalOrdinal dof = fixed_dofs(fixed_idx);
-      // divide by 3 assumes we are using a three dimensional mesh
-      LocalOrdinal node_idx = dof / 3;
-      LocalOrdinal direction_idx = dof % 3;
-      update_value1(node_idx, direction_idx) =
-          fixed_value1(fixed_idx) * amplitude1;
-      update_value2(node_idx, direction_idx) =
-          fixed_value2(fixed_idx) * amplitude2;
-    }
-    // this is only needed if we care what forces are on the boundary since we
-    // always have displacement BCs
-    template <typename LocalOrdinal,
-              typename T1,
-              typename T2,
-              typename T3,
-              typename T4,
-              typename T5,
-              typename O1,
-              typename O2>
-    KOKKOS_INLINE_FUNCTION void applyBoundaryForces(LocalOrdinal fixed_idx,
-                                                    T1 fixed_dofs,
-                                                    T2 mass,
-                                                    T3 acceleration,
-                                                    T4 f_int,
-                                                    T5 f_damp,
-                                                    O1 f_ext,
-                                                    O2 force)
-    {
-      LocalOrdinal dof = fixed_dofs(fixed_idx);
-      // divide by 3 assumes we are using a three dimensional mesh
-      LocalOrdinal node_idx = dof / 3;
-      LocalOrdinal direction_idx = dof % 3;
-      auto f_inertial = mass(node_idx) * acceleration(node_idx, direction_idx);
-      f_ext(node_idx, direction_idx) = f_inertial +
-                                       f_int(node_idx, direction_idx) +
-                                       f_damp(node_idx, direction_idx);
-      force(node_idx, direction_idx) = f_inertial;
-    }
-    // TODO IMPLEMENT GET FORCES STUFF
-    // call Kokkos::deep_copy(f_int, 0) before calling the main gather scatter
-    // stuff...
-    template <typename LocalOrdinal,
-              typename Scalar,
-              typename T1,
-              typename T2,
-              typename O1>
-    KOKKOS_INLINE_FUNCTION void updateDampingForce(LocalOrdinal node_idx,
-                                                   Scalar visc_damp_coeff,
-                                                   T1 mass,
-                                                   T2 velocity,
-                                                   O1 f_damp)
-    {
-      f_damp(node_idx, 0) =
-          visc_damp_coeff * mass(node_idx) * velocity(node_idx, 0);
-      f_damp(node_idx, 1) =
-          visc_damp_coeff * mass(node_idx) * velocity(node_idx, 1);
-      f_damp(node_idx, 2) =
-          visc_damp_coeff * mass(node_idx) * velocity(node_idx, 2);
-    }
-    template <typename LocalOrdinal, typename Scalar, typename T1>
-    KOKKOS_INLINE_FUNCTION Scalar getElementNorm(LocalOrdinal node1_idx,
-                                                 LocalOrdinal node2_idx,
-                                                 LocalOrdinal direction,
-                                                 Scalar length,
-                                                 T1 current_coordinates)
-    {
-      return (current_coordinates(node2_idx, direction) -
-              current_coordinates(node1_idx, direction)) /
-             length;
-    }
-    // function needs tot take all the data I need...
-    template <BatchLoopType BLT,
-              typename Ordinal,
-              typename Scalar,
-              typename ExeSpace>
-    struct BatchedExplicit
-    {
-      static int run(ViewOfView<Ordinal, ExeSpace> connectivity,
-                     ViewOfView<Scalar, ExeSpace> original_coordinates,
-                     ViewOfView<Scalar, ExeSpace> current_coordinates,
-                     ViewOfView<Scalar, ExeSpace> displacement,
-                     ViewOfView<Scalar, ExeSpace> velocity,
-                     ViewOfView<Scalar, ExeSpace> acceleration,
-                     ViewOfView<Scalar, ExeSpace> force_total,
-                     ViewOfView<Scalar, ExeSpace> force_internal,
-                     ViewOfView<Scalar, ExeSpace> force_external,
-                     ViewOfView<Scalar, ExeSpace> force_damping,
-                     ViewOfView<Scalar, ExeSpace> nodal_mass,
-                     ViewOfView<Scalar, ExeSpace> origninal_length,
-                     ViewOfView<Scalar, ExeSpace> current_length,
-                     ViewOfView<Scalar, ExeSpace> fiber_elastic_modulus,
-                     ViewOfView<Scalar, ExeSpace> fiber_area,
-                     ViewOfView<Scalar, ExeSpace> fiber_density,
-                     ViewOfView<Scalar, ExeSpace> viscous_damping_coefficient,
-                     ViewOfView<Scalar, ExeSpace> critical_time_scale_factor,
-                     ViewOfView<Scalar, ExeSpace> energy_check_epsilon,
-                     ViewOfView<Ordinal, ExeSpace> displacement_boundary_dof,
-                     ViewOfView<Scalar, ExeSpace> displacement_boundary_values)
+      if (m->isOwned(v))
       {
-        std::cerr << "You are trying to run with an unimplemented microscale "
-                     "BatchLoopType"
-                  << std::endl;
-        std::exit(EXIT_FAILURE);
-        return 1;
+        apf::getComponents(coord_field, v, 0, &coords[i * 3]);
+        i++;
       }
-    };
-    template <typename Ordinal, typename Scalar, typename ExeSpace>
-    struct BatchedExplicit<BatchLoopType::SINGLE, Ordinal, Scalar, ExeSpace>
-    {
-      static int run(ViewOfView<Ordinal, ExeSpace> connectivity,
-                     ViewOfView<Scalar, ExeSpace> original_coordinates,
-                     ViewOfView<Scalar, ExeSpace> current_coordinates,
-                     ViewOfView<Scalar, ExeSpace> displacement,
-                     ViewOfView<Scalar, ExeSpace> velocity,
-                     ViewOfView<Scalar, ExeSpace> acceleration,
-                     ViewOfView<Scalar, ExeSpace> force_total,
-                     ViewOfView<Scalar, ExeSpace> force_internal,
-                     ViewOfView<Scalar, ExeSpace> force_external,
-                     ViewOfView<Scalar, ExeSpace> force_damping,
-                     ViewOfView<Scalar, ExeSpace> nodal_mass,
-                     ViewOfView<Scalar, ExeSpace> origninal_length,
-                     ViewOfView<Scalar, ExeSpace> current_length,
-                     ViewOfView<Scalar, ExeSpace> fiber_elastic_modulus,
-                     ViewOfView<Scalar, ExeSpace> fiber_area,
-                     ViewOfView<Scalar, ExeSpace> fiber_density,
-                     ViewOfView<Scalar, ExeSpace> viscous_damping_coefficient,
-                     ViewOfView<Scalar, ExeSpace> critical_time_scale_factor,
-                     ViewOfView<Scalar, ExeSpace> energy_check_epsilon,
-                     ViewOfView<Ordinal, ExeSpace> displacement_boundary_dof,
-                     ViewOfView<Scalar, ExeSpace> displacement_boundary_values)
-      {
-        std::cerr << "RUNNING SINGLE ANALYSIS" << std::endl;
-        std::exit(EXIT_FAILURE);
-        return 1;
-      }
-    };
-  }  // namespace impl
+    }
+    m->end(it);
+  }
+  */
+  template<typename ExePolicy, typename RWSV>
+  void zeroDeviceData(ExePolicy exe_policy, RWSV data)
+  {
+    Kokkos::parallel_for(
+        "zeroDeviceData", exe_policy, KOKKOS_LAMBDA(const int i) { data(i) = 0; });
+  }
+  template<typename ExePolicy, typename ROSV, typename RWSV>
+  void getCurrentCoords(ExePolicy dof_policy,
+                        ROSV coords,
+                        ROSV u,
+                        RWSV current_coords)
+  {
+    Kokkos::parallel_for(
+        "getCurrentCoords", dof_policy,
+        KOKKOS_LAMBDA(const int i) { current_coords(i) = coords(i) + u(i); });
+  }
+  template <typename ExePolicy, typename ROSV, typename ROOV, typename RWSV>
+  void getElementLengths(ExePolicy element_policy,
+                         ROSV coords,
+                         ROOV connectivity,
+                         RWSV l0)
+  {
+    Kokkos::parallel_for(
+        "getElementLengths", element_policy, KOKKOS_LAMBDA(const int i) {
+          int n1 = connectivity(i * 2);
+          int n2 = connectivity(i * 2 + 1);
+          double x1 = coords(n2 * 3) - coords(n1 * 3);
+          double x2 = coords(n2 * 3 + 1) - coords(n1 * 3 + 1);
+          double x3 = coords(n2 * 3 + 2) - coords(n1 * 3 + 2);
+          l0(i) = sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+        });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename ROOV, typename RWSV>
+  double getForces(ExePolicy element_policy,
+                   ExePolicy dof_policy,
+                   Scalar fiber_elastic_modulus,
+                   Scalar fiber_area,
+                   Scalar fiber_density,
+                   ROSV l0,
+                   ROSV l,
+                   ROSV v,
+                   ROSV current_coords,
+                   ROOV connectivity,
+                   ROSV mass_matrix,
+                   Scalar visc_damp_coeff,
+                   RWSV f_int,
+                   RWSV f_ext,
+                   RWSV f_damp,
+                   RWSV f,
+                   Scalar & residual)
+  {
+    Scalar dt = std::numeric_limits<Scalar>::max();
+    // element normal vectors
+    Scalar sound_speed = sqrt(fiber_elastic_modulus / fiber_density);
+    residual = 0;
+    // swap force arrays and zero internal forces
+    Kokkos::parallel_for(
+        "getFoces--Loop1", dof_policy, KOKKOS_LAMBDA(const int i) {
+          f_int(i) = 0;
+          f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
+        });
+
+    // set the internal forces
+    Kokkos::Min<Scalar> min_reducer(dt);
+    Kokkos::parallel_reduce(
+        "getForces--mainLoop", element_policy,
+        KOKKOS_LAMBDA(const int i, Scalar & dt_crit_elem) {
+          Scalar local_l = l(i);
+          // FIXME the force reactions are all messed up! need to figure out
+          // how to get the struct data in here?
+          Scalar frc = getLinearReactionForce(
+              l0(i), local_l, fiber_elastic_modulus, fiber_area);
+          auto n1 = connectivity(i * 2);
+          auto n2 = connectivity(i * 2 + 1);
+          Scalar elem_nrm_1 =
+              (current_coords(n2 * 3) - current_coords(n1 * 3)) / local_l;
+          Scalar elem_nrm_2 =
+              (current_coords(n2 * 3 + 1) - current_coords(n1 * 3 + 1)) /
+              local_l;
+          Scalar elem_nrm_3 =
+              (current_coords(n2 * 3 + 2) - current_coords(n1 * 3 + 2)) /
+              local_l;
+          // note we have a race condition here unless we perform an atomic
+          // add!
+          Kokkos::atomic_add(&f_int(n1 * 3), -frc * elem_nrm_1);
+          Kokkos::atomic_add(&f_int(n1 * 3 + 1), -frc * elem_nrm_2);
+          Kokkos::atomic_add(&f_int(n1 * 3 + 2), -frc * elem_nrm_3);
+          Kokkos::atomic_add(&f_int(n2 * 3), frc * elem_nrm_1);
+          Kokkos::atomic_add(&f_int(n2 * 3 + 1), frc * elem_nrm_2);
+          Kokkos::atomic_add(&f_int(n2 * 3 + 2), frc * elem_nrm_3);
+          min_reducer.join(dt_crit_elem, local_l / sound_speed);
+        },
+        min_reducer);
+    residual = 0;
+    Kokkos::parallel_reduce(
+        "getForces-Loop3", dof_policy,
+        KOKKOS_LAMBDA(const int i, Scalar & residual_update) {
+          double local_residual = f_ext(i) - f_int(i);
+          residual_update += local_residual * local_residual;
+          f(i) = local_residual - f_damp(i);
+        },
+        residual);
+    residual = sqrt(residual);
+    return dt;
+  }
+  template<typename ExePolicy, typename ROSV, typename RWSV>
+  void updateAcceleration(ExePolicy dof_policy,
+                          ROSV mass_matrix,
+                          ROSV f,
+                          RWSV a)
+  {
+    Kokkos::parallel_for(
+        "updateAcceleration", dof_policy, KOKKOS_LAMBDA(const int i) {
+          a(i) = (1.0 / mass_matrix(i / 3)) * f(i);
+        });
+  }
+  template<typename ExePolicy, typename ROSV, typename RWSV>
+  void updateVelocity(ExePolicy dof_policy, ROSV a, double dt, RWSV v)
+  {
+    Kokkos::parallel_for(
+        "updateVelocity", dof_policy,
+        KOKKOS_LAMBDA(const int i) { v(i) += dt * a(i); });
+  }
+
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename RWSV>
+  void updateAccelVel(ExePolicy dof_policy,
+                      Scalar dt,
+                      ROSV mass_matrix,
+                      ROSV f,
+                      RWSV a,
+                      RWSV v)
+  {
+    // 2*ndof loads, 2*ndof writes
+    // 2*ndof multiply, 2*ndof divide
+    Kokkos::parallel_for(
+        "updateAccelVel", dof_policy, KOKKOS_LAMBDA(const int i) {
+          double a_local = (1.0 / mass_matrix(i / 3)) * f(i);
+          a(i) = a_local;
+          v(i) += dt * a_local;
+        });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename RWSV>
+  void updateDisplacement(ExePolicy dof_policy,
+                          ROSV v,
+                          Scalar dt,
+                          RWSV u)
+  {
+    Kokkos::parallel_for(
+        "updateDisplacement", dof_policy , KOKKOS_LAMBDA(const int i) {
+          u(i) += dt * v(i);
+        });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename ROOV, typename RWSV>
+  void applyDispBC(ExePolicy fixed_dof_policy,
+                   Scalar amp_t,
+                   ROOV dof,
+                   ROSV init_values,
+                   ROSV values,
+                   RWSV u)
+  {
+    Kokkos::parallel_for(
+        "applyDispBC", fixed_dof_policy, KOKKOS_LAMBDA(const int i) {
+          u(dof(i)) = values(i) * amp_t + init_values(i);
+        });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename ROOV, typename RWSV>
+  void applyVelBC(ExePolicy fixed_dof_policy,
+                  Scalar amp_t,
+                  ROOV dof,
+                  ROSV values,
+                  RWSV v)
+  {
+    Kokkos::parallel_for(
+        "applyVelBC", fixed_dof_policy,
+        KOKKOS_LAMBDA(const int i) { v(dof(i)) = values(i) * amp_t; });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename ROOV, typename RWSV>
+  void applyAccelBC(ExePolicy fixed_dof_policy,
+                    Scalar amp_t,
+                    ROOV dof,
+                    ROSV values,
+                    RWSV a)
+  {
+    Kokkos::parallel_for(
+        "applyAccelBC", fixed_dof_policy,
+        KOKKOS_LAMBDA(const int i) { a(dof(i)) = values(i) * amp_t; });
+  }
+  template<typename ExePolicy, typename ROSV, typename ROOV, typename RWSV>
+  void fixBoundaryForces(ExePolicy fixed_dof_policy,
+                         ROOV dof,
+                         ROSV mass_matrix,
+                         ROSV a,
+                         RWSV f_int,
+                         RWSV f_ext,
+                         RWSV f_damp,
+                         RWSV f)
+  {
+    Kokkos::parallel_for(
+        "fixBoundaryForce", fixed_dof_policy, KOKKOS_LAMBDA(const int i) {
+          // if we apply a velocity, or displacement boundary
+          // condition, the external force is the sum of the
+          // internal, and inertial forces
+          int local_dof = dof(i);
+          double f_inertial = mass_matrix(local_dof / 3) * a(local_dof);
+          f_ext(local_dof) = f_inertial + f_int(local_dof) + f_damp(local_dof);
+          f(local_dof) = f_inertial;
+        });
+  }
+  template<typename ExePolicy, typename Scalar, typename ROSV, typename ROOV, typename RWSV>
+  void applyAccelVelBC(ExePolicy fixed_dof_policy,
+                       Scalar a_amp,
+                       Scalar v_amp,
+                       Scalar visc_damp_coeff,
+                       ROOV dof,
+                       ROSV values,
+                       ROSV mass_matrix,
+                       RWSV a,
+                       RWSV v,
+                       RWSV f_int,
+                       RWSV f_ext,
+                       RWSV f_damp,
+                       RWSV f)
+  {
+    // 4*nfixed reads, 5*nfixed writes
+    // 5*nfixed multiply, 2*nfixed adds, 1 divide
+    Kokkos::parallel_for(
+        "applyAccelVelBC", fixed_dof_policy, KOKKOS_LAMBDA(const int i) {
+          auto local_dof = dof(i);
+          auto value = values(i);
+          auto a_local = value * a_amp;
+          auto v_local = value * v_amp;
+          auto mass = mass_matrix(local_dof / 3);
+          auto f_damp_local = visc_damp_coeff * mass * v_local;
+          auto f_inertial = mass * a_local;
+          a(local_dof) = a_local;
+          v(local_dof) = v_local;
+          f_damp(local_dof) = f_damp_local;
+          f_ext(local_dof) = f_inertial + f_int(local_dof) + f_damp_local;
+          f(local_dof) = f_inertial;
+        });
+  }
 }  // namespace bio
 #endif
