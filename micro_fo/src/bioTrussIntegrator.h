@@ -12,7 +12,6 @@
 #include <limits>
 #include "bioFiberNetwork.h"
 #include "bioFiberReactions.h"
-#include "bioUtil.h"
 namespace las
 {
   class Mat;

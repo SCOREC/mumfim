@@ -9,7 +9,7 @@
 namespace bio
 {
   template <typename O>
-  void originCenterCube(O cbe_crnrs, double crd)
+  static void originCenterCube(O cbe_crnrs, double crd)
   {
     // APF orders differently than canonical
     // iosparametric hexs
@@ -25,7 +25,7 @@ namespace bio
     *cbe_crnrs++ = apf::Vector3(crd * -1.0,crd *  1.0,crd *  1.0);
   }
   template <typename O>
-  void originCenterSquare(O cbe_crnrs, double crd)
+  static void originCenterSquare(O cbe_crnrs, double crd)
   {
     // bottom
     *cbe_crnrs++ = apf::Vector3(-crd,-crd, 0.0);
@@ -108,37 +108,6 @@ namespace bio
     apf::destroyMesh(cbe);
     cbe = NULL;
   }
-  apf::MeshEntity * RVE::getSide(side sd) const
-  {
-    apf::MeshEntity * rslt = NULL;
-    int plnr_dim =
-      (sd == rgt || sd == lft) ? 0 :
-      (sd == bot || sd == top) ? 1 : 2;
-    double plnr_crd = sideCoord(sd);
-    for(auto fc_itr = amsi::apfMeshIterator(cbe,2); fc_itr != amsi::apfEndIterator(cbe); ++fc_itr)
-    {
-      apf::MeshEntity * vrts[4];
-      cbe->getDownward(*fc_itr,0,&vrts[0]);
-      bool found = true;
-      for(int ii = 0; ii < 4 && found; ++ii)
-      {
-        apf::Vector3 crd;
-        cbe->getPoint(vrts[ii],0,crd);
-        if(crd[plnr_dim] != plnr_crd)
-          found = false;
-      }
-      if(found)
-      {
-        rslt = *fc_itr;
-        break;
-      }
-    }
-    return rslt;
-  }
-  void displaceRVE(RVE * rve,const apf::DynamicVector & du)
-  {
-    ApplySolution(rve->getUField(), rve->getNumbering(),&du[0],0,true).run();
-  }
   void getRVEDisplacement(RVE * rve, apf::DynamicVector & u)
   {
     int ndofs = rve->getDim() * rve->numNodes();
@@ -156,16 +125,5 @@ namespace bio
       xyz_0.setSize(ndofs);
     amsi::WriteOp wrt;
     amsi::ToArray(rve->getNumbering(),rve->getMesh()->getCoordinateField(),&xyz_0(0),0,&wrt).run();
-  }
-  void getRVECoords(RVE * rve, apf::DynamicVector & xyz)
-  {
-    int ndofs = rve->getDim() * rve->numNodes();
-    int sz = xyz.getSize();
-    if(sz != ndofs)
-      xyz.setSize(ndofs);
-    amsi::WriteOp wrt;
-    amsi::AccumOp acm;
-    amsi::ToArray(rve->getNumbering(),rve->getMesh()->getCoordinateField(),&xyz(0),0,&wrt).run();
-    amsi::ToArray(rve->getNumbering(),rve->getUField(),&xyz(0),0,&acm).run();
   }
 }

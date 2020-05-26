@@ -13,6 +13,7 @@
 #include "bioVerbosity.h"
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleMicroFOParams.h"
+#include "bioUtility.h"
 #include <apfMatrixUtil.h>
 #include <lasCSR.h>
 #include <lasCSRCore.h>

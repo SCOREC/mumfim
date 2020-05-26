@@ -17,7 +17,7 @@ set(micro_fo_src_files
   bioRVE.cc
   bioRVEAnalysis.cc
   bioTrussIntegrator.cc
-  bioUtil.cc
+  bioUtility.cc
   bioFiberNetworkLibrary.cc
   bioApfPointers.cc)
 

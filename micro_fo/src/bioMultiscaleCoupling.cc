@@ -4,8 +4,7 @@
 #include <cassert>
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
-#include "bioUtil.h"
-//#include "bioFiberNetwork.h"
+#include "bioUtility.h"
 #include <numeric>
 namespace bio
 {
@@ -32,7 +31,7 @@ namespace bio
     int sigma_length = dim == 3 ? 6 : 3;
     int mat_stiff_length = dim == 3 ? 36 : 9;
     // convert to a macro-scale term
-    double vol = ans->getRVE()->measureDu();
+    double vol = ans->getCurrentVolume();
     double scale_conversion = ans->getFn()->getScaleConversion();
     for (int ii = 0; ii < sigma_length; ++ii)
       stress[ii] *= scale_conversion / vol;

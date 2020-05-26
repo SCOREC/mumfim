@@ -1,6 +1,5 @@
 #ifndef BIO_RVE_H_
 #define BIO_RVE_H_
-#include "bioUtil.h"
 #include <apfFunctions.h> //amsi
 #include <apfFieldOp.h>
 #include <apf.h>
@@ -39,15 +38,7 @@ namespace bio
       top = 5,  ///< top face
       all = 6   ///< all faces
     };
-    /*
-     * Returns all mesh entities on a specific side.
-     */
-    apf::MeshEntity * getSide(side sd) const;
-    /**
-     * Get the number of nodes for the RVE
-     * @return The number of nodes on the RVE (4 for 2d, 8 for 3d, -1 for failure)
-     */
-    int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
+     int numNodes() const { return dim == 2 ? 4 : dim == 3 ? 8 : -1; }
     /*
      * Return the number of degrees of freedom in the rve cube
      */
@@ -57,7 +48,7 @@ namespace bio
      */
     int getDim() const {return dim;}
     /*
-     * Measure the RVE based on dimensionality
+     * Measure the current volume of the RVE based on dimensionality
      *  gives area for a 2d RVE and volume for a 3d
      *  rve.
      * @note This is the displaced RVE measure,
@@ -66,20 +57,6 @@ namespace bio
     double measureDu() const
     {
       apf::MeshElement * mlmt = apf::createMeshElement(cbe_xpu,cbe_e);
-      double msr = apf::measure(mlmt);
-      apf::destroyMeshElement(mlmt);
-      return msr;
-    }
-    /*
-     * Measure the RVE based on dimensionality
-     *  gives area for a 2d RVE and volume for a 3d
-     *  rve.
-     * @note This is the reference RVE measure,
-     *  not the displaced measure.
-     */
-    double measure() const
-    {
-      apf::MeshElement * mlmt = apf::createMeshElement(cbe,cbe_e);
       double msr = apf::measure(mlmt);
       apf::destroyMeshElement(mlmt);
       return msr;
@@ -125,18 +102,9 @@ namespace bio
       return fabs(sideCoord(sd) - crd[idx]) < eps;
      }
     apf::Mesh * getMesh() const { return cbe; }
-    apf::MeshEntity * getMeshEnt() const { return cbe_e; }
-    apf::Element * getElement()
-    {
-      if(cbe_u_e)
-        apf::destroyElement(cbe_u_e);
-      cbe_u_e = apf::createElement(cbe_u,cbe_e);
-      return cbe_u_e;
-    }
     apf::Numbering * getNumbering() const { return cbe_dof; }
     apf::Field * getUField() const { return cbe_u; }
     apf::Field * getdUField() const { return cbe_du; }
-    apf::Field * getXpUField() const { return cbe_xpu; }
   };
   /**
    * Compile a list of MeshEntities in the fiber network which have at least a single
@@ -146,19 +114,8 @@ namespace bio
     void getBoundaryVerts(const RVE * rve, apf::Mesh * msh,
                           I bgn_vrts, I end_vrts,
                           RVE::side sd, O nds);
-  /**
-   * Apply a vector of displacements to the coordinates of the rve mesh
-   * @param rve The rve to displace
-   * @param du A vector of the correct length (24 for 3d, 8 for 2d) containing
-   *           displacement values for each rve node in the typically finite element
-   *           ordering for a cube
-   */
-  void displaceRVE(RVE * rve, const apf::DynamicVector & du);
   void getRVEDisplacement(RVE * rve, apf::DynamicVector & u);
   void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0);
-  void getRVECoords(RVE * rve, apf::DynamicVector & xyz);
-  //
-  void updateRVEBounds(RVE * rve, FiberNetwork * fn, const double disp[6]);
 }
 #include <bioRVE_impl.h>
 #endif

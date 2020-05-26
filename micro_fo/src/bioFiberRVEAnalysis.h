@@ -84,6 +84,8 @@ namespace bio
     virtual ~FiberRVEAnalysis();
     FiberRVEAnalysis& operator=(FiberRVEAnalysis&& other);
     FiberNetwork * getFn() const { return mFiberNetwork.get(); }
+    double getCurrentVolume() const { return rve->measureDu(); }
+    // TODO make this protected, makes the api more clear
     RVE * getRVE() const { return rve.get(); }
     virtual bool run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords=true) override = 0;
     virtual SolverType getAnalysisType() = 0;

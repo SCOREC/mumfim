@@ -1,4 +1,5 @@
 #include "bioTrussIntegrator.h"
+#include "bioUtility.h"
 namespace bio
 {
   void TrussIntegrator::inElement(apf::MeshElement * me)
@@ -24,8 +25,6 @@ namespace bio
     apf::destroyElement(dsp_elm);
     // unit vector of the fiber
     spans_l = (crds[nd_cnt - 1] - crds[0]) / l;
-    // int id = -1;
-    //msh->getIntTag(ent, id_tg, &id);
   }
   void TrussIntegrator::atPoint(const apf::Vector3 &, double, double)
   {
