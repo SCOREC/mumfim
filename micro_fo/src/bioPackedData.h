@@ -46,8 +46,8 @@ class PackedData
   // Public Functions
   PackedData(IndexViewType row_sizes) : num_rows_(row_sizes.extent(0))
   {
-    // row_index_ = initializeRowIndex<ExeSpace>(row_sizes);
-    row_index_ = initializeRowIndex<Kokkos::Serial>(row_sizes);
+    row_index_ = initializeRowIndex<ExeSpace>(row_sizes);
+    //row_index_ = initializeRowIndex<Kokkos::Serial>(row_sizes);
     auto row_index_h = row_index_.h_view;
     auto num_values =
         row_index_h.extent(0) > 0 ? row_index_h(row_index_h.extent(0) - 1) : 0;
