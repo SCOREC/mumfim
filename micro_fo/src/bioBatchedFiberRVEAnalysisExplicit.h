@@ -14,10 +14,12 @@
 #include "bioRVE.h"
 namespace bio
 {
+  void updateRVECoords(RVE &rve, const DeformationGradient & incremental_deformation_gradient);
+
   template <typename Scalar = bio::Scalar,
             typename LocalOrdinal = bio::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
-  class BatchedFiberRVEAnalysisExplicit : public BatchedRVEAnalysis<Scalar>
+  class BatchedFiberRVEAnalysisExplicit : public BatchedRVEAnalysis<Scalar,ExeSpace>
   {
     private:
     using LO = LocalOrdinal;
@@ -170,6 +172,7 @@ namespace bio
                        fiber_networks[i]->getNetworkMesh()->getCoordinateField(),
                        original_coordinates_row);
         auto displacement_boundary_dof_row = displacement_boundary_dof.template getRow<HostMemorySpace>(i);
+        apf::NaiveOrder(fiber_networks[i]->getUNumbering());
         getFixedDof(fiber_networks[i]->getUNumbering(), displacement_boundary_dof_row, boundary_verts[i]);
         auto fiber_elastic_modulus_row = fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
         fiber_elastic_modulus_row(0) = fiber_networks[i]->getFiberReaction(0).E;
@@ -197,15 +200,141 @@ namespace bio
       critical_time_scale_factor.template modify<HostMemorySpace>();
       displacement_boundary_dof.template modify<HostMemorySpace>();
     };
-
-    virtual bool run(const std::vector<DeformationGradient> & dfmGrds,
-                     std::vector<Scalar[6]> sigma,
-                     bool update_coords = true) final
+    bool runSingleLoop()
     {
-      // set up the displacement_boundary_values
-      return false;
+      // sync all data to the execution space
+      connectivity.template sync<ExeSpace>();
+      original_coordinates.template sync<ExeSpace>();
+      current_coordinates.template sync<ExeSpace>();
+      displacement.template sync<ExeSpace>();
+      velocity.template sync<ExeSpace>();
+      acceleration.template sync<ExeSpace>();
+      force_total.template sync<ExeSpace>();
+      force_internal.template sync<ExeSpace>();
+      force_external.template sync<ExeSpace>();
+      force_damping.template sync<ExeSpace>();
+      nodal_mass.template sync<ExeSpace>();
+      original_length.template sync<ExeSpace>();
+      current_length.template sync<ExeSpace>();
+      residual.template sync<ExeSpace>();
+      fiber_elastic_modulus.template sync<ExeSpace>();
+      fiber_area.template sync<ExeSpace>();
+      fiber_density.template sync<ExeSpace>();
+      viscous_damping_coefficient.template sync<ExeSpace>();
+      critical_time_scale_factor.template sync<ExeSpace>();
+      displacement_boundary_dof.template sync<ExeSpace>();
+      displacement_boundary_values.template sync<ExeSpace>();
+      for(size_t i=0; i<rves.size(); ++i)
+      {
+        //// get the device views of the data
+        auto connectivity_row = connectivity.template getRow<ExeSpace>(i);
+        auto original_coordinates_row = original_coordinates.template getRow<ExeSpace>(i);
+        auto current_coordinates_row = current_coordinates.template getRow<ExeSpace>(i);
+        auto displacement_row = displacement.template getRow<ExeSpace>(i);
+        auto velocity_row = velocity.template getRow<ExeSpace>(i);
+        auto acceleration_row = acceleration.template getRow<ExeSpace>(i);
+        auto force_total_row = force_total.template getRow<ExeSpace>(i);
+        auto force_internal_row = force_internal.template getRow<ExeSpace>(i);
+        auto force_external_row = force_external.template getRow<ExeSpace>(i);
+        auto force_damping_row = force_damping.template getRow<ExeSpace>(i);
+        auto nodal_mass_row = nodal_mass.template getRow<ExeSpace>(i);
+        auto original_length_row = original_length.template getRow<ExeSpace>(i);
+        auto current_length_row = current_length.template getRow<ExeSpace>(i);
+        auto residual_row = residual.template getRow<ExeSpace>(i);
+
+        auto displacement_boundary_dof_row = displacement_boundary_dof.template getRow<ExeSpace>(i);
+        auto displacement_boundary_values_row = displacement_boundary_values.template getRow<ExeSpace>(i);
+
+        // get the scalar values
+        Scalar visc_damp_coeff = viscous_damping_coefficient.template getRow<HostMemorySpace>(i)(0);
+        Scalar crit_time_scale_factor = critical_time_scale_factor.template getRow<HostMemorySpace>(i)(0);
+        Scalar elastic_modulus = fiber_elastic_modulus.template getRow<HostMemorySpace>(i)(0);
+        Scalar area = fiber_area.template getRow<HostMemorySpace>(i)(0);
+        Scalar density = fiber_density.template getRow<HostMemorySpace>(i)(0);
+        // create the loop policies based on the lengths of the various arrays
+        Kokkos::RangePolicy<ExeSpace> element_policy(0, current_length_row.extent(0));
+        Kokkos::RangePolicy<ExeSpace> dof_policy(0, displacement_row.extent(0));
+        Kokkos::RangePolicy<ExeSpace> fixed_dof_policy(0, displacement_boundary_dof_row.extent(0));
+        Scalar residual = 10.0;
+        Scalar total_time = 10.0;
+        Scalar current_time = 10.0;
+        Scalar dt_nphalf, t_npone, t_nphalf;
+        long int n_step=0;
+        getElementLengths(element_policy, original_coordinates_row, connectivity_row, original_length_row);
+        getCurrentCoords(dof_policy, original_coordinates_row, displacement_row, current_coordinates_row);
+        getElementLengths(element_policy, current_coordinates_row, connectivity_row, current_length_row);
+        auto dt_crit = getForces(element_policy, dof_policy,
+                            elastic_modulus, area, density,
+                            original_length_row,
+                            current_length_row, 
+                            velocity_row, current_coordinates_row,
+                            connectivity_row, nodal_mass_row, visc_damp_coeff,
+                            force_internal_row, force_external_row,
+                            force_damping_row, force_total_row, residual);
+        updateAcceleration(dof_policy, nodal_mass_row, force_total_row, acceleration_row);
+
+        do
+        {
+          dt_nphalf = crit_time_scale_factor *dt_crit;
+          t_npone = current_time + dt_nphalf;
+          t_nphalf = 0.5* (current_time + t_npone);
+          assert(dt_nphalf != t_npone != t_nphalf);
+          updateVelocity(dof_policy, acceleration_row, (t_nphalf - current_time), velocity_row);
+          updateDisplacement(dof_policy, velocity_row, dt_nphalf, displacement_row);
+          applyDispBC(fixed_dof_policy, 1.0, displacement_boundary_dof_row,
+                      displacement_boundary_values_row, displacement_row);
+          getCurrentCoords(dof_policy, original_coordinates_row, displacement_row,
+                           current_coordinates_row);
+          getElementLengths(element_policy, current_coordinates_row, connectivity_row,
+                            current_length_row);
+          dt_crit = getForces(element_policy, dof_policy,
+                              elastic_modulus, area, density,
+                              original_length_row,
+                              current_length_row, 
+                              velocity_row, current_coordinates_row,
+                              connectivity_row, nodal_mass_row, visc_damp_coeff,
+                              force_internal_row, force_external_row,
+                              force_damping_row, force_total_row, residual);
+          updateAccelVel(dof_policy, t_npone-t_nphalf, nodal_mass_row, force_total_row,
+                         acceleration_row, velocity_row);
+          // the derivative and second derivative amplitudes are zero
+          // since we apply the displacement boundary condition all at once
+          applyAccelVelBC(fixed_dof_policy,(Scalar)0,(Scalar)0,visc_damp_coeff,displacement_boundary_dof_row,
+                       displacement_boundary_values_row, nodal_mass_row, acceleration_row,
+                       velocity_row, force_internal_row, force_external_row, force_damping_row,
+                       force_total_row);
+          current_time = t_npone;
+          ++n_step;
+          Kokkos::fence();
+        } while ((current_time < total_time) || (residual > 1E-6));
+        printf("n_step %ld, %e\n", n_step, residual);
+      }
+      return true;
+    }
+
+    virtual bool run(Kokkos::DualView<Scalar*[3][3], ExeSpace> deformation_gradients,
+                     Kokkos::DualView<Scalar*[6], ExeSpace> sigma,
+                     bool update_coords=true) final
+    {
+      // for coordinate update can we just set the intital coordinates
+      // to the initial_coordinates+displacements if we want update?
+      deformation_gradients.template sync<HostMemorySpace>();
+      // apply the incremental deformation to the RVE
+      for(size_t i=0; i<rves.size(); ++i)
+      {
+        auto deformation_gradient = Kokkos::subview(deformation_gradients, i, Kokkos::ALL, Kokkos::ALL);
+        updateRVECoords(rves[i], deformation_gradient.h_view);
+      }
+      // apply the incremental deformation gradient to the boundaries and the boundary_dof_values
+      applyIncrementalDeformationToDisplacement<ExeSpace>(deformation_gradients, original_coordinates, displacement);
+      applyIncrementalDeformationToBoundary<ExeSpace>(deformation_gradients, original_coordinates, displacement_boundary_dof, displacement_boundary_values);
+      // solve the problem?
+      auto result = runSingleLoop();
+      // compute the stress from the force and displacement vectors
+      computeCauchyStress<ExeSpace>(displacement_boundary_dof, current_coordinates, force_internal, sigma);
+      return result;
     };
-    virtual void computeMaterialStiffness(std::vector<Scalar[36]> C) final {};
+    virtual void computeMaterialStiffness(Kokkos::DualView<Scalar*[6][6], ExeSpace> C) final {};
   };
   // the actual explicit instantionations can be found in the associated cc file
   extern template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;

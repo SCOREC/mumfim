@@ -168,54 +168,6 @@ namespace bio
     disp_bound_init_vals = NULL;
     return rtn;
   }
-  /*
-  void FiberRVEAnalysisExplicit::computeDisplacementBC(
-      const DeformationGradient & dfmGrd)
-  {
-    disp_bound_nfixed = 3 * bnd_nds[RVE::all].size();
-    disp_bound_dof = new int[disp_bound_nfixed];
-    disp_bound_vals = new double[disp_bound_nfixed];
-    disp_bound_init_vals = new double[disp_bound_nfixed];
-    //apf::Field * current_coords_field = getFn()->getXpUField();
-    apf::Field * current_coords_field = getFn()->getNetworkMesh()->getCoordinateField();
-    apf::Field * disp_field = getFn()->getUField();
-    apf::Vector3 coords, disp;
-    int node_num[3];
-    for (std::size_t i = 0; i < bnd_nds[RVE::all].size(); ++i)
-    {
-      apf::MeshEntity * nd = bnd_nds[RVE::all][i];
-      apf::getVector(current_coords_field, nd, 0, coords);
-      apf::getVector(disp_field, nd, 0, disp);
-      node_num[0] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 0);
-      node_num[1] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 1);
-      node_num[2] = apf::getNumber(getFn()->getUNumbering(), nd, 0, 2);
-      disp_bound_dof[i * 3] = node_num[0];
-      disp_bound_dof[i * 3 + 1] = node_num[1];
-      disp_bound_dof[i * 3 + 2] = node_num[2];
-     // version 1
-      disp_bound_vals[i * 3] = (dfmGrd[0] - 1) * coords[0] +
-                               dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2]-disp[0];
-      disp_bound_vals[i * 3 + 1] = dfmGrd[3] * coords[0] +
-                                   (dfmGrd[4] - 1) * coords[1] +
-                                   dfmGrd[5] * coords[2]-disp[1];
-      disp_bound_vals[i * 3 + 2] = dfmGrd[6] * coords[0] +
-                                   dfmGrd[7] * coords[1] +
-                                   (dfmGrd[8] - 1) * coords[2]-disp[2];
-     // Version 2
-      //disp_bound_vals[i * 3] = (dfmGrd[0] - 1) * coords[0] +
-      //                         dfmGrd[1] * coords[1] + dfmGrd[2] * coords[2];
-      //disp_bound_vals[i * 3 + 1] = dfmGrd[3] * coords[0] +
-      //                             (dfmGrd[4] - 1) * coords[1] +
-      //                             dfmGrd[5] * coords[2];
-      //disp_bound_vals[i * 3 + 2] = dfmGrd[6] * coords[0] +
-      //                             dfmGrd[7] * coords[1] +
-      //                             (dfmGrd[8] - 1) * coords[2];
-      disp_bound_init_vals[i*3] = disp[0];
-      disp_bound_init_vals[i*3+1] = disp[1];
-      disp_bound_init_vals[i*3+2] = disp[2];
-    }
-  }
-  */
   void FiberRVEAnalysisExplicit::computeDisplacementBC(
       const DeformationGradient & dfmGrd)
   {

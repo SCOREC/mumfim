@@ -12,18 +12,20 @@
 #include "bioVerbosity.h"
 #include "bioFiberNetworkLibrary.h"
 #include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
 #include <bioBatchedFiberRVEAnalysisExplicit.h>
-void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
+template <typename T>
+void stressToMat(int idx, T stress_view, apf::Matrix3x3 & stress)
 {
-  stress[0][0] = stress_arr[0];
-  stress[1][1] = stress_arr[1];
-  stress[2][2] = stress_arr[2];
-  stress[1][2] = stress_arr[3];
-  stress[2][1] = stress_arr[3];
-  stress[0][2] = stress_arr[4];
-  stress[2][0] = stress_arr[4];
-  stress[0][1] = stress_arr[5];
-  stress[1][0] = stress_arr[5];
+  stress[0][0] = stress_view(idx,0);
+  stress[1][1] = stress_view(idx,1);
+  stress[2][2] = stress_view(idx,2);
+  stress[1][2] = stress_view(idx,3);
+  stress[2][1] = stress_view(idx,3);
+  stress[0][2] = stress_view(idx,4);
+  stress[2][0] = stress_view(idx,4);
+  stress[0][1] = stress_view(idx,5);
+  stress[1][0] = stress_view(idx,5);
 }
 int main(int argc, char * argv[])
 {
@@ -49,19 +51,42 @@ int main(int argc, char * argv[])
   std::vector<std::unique_ptr<bio::MicroSolutionStrategy>> solution_strategies;
   fiber_networks.push_back(network_library.getOriginalNetwork(0,0));
   solution_strategies.push_back(std::move(cases[0].ss));
-  
-  bio::BatchedFiberRVEAnalysisExplicit<bio::Scalar,bio::LocalOrdinal,Kokkos::DefaultExecutionSpace> batched_analysis(std::move(fiber_networks),std::move(solution_strategies));
-  // I'm not confident that the move thing here works as intended
-  /*
-  auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
 
-  double stress[6];
-  double C[36];
-  apf::Matrix3x3 strss;
+  
+  using ExeSpace = Kokkos::DefaultExecutionSpace;
+  //using ExeSpace = Kokkos::Serial;
+  bio::BatchedFiberRVEAnalysisExplicit<bio::Scalar,bio::LocalOrdinal,ExeSpace> batched_analysis(std::move(fiber_networks),std::move(solution_strategies));
+  Kokkos::DualView<bio::Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",1);
+  Kokkos::DualView<bio::Scalar*[6][6],ExeSpace> stiffness("stiffness",1);
+  Kokkos::DualView<bio::Scalar*[6], ExeSpace> stress("stress",1);
+
+  auto deformation_gradient_h = deformation_gradient.h_view;
+  for(int ei=0; ei<3; ++ei)
+    for(int ej=0; ej<3; ++ej)
+      deformation_gradient_h(0,ei,ej) = cases[0].pd.deformationGradient[ei*3+ej];
+  deformation_gradient.modify<Kokkos::HostSpace>();
+
   Kokkos::Timer timer;
   double time = timer.seconds();
   timer.reset();
-  bool result = an->run(cases[0].pd.deformationGradient, stress);
+  bool result = batched_analysis.run(deformation_gradient, stress);
+  stress.sync<Kokkos::HostSpace>();
+  auto stress_h = stress.h_view;
+
+  //for(int i=0; i<6; ++i)
+  //{
+  //  std::cout<<stress_h(0, i)<<" ";
+  //}
+  std::cout<<std::endl;
+  apf::Matrix3x3 strss;
+  stressToMat(0, stress.h_view, strss);
+  std::cout<<strss<<std::endl;
+  double time2 = timer.seconds();
+  std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
+
+
+  /*
+  double C[36];
   an->computeMaterialStiffness(C);
   std::cout<<"Stress from run"<<std::endl;
   stressToMat(stress, strss);

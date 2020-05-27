@@ -58,7 +58,13 @@ class PackedData
   KOKKOS_INLINE_FUNCTION Kokkos::View<DataType *, Device> getRow(
       OrdinalType idx) const
   {
+    // only use the device version of the row index if we are using this function
+    // on a device
+#ifdef __CUDA_ARCH__
     auto row_index_d = row_index_.template view<Device>();
+#else
+    auto row_index_d = row_index_.template view<host_mirror_space>();
+#endif
     // it is the responsibilty of the user to sync and mark modified the
     // device data using the sync and modify functions. Therefore, we do
     // not make any assumptions about if they modify the data here

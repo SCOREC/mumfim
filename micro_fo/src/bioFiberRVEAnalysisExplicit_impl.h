@@ -141,6 +141,7 @@ namespace bio
         writer->writeHistoryData(itr_prev, W_int, W_ext, W_damp, W_kin, current_time);
       }
       updateAcceleration(ndof, mass_matrix_d, f_d, a_d);
+
       // we set the current time to the total time
       // because we don't want to ramp boundaries.
       // The hope is that with an affine guess this
@@ -232,6 +233,7 @@ namespace bio
         //if((current_time > total_time) && (n_step%1000 == 0))
         //  std::cout<<residual<<std::endl;
       } while ((current_time < total_time) || (residual > 1E-6));
+      printf("n_step %ld, %e\n", n_step, residual);
       //} while ((current_time < total_time) || (residual > 1E-10));
       // if we didn't already write the last frame
       if (print_field_frequency && !print_field_by_num_frames &&
