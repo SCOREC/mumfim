@@ -46,6 +46,7 @@ endif()
 
 target_include_directories(micro_fo PUBLIC
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/batched_analysis>
                                     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
                                     $<INSTALL_INTERFACE:include/biotissue>
                                     PRIVATE ${yaml-cpp_INCLUDE_DIRS} )
@@ -102,7 +103,7 @@ else()
   message(FATAL_ERROR "You have incorrectly set MICRO_BACKEND=${MICRO_BACKEND}.\n Balid options are sparskit, petsc")
 endif()
 
-target_include_directories(micro_fo SYSTEM PRIVATE $ENV{INCLUDE})
+#target_include_directories(micro_fo SYSTEM PRIVATE $ENV{INCLUDE})
 
 install(TARGETS micro_fo
         LIBRARY DESTINATION lib
