@@ -14,6 +14,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <bioBatchedFiberRVEAnalysisExplicit.h>
+#include <memory>
 template <typename T>
 void stressToMat(int idx, T stress_view, apf::Matrix3x3 & stress)
 {
@@ -34,11 +35,12 @@ int main(int argc, char * argv[])
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
   Kokkos::ScopeGuard kokkos(argc, argv);
-  if(argc != 2)
+  if(argc != 3)
   {
-    std::cerr<<"Usage: "<<argv[0]<<" job.yaml"<<std::endl;
+    std::cerr<<"Usage: "<<argv[0]<<" job.yaml num_rves"<<std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
+  auto BatchNum = std::atoi(argv[2]);
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(argv[1], cases);
   bio::printMicroFOCase(cases[0]);
@@ -48,22 +50,31 @@ int main(int argc, char * argv[])
   bio::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
   std::vector<std::unique_ptr<bio::FiberNetwork>> fiber_networks;
-  std::vector<std::unique_ptr<bio::MicroSolutionStrategy>> solution_strategies;
-  fiber_networks.push_back(network_library.getOriginalNetwork(0,0));
-  solution_strategies.push_back(std::move(cases[0].ss));
+  std::vector<std::shared_ptr<bio::MicroSolutionStrategy>> solution_strategies;
+  std::shared_ptr<bio::MicroSolutionStrategy> shared_case{std::move(cases[0].ss)};
+
+  for(int i=0; i<BatchNum; ++i)
+  {
+    fiber_networks.push_back(network_library.getCopy(0,0));
+    solution_strategies.push_back(shared_case);
+  }
 
   
   using ExeSpace = Kokkos::DefaultExecutionSpace;
   //using ExeSpace = Kokkos::Serial;
-  bio::BatchedFiberRVEAnalysisExplicit<bio::Scalar,bio::LocalOrdinal,ExeSpace> batched_analysis(std::move(fiber_networks),std::move(solution_strategies));
-  Kokkos::DualView<bio::Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",1);
-  Kokkos::DualView<bio::Scalar*[6][6],ExeSpace> stiffness("stiffness",1);
-  Kokkos::DualView<bio::Scalar*[6], ExeSpace> stress("stress",1);
+  //using Scalar = float;//bio::Scalar;
+  using Scalar = bio::Scalar;
+  bio::BatchedFiberRVEAnalysisExplicit<Scalar,bio::LocalOrdinal,ExeSpace> batched_analysis(std::move(fiber_networks),std::move(solution_strategies));
+
+  Kokkos::DualView<Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",BatchNum);
+  Kokkos::DualView<Scalar*[6][6],ExeSpace> stiffness("stiffness",BatchNum);
+  Kokkos::DualView<Scalar*[6], ExeSpace> stress("stress",BatchNum);
 
   auto deformation_gradient_h = deformation_gradient.h_view;
-  for(int ei=0; ei<3; ++ei)
-    for(int ej=0; ej<3; ++ej)
-      deformation_gradient_h(0,ei,ej) = cases[0].pd.deformationGradient[ei*3+ej];
+  for(int i=0; i<BatchNum; ++i)
+    for(int ei=0; ei<3; ++ei)
+      for(int ej=0; ej<3; ++ej)
+        deformation_gradient_h(i,ei,ej) = cases[0].pd.deformationGradient[ei*3+ej];
   deformation_gradient.modify<Kokkos::HostSpace>();
 
   Kokkos::Timer timer;
@@ -83,53 +94,6 @@ int main(int argc, char * argv[])
   std::cout<<strss<<std::endl;
   double time2 = timer.seconds();
   std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
-
-
-  /*
-  double C[36];
-  an->computeMaterialStiffness(C);
-  std::cout<<"Stress from run"<<std::endl;
-  stressToMat(stress, strss);
-  std::cout<<strss<<std::endl;
-  for(int i=0; i<6; ++i)
-  {
-    for(int j=0; j<6; ++j)
-    {
-      std::cout<<C[i*6+j]<<" ";
-    }
-    std::cout<<"\n";
-  }
-  std::cout<<std::endl;
-  // DEBUG
-  bio::DeformationGradient dg(1,0,0,0,1,0,0,0,1);
-  result = an->run(dg, stress);
-  an->computeMaterialStiffness(C);
-  std::cout<<"Stress from run"<<std::endl;
-  stressToMat(stress, strss);
-  std::cout<<strss<<std::endl;
-  for(int i=0; i<6; ++i)
-  {
-    for(int j=0; j<6; ++j)
-    {
-      std::cout<<C[i*6+j]<<" ";
-    }
-    std::cout<<"\n";
-  }
-  std::cout<<std::endl;
-  // end DEBUG
-  double time2 = timer.seconds();
-  std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
-  if (!result)
-  {
-    std::cerr << "The microscale analysis failed to converge" << std::endl;
-  }
-  std::stringstream sout;
-  sout << "rnk_" << rank << "_fn_" << an->getFn()->getRVEType();
-  apf::writeVtkFiles(sout.str().c_str(), an->getFn()->getNetworkMesh(), 1);
-#ifdef MICRO_USING_PETSC
-  las::finalizePETScLAS();
-#endif
-  */
   amsi::freeAnalysis();
   return 0;
 }

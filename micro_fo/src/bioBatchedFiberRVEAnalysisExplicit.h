@@ -8,7 +8,7 @@
 #include "bioMicroTypeDefinitions.h"
 #include "bioPackedData.h"
 #include "bioBatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
-//#include "bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
+#include "bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
 #include "bioBatchedMesh.h"
 #include <apf.h>
 #include <apfMesh.h> // for count owned
@@ -71,7 +71,7 @@ namespace bio
     // class TagBatchLoopTeamInnerWhile {};
     BatchedFiberRVEAnalysisExplicit(
         std::vector<std::unique_ptr<FiberNetwork>> fiber_networks,
-        std::vector<std::unique_ptr<MicroSolutionStrategy>>
+        std::vector<std::shared_ptr<MicroSolutionStrategy>>
             solution_strategies)
     {
       if(fiber_networks.size() != solution_strategies.size())
@@ -242,13 +242,22 @@ namespace bio
       critical_time_scale_factor.template sync<ExeSpace>();
       displacement_boundary_dof.template sync<ExeSpace>();
       displacement_boundary_values.template sync<ExeSpace>();
+      printf("Problem has %ld DOF and %ld fixed dof with %ld elements.\n", velocity.template getRow<HostMemorySpace>(0).extent(0),
+                                                                        displacement_boundary_dof.template getRow<HostMemorySpace>(0).extent(0),
+                                                                        current_length.template getRow<HostMemorySpace>(0).extent(0)
+                                                                );
+      Kokkos::Timer timer;
+      auto t1 = timer.seconds();
       // Run the specific implementation we are interested in
-      auto result = SerialOuterLoop<Scalar,LO,ExeSpace>::run(rves, connectivity,original_coordinates,current_coordinates,displacement,
+      auto result = TeamOuterLoop<Scalar,LO,ExeSpace>::run(rves, connectivity,original_coordinates,current_coordinates,displacement,
                                velocity, acceleration,force_total,force_internal,force_external,
                                force_damping, nodal_mass,original_length,current_length,residual,
                                fiber_elastic_modulus, fiber_area,fiber_density,
                                viscous_damping_coefficient, critical_time_scale_factor,
                                displacement_boundary_dof, displacement_boundary_values);
+      Kokkos::fence();
+      auto t2 = timer.seconds();
+      printf("Inner Time %f\n", t2-t1);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_dof, current_coordinates, force_internal, sigma);
       return result;

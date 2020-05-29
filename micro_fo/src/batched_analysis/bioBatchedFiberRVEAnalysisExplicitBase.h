@@ -5,6 +5,8 @@
 #include <limits>
 #include "bioPackedData.h"
 #include "bioRVE.h"
+#define TEAM_SIZE 512
+//#define TEAM_SIZE Kokkos::AUTO();
 namespace bio
 {
   template <typename ExeSpace,
@@ -24,8 +26,7 @@ namespace bio
     displacements.template modify<ExeSpace>();
     using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
     using member_type = typename OuterPolicyType::member_type;
-    OuterPolicyType outer_policy(deformation_gradient.extent(0),
-                                 Kokkos::AUTO());
+    OuterPolicyType outer_policy(deformation_gradient.extent(0), TEAM_SIZE);
     Kokkos::parallel_for(
         "applyIncrementalDfm", outer_policy,
         KOKKOS_LAMBDA(member_type team_member) {
@@ -71,8 +72,7 @@ namespace bio
     boundary_values.template modify<ExeSpace>();
     using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
     using member_type = typename OuterPolicyType::member_type;
-    OuterPolicyType outer_policy(deformation_gradient.extent(0),
-                                 Kokkos::AUTO());
+    OuterPolicyType outer_policy(deformation_gradient.extent(0), TEAM_SIZE);
     Kokkos::parallel_for(
         "applyIncrementalDfm", outer_policy,
         KOKKOS_LAMBDA(member_type team_member) {
@@ -107,6 +107,7 @@ namespace bio
   template <typename ExeSpace, typename T, typename T2, typename T3>
   void computeCauchyStress(T2 boundary_dofs, T3 coordinates, T3 force, T stress)
   {
+    using Scalar = typename T::value_type;
     boundary_dofs.template sync<ExeSpace>();
     coordinates.template sync<ExeSpace>();
     force.template sync<ExeSpace>();
@@ -116,7 +117,7 @@ namespace bio
     Kokkos::deep_copy(stress_d, 0);
     using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
     using member_type = typename OuterPolicyType::member_type;
-    OuterPolicyType outer_policy(stress.extent(0), Kokkos::AUTO());
+    OuterPolicyType outer_policy(stress.extent(0), TEAM_SIZE);
     Kokkos::parallel_for(
         "compute cauchy stress", outer_policy,
         KOKKOS_LAMBDA(member_type team_member) {
@@ -138,15 +139,21 @@ namespace bio
                 auto crd1 = coordinates_row(dof1);
                 auto crd2 = coordinates_row(dof2);
                 auto crd3 = coordinates_row(dof3);
-                Kokkos::atomic_add(&stress_row(0), crd1 * f1);
-                Kokkos::atomic_add(&stress_row(1), crd2 * f2);
-                Kokkos::atomic_add(&stress_row(2), crd3 * f3);
-                Kokkos::atomic_add(&stress_row(3),
-                                   0.5 * (crd2 * f3 + crd3 * f2));
-                Kokkos::atomic_add(&stress_row(4),
-                                   0.5 * (crd1 * f3 + crd3 * f1));
-                Kokkos::atomic_add(&stress_row(5),
-                                   0.5 * (crd1 * f2 + crd2 * f1));
+                Kokkos::atomic_add(&stress_row(0),
+                                   static_cast<Scalar>(crd1 * f1));
+                Kokkos::atomic_add(&stress_row(1),
+                                   static_cast<Scalar>(crd2 * f2));
+                Kokkos::atomic_add(&stress_row(2),
+                                   static_cast<Scalar>(crd3 * f3));
+                Kokkos::atomic_add(
+                    &stress_row(3),
+                    static_cast<Scalar>(0.5 * (crd2 * f3 + crd3 * f2)));
+                Kokkos::atomic_add(
+                    &stress_row(4),
+                    static_cast<Scalar>(0.5 * (crd1 * f3 + crd3 * f1)));
+                Kokkos::atomic_add(
+                    &stress_row(5),
+                    static_cast<Scalar>(0.5 * (crd1 * f2 + crd2 * f1)));
               });
         });
   }
@@ -175,15 +182,15 @@ namespace bio
     using HostMemorySpace = typename PST::host_mirror_space;
     using DeviceMemorySpace = typename PST::memory_space;
     // read only view types
-    using RASV = Kokkos::View<const Scalar *,
-                              ExeSpace,
-                              Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
-    using RAOV = Kokkos::View<const Ordinal *,
-                              ExeSpace,
-                              Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
-    // Random Access View types
     using ROSV = Kokkos::View<const Scalar *, ExeSpace>;
     using ROOV = Kokkos::View<const Ordinal *, ExeSpace>;
+    // Random Access View types
+    using RASV = ROSV;  // Kokkos::View<const Scalar *,
+                        // ExeSpace,
+                        // Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
+    using RAOV = ROOV;  // Kokkos::View<const Ordinal *,
+                        // ExeSpace,
+    // Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
     // read write view types
     using RWSV = Kokkos::View<Scalar *, ExeSpace>;
     using RWOV = Kokkos::View<Ordinal *, ExeSpace>;
@@ -220,68 +227,85 @@ namespace bio
           displacement_boundary_values);
     }
     KOKKOS_INLINE_FUNCTION
-    static void getCurrentCoord(const Ordinal i, ROSV coords, ROSV u, RWSV current_coords)
+    static void getCurrentCoord(const Ordinal i,
+                                ROSV coords,
+                                ROSV u,
+                                RWSV current_coords)
     {
       current_coords(i) = coords(i) + u(i);
     }
     KOKKOS_INLINE_FUNCTION
-    static void getElementLength(const Ordinal i, ROSV coords, ROOV connectivity, RWSV l0)
+    static void getElementLength(const Ordinal i,
+                                 ROSV coords,
+                                 ROOV connectivity,
+                                 RWSV l0)
     {
-            int n1 = connectivity(i * 2);
-            int n2 = connectivity(i * 2 + 1);
-            double x1 = coords(n2 * 3) - coords(n1 * 3);
-            double x2 = coords(n2 * 3 + 1) - coords(n1 * 3 + 1);
-            double x3 = coords(n2 * 3 + 2) - coords(n1 * 3 + 2);
-            l0(i) = sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+      Ordinal n1 = connectivity(i * 2);
+      Ordinal n2 = connectivity(i * 2 + 1);
+      Scalar x1 = coords(n2 * 3) - coords(n1 * 3);
+      Scalar x2 = coords(n2 * 3 + 1) - coords(n1 * 3 + 1);
+      Scalar x3 = coords(n2 * 3 + 2) - coords(n1 * 3 + 2);
+      l0(i) = sqrt(x1 * x1 + x2 * x2 + x3 * x3);
     }
     KOKKOS_INLINE_FUNCTION
-    static void getForceLoop1(const Ordinal i, Scalar visc_damp_coeff, ROSV mass_matrix, ROSV v, RWSV f_int, RWSV f_damp)
+    static void getForceLoop1(const Ordinal i,
+                              Scalar visc_damp_coeff,
+                              ROSV mass_matrix,
+                              ROSV v,
+                              RWSV f_int,
+                              RWSV f_damp)
     {
-            f_int(i) = 0;
-            f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
+      f_int(i) = 0;
+      f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
     }
     KOKKOS_INLINE_FUNCTION
     static Scalar getForceLoop2(const Ordinal i,
-                            Scalar fiber_elastic_modulus,
-                            Scalar fiber_area,
-                            Scalar fiber_density,
-                            ROSV l0,
-                            ROSV l,
-                            RASV current_coords,
-                            ROOV connectivity,
-                            Scalar visc_damp_coeff,
-                            RWSV f_int)
-
+                                Scalar fiber_elastic_modulus,
+                                Scalar fiber_area,
+                                Scalar fiber_density,
+                                ROSV l0,
+                                ROSV l,
+                                RASV current_coords,
+                                ROOV connectivity,
+                                Scalar visc_damp_coeff,
+                                RWSV f_int)
     {
-            Scalar local_l = l(i);
-            // FIXME the force reactions are all messed up! need to figure out
-            // how to get the struct data in here?
-            Scalar frc = getLinearReactionForce(
-                l0(i), local_l, fiber_elastic_modulus, fiber_area);
-            auto n1 = connectivity(i * 2);
-            auto n2 = connectivity(i * 2 + 1);
-            Scalar elem_nrm_1 =
-                (current_coords(n2 * 3) - current_coords(n1 * 3)) / local_l;
-            Scalar elem_nrm_2 =
-                (current_coords(n2 * 3 + 1) - current_coords(n1 * 3 + 1)) /
-                local_l;
-            Scalar elem_nrm_3 =
-                (current_coords(n2 * 3 + 2) - current_coords(n1 * 3 + 2)) /
-                local_l;
-            Kokkos::atomic_add(&f_int(n1 * 3), -frc * elem_nrm_1);
-            Kokkos::atomic_add(&f_int(n1 * 3 + 1), -frc * elem_nrm_2);
-            Kokkos::atomic_add(&f_int(n1 * 3 + 2), -frc * elem_nrm_3);
-            Kokkos::atomic_add(&f_int(n2 * 3), frc * elem_nrm_1);
-            Kokkos::atomic_add(&f_int(n2 * 3 + 1), frc * elem_nrm_2);
-            Kokkos::atomic_add(&f_int(n2 * 3 + 2), frc * elem_nrm_3);
-            return local_l;
+      Scalar local_l = l(i);
+      // FIXME the force reactions are all messed up! need to figure out
+      // how to get the struct data in here?
+      Scalar frc = getLinearReactionForce(l0(i), local_l, fiber_elastic_modulus,
+                                          fiber_area);
+      auto n1 = connectivity(i * 2);
+      auto n2 = connectivity(i * 2 + 1);
+      Scalar elem_nrm_1 =
+          (current_coords(n2 * 3) - current_coords(n1 * 3)) / local_l;
+      Scalar elem_nrm_2 =
+          (current_coords(n2 * 3 + 1) - current_coords(n1 * 3 + 1)) / local_l;
+      Scalar elem_nrm_3 =
+          (current_coords(n2 * 3 + 2) - current_coords(n1 * 3 + 2)) / local_l;
+      Kokkos::atomic_add(&f_int(n1 * 3),
+                         static_cast<Scalar>(-frc * elem_nrm_1));
+      Kokkos::atomic_add(&f_int(n1 * 3 + 1),
+                         static_cast<Scalar>(-frc * elem_nrm_2));
+      Kokkos::atomic_add(&f_int(n1 * 3 + 2),
+                         static_cast<Scalar>(-frc * elem_nrm_3));
+      Kokkos::atomic_add(&f_int(n2 * 3), static_cast<Scalar>(frc * elem_nrm_1));
+      Kokkos::atomic_add(&f_int(n2 * 3 + 1),
+                         static_cast<Scalar>(frc * elem_nrm_2));
+      Kokkos::atomic_add(&f_int(n2 * 3 + 2),
+                         static_cast<Scalar>(frc * elem_nrm_3));
+      return local_l;
     }
     KOKKOS_INLINE_FUNCTION
-    static Scalar getForceLoop3(const Ordinal i, ROSV f_ext, ROSV f_int, ROSV f_damp, RWSV f)
+    static Scalar getForceLoop3(const Ordinal i,
+                                ROSV f_ext,
+                                ROSV f_int,
+                                ROSV f_damp,
+                                RWSV f)
     {
-            double local_residual = f_ext(i) - f_int(i);
-            f(i) = local_residual - f_damp(i);
-            return local_residual * local_residual;
+      Scalar local_residual = f_ext(i) - f_int(i);
+      f(i) = local_residual - f_damp(i);
+      return local_residual * local_residual;
     }
     KOKKOS_INLINE_FUNCTION
     static void updateAcceleration(const Ordinal i,
@@ -289,7 +313,7 @@ namespace bio
                                    ROSV f,
                                    RWSV a)
     {
-            a(i) = (1.0 / mass_matrix(i / 3)) * f(i);
+      a(i) = (1.0 / mass_matrix(i / 3)) * f(i);
     }
     KOKKOS_INLINE_FUNCTION
     static void update(const Ordinal i, ROSV a, Scalar dt, RWSV v)
@@ -297,19 +321,28 @@ namespace bio
       v(i) += dt * a(i);
     }
     KOKKOS_INLINE_FUNCTION
-    static void updateAccelVel(const Ordinal i, Scalar dt, ROSV mass_matrix, ROSV f, RWSV a, RWSV v)
+    static void updateAccelVel(const Ordinal i,
+                               Scalar dt,
+                               ROSV mass_matrix,
+                               ROSV f,
+                               RWSV a,
+                               RWSV v)
     {
-            Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
-            a(i) = a_local;
-            v(i) += dt * a_local;
+      Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
+      a(i) = a_local;
+      v(i) += dt * a_local;
     }
     KOKKOS_INLINE_FUNCTION
-    static void applyBC(const Ordinal i, Scalar amp_t, ROOV dof, ROSV values, RWSV u)
+    static void applyBC(const Ordinal i,
+                        Scalar amp_t,
+                        ROOV dof,
+                        ROSV values,
+                        RWSV u)
     {
       u(dof(i)) = values(i) * amp_t;
     }
     KOKKOS_INLINE_FUNCTION
-    static void applyAccelVelBC(const Ordinal i, 
+    static void applyAccelVelBC(const Ordinal i,
                                 Scalar a_amp,
                                 Scalar v_amp,
                                 Scalar visc_damp_coeff,
@@ -323,18 +356,18 @@ namespace bio
                                 RWSV f_damp,
                                 RWSV f)
     {
-            auto local_dof = dof(i);
-            Scalar value = values(i);
-            Scalar a_local = value * a_amp;
-            Scalar v_local = value * v_amp;
-            Scalar mass = mass_matrix(local_dof / 3);
-            Scalar f_damp_local = visc_damp_coeff * mass * v_local;
-            Scalar f_inertial = mass * a_local;
-            a(local_dof) = a_local;
-            v(local_dof) = v_local;
-            f_damp(local_dof) = f_damp_local;
-            f_ext(local_dof) = f_inertial + f_int(local_dof) + f_damp_local;
-            f(local_dof) = f_inertial;
+      auto local_dof = dof(i);
+      Scalar value = values(i);
+      Scalar a_local = value * a_amp;
+      Scalar v_local = value * v_amp;
+      Scalar mass = mass_matrix(local_dof / 3);
+      Scalar f_damp_local = visc_damp_coeff * mass * v_local;
+      Scalar f_inertial = mass * a_local;
+      a(local_dof) = a_local;
+      v(local_dof) = v_local;
+      f_damp(local_dof) = f_damp_local;
+      f_ext(local_dof) = f_inertial + f_int(local_dof) + f_damp_local;
+      f(local_dof) = f_inertial;
     }
   };
 }  // namespace bio

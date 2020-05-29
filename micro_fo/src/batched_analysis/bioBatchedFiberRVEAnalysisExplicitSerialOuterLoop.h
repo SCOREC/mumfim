@@ -19,13 +19,12 @@ namespace bio
     using typename BaseType::HostMemorySpace;
     using typename BaseType::POT;
     using typename BaseType::PST;
-    using typename BaseType::RASV;
     using typename BaseType::RAOV;
-    using typename BaseType::ROSV;
+    using typename BaseType::RASV;
     using typename BaseType::ROOV;
-    using typename BaseType::RWSV;
+    using typename BaseType::ROSV;
     using typename BaseType::RWOV;
-
+    using typename BaseType::RWSV;
     template <typename ExePolicy>
     static void getCurrentCoords(ExePolicy dof_policy,
                                  ROSV coords,
@@ -33,8 +32,9 @@ namespace bio
                                  RWSV current_coords)
     {
       Kokkos::parallel_for(
-          "getCurrentCoords", dof_policy,
-          KOKKOS_LAMBDA(const Ordinal i) { SerialOuterLoop::getCurrentCoord(i,coords,u,current_coords);});
+          "getCurrentCoords", dof_policy, KOKKOS_LAMBDA(const Ordinal i) {
+            SerialOuterLoop::getCurrentCoord(i, coords, u, current_coords);
+          });
     }
     template <typename ExePolicy>
     static void getElementLengths(ExePolicy element_policy,
@@ -44,7 +44,7 @@ namespace bio
     {
       Kokkos::parallel_for(
           "getElementLengths", element_policy, KOKKOS_LAMBDA(const Ordinal i) {
-          SerialOuterLoop::getElementLength(i,coords,connectivity,l0);
+            SerialOuterLoop::getElementLength(i, coords, connectivity, l0);
           });
     }
     template <typename ExePolicy>
@@ -73,15 +73,17 @@ namespace bio
       // swap force arrays and zero internal forces
       Kokkos::parallel_for(
           "getFoces--Loop1", dof_policy, KOKKOS_LAMBDA(const int i) {
-          SerialOuterLoop::getForceLoop1(i, visc_damp_coeff, mass_matrix, v, f_int, f_damp);
+            SerialOuterLoop::getForceLoop1(i, visc_damp_coeff, mass_matrix, v,
+                                           f_int, f_damp);
           });
       // set the internal forces
       Kokkos::Min<Scalar> min_reducer(dt);
       Kokkos::parallel_reduce(
           "getForces--mainLoop", element_policy,
           KOKKOS_LAMBDA(const int i, Scalar & dt_crit_elem) {
-            auto local_l = SerialOuterLoop::getForceLoop2(i, fiber_elastic_modulus, fiber_area,
-                fiber_density, l0, l, current_coords,connectivity,visc_damp_coeff,f_int);
+            auto local_l = SerialOuterLoop::getForceLoop2(
+                i, fiber_elastic_modulus, fiber_area, fiber_density, l0, l,
+                current_coords, connectivity, visc_damp_coeff, f_int);
             min_reducer.join(dt_crit_elem, local_l / sound_speed);
           },
           min_reducer);
@@ -89,7 +91,8 @@ namespace bio
       Kokkos::parallel_reduce(
           "getForces-Loop3", dof_policy,
           KOKKOS_LAMBDA(const int i, Scalar & residual_update) {
-            residual_update += SerialOuterLoop::getForceLoop3(i, f_ext, f_int, f_damp, f);
+            residual_update +=
+                SerialOuterLoop::getForceLoop3(i, f_ext, f_int, f_damp, f);
           },
           residual);
       residual = sqrt(residual);
@@ -97,28 +100,28 @@ namespace bio
     }
     template <typename ExePolicy>
     static void updateAccelerations(ExePolicy dof_policy,
-                                   ROSV mass_matrix,
-                                   ROSV f,
-                                   RWSV a)
+                                    ROSV mass_matrix,
+                                    ROSV f,
+                                    RWSV a)
     {
       Kokkos::parallel_for(
           "updateAcceleration", dof_policy, KOKKOS_LAMBDA(const int i) {
-          SerialOuterLoop::updateAcceleration(i,mass_matrix,f,a);
+            SerialOuterLoop::updateAcceleration(i, mass_matrix, f, a);
           });
     }
     template <typename ExePolicy>
     static void updateAccelVels(ExePolicy dof_policy,
-                               Scalar dt,
-                               ROSV mass_matrix,
-                               ROSV f,
-                               RWSV a,
-                               RWSV v)
+                                Scalar dt,
+                                ROSV mass_matrix,
+                                ROSV f,
+                                RWSV a,
+                                RWSV v)
     {
       // 2*ndof loads, 2*ndof writes
       // 2*ndof multiply, 2*ndof divide
       Kokkos::parallel_for(
           "updateAccelVel", dof_policy, KOKKOS_LAMBDA(const int i) {
-          SerialOuterLoop::updateAccelVel(i, dt, mass_matrix,f,a,v);
+            SerialOuterLoop::updateAccelVel(i, dt, mass_matrix, f, a, v);
           });
     }
     template <typename ExePolicy>
@@ -126,46 +129,45 @@ namespace bio
     {
       Kokkos::parallel_for(
           "update", dof_policy,
-          KOKKOS_LAMBDA(const int i) { SerialOuterLoop::update(i,a,dt,v);});
+          KOKKOS_LAMBDA(const int i) { SerialOuterLoop::update(i, a, dt, v); });
     }
     template <typename ExePolicy>
     // FIXME Add init values back!
     static void applyBCs(ExePolicy fixed_dof_policy,
-                            Scalar amp_t,
-                            ROOV dof,
-                            ROSV values,
-                            RWSV u)
+                         Scalar amp_t,
+                         ROOV dof,
+                         ROSV values,
+                         RWSV u)
     {
       Kokkos::parallel_for(
-          "applyBC", fixed_dof_policy,
-          KOKKOS_LAMBDA(const int i) { SerialOuterLoop::applyBC(i,amp_t,dof,values,u);});
+          "applyBC", fixed_dof_policy, KOKKOS_LAMBDA(const int i) {
+            SerialOuterLoop::applyBC(i, amp_t, dof, values, u);
+          });
     }
     template <typename ExePolicy>
     static void applyAccelVelBCs(ExePolicy fixed_dof_policy,
-                                Scalar a_amp,
-                                Scalar v_amp,
-                                Scalar visc_damp_coeff,
-                                ROOV dof,
-                                ROSV values,
-                                ROSV mass_matrix,
-                                RWSV a,
-                                RWSV v,
-                                RWSV f_int,
-                                RWSV f_ext,
-                                RWSV f_damp,
-                                RWSV f)
+                                 Scalar a_amp,
+                                 Scalar v_amp,
+                                 Scalar visc_damp_coeff,
+                                 ROOV dof,
+                                 ROSV values,
+                                 ROSV mass_matrix,
+                                 RWSV a,
+                                 RWSV v,
+                                 RWSV f_int,
+                                 RWSV f_ext,
+                                 RWSV f_damp,
+                                 RWSV f)
     {
       // 4*nfixed reads, 5*nfixed writes
       // 5*nfixed multiply, 2*nfixed adds, 1 divide
       Kokkos::parallel_for(
           "applyAccelVelBC", fixed_dof_policy, KOKKOS_LAMBDA(const int i) {
-          SerialOuterLoop::applyAccelVelBC(i, a_amp,v_amp,visc_damp_coeff,dof,values,mass_matrix,
-                                           a,v,f_int,f_ext,f_damp, f);
+            SerialOuterLoop::applyAccelVelBC(i, a_amp, v_amp, visc_damp_coeff,
+                                             dof, values, mass_matrix, a, v,
+                                             f_int, f_ext, f_damp, f);
           });
     }
-
-
-
     static bool run(const std::vector<RVE> & rves,
                     POT connectivity,
                     PST original_coordinates,
@@ -248,7 +250,7 @@ namespace bio
             visc_damp_coeff, force_internal_row, force_external_row,
             force_damping_row, force_total_row, residual);
         SerialOuterLoop::updateAccelerations(dof_policy, nodal_mass_row,
-                                            force_total_row, acceleration_row);
+                                             force_total_row, acceleration_row);
         do
         {
           dt_nphalf = crit_time_scale_factor * dt_crit;
@@ -256,10 +258,9 @@ namespace bio
           t_nphalf = 0.5 * (current_time + t_npone);
           assert(dt_nphalf != t_npone != t_nphalf);
           SerialOuterLoop::updates(dof_policy, acceleration_row,
-                                          (t_nphalf - current_time),
-                                          velocity_row);
-          SerialOuterLoop::updates(dof_policy, velocity_row,
-                                              dt_nphalf, displacement_row);
+                                   (t_nphalf - current_time), velocity_row);
+          SerialOuterLoop::updates(dof_policy, velocity_row, dt_nphalf,
+                                   displacement_row);
           SerialOuterLoop::applyBCs(
               fixed_dof_policy, 1.0, displacement_boundary_dof_row,
               displacement_boundary_values_row, displacement_row);
@@ -276,8 +277,8 @@ namespace bio
               visc_damp_coeff, force_internal_row, force_external_row,
               force_damping_row, force_total_row, residual);
           SerialOuterLoop::updateAccelVels(dof_policy, t_npone - t_nphalf,
-                                          nodal_mass_row, force_total_row,
-                                          acceleration_row, velocity_row);
+                                           nodal_mass_row, force_total_row,
+                                           acceleration_row, velocity_row);
           // the derivative and second derivative amplitudes are zero
           // since we apply the displacement boundary condition all at once
           SerialOuterLoop::applyAccelVelBCs(
