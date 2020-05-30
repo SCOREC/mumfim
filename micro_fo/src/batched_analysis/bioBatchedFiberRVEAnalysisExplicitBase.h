@@ -6,7 +6,7 @@
 #include "bioPackedData.h"
 #include "bioRVE.h"
 #define TEAM_SIZE 512
-//#define TEAM_SIZE Kokkos::AUTO();
+//#define TEAM_SIZE Kokkos::AUTO()
 namespace bio
 {
   template <typename ExeSpace,
@@ -158,10 +158,11 @@ namespace bio
         });
   }
   template <typename Scalar>
-  KOKKOS_INLINE_FUNCTION Scalar getLinearReactionForce(Scalar orig_length,
-                                                       Scalar length,
-                                                       Scalar elastic_modulus,
-                                                       Scalar area)
+  KOKKOS_FORCEINLINE_FUNCTION Scalar
+  getLinearReactionForce(Scalar orig_length,
+                         Scalar length,
+                         Scalar elastic_modulus,
+                         Scalar area)
   {
     // abaqus ...
     // double length_ratio = length / orig_length;
@@ -226,7 +227,9 @@ namespace bio
           critical_time_scale_factor, displacement_boundary_dof,
           displacement_boundary_values);
     }
-    KOKKOS_INLINE_FUNCTION
+
+    protected:
+    KOKKOS_FORCEINLINE_FUNCTION
     static void getCurrentCoord(const Ordinal i,
                                 ROSV coords,
                                 ROSV u,
@@ -234,7 +237,7 @@ namespace bio
     {
       current_coords(i) = coords(i) + u(i);
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void getElementLength(const Ordinal i,
                                  ROSV coords,
                                  ROOV connectivity,
@@ -247,7 +250,7 @@ namespace bio
       Scalar x3 = coords(n2 * 3 + 2) - coords(n1 * 3 + 2);
       l0(i) = sqrt(x1 * x1 + x2 * x2 + x3 * x3);
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void getForceLoop1(const Ordinal i,
                               Scalar visc_damp_coeff,
                               ROSV mass_matrix,
@@ -258,7 +261,7 @@ namespace bio
       f_int(i) = 0;
       f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop2(const Ordinal i,
                                 Scalar fiber_elastic_modulus,
                                 Scalar fiber_area,
@@ -296,7 +299,7 @@ namespace bio
                          static_cast<Scalar>(frc * elem_nrm_3));
       return local_l;
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop3(const Ordinal i,
                                 ROSV f_ext,
                                 ROSV f_int,
@@ -307,7 +310,7 @@ namespace bio
       f(i) = local_residual - f_damp(i);
       return local_residual * local_residual;
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void updateAcceleration(const Ordinal i,
                                    ROSV mass_matrix,
                                    ROSV f,
@@ -315,12 +318,12 @@ namespace bio
     {
       a(i) = (1.0 / mass_matrix(i / 3)) * f(i);
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void update(const Ordinal i, ROSV a, Scalar dt, RWSV v)
     {
       v(i) += dt * a(i);
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void updateAccelVel(const Ordinal i,
                                Scalar dt,
                                ROSV mass_matrix,
@@ -332,7 +335,7 @@ namespace bio
       a(i) = a_local;
       v(i) += dt * a_local;
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void applyBC(const Ordinal i,
                         Scalar amp_t,
                         ROOV dof,
@@ -341,7 +344,7 @@ namespace bio
     {
       u(dof(i)) = values(i) * amp_t;
     }
-    KOKKOS_INLINE_FUNCTION
+    KOKKOS_FORCEINLINE_FUNCTION
     static void applyAccelVelBC(const Ordinal i,
                                 Scalar a_amp,
                                 Scalar v_amp,
