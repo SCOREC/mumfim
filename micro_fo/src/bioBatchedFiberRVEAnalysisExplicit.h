@@ -32,7 +32,7 @@ namespace bio
     using HostMemorySpace = typename PackedScalarType::host_mirror_space;
     using DeviceMemorySpace = typename PackedScalarType::memory_space;
     // helper class typedefs
-    using MeshFunctionType = BatchedMeshFunctions<Scalar,LocalOrdinal,HostMemorySpace>;
+    using MeshFunctionType = BatchedApfMeshFunctions<Scalar,LocalOrdinal,HostMemorySpace>;
     // Simulation state vectors
     PackedOrdinalType connectivity;
     PackedScalarType original_coordinates;

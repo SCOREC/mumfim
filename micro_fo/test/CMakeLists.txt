@@ -40,6 +40,7 @@ find_package(Catch2 REQUIRED)
 include(ParseAndAddCatchTests)
 
 set(TEST_SOURCES test_main.cc
+                 test_reorder_mesh.cc
                  test_kokkos_view_of_views.cc
    )
 add_executable(unit_tests ${TEST_SOURCES})

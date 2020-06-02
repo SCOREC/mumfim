@@ -12,8 +12,9 @@
 #include "bioUtility.h"
 namespace bio
 {
+  // functions that need to interact with the apf mesh
   template <typename Scalar, typename Ordinal, typename HostSpace>
-  struct BatchedMeshFunctions
+  struct BatchedApfMeshFunctions
   {
     static_assert(
         Kokkos::SpaceAccessibility<HostSpace, Kokkos::HostSpace>::accessible,

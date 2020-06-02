@@ -226,6 +226,10 @@ namespace bio
                 displacement_boundary_dof.template getRow<ExeSpace>(i);
             auto displacement_boundary_values_row =
                 displacement_boundary_values.template getRow<ExeSpace>(i);
+
+            //Kokkos::View<const Scalar*, ExeSpace, Kokkos::MemoryRandomAccess> test = 
+            //    displacement_boundary_values.template getRow<ExeSpace>(i);
+            //printf("Random access array %f", test(0));
             // get the scalar values
             Scalar visc_damp_coeff =
                 viscous_damping_coefficient.template getRow<ExeSpace>(i)(0);
@@ -251,7 +255,6 @@ namespace bio
             TeamOuterLoop::getElementLengths(
                 element_policy, original_coordinates_row, connectivity_row,
                 original_length_row);
-            team_member.team_barrier();
             TeamOuterLoop::getCurrentCoords(
                 dof_policy, original_coordinates_row, displacement_row,
                 current_coordinates_row);
@@ -313,7 +316,6 @@ namespace bio
                   displacement_boundary_values_row, nodal_mass_row,
                   acceleration_row, velocity_row, force_internal_row,
                   force_external_row, force_damping_row, force_total_row);
-              team_member.team_barrier();
               current_time = t_npone;
               ++n_step;
               team_member.team_barrier();
