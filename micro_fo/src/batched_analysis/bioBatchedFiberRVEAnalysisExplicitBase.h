@@ -5,8 +5,8 @@
 #include <limits>
 #include "bioPackedData.h"
 #include "bioRVE.h"
-#define TEAM_SIZE 512
-//#define TEAM_SIZE Kokkos::AUTO()
+//#define TEAM_SIZE 512
+#define TEAM_SIZE Kokkos::AUTO
 namespace bio
 {
   template <typename ExeSpace,
@@ -321,7 +321,8 @@ namespace bio
     KOKKOS_FORCEINLINE_FUNCTION
     static void update(const Ordinal i, ROSV a, Scalar dt, RWSV v)
     {
-      v(i) += dt * a(i);
+      //v(i) += dt * a(i);
+      Kokkos::atomic_add(&v(i), dt * a(i));
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static void updateAccelVel(const Ordinal i,
@@ -333,7 +334,8 @@ namespace bio
     {
       Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
       a(i) = a_local;
-      v(i) += dt * a_local;
+      //v(i) += dt * a_local;
+      Kokkos::atomic_add(&v(i), dt*a_local);
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static void applyBC(const Ordinal i,

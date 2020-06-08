@@ -16,7 +16,10 @@ namespace bio
     class TagScanPermutation{};
     class TagPermuteConnectivity{};
     class TagPermuteCoordinates{};
+    class TagPermuteNodal{};
+    class TagPermuteFixedDof{};
     using RWOV = Kokkos::View<Ordinal *, ExeSpace>;
+    using ROOV = Kokkos::View<Ordinal *, ExeSpace>;
     using RWSV = Kokkos::View<Scalar *, ExeSpace>;
     Ordinal nvert_;
     RWOV fixed_vert_;
@@ -55,6 +58,18 @@ namespace bio
     {
       coordinates_(3*permutation_array_(i/3)+i%3) = tmp_(i);
     }
+    KOKKOS_INLINE_FUNCTION
+    void operator()(TagPermuteNodal, const int i) const
+    {
+      coordinates_(permutation_array_(i)) = tmp_(i);
+    }
+    KOKKOS_INLINE_FUNCTION
+    void operator()(TagPermuteFixedDof, const int i) const
+    {
+      auto original_dof = fixed_vert_(i);
+      auto original_vert = original_dof/3;
+      fixed_vert_(i) = 3*permutation_array_(original_vert)+original_dof%3;
+    }
     // create the map from the old to the new verts
     void createPermutationArray() const
     {
@@ -66,6 +81,7 @@ namespace bio
     {
       connectivity_ = connectivity;
       Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteConnectivity,ExeSpace>(0,connectivity_.extent(0)),*this);
+      connectivity_ = RWOV();
     }
     void applyPermutationToCoordinates(RWSV coordinates) 
     {
@@ -75,8 +91,25 @@ namespace bio
       Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteCoordinates,ExeSpace>(0,coordinates_.extent(0)), *this);
       // unallocate the temporary view
       tmp_ = RWSV();
+      coordinates_ = RWSV();
     }
-    //void applyPermuationToDof();
+    void applyPermutationToNodalValue(RWSV nodal) 
+    {
+      coordinates_ = nodal;
+      tmp_ = RWSV("nodal data", coordinates_.extent(0));
+      Kokkos::deep_copy(tmp_, coordinates_);
+      Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteNodal,ExeSpace>(0,coordinates_.extent(0)), *this);
+      // unallocate the temporary view
+      tmp_ = RWSV();
+    }
+    void applyPermutationToFixedDof(RWOV fixed_dof) 
+    {
+      fixed_vert_ = fixed_dof;
+      Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteFixedDof,ExeSpace>(0,fixed_vert_.extent(0)), *this);
+      // unallocate the temporary view
+      fixed_vert_ = RWOV();
+    }
+    ROOV getPermutationArray() { return permutation_array_; }
   };
 }
 #endif

@@ -7,8 +7,9 @@
 #include "bioMicroFOParams.h"
 #include "bioMicroTypeDefinitions.h"
 #include "bioPackedData.h"
-#include "bioBatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
+//#include "bioBatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
 #include "bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
+#include "bioBatchedReorderMesh.h"
 #include "bioBatchedMesh.h"
 #include <apf.h>
 #include <apfMesh.h> // for count owned
@@ -129,6 +130,7 @@ namespace bio
         // analysis should not change every time it is run (only the values change), so
         // we do not need to update the sizes each time we run the analsis
         fixed_dof_counts_h(i) = 3*boundary_verts.back().size();
+        //fixed_dof_counts_h(i) = boundary_verts.back().size();
         // currently we only deal with one material property for all fibers
         // eventually this will be changed
         material_counts_h(i) = 1;
@@ -176,8 +178,10 @@ namespace bio
                        fiber_networks[i]->getNetworkMesh()->getCoordinateField(),
                        original_coordinates_row);
         auto displacement_boundary_dof_row = displacement_boundary_dof.template getRow<HostMemorySpace>(i);
+        Kokkos::View<LO*, Kokkos::HostSpace> fixed_vert("fixed verts", displacement_boundary_dof_row.extent(0)/3);
         apf::NaiveOrder(fiber_networks[i]->getUNumbering());
         MeshFunctionType::getFixedDof(fiber_networks[i]->getUNumbering(), displacement_boundary_dof_row, boundary_verts[i]);
+        MeshFunctionType::getFixedVert(fiber_networks[i]->getUNumbering(), fixed_vert, boundary_verts[i]);
         auto fiber_elastic_modulus_row = fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
         fiber_elastic_modulus_row(0) = fiber_networks[i]->getFiberReaction(0).E;
         auto fiber_area_row = fiber_area.template getRow<HostMemorySpace>(i);
@@ -192,6 +196,14 @@ namespace bio
         auto nodal_mass_row = nodal_mass.template getRow<HostMemorySpace>(i);
         MeshFunctionType::getNodalMass(fiber_networks[i]->getNetworkMesh(), fiber_density_row(0),
                      fiber_area_row(0), nodal_mass_row);
+        // reorder the mesh
+        ReorderMesh<Scalar, LocalOrdinal, Kokkos::Serial> reorder(nodal_mass_row.extent(0), fixed_vert);
+        reorder.createPermutationArray();
+        reorder.applyPermutationToConnectivity(connectivity_row);
+        reorder.applyPermutationToCoordinates(original_coordinates_row);
+        reorder.applyPermutationToNodalValue(nodal_mass_row);
+        reorder.applyPermutationToConnectivity(fixed_vert);
+        reorder.applyPermutationToFixedDof(displacement_boundary_dof_row);
       }
       // mark the packed data as modified
       connectivity.template modify<HostMemorySpace>();
@@ -267,6 +279,6 @@ namespace bio
     };
   };
   // the actual explicit instantionations can be found in the associated cc file
-  //extern template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
+  extern template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
 }  // namespace bio
 #endif

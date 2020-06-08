@@ -114,6 +114,17 @@ namespace bio
         fixed_dof_view(i * 3 + 2) = apf::getNumber(numbering, nd, 0, 2);
       }
     }
+    // FIXME this is just a hack for now...assuming  naive ordering
+    static void getFixedVert(apf::Numbering * numbering,
+                            RWOV fixed_vert_view,
+                            std::vector<apf::MeshEntity *> bnd_nds)
+    {
+      for (std::size_t i = 0; i < bnd_nds.size(); ++i)
+      {
+        apf::MeshEntity * nd = bnd_nds[i];
+        fixed_vert_view(i ) = apf::getNumber(numbering, nd, 0, 0)/3;
+      }
+    }
     // runtime needs
     template <typename Layout, typename Device>
     static void updateRVECoords(RVE & rve,
