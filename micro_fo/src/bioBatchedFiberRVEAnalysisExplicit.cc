@@ -3,5 +3,4 @@
 namespace bio
 {
   template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
-
 }

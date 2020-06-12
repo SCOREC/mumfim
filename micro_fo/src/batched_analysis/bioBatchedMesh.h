@@ -116,13 +116,13 @@ namespace bio
     }
     // FIXME this is just a hack for now...assuming  naive ordering
     static void getFixedVert(apf::Numbering * numbering,
-                            RWOV fixed_vert_view,
-                            std::vector<apf::MeshEntity *> bnd_nds)
+                             RWOV fixed_vert_view,
+                             std::vector<apf::MeshEntity *> bnd_nds)
     {
       for (std::size_t i = 0; i < bnd_nds.size(); ++i)
       {
         apf::MeshEntity * nd = bnd_nds[i];
-        fixed_vert_view(i ) = apf::getNumber(numbering, nd, 0, 0)/3;
+        fixed_vert_view(i) = apf::getNumber(numbering, nd, 0, 0) / 3;
       }
     }
     // runtime needs

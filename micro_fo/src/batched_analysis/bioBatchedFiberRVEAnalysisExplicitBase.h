@@ -10,11 +10,13 @@
 namespace bio
 {
   template <typename ExeSpace,
+            typename Ordinal,
             typename T,
             typename T2,
             typename T3,
             int DIM = 3>
-  void applyIncrementalDeformationToDisplacement(T deformation_gradient,
+  void applyIncrementalDeformationToDisplacement(Ordinal number_rves,
+                                                 T deformation_gradient,
                                                  T3 coordinates,
                                                  T2 displacements)
   {
@@ -26,15 +28,17 @@ namespace bio
     displacements.template modify<ExeSpace>();
     using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
     using member_type = typename OuterPolicyType::member_type;
-    OuterPolicyType outer_policy(deformation_gradient.extent(0), TEAM_SIZE);
+    OuterPolicyType outer_policy(number_rves, TEAM_SIZE);
     Kokkos::parallel_for(
         "applyIncrementalDfm", outer_policy,
         KOKKOS_LAMBDA(member_type team_member) {
           int rve = team_member.league_rank();
           auto displacements_row = displacements.template getRow<ExeSpace>(rve);
           auto coordinates_row = coordinates.template getRow<ExeSpace>(rve);
-          auto deformation_gradient_row = Kokkos::subview(
-              deformation_gradient_d, rve, Kokkos::ALL(), Kokkos::ALL());
+          auto deformation_idx = deformation_gradient_d.extent(0) > 1 ? rve : 0;
+          auto deformation_gradient_row =
+              Kokkos::subview(deformation_gradient_d, deformation_idx,
+                              Kokkos::ALL(), Kokkos::ALL());
           Kokkos::parallel_for(
               Kokkos::TeamThreadRange(team_member,
                                       displacements_row.extent(0) / DIM),
@@ -49,57 +53,6 @@ namespace bio
                       (deformation_gradient_row(k, 2) - (k == 2 ? 1 : 0)) *
                           coordinates_row(i * DIM + 2) +
                       displacements_row(i * DIM + k);
-                }
-              });
-        });
-  }
-  template <typename ExeSpace,
-            typename T,
-            typename T2,
-            typename T3,
-            int DIM = 3>
-  void applyIncrementalDeformationToBoundary(T deformation_gradient,
-                                             T2 coordinates,
-                                             T3 boundary_dof,
-                                             T2 boundary_values)
-  {
-    deformation_gradient.template sync<ExeSpace>();
-    auto deformation_gradient_d =
-        deformation_gradient.template view<ExeSpace>();
-    coordinates.template sync<ExeSpace>();
-    boundary_dof.template sync<ExeSpace>();
-    boundary_values.template sync<ExeSpace>();
-    boundary_values.template modify<ExeSpace>();
-    using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
-    using member_type = typename OuterPolicyType::member_type;
-    OuterPolicyType outer_policy(deformation_gradient.extent(0), TEAM_SIZE);
-    Kokkos::parallel_for(
-        "applyIncrementalDfm", outer_policy,
-        KOKKOS_LAMBDA(member_type team_member) {
-          int rve = team_member.league_rank();
-          auto deformation_gradient_row = Kokkos::subview(
-              deformation_gradient_d, rve, Kokkos::ALL(), Kokkos::ALL());
-          auto coordinates_row = coordinates.template getRow<ExeSpace>(rve);
-          auto boundary_dof_row = boundary_dof.template getRow<ExeSpace>(rve);
-          auto boundary_values_row =
-              boundary_values.template getRow<ExeSpace>(rve);
-          Kokkos::parallel_for(
-              Kokkos::TeamThreadRange(team_member,
-                                      boundary_dof_row.extent(0) / DIM),
-              [&](int i) {
-                auto dof1 = boundary_dof_row(i * DIM);
-                auto dof2 = boundary_dof_row(i * DIM + 1);
-                auto dof3 = boundary_dof_row(i * DIM + 2);
-                for (int k = 0; k < 3; ++k)
-                {
-                  boundary_values_row(i * DIM + k) =
-                      (deformation_gradient_row(k, 0) - (k == 0 ? 1 : 0)) *
-                          coordinates_row(dof1) +
-                      (deformation_gradient_row(k, 1) - (k == 1 ? 1 : 0)) *
-                          coordinates_row(dof2) +
-                      (deformation_gradient_row(k, 2) - (k == 2 ? 1 : 0)) *
-                          coordinates_row(dof3) +
-                      boundary_values_row(i * DIM + k);
                 }
               });
         });
@@ -215,8 +168,7 @@ namespace bio
                     PST fiber_density,
                     PST viscous_damping_coefficient,
                     PST critical_time_scale_factor,
-                    POT displacement_boundary_dof,
-                    PST displacement_boundary_values)
+                    POT displacement_boundary_dof)
     {
       return Derived::run(
           rves, connectivity, original_coordinates, current_coordinates,
@@ -224,8 +176,7 @@ namespace bio
           force_external, force_damping, nodal_mass, original_length,
           current_length, residual, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_dof,
-          displacement_boundary_values);
+          critical_time_scale_factor, displacement_boundary_dof);
     }
 
     protected:
@@ -321,7 +272,7 @@ namespace bio
     KOKKOS_FORCEINLINE_FUNCTION
     static void update(const Ordinal i, ROSV a, Scalar dt, RWSV v)
     {
-      //v(i) += dt * a(i);
+      // v(i) += dt * a(i);
       Kokkos::atomic_add(&v(i), dt * a(i));
     }
     KOKKOS_FORCEINLINE_FUNCTION
@@ -334,8 +285,8 @@ namespace bio
     {
       Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
       a(i) = a_local;
-      //v(i) += dt * a_local;
-      Kokkos::atomic_add(&v(i), dt*a_local);
+      // v(i) += dt * a_local;
+      Kokkos::atomic_add(&v(i), dt * a_local);
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static void applyBC(const Ordinal i,

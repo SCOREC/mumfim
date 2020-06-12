@@ -17,21 +17,43 @@ namespace bio
     std::vector<std::vector<int>> idx = {{0,0},{1,1},{2,2},{1,2},{0,2},{0,1}};
     double sigma1[6];
     //double h = 1E-8;
-    double h = 1E-5;
+    constexpr double h = 1E-5;
+    double D1 = sqrt(1.0 / (1 - 2 * h));
+    constexpr double l1 = 1;
+    constexpr double l2 = (1 + h) / (1 - h * h);
+    constexpr double l3 = (1 - h) / (1 - h * h);
+    double l2pl3 = 0.5 * (sqrt(l2) + sqrt(l3));
+    double l2ml3 = 0.5 * (sqrt(l2) - sqrt(l3));
     // assume 3D
     for(int i=0; i<6; ++i)
     {
       // compute V from V = sqrt((I-2e)^-1)
-      // compute I-2e
-      apf::Matrix3x3 im2e(1,0,0,0,1,0,0,0,1);
       // symmetric e=1/2(e+e^T)
-      im2e[idx[i][0]][idx[i][1]] = im2e[idx[i][1]][idx[i][0]] = (idx[i][0]==idx[i][1]) ? 1-2*h : -h;
-      apf::Matrix3x3 im2einv = apf::invert(im2e);
-      apf::Matrix3x3 V;
-      apf::applyMatrixFunc(im2einv, &sqrt, V);
-      DeformationGradient Fappd(V[0][0], V[0][1], V[0][2],
-                                V[1][0], V[1][1], V[1][2],
-                                V[2][0], V[2][1], V[2][2]);
+      DeformationGradient Fappd;
+      switch (i)
+      {
+        case 0:
+          Fappd = DeformationGradient(D1, 0, 0, 0, 1, 0, 0, 0, 1);
+          break;
+        case 1:
+          Fappd = DeformationGradient(1, 0, 0, 0, D1, 0, 0, 0, 1);
+          break;
+        case 2:
+          Fappd = DeformationGradient(1, 0, 0, 0, 1, 0, 0, 0, D1);
+          break;
+        case 3:
+          Fappd =
+              DeformationGradient(l1, 0, 0, 0, l2pl3, l2ml3, 0, l2ml3, l2pl3);
+          break;
+        case 4:
+          Fappd =
+              DeformationGradient(l2pl3, 0, l2ml3, 0, l1, 0, l2ml3, 0, l2pl3);
+          break;
+        case 5:
+          Fappd =
+              DeformationGradient(l2pl3, l2ml3, 0, l2ml3, l2pl3, 0, 0, 0, l1);
+          break;
+      }
       run(Fappd, sigma1, false);
       for(int j=0; j<6; ++j)
       {

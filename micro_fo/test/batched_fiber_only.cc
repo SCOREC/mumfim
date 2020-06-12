@@ -61,11 +61,13 @@ int main(int argc, char * argv[])
 
   
   using ExeSpace = Kokkos::DefaultExecutionSpace;
-  //using ExeSpace = Kokkos::Serial;
-  //using Scalar = float;//bio::Scalar;
+  // using ExeSpace = Kokkos::Serial;
+  // using Scalar = float;//bio::Scalar;
   using Scalar = bio::Scalar;
-  bio::BatchedFiberRVEAnalysisExplicit<Scalar,bio::LocalOrdinal,ExeSpace> batched_analysis(std::move(fiber_networks),std::move(solution_strategies));
-
+  using Ordinal = bio::LocalOrdinal;
+  bio::BatchedFiberRVEAnalysisExplicit<Scalar, Ordinal, ExeSpace>
+      batched_analysis(std::move(fiber_networks),
+                       std::move(solution_strategies));
   Kokkos::DualView<Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",BatchNum);
   Kokkos::DualView<Scalar*[6][6],ExeSpace> stiffness("stiffness",BatchNum);
   Kokkos::DualView<Scalar*[6], ExeSpace> stress("stress",BatchNum);
@@ -81,17 +83,24 @@ int main(int argc, char * argv[])
   double time = timer.seconds();
   timer.reset();
   bool result = batched_analysis.run(deformation_gradient, stress);
+  batched_analysis.computeMaterialStiffness(stiffness);
   stress.sync<Kokkos::HostSpace>();
+  stiffness.sync<Kokkos::HostSpace>();
   auto stress_h = stress.h_view;
-
-  //for(int i=0; i<6; ++i)
-  //{
-  //  std::cout<<stress_h(0, i)<<" ";
-  //}
+  auto stiffness_h = stiffness.h_view;
   std::cout<<std::endl;
   apf::Matrix3x3 strss;
-  stressToMat(0, stress.h_view, strss);
+  stressToMat(0, stress_h, strss);
   std::cout<<strss<<std::endl;
+  for (int i = 0; i < 6; ++i)
+  {
+    for (int j = 0; j < 6; ++j)
+    {
+      std::cout << stiffness_h(0, i, j) << " ";
+    }
+    std::cout << "\n";
+  }
+  std::cout << std::endl;
   double time2 = timer.seconds();
   std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
   amsi::freeAnalysis();

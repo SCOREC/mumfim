@@ -152,22 +152,19 @@ namespace bio
                     PST fiber_density,
                     PST viscous_damping_coefficient,
                     PST critical_time_scale_factor,
-                    POT displacement_boundary_dof,
-                    PST displacement_boundary_values)
+                    POT displacement_boundary_dof)
     {
       using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
       using member_type = typename OuterPolicyType::member_type;
-      //OuterPolicyType outer_policy(rves.size(), TEAM_SIZE);
-      OuterPolicyType outer_policy(rves.size(), 256);
-      //OuterPolicyType outer_policy(rves.size(), 375);
-      //OuterPolicyType outer_policy(rves.size(), 512);
-      //OuterPolicyType outer_policy(rves.size(),Kokkos::AUTO);
+      // OuterPolicyType outer_policy(rves.size(), TEAM_SIZE);
+      // OuterPolicyType outer_policy(rves.size(), 256);
+      // OuterPolicyType outer_policy(rves.size(), 375);
+      OuterPolicyType outer_policy(rves.size(), 512);
+      // OuterPolicyType outer_policy(rves.size(),Kokkos::AUTO);
       Kokkos::parallel_for(
-          OuterPolicyType(rves.size(),Kokkos::AUTO), KOKKOS_LAMBDA(member_type team_member) {
-          //outer_policy, KOKKOS_LAMBDA(member_type team_member) {
+          outer_policy, KOKKOS_LAMBDA(member_type team_member) {
+            // outer_policy, KOKKOS_LAMBDA(member_type team_member) {
             Ordinal i = team_member.league_rank();
-            if(team_member.team_rank() == 0 && team_member.league_rank() == 0)
-              printf("Team Size: %d\n", team_member.team_size());
             //// get the device views of the data
             auto connectivity_row = connectivity.template getRow<ExeSpace>(i);
             auto original_coordinates_row =
@@ -191,7 +188,6 @@ namespace bio
             auto residual_row = residual.template getRow<ExeSpace>(i);
             auto displacement_boundary_dof_row =
                 displacement_boundary_dof.template getRow<ExeSpace>(i);
-
             // get the scalar values
             Scalar visc_damp_coeff =
                 viscous_damping_coefficient.template getRow<ExeSpace>(i)(0);
@@ -208,8 +204,9 @@ namespace bio
             auto dof_policy = Kokkos::TeamThreadRange(
                 team_member, 0, displacement_row.extent(0));
             auto free_dof_policy = Kokkos::TeamThreadRange(
-                team_member, 0, displacement_row.extent(0)-
-                displacement_boundary_dof_row.extent(0));
+                team_member, 0,
+                displacement_row.extent(0) -
+                    displacement_boundary_dof_row.extent(0));
             Scalar residual = 10.0;
             Scalar current_time = 10.0;
             Scalar dt_nphalf, t_npone, t_nphalf;
@@ -224,15 +221,17 @@ namespace bio
                 element_policy, current_coordinates_row, connectivity_row,
                 current_length_row);
             team_member.team_barrier();
-            auto dt_crit = TeamOuterLoop::getForces(team_member,
-                element_policy, free_dof_policy, elastic_modulus, area, density,
-                original_length_row, current_length_row, velocity_row,
-                current_coordinates_row, connectivity_row, nodal_mass_row,
-                visc_damp_coeff, force_internal_row, force_external_row,
-                force_damping_row, force_total_row, residual);
+            auto dt_crit = TeamOuterLoop::getForces(
+                team_member, element_policy, free_dof_policy, elastic_modulus,
+                area, density, original_length_row, current_length_row,
+                velocity_row, current_coordinates_row, connectivity_row,
+                nodal_mass_row, visc_damp_coeff, force_internal_row,
+                force_external_row, force_damping_row, force_total_row,
+                residual);
             team_member.team_barrier();
-            TeamOuterLoop::updateAccelerations(
-                free_dof_policy, nodal_mass_row, force_total_row, acceleration_row);
+            TeamOuterLoop::updateAccelerations(free_dof_policy, nodal_mass_row,
+                                               force_total_row,
+                                               acceleration_row);
             team_member.team_barrier();
             do
             {
@@ -253,28 +252,30 @@ namespace bio
                   element_policy, current_coordinates_row, connectivity_row,
                   current_length_row);
               team_member.team_barrier();
-              dt_crit = TeamOuterLoop::getForces(team_member,
-                  element_policy, free_dof_policy, elastic_modulus, area, density,
-                  original_length_row, current_length_row, velocity_row,
-                  current_coordinates_row, connectivity_row, nodal_mass_row,
-                  visc_damp_coeff, force_internal_row, force_external_row,
-                  force_damping_row, force_total_row, residual);
+              dt_crit = TeamOuterLoop::getForces(
+                  team_member, element_policy, free_dof_policy, elastic_modulus,
+                  area, density, original_length_row, current_length_row,
+                  velocity_row, current_coordinates_row, connectivity_row,
+                  nodal_mass_row, visc_damp_coeff, force_internal_row,
+                  force_external_row, force_damping_row, force_total_row,
+                  residual);
               team_member.team_barrier();
-              TeamOuterLoop::updateAccelVels(free_dof_policy, t_npone - t_nphalf,
-                                             nodal_mass_row, force_total_row,
-                                             acceleration_row, velocity_row);
+              TeamOuterLoop::updateAccelVels(
+                  free_dof_policy, t_npone - t_nphalf, nodal_mass_row,
+                  force_total_row, acceleration_row, velocity_row);
               current_time = t_npone;
               team_member.team_barrier();
             } while (residual > 1E-6);
-            dt_crit = TeamOuterLoop::getForces(team_member,
-                element_policy, dof_policy, elastic_modulus, area, density,
-                original_length_row, current_length_row, velocity_row,
+            // This extra call is required to getForces with the full dof_policy
+            // to fill in the internal forces on the boundary (which is needed
+            // for computation of the cauchy stresses).
+            dt_crit = TeamOuterLoop::getForces(
+                team_member, element_policy, dof_policy, elastic_modulus, area,
+                density, original_length_row, current_length_row, velocity_row,
                 current_coordinates_row, connectivity_row, nodal_mass_row,
                 visc_damp_coeff, force_internal_row, force_external_row,
                 force_damping_row, force_total_row, residual);
-            //if (team_member.league_rank() == 0 && team_member.team_rank() == 0)
-            //  printf("%d, %ld, %e\n", team_member.team_rank(), n_step, residual);
-  });
+          });
       return true;
     }
   };

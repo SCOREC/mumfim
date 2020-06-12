@@ -10,6 +10,7 @@ class PackedData
 {
   public:
   using DataViewType = Kokkos::DualView<DataType *, ExeSpace>;
+  using DeviceViewType = typename DataViewType::t_dev;
   using IndexViewType = Kokkos::DualView<OrdinalType *, ExeSpace>;
   using CIndexViewType = Kokkos::DualView<const OrdinalType *, ExeSpace>;
   // these types use lowerspace names for consistency with Kokkos
@@ -54,6 +55,15 @@ class PackedData
     data_ = DataViewType("Data", num_values);
   }
   PackedData() : num_rows_(0) {}
+  // deep_copy()
+  //{
+  //  // since row index is constant after initialization multiple packed
+  //  // scalar data can share this without issue.
+  //  //row_index_ = other.row_index_;
+  //  // for multidimensional data we could use mirror_view with exe space here?
+  //  //data_ = DataViewType("Data", other.data_.extent(0));
+  //  //Kokkos::deep_copy(data_, other.data_);
+  //}
   template <typename Device>
   KOKKOS_INLINE_FUNCTION Kokkos::View<DataType *, Device> getRow(
       OrdinalType idx) const
@@ -82,6 +92,11 @@ class PackedData
   void sync()
   {
     data_.template sync<Device>();
+  }
+  template <typename Device>
+  DeviceViewType getAllRows()
+  {
+    return data_.template view<Device>();
   }
   KOKKOS_INLINE_FUNCTION
   OrdinalType getNumRows() const { return num_rows_; }
