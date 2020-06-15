@@ -39,7 +39,10 @@ namespace bio
     virtual ~FiberNetworkBase();
     // TODO this should be made const, but it will take some refactor work
     // in the Truss integrator
-    const FiberReaction & getFiberReaction(size_t idx) { return (*mReactions)[idx]; }
+    [[nodiscard]] const FiberReaction & getFiberReaction(size_t idx) const
+    {
+      return (*mReactions)[idx];
+    }
     reaction_ptr_type getFiberReactions() { return mReactions; }
     /*
      * returns the type of rve (e.g. filename as an integer)
@@ -98,13 +101,16 @@ namespace bio
      * possibly be moved to a multiscale fiber network which sublcasses from
      * here?
      */
-    double getScaleConversion() const { return scale_factor; }
+    [[nodiscard]] double getScaleConversion() const noexcept
+    {
+      return scale_factor;
+    }
     /*
      * sets the scale conversion factor (default 1). Typically this is
      * done in the multiscale initialization phase
      * \param sf scale factor
      */
-    void setScaleConversion(double sf) { scale_factor = sf; }
+    void setScaleConversion(double sf) noexcept { scale_factor = sf; }
     /**
      *  Gives the dimensionality of the managed fiber network
      *  @return the dimensionality of the fiber network (2 or 3)

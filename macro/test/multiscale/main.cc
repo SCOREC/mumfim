@@ -1,17 +1,18 @@
-#include "bioTissueMultiscaleAnalysis.h"
-#include "bioMultiscaleTissue.h"
-#include <bioMultiscaleRVEAnalysis.h>
-#include <amsiMultiscale.h>
-#include <amsiAnalysis.h>
-#include <amsiUtil.h>
 #include <SimError.h>
+#include <amsiAnalysis.h>
+#include <amsiMultiscale.h>
+#include <amsiUtil.h>
+#include <bioMultiscaleRVEAnalysis.h>
+#include <fenv.h>
+#include <getopt.h>
+#include <las.h>
+#include <Kokkos_Core.hpp>
+#include <cstring>
 #include <iostream>
 #include <sstream>
-#include <cstring>
-#include <getopt.h>
 #include <string>
-#include <fenv.h>
-#include <Kokkos_Core.hpp>
+#include "bioMultiscaleTissue.h"
+#include "bioTissueMultiscaleAnalysis.h"
 void display_help_string()
 {
   std::cout << "Usage: multiscale [OPTIONS]\n"

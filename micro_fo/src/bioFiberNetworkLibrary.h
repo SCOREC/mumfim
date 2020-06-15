@@ -11,15 +11,24 @@ namespace bio
   class FiberNetworkLibrary
   {
     public:
-    void load(const std::string & network_name, const std::string& params_name, 
-              size_t net_type, size_t net_id);
-    void load(std::istream & mesh_istream,
-              std::istream & params_istream,
-              size_t net_type,
-              size_t net_id);
-    std::unique_ptr<FiberNetwork> getCopy(size_t net_type, size_t net_id);
+    std::shared_ptr<FiberNetwork> load(const std::string & network_name,
+                                       const std::string & params_name,
+                                       std::size_t net_type,
+                                       std::size_t net_id);
+    std::shared_ptr<FiberNetwork> load(std::istream & mesh_istream,
+                                       std::istream & params_istream,
+                                       std::size_t net_type,
+                                       std::size_t net_id);
+    [[nodiscard]] std::unique_ptr<FiberNetwork> getUniqueCopy(
+        std::size_t net_type,
+        std::size_t net_id) const;
+    [[nodiscard]] std::shared_ptr<FiberNetwork> getSharedCopy(
+        std::size_t net_type,
+        std::size_t net_id) const;
     // this extracts the original network from the library
-    std::unique_ptr<FiberNetwork> getOriginalNetwork(size_t net_type, size_t net_id);
+    [[nodiscard]] std::shared_ptr<FiberNetwork> extractNetwork(
+        std::size_t net_type,
+        std::size_t net_id);
     FiberNetworkLibrary();
     ~FiberNetworkLibrary();
     private:
@@ -31,8 +40,8 @@ namespace bio
     // typically we will have a small container, so th cost shouldn't be
     // terrible. transitioning to an unordered map requires writing a hash
     // function for the pair.
-    using LibType = typename std::map<
-        std::pair<size_t, size_t>, std::unique_ptr<FiberNetwork>>;
+    using LibType = typename std::map<std::pair<std::size_t, std::size_t>,
+                                      std::shared_ptr<FiberNetwork>>;
     LibType mLibrary;
   };
 }  // namespace bio

@@ -16,6 +16,12 @@ namespace bio
   {
     virtual ~FiberReaction(){}
     virtual std::pair<double, double> forceReaction(double, double) const = 0;
+    [[nodiscard]] double getYoungModulus() const noexcept { return E; }
+    [[nodiscard]] double getFiberArea() const noexcept { return fiber_area; }
+    [[nodiscard]] double getFiberDensity() const noexcept
+    {
+      return fiber_density;
+    }
     double fiber_area;
     double fiber_density;
     double E;

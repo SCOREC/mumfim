@@ -12,22 +12,22 @@ namespace bio
   template <typename Scalar, typename Ordinal, typename ExeSpace>
   struct ReorderMesh
   {
-    class TagInitPermutation
+    struct TagInitPermutation
     {
     };
-    class TagScanPermutation
+    struct TagScanPermutation
     {
     };
-    class TagPermuteConnectivity
+    struct TagPermuteConnectivity
     {
     };
-    class TagPermuteCoordinates
+    struct TagPermuteCoordinates
     {
     };
-    class TagPermuteNodal
+    struct TagPermuteNodal
     {
     };
-    class TagPermuteFixedDof
+    struct TagPermuteFixedDof
     {
     };
     using RWOV = Kokkos::View<Ordinal *, ExeSpace>;

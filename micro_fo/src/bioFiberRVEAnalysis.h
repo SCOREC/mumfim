@@ -105,13 +105,6 @@ namespace bio
       std::unique_ptr<FiberNetwork> fiber_network,
       std::unique_ptr<MicroSolutionStrategy> solution_strategy,
       std::shared_ptr<void> workspace = nullptr);
-  // FIXME move to bioMultiscaleRVEAnalysis
-  std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysisFromMultiscale(
-      std::unique_ptr<FiberNetwork> fiber_network,
-      micro_fo_header & hdr,
-      micro_fo_params & prm,
-      std::unique_ptr<MicroSolutionStrategy> solution_strategy,
-      std::shared_ptr<void> workspace = nullptr);
   std::unique_ptr<LinearStructs<las::MICRO_BACKEND>>
     createLinearStructs(
       FiberNetwork * fiber_network,

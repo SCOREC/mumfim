@@ -13,6 +13,7 @@
 #include <apfMeshIterator.h>  // iterator for RVE Functions
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
+#include "bioBatchedComputeOrientationTensor.h"
 #include "bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
 #include "bioBatchedMesh.h"
 #include "bioBatchedReorderMesh.h"
@@ -39,6 +40,8 @@ namespace bio
     // helper class typedefs
     using MeshFunctionType =
         BatchedApfMeshFunctions<Scalar, LocalOrdinal, HostMemorySpace>;
+    using OrientationTensorType =
+        OrientationTensor<Scalar, LocalOrdinal, ExeSpace>;
     // Simulation state vectors
     PackedOrdinalType connectivity;
     PackedScalarType original_coordinates;
@@ -65,14 +68,19 @@ namespace bio
     // Boundary Condition data
     PackedOrdinalType displacement_boundary_dof;
     DeviceScalarView displacement_copy;
+    Kokkos::DualView<Scalar *, ExeSpace> current_volume;
+    Kokkos::DualView<Scalar *, ExeSpace> scale_factor;
     std::vector<RVE> rves;
+    OrientationTensorType orientation_tensor;
+
     public:
     // class TagBatchLoopSingle{};
     // class TagBatchLoopTeamOuterWhile {};
     // class TagBatchLoopTeamInnerWhile {};
     BatchedFiberRVEAnalysisExplicit(
-        std::vector<std::unique_ptr<FiberNetwork>> fiber_networks,
-        std::vector<std::shared_ptr<MicroSolutionStrategy>> solution_strategies)
+        std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks,
+        std::vector<std::shared_ptr<const MicroSolutionStrategy>>
+            solution_strategies)
     {
       if (fiber_networks.size() != solution_strategies.size())
       {
@@ -107,8 +115,16 @@ namespace bio
       std::vector<std::vector<apf::MeshEntity *>> boundary_verts;
       rves.reserve(fiber_networks.size());
       boundary_verts.reserve(boundary_verts.size());
+      current_volume = Kokkos::DualView<Scalar *, ExeSpace>(
+          "current_volume", fiber_networks.size());
+      deep_copy(current_volume.template view<ExeSpace>(), 1.0);
+      current_volume.template modify<ExeSpace>();
+      scale_factor = Kokkos::DualView<Scalar *, ExeSpace>(
+          "scale_factor", fiber_networks.size());
+      scale_factor.template modify<HostMemorySpace>();
       for (size_t i = 0; i < fiber_networks.size(); ++i)
       {
+        scale_factor.h_view(i) = fiber_networks[i]->getScaleConversion();
         dof_counts_h(i) = fiber_networks[i]->getDofCount();
         mass_counts_h(i) = dof_counts_h(i) / 3;
         // since we are dealing with trusses all elements are just lines
@@ -197,23 +213,31 @@ namespace bio
                                        fixed_vert, boundary_verts[i]);
         auto fiber_elastic_modulus_row =
             fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
-        fiber_elastic_modulus_row(0) = fiber_networks[i]->getFiberReaction(0).E;
+        // fiber_elastic_modulus_row(0) =
+        // fiber_networks[i]->getFiberReaction(0).E;
+        fiber_elastic_modulus_row(0) =
+            fiber_networks[i]->getFiberReaction(0).getYoungModulus();
         auto fiber_area_row = fiber_area.template getRow<HostMemorySpace>(i);
-        fiber_area_row(0) = fiber_networks[i]->getFiberReaction(0).fiber_area;
+        // fiber_area_row(0) =
+        // fiber_networks[i]->getFiberReaction(0).fiber_area;
+        fiber_area_row(0) =
+            fiber_networks[i]->getFiberReaction(0).getFiberArea();
         auto fiber_density_row =
             fiber_density.template getRow<HostMemorySpace>(i);
+        // fiber_density_row(0) =
+        //    fiber_networks[i]->getFiberReaction(0).fiber_density;
         fiber_density_row(0) =
-            fiber_networks[i]->getFiberReaction(0).fiber_density;
+            fiber_networks[i]->getFiberReaction(0).getFiberDensity();
         auto viscous_damping_coefficient_row =
             viscous_damping_coefficient.template getRow<HostMemorySpace>(i);
         viscous_damping_coefficient_row(0) =
-            static_cast<MicroSolutionStrategyExplicit *>(
+            static_cast<const MicroSolutionStrategyExplicit *>(
                 solution_strategies[i].get())
                 ->visc_damp_coeff;
         auto critical_time_scale_factor_row =
             critical_time_scale_factor.template getRow<HostMemorySpace>(i);
         critical_time_scale_factor_row(0) =
-            static_cast<MicroSolutionStrategyExplicit *>(
+            static_cast<const MicroSolutionStrategyExplicit *>(
                 solution_strategies[i].get())
                 ->crit_time_scale_factor;
         auto nodal_mass_row = nodal_mass.template getRow<HostMemorySpace>(i);
@@ -240,7 +264,15 @@ namespace bio
       viscous_damping_coefficient.template modify<HostMemorySpace>();
       critical_time_scale_factor.template modify<HostMemorySpace>();
       displacement_boundary_dof.template modify<HostMemorySpace>();
-    };
+      // we need to initialize the current coordinates for the orientaiton
+      // tensor since we want to compute this before we do any analysis runs
+      Kokkos::deep_copy(
+          current_coordinates.template getAllRows<HostMemorySpace>(),
+          original_coordinates.template getAllRows<HostMemorySpace>());
+      current_coordinates.template modify<HostMemorySpace>();
+      orientation_tensor =
+          OrientationTensorType(connectivity, current_coordinates, 512);
+    }
     virtual bool run(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> deformation_gradients,
         Kokkos::DualView<Scalar * [6], ExeSpace> sigma,
@@ -254,8 +286,10 @@ namespace bio
         Kokkos::deep_copy(displacement_copy,
                           displacement.template getAllRows<ExeSpace>());
       }
-      // for coordinate update can we just set the intital coordinates
-      // to the initial_coordinates+displacements if we want update?
+      else
+      {
+        updateVolume<ExeSpace>(deformation_gradients, current_volume);
+      }
       deformation_gradients.template sync<HostMemorySpace>();
       // apply the incremental deformation to the RVE
       for (size_t i = 0; i < rves.size(); ++i)
@@ -300,7 +334,8 @@ namespace bio
           critical_time_scale_factor, displacement_boundary_dof);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_dof,
-                                    current_coordinates, force_internal, sigma);
+                                    current_coordinates, force_internal, sigma,
+                                    current_volume, scale_factor);
       if (!update_coords)
       {
         Kokkos::deep_copy(displacement.template getAllRows<ExeSpace>(),
@@ -398,6 +433,17 @@ namespace bio
             });
       }
       C.template modify<ExeSpace>();
+    }
+    void compute3DOrientationTensor(
+        Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
+    {
+      orientation_tensor.compute3D(omega);
+    }
+    void compute2DOrientationTensor(
+        Kokkos::DualView<Scalar * [3], ExeSpace> normal,
+        Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
+    {
+      orientation_tensor.compute2D(normal, omega);
     }
   };
   // the actual explicit instantionations can be found in the associated cc file

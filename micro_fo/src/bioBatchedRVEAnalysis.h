@@ -31,7 +31,19 @@ namespace bio
     // and E
     virtual void computeMaterialStiffness(
         Kokkos::DualView<Scalar * [6][6], ExeSpace> C) = 0;
-    virtual void computeAvgVolStress(double Q[3]) { Q[0] = Q[1] = Q[2] = 0; }
+    virtual void compute3DOrientationTensor(
+        Kokkos::DualView<Scalar * [3][3], ExeSpace> omega)
+    {
+      omega.template modify<Kokkos::HostSpace>();
+      Kokkos::deep_copy(omega.h_view, 0);
+    }
+    virtual void compute2DOrientationTensor(
+        Kokkos::DualView<Scalar * [3], ExeSpace> normal,
+        Kokkos::DualView<Scalar * [3][3], ExeSpace> omega)
+    {
+      omega.template modify<Kokkos::HostSpace>();
+      Kokkos::deep_copy(omega.h_view, 0);
+    }
     // RVEAnalysis(const RVEAnalysis & an);
     // RVEAnalysis();
   };

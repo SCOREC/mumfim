@@ -1,26 +1,54 @@
 #ifndef BIO_MULTISCALE_COUPLING_H_
 #define BIO_MULTISCALE_COUPLING_H_
-namespace apf
-{
-  class DynamicMatrix;
-  class DynamicVector;
-  class Mesh;
-}  // namespace apf
+#include <apf.h>
+#include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
+#include "bioBatchedFiberRVEAnalysisExplicit.h"
+#include "bioMultiscaleMicroFOParams.h"
 namespace bio
 {
-  class RVEAnalysis;
-  class micro_fo_data;
-  class micro_fo_result;
-  class micro_fo_header;
-  class micro_fo_params;
-  class micro_fo_step_result;
-  class FiberNetwork;
-  class DeformationGradient;
-  class FiberRVEAnalysis;
-  void recoverMultiscaleStepResults(RVEAnalysis * ans,
-                                    micro_fo_header & hdr,
-                                    micro_fo_params & prm,
-                                    micro_fo_step_result * data);
+  template <typename DualView>
+  void copyOrientationResultsFromKokkosArray(
+      DualView orientation_tensor,
+      std::vector<micro_fo_step_result> & results,
+      int offset)
+  {
+    orientation_tensor.template sync<Kokkos::HostSpace>();
+    auto orientation_tensor_h = orientation_tensor.h_view;
+    for (std::size_t i = 0; i < results.size(); ++i)
+    {
+      for (int j = 0; j < 3; ++j)
+      {
+        for (int k = 0; k < 3; ++k)
+        {
+          results[i].data[j * 3 + k + offset] = orientation_tensor_h(i, j, k);
+        }
+      }
+    }
+  }
+  template <typename DualView,
+            typename DualViewNorm,
+            typename BatchedAnalysisType>
+  void recoverMultiscaleStepResults(DualView orientation_tensor,
+                                    DualViewNorm orientation_normal,
+                                    BatchedAnalysisType * batched_analysis,
+                                    std::vector<micro_fo_header> & hdrs,
+                                    std::vector<micro_fo_params> & prms,
+                                    std::vector<micro_fo_step_result> & results)
+  {
+    orientation_normal.template modify<Kokkos::HostSpace>();
+    for (std::size_t i = 0; i < results.size(); ++i)
+    {
+      orientation_normal.h_view(i, 0) = prms[i].data[ORIENTATION_AXIS_X];
+      orientation_normal.h_view(i, 1) = prms[i].data[ORIENTATION_AXIS_Y];
+      orientation_normal.h_view(i, 2) = prms[i].data[ORIENTATION_AXIS_Z];
+    }
+    batched_analysis->compute3DOrientationTensor(orientation_tensor);
+    copyOrientationResultsFromKokkosArray(orientation_tensor, results, 0);
+    batched_analysis->compute2DOrientationTensor(orientation_normal,
+                                                 orientation_tensor);
+    copyOrientationResultsFromKokkosArray(orientation_tensor, results, 9);
+  }
   /*
    * \brief computes RVE scaling factor
    * Computes the scaling factor. This correlates to the RVE side length in "physical space"
@@ -30,6 +58,5 @@ namespace bio
    * \warning This function assumes that all of the fibers have the same cross-sectional area
    */
   double calcScaleConversion(apf::Mesh * mesh, double fbr_area, double fbr_vol_frc);
-  void convertStressQuantities(FiberRVEAnalysis * ans, double * stress, double * C);
 }  // namespace bio
 #endif

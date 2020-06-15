@@ -216,20 +216,6 @@ namespace bio
     apf::Matrix3x3 sym_strs = amsi::symmetricPart(strs);
     amsi::mat2VoigtVec(dim, sym_strs, &sigma[0]);
   }
-  std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysisFromMultiscale(std::unique_ptr<FiberNetwork> fiber_network,
-                                        micro_fo_header & hdr,
-                                        micro_fo_params & prm,
-                                        std::unique_ptr<MicroSolutionStrategy> ss,
-                                        std::shared_ptr<void> workspace)
-  {
-    double pi = 4*atan(1);
-    double fbr_area = pi*prm.data[FIBER_RADIUS]*prm.data[FIBER_RADIUS];
-    double fbr_vol_frc = prm.data[VOLUME_FRACTION];
-    double scale_factor = calcScaleConversion(fiber_network->getNetworkMesh(), fbr_area, fbr_vol_frc);
-    fiber_network->setScaleConversion(scale_factor);
-    std::unique_ptr<FiberRVEAnalysis> analysis = createFiberRVEAnalysis(std::move(fiber_network), std::move(ss), workspace);
-    return analysis;
-  }
   std::unique_ptr<LinearStructs<las::MICRO_BACKEND>> createLinearStructs(FiberNetwork* fiber_network, int ndofs,double solver_tol,
                                       std::shared_ptr<void> bfrs)
   {

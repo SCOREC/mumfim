@@ -13,10 +13,11 @@ namespace bio
   {
   }
   FiberNetworkLibrary::~FiberNetworkLibrary(){};
-  void FiberNetworkLibrary::load(const std::string & network_name,
-                                const std::string & params_name,
-                                size_t net_type,
-                                size_t net_id)
+  std::shared_ptr<FiberNetwork> FiberNetworkLibrary::load(
+      const std::string & network_name,
+      const std::string & params_name,
+      std::size_t net_type,
+      std::size_t net_id)
   {
     std::ifstream network_stream(network_name);
     if (!network_stream.is_open())
@@ -32,12 +33,13 @@ namespace bio
                 << " aborting analysis" << std::endl;
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
-    load(network_stream, params_stream, net_type, net_id);
+    return load(network_stream, params_stream, net_type, net_id);
   }
-  void FiberNetworkLibrary::load(std::istream & network_stream,
-                                 std::istream & params_stream,
-                                 size_t net_type,
-                                 size_t net_id)
+  std::shared_ptr<FiberNetwork> FiberNetworkLibrary::load(
+      std::istream & network_stream,
+      std::istream & params_stream,
+      std::size_t net_type,
+      std::size_t net_id)
   {
     auto network_key =  std::make_pair(net_type, net_id);
     auto libIt = mLibrary.find(network_key);
@@ -47,11 +49,16 @@ namespace bio
       auto mesh = bio::make_unique(loadFromStream(network_stream));
       FiberNetwork::reaction_ptr_type reactions(
           new FiberNetworkReactions(static_cast<apf::Mesh2*>(mesh.get()), params_stream));
-      auto network = std::unique_ptr<FiberNetwork>{new FiberNetwork(std::move(mesh),std::move(reactions))};
-      mLibrary[network_key] = std::move(network);
+      auto network = std::shared_ptr<FiberNetwork>{
+          new FiberNetwork(std::move(mesh), std::move(reactions))};
+      mLibrary[network_key] = network;
+      return network;
     }
+    return libIt->second;
   }
-  std::unique_ptr<FiberNetwork> FiberNetworkLibrary::getCopy(size_t net_type, size_t net_id)
+  std::unique_ptr<FiberNetwork> FiberNetworkLibrary::getUniqueCopy(
+      std::size_t net_type,
+      std::size_t net_id) const
   {
     auto libIt = mLibrary.find(std::make_pair(net_type, net_id));
     if (libIt != std::end(mLibrary))
@@ -62,7 +69,21 @@ namespace bio
     // return a nullptr if the fiber network doesn't exist in the library
     return std::unique_ptr<FiberNetwork>(nullptr);
   }
-  std::unique_ptr<FiberNetwork> FiberNetworkLibrary::getOriginalNetwork(size_t net_type, size_t net_id)
+  std::shared_ptr<FiberNetwork> FiberNetworkLibrary::getSharedCopy(
+      std::size_t net_type,
+      std::size_t net_id) const
+  {
+    auto libIt = mLibrary.find(std::make_pair(net_type, net_id));
+    if (libIt != std::end(mLibrary))
+    {
+      return libIt->second;
+    }
+    // return a nullptr if the fiber network doesn't exist in the library
+    return std::unique_ptr<FiberNetwork>(nullptr);
+  }
+  std::shared_ptr<FiberNetwork> FiberNetworkLibrary::extractNetwork(
+      std::size_t net_type,
+      std::size_t net_id)
   {
     auto libIt = mLibrary.find(std::make_pair(net_type, net_id));
     if (libIt != std::end(mLibrary))

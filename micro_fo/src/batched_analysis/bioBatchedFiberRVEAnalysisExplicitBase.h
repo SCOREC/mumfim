@@ -57,15 +57,28 @@ namespace bio
               });
         });
   }
-  template <typename ExeSpace, typename T, typename T2, typename T3>
-  void computeCauchyStress(T2 boundary_dofs, T3 coordinates, T3 force, T stress)
+  template <typename ExeSpace,
+            typename T,
+            typename T2,
+            typename T3,
+            typename T4>
+  void computeCauchyStress(T2 boundary_dofs,
+                           T3 coordinates,
+                           T3 force,
+                           T stress,
+                           T4 volume,
+                           T4 scale_factor)
   {
     using Scalar = typename T::value_type;
     boundary_dofs.template sync<ExeSpace>();
     coordinates.template sync<ExeSpace>();
     force.template sync<ExeSpace>();
     stress.template modify<ExeSpace>();
+    volume.template sync<ExeSpace>();
+    scale_factor.template sync<ExeSpace>();
     auto stress_d = stress.template view<ExeSpace>();
+    auto volume_d = volume.template view<ExeSpace>();
+    auto scale_factor_d = scale_factor.template view<ExeSpace>();
     // zero the trss vector because we will sum the values into the streses
     Kokkos::deep_copy(stress_d, 0);
     using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace>;
@@ -108,6 +121,40 @@ namespace bio
                     &stress_row(5),
                     static_cast<Scalar>(0.5 * (crd1 * f2 + crd2 * f1)));
               });
+          team_member.team_barrier();
+          Kokkos::parallel_for(
+              Kokkos::TeamThreadRange(team_member, 6), [=](const int i) {
+                stress_row(i) *= scale_factor_d(team_member.league_rank()) /
+                                 volume_d(team_member.league_rank());
+              });
+        });
+  }
+  template <typename ExeSpace, typename T1, typename T2>
+  void updateVolume(T1 deformation_gradients, T2 current_volume)
+  {
+    deformation_gradients.template sync<ExeSpace>();
+    current_volume.template sync<ExeSpace>();
+    current_volume.template modify<ExeSpace>();
+    auto deformation_gradients_d =
+        deformation_gradients.template view<ExeSpace>();
+    auto current_volume_d = current_volume.template view<ExeSpace>();
+    if (deformation_gradients.extent(0) != current_volume.extent(0))
+    {
+      std::cerr << "The volume and deformation gradients must have the same "
+                   "extent corresponding to the number of RVEs."
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<ExeSpace>(0, deformation_gradients_d.extent(0)),
+        KOKKOS_LAMBDA(const int i) {
+          auto dg = Kokkos::subview(deformation_gradients_d, i, Kokkos::ALL(),
+                                    Kokkos::ALL());
+          // the jacobian
+          auto J = dg(0, 0) * (dg(1, 1) * dg(2, 2) - dg(1, 2) * dg(2, 1)) -
+                   dg(0, 1) * (dg(1, 0) * dg(2, 2) - dg(1, 2) * dg(2, 0)) +
+                   dg(0, 2) * (dg(1, 0) * dg(2, 1) - dg(1, 1) * dg(2, 0));
+          current_volume_d(i) = J * current_volume_d(i);
         });
   }
   template <typename Scalar>

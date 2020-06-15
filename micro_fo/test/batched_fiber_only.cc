@@ -48,17 +48,18 @@ int main(int argc, char * argv[])
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   bio::FiberNetworkLibrary network_library;
-  network_library.load(file_name,file_name+".params",0,0);
-  std::vector<std::unique_ptr<bio::FiberNetwork>> fiber_networks;
-  std::vector<std::shared_ptr<bio::MicroSolutionStrategy>> solution_strategies;
+  auto fiber_network =
+      network_library.load(file_name, file_name + ".params", 0, 0);
+  std::vector<std::shared_ptr<const bio::FiberNetwork>> fiber_networks;
+  std::vector<std::shared_ptr<const bio::MicroSolutionStrategy>>
+      solution_strategies;
   std::shared_ptr<bio::MicroSolutionStrategy> shared_case{std::move(cases[0].ss)};
 
   for(int i=0; i<BatchNum; ++i)
   {
-    fiber_networks.push_back(network_library.getCopy(0,0));
+    fiber_networks.push_back(fiber_network);
     solution_strategies.push_back(shared_case);
   }
-
   
   using ExeSpace = Kokkos::DefaultExecutionSpace;
   // using ExeSpace = Kokkos::Serial;
@@ -71,17 +72,51 @@ int main(int argc, char * argv[])
   Kokkos::DualView<Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",BatchNum);
   Kokkos::DualView<Scalar*[6][6],ExeSpace> stiffness("stiffness",BatchNum);
   Kokkos::DualView<Scalar*[6], ExeSpace> stress("stress",BatchNum);
-
+  Kokkos::DualView<Scalar * [3][3], ExeSpace> orientation_tensor(
+      "orientation tensor", BatchNum);
+  Kokkos::DualView<Scalar * [3], ExeSpace> normal("normal", BatchNum);
   auto deformation_gradient_h = deformation_gradient.h_view;
   for(int i=0; i<BatchNum; ++i)
+  {
+    normal.h_view(i, 0) = 1;
+    normal.h_view(i, 1) = 0;
+    normal.h_view(i, 2) = 0;
     for(int ei=0; ei<3; ++ei)
+    {
       for(int ej=0; ej<3; ++ej)
+      {
         deformation_gradient_h(i,ei,ej) = cases[0].pd.deformationGradient[ei*3+ej];
+      }
+    }
+  }
+  normal.modify<Kokkos::HostSpace>();
   deformation_gradient.modify<Kokkos::HostSpace>();
-
   Kokkos::Timer timer;
-  double time = timer.seconds();
-  timer.reset();
+  double ornt_time1 = timer.seconds();
+  batched_analysis.compute3DOrientationTensor(orientation_tensor);
+  orientation_tensor.sync<Kokkos::HostSpace>();
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      printf("%f ", orientation_tensor.h_view(0, i, j));
+    }
+    printf("\n");
+  }
+  printf("\n");
+  batched_analysis.compute2DOrientationTensor(normal, orientation_tensor);
+  orientation_tensor.sync<Kokkos::HostSpace>();
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      printf("%f ", orientation_tensor.h_view(0, i, j));
+    }
+    printf("\n");
+  }
+  printf("\n");
+  double ornt_time2 = timer.seconds();
+  double time1 = timer.seconds();
   bool result = batched_analysis.run(deformation_gradient, stress);
   batched_analysis.computeMaterialStiffness(stiffness);
   stress.sync<Kokkos::HostSpace>();
@@ -102,7 +137,9 @@ int main(int argc, char * argv[])
   }
   std::cout << std::endl;
   double time2 = timer.seconds();
-  std::cout<<"Took: "<<time2 << " seconds."<<std::endl;
+  std::cout << "Took: " << time2 - time1 << " seconds." << std::endl;
+  std::cout << "Orientation Computation Took: " << ornt_time2 - ornt_time1
+            << " seconds." << std::endl;
   amsi::freeAnalysis();
   return 0;
 }

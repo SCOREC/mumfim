@@ -233,8 +233,6 @@ namespace bio
         //if((current_time > total_time) && (n_step%1000 == 0))
         //  std::cout<<residual<<std::endl;
       } while ((current_time < total_time) || (residual > 1E-6));
-      printf("n_step %ld, %e\n", n_step, residual);
-      //} while ((current_time < total_time) || (residual > 1E-10));
       // if we didn't already write the last frame
       if (print_field_frequency && !print_field_by_num_frames &&
           (n_step % print_field_frequency))

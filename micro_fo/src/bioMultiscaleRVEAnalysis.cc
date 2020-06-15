@@ -36,10 +36,8 @@ namespace bio
       , network_library()
       , macro_iter(0)
       , macro_step(0)
+      , initial_update(true)
   {
-#ifdef MICRO_USING_SPARSKIT
-  mWorkspace = std::shared_ptr<void>(new las::SparskitBuffers(0));
-#endif
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
                                  amsi::getScaleManager(),
                                  "macro",
@@ -107,16 +105,21 @@ namespace bio
     std::vector<int> to_delete;
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->RemoveData(recv_ptrn, to_delete);
-    for (auto idx = to_delete.rbegin(); idx != to_delete.rend(); ++idx)
+    if (to_delete.size() > 0)
     {
-      // FIXME cannot just destroy the analysis w/o removing the corresponding
-      // terms from the ans vector see vector erase
-      // destroyAnalysis(ans[*idx]);
+      std::cerr << "Deleting RVEs is not currently supported!" << std::endl;
+      MPI_Abort(AMSI_COMM_WORLD, EXIT_FAILURE);
     }
     std::vector<int> to_add;
     std::vector<int> empty;
     size_t recv_init_ptrn = cs->AddData(recv_ptrn, empty, to_add);
-    ans.resize(ans.size() + to_add.size());
+    if (!initial_update && to_add.size() > 0)
+    {
+      std::cerr << "Adding RVEs on the fly is not currently supported!"
+                << std::endl;
+      MPI_Abort(AMSI_COMM_WORLD, EXIT_FAILURE);
+    }
+    initial_update = false;
     cs->Communicate(recv_init_ptrn, hdrs,
                     amsi::mpi_type<bio::micro_fo_header>());
     cs->Communicate(recv_init_ptrn, prms,
@@ -132,43 +135,59 @@ namespace bio
     // All of the APF mesh operations need to have the PCU communicator
     // set to self, otherwise it will try to do things in parallel
     PCU_Switch_Comm(MPI_COMM_SELF);
-    int ii = 0;
-    for (auto rve = ans.begin(); rve != ans.end(); ++rve)
+    std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks;
+    std::vector<std::shared_ptr<const MicroSolutionStrategy>>
+        solution_strategies;
+    double library_time = 0;
+    double scale_time = 0;
+    for (std::size_t i = 0; i < to_add.size(); ++i)
     {
-      if (*rve == NULL)
+      micro_fo_header & hdr = hdrs[i];
+      micro_fo_params & prm = prms[i];
+      micro_fo_solver & slvr_prm = slvr_prms[i];
+      micro_fo_int_solver & slvr_int_prm = slvr_int_prms[i];
+      MicroscaleType micro_tp = static_cast<MicroscaleType>(hdr.data[RVE_TYPE]);
+      if (micro_tp == MicroscaleType::FIBER_ONLY)
       {
-        micro_fo_header & hdr = hdrs[ii];
-        micro_fo_params & prm = prms[ii];
-        //micro_fo_init_data & dat = inis[ii];
-        micro_fo_solver & slvr_prm = slvr_prms[ii];
-        micro_fo_int_solver & slvr_int_prm = slvr_int_prms[ii];
-        MicroscaleType micro_tp = static_cast<MicroscaleType>(hdr.data[RVE_TYPE]);
-        if(micro_tp == MicroscaleType::FIBER_ONLY)
-        {
-          int tp = hdr.data[RVE_DIR_TYPE];
-          int rnd = rand() % rve_tp_cnt[tp];
-          std::string fiber_network_file =
-              rve_tp_dirs[tp] + std::to_string(rnd + 1) + ".txt";
-          network_library.load(fiber_network_file,
-                               fiber_network_file + ".params", tp, rnd);
-          auto fn = network_library.getCopy(tp, rnd);
-          auto solution_strategy = serializeSolutionStrategy(slvr_prm,slvr_int_prm);
-          fn->setRVEType(ii);
-          *rve = createFiberRVEAnalysisFromMultiscale(
-              std::move(fn), hdr, prm, std::move(solution_strategy), mWorkspace);
-          ++ii;
-        }
-        else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
-        {
-          *rve = initNeoHookeanRVEAnalysisFromMultiscale(prm);
-          assert(*rve);
-        }
-        else
-        {
-          std::cerr<<"The Microscale/RVE type is not valid"<<std::endl;
-          MPI_Abort(AMSI_COMM_WORLD, 1);
-        }
+        int tp = hdr.data[RVE_DIR_TYPE];
+        int rnd = rand() % rve_tp_cnt[tp];
+        std::string fiber_network_file =
+            rve_tp_dirs[tp] + std::to_string(rnd + 1) + ".txt";
+        auto fiber_network = network_library.load(
+            fiber_network_file, fiber_network_file + ".params", tp, rnd);
+        fiber_networks.push_back(fiber_network);
+        solution_strategies.push_back(
+            std::move(serializeSolutionStrategy(slvr_prm, slvr_int_prm)));
+        // FIXME This only needs to be done once per Fiber network, and
+        // FIBER_RADIUS should come from network properties, not the multiscale
+        // anlysis...FIBER_RADIUS needs to be removed from the communicated data
+        double pi = 4 * atan(1);
+        double fbr_area = pi * prm.data[FIBER_RADIUS] * prm.data[FIBER_RADIUS];
+        double fbr_vol_frc = prm.data[VOLUME_FRACTION];
+        double scale_factor = calcScaleConversion(
+            fiber_network->getNetworkMesh(), fbr_area, fbr_vol_frc);
+        fiber_network->setScaleConversion(scale_factor);
       }
+      else if (micro_tp == MicroscaleType::ISOTROPIC_NEOHOOKEAN)
+      {
+        std::cerr
+            << "Currently Neohookean Analysis is not supported in batched mode"
+            << std::endl;
+        //*rve = initNeoHookeanRVEAnalysisFromMultiscale(prm);
+        MPI_Abort(AMSI_COMM_WORLD, EXIT_FAILURE);
+      }
+      else
+      {
+        std::cerr << "The Microscale/RVE type is not valid" << std::endl;
+        MPI_Abort(AMSI_COMM_WORLD, EXIT_FAILURE);
+      }
+    }
+    if (to_add.size() > 0)
+    {
+      batched_analysis = BatchedAnalysisType{
+          new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
+                                              Kokkos::DefaultExecutionSpace>{
+              std::move(fiber_networks), std::move(solution_strategies)}};
     }
     // reset the PCU communictor back to its original state so that
     // our scale wide communications can proceed
@@ -189,24 +208,28 @@ namespace bio
     if (macro_step == 0 && macro_iter == 0)
     {
       updateCoupling();
+    }
       // send the initial step result data to the macroscale to output
       // get the size of the step results vector
       std::vector<micro_fo_step_result> step_results(hdrs.size());
-      // recover step results and set the step results vector
-      int i = 0;
-      PCU_Switch_Comm(MPI_COMM_SELF);
-      for (auto rve = ans.begin(); rve != ans.end(); ++rve)
-      {
-        micro_fo_header & hdr = hdrs[i];
-        micro_fo_params & prm = prms[i];
-        recoverMultiscaleStepResults(rve->get(), hdr, prm, &step_results[i]);
-        ++i;
-      }
-      PCU_Switch_Comm(AMSI_COMM_SCALE);
+      Kokkos::DualView<Scalar * [3][3]> deformation_gradient(
+          "deformation gradient", hdrs.size());
+      Kokkos::DualView<Scalar * [6]> stress("stress", hdrs.size());
+      Kokkos::DualView<Scalar * [6][6]> material_stiffness("material stiffness",
+                                                           hdrs.size());
+      Kokkos::DualView<Scalar * [3][3]> orientation_tensor("orientation tensor",
+                                                           hdrs.size());
+      Kokkos::DualView<Scalar * [3]> orientation_tensor_normal(
+          "orientation tensor normal", hdrs.size());
       // communicate the step results back to the macro scale
-      cs->Communicate(
-          send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
-    }
+      if (macro_step == 0 && macro_iter == 0)
+      {
+        recoverMultiscaleStepResults(
+            orientation_tensor, orientation_tensor_normal,
+            batched_analysis.get(), hdrs, prms, step_results);
+        cs->Communicate(send_ptrn, step_results,
+                        amsi::mpi_type<micro_fo_step_result>());
+      }
     bool sim_complete = false;
     while (!sim_complete)
     {
@@ -222,62 +245,53 @@ namespace bio
         PCU_Switch_Comm(MPI_COMM_SELF);
         int rank = -1;
         MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
-        int ii = 0;
+        // int ii = 0;
         BIO_V1(double t0 = MPI_Wtime();)
-        for (auto rve = ans.begin(); rve != ans.end(); ++rve)
+        auto deformation_gradient_h = deformation_gradient.h_view;
+        auto stress_h = stress.h_view;
+        auto material_stiffness_h = material_stiffness.h_view;
+        deformation_gradient.modify<Kokkos::HostSpace>();
+        // fill the deformation gradient data
+        for (std::size_t i = 0; i < results.size(); ++i)
         {
-          double * sigma = &(results[ii].data[0]);
-          double * avgVolStress = &(results[ii].data[6]);
-          double * matStiffMatrix = &(results[ii].data[9]);
-          // TODO this is somewhat inefficient and will not be needed when we
-          // directly communicate the DeformationGradient type
-          DeformationGradient dfmGrd;
-          for (int jj = 0; jj < 9; ++jj)
+          for (int ei = 0; ei < 3; ++ei)
           {
-            dfmGrd[jj] = data[ii].data[jj];
+            for (int ej = 0; ej < 3; ++ej)
+            {
+              deformation_gradient_h(i, ei, ej) = data[i].data[ei * 3 + ej];
+            }
           }
-          bool result = (*rve)->run(dfmGrd, sigma, true);
-          // if the rve didn't work, crash the analysis
-          if (!result)
+        }
+        batched_analysis->run(deformation_gradient, stress);
+        batched_analysis->computeMaterialStiffness(material_stiffness);
+        stress.sync<Kokkos::HostSpace>();
+        material_stiffness.sync<Kokkos::HostSpace>();
+        // fill the results data
+        for (std::size_t i = 0; i < results.size(); ++i)
+        {
+          double * sigma = &(results[i].data[0]);
+          double * avgVolStress = &(results[i].data[6]);
+          double * matStiffMatrix = &(results[i].data[9]);
+          for (int j = 0; j < 6; ++j)
           {
-            std::cerr << "Failed during  Macro Step " << macro_step
-                      << " and macro iteration " << macro_iter << ".\n"
-                      << "Applied deformation gradient was: "
-                      << "F=";
-                      for(int i=0; i<9;++i) {
-                        std::cerr<<dfmGrd[i]<<" ";
-                      }
-                      std::cerr<<std::endl;
-            // use MPI abort, so that we don't wait for networks to complete if one
-            // has failed.
-            MPI_Abort(AMSI_COMM_WORLD, 1);
+            sigma[j] = stress_h(i, j);
           }
-          //recoverMultiscaleResults(*rve, &results[ii]);
-          (*rve)->computeAvgVolStress(avgVolStress);
-          (*rve)->computeMaterialStiffness(matStiffMatrix);
-          FiberRVEAnalysis* FRveAns = dynamic_cast<FiberRVEAnalysis *>(rve->get());
-          if(FRveAns)
-            convertStressQuantities(FRveAns, sigma, matStiffMatrix);
-          ii++;
-#ifdef WRITE_MICRO_PER_ITER
-          FiberRVEAnalysis * FNRve = dynamic_cast<FiberRVEAnalysis *>(*rve);
-          if(FNRve)
+          // avg vol stress which we don't currently use
+          for (int j = 0; j < 3; ++j)
           {
-            std::stringstream sout;
-            sout << "rnk_" << rank << "_fn_" << (*FNRve)->getFn()->getFNRveType()
-                 << "_step_" << macro_step << "_iter_" << macro_iter;
-            apf::writeVtkFiles(
-                sout.str().c_str(), (*FNRve)->getFn()->getNetworkMesh(), 1);
+            avgVolStress[j] = 0;
           }
-          else
+          for (int j = 0; j < 36; ++j)
           {
-            std::cerr<<"Not Writing microscale to output per iteration since this RVE type has no mesh representation"<<std::endl;
+            int row = (j) / 6;
+            int col = (j) % 6;
+            matStiffMatrix[j] = material_stiffness_h(i, row, col);
           }
-#endif
         }
         BIO_V1(double t1 = MPI_Wtime();)
-        BIO_V1(std::cout << "Computed " << ans.size() << " RVEs in " << t1 - t0
-                         << " seconds. On rank "<<rank<<"."<< std::endl;)
+        BIO_V1(std::cout << "Computed " << results.size() << " RVEs in "
+                         << t1 - t0 << " seconds. On rank " << rank << "."
+                         << std::endl;)
         //PCU_Switch_Comm(AMSI_COMM_SCALE);
         cs->Communicate(send_ptrn, results, amsi::mpi_type<micro_fo_result>());
         macro_iter++;
@@ -286,41 +300,12 @@ namespace bio
       // get the size of the step results vector
       std::vector<micro_fo_step_result> step_results(hdrs.size());
       // recover step results and set the step results vector
-      int i = 0;
-      PCU_Switch_Comm(MPI_COMM_SELF);
-      for (auto rve = ans.begin(); rve != ans.end(); ++rve)
-      {
-        micro_fo_header & hdr = hdrs[i];
-        micro_fo_params & prm = prms[i];
-        recoverMultiscaleStepResults(rve->get(), hdr, prm, &step_results[i]);
-        ++i;
-      }
-      PCU_Switch_Comm(AMSI_COMM_SCALE);
+      recoverMultiscaleStepResults(
+          orientation_tensor, orientation_tensor_normal, batched_analysis.get(),
+          hdrs, prms, step_results);
       // communicate the step results back to the macro scale
       cs->Communicate(
           send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
-#ifdef WRITE_MICRO_PER_STEP
-      for (auto rve = ans.begin(); rve != ans.end(); ++rve)
-      {
-        FiberRVEAnalysis * FNRve2 = dynamic_cast<FiberRVEAnalysis *>(*rve);
-        if(FNRve2)
-        {
-          std::stringstream sout;
-          int rnk = -1;
-          MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
-          int ii = 0;
-          sout << "rnk_" << rnk << "_fn_" << (*FNRve2)->getFn()->getRVEType()
-               << "_step_" << macro_step << "_iter_" << macro_iter;
-          apf::writeVtkFiles(sout.str().c_str(), (*FNRve2)->fn->getNetworkMesh(), 1);
-          sout.str("");
-          ii++;
-        }
-        else
-        {
-          std::cerr<<"Not Writing microscale to output per iteration since this RVE type has no mesh representation"<<std::endl;
-        }
-      }
-#endif
       macro_iter = 0;
       macro_step++;
       cs->scaleBroadcast(M2m_id, &sim_complete);

@@ -3,9 +3,10 @@
 #include <amsiMultiscale.h>
 #include <amsiReporter.h>
 #include <vector>
-#include "bioFiberRVEAnalysis.h"
-#include "bioMultiscaleMicroFOParams.h"
+//#include "bioFiberRVEAnalysis.h"
+#include "bioBatchedFiberRVEAnalysisExplicit.h"
 #include "bioFiberNetworkLibrary.h"
+#include "bioMultiscaleMicroFOParams.h"
 namespace bio
 {
   class MultiscaleRVEAnalysis
@@ -32,12 +33,14 @@ namespace bio
     std::vector<micro_fo_params> prms;
     std::vector<micro_fo_solver> slvr_prms;
     std::vector<micro_fo_int_solver> slvr_int_prms;
-
-    std::vector<std::unique_ptr<RVEAnalysis>> ans;
+    using BatchedAnalysisType = std::unique_ptr<
+        BatchedRVEAnalysis<Scalar, Kokkos::DefaultExecutionSpace> >;
+    /// std::vector<std::unique_ptr<RVEAnalysis>> ans;
+    BatchedAnalysisType batched_analysis;
     // this is a workspace that the microscale solves can use.
     // Note the current design is that all microscale solves
     // share the same workspace
-    std::shared_ptr<void> mWorkspace;
+    // std::shared_ptr<void> mWorkspace;
     //  an vector that holds the names of the rve physical
     //  types. Here a type would refer to a set of networks
     //  with the same set of statistical properties i.e. density
@@ -46,7 +49,7 @@ namespace bio
    
     int macro_iter;
     int macro_step;
-    
+    bool initial_update;
     // funcs
     void initLogging();
     void initCoupling();

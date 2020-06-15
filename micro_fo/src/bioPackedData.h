@@ -10,9 +10,9 @@ class PackedData
 {
   public:
   using DataViewType = Kokkos::DualView<DataType *, ExeSpace>;
-  using DeviceViewType = typename DataViewType::t_dev;
   using IndexViewType = Kokkos::DualView<OrdinalType *, ExeSpace>;
   using CIndexViewType = Kokkos::DualView<const OrdinalType *, ExeSpace>;
+  using DeviceViewType = typename DataViewType::t_dev;
   // these types use lowerspace names for consistency with Kokkos
   using host_mirror_space = typename DataViewType::host_mirror_space;
   using memory_space = typename DataViewType::memory_space;
@@ -94,7 +94,9 @@ class PackedData
     data_.template sync<Device>();
   }
   template <typename Device>
-  DeviceViewType getAllRows()
+  auto getAllRows() -> Kokkos::View<typename DataViewType::traits::data_type,
+                                    typename DataViewType::traits::array_layout,
+                                    Device>
   {
     return data_.template view<Device>();
   }

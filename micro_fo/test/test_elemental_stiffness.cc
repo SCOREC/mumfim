@@ -56,7 +56,7 @@ int main(int argc, char * argv[])
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   bio::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
-  auto fiber_network = network_library.getOriginalNetwork(0,0);
+  auto fiber_network = network_library.getUniqueCopy(0, 0);
   // I'm not confident that the move thing here works as intended
   auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
   auto truss_es = std::unique_ptr<apf::Integrator>{new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF())};
