@@ -157,12 +157,12 @@ namespace bio
           current_volume_d(i) = J * current_volume_d(i);
         });
   }
-  template <typename Scalar>
+  template <typename Scalar, typename T>
   KOKKOS_FORCEINLINE_FUNCTION Scalar
   getLinearReactionForce(Scalar orig_length,
                          Scalar length,
-                         Scalar elastic_modulus,
-                         Scalar area)
+                         T scratch
+                         )
   {
     // abaqus ...
     // double length_ratio = length / orig_length;
@@ -171,7 +171,9 @@ namespace bio
     // Normal 
     Scalar length_ratio = length / orig_length;
     Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
-    return length_ratio * elastic_modulus * area * green_strain;
+    // elastic_modulus * area
+    //return length_ratio * elastic_modulus * area * green_strain;
+    return length_ratio * scratch(1) * scratch(2) * green_strain;
   }
   template <typename Derived,
             typename Scalar,
@@ -255,11 +257,10 @@ namespace bio
     {
       f_int(i) = 0;
     }
+    template <typename T>
     KOKKOS_FORCEINLINE_FUNCTION
-    static Scalar getForceLoop2(const Ordinal i,
-                                Scalar fiber_elastic_modulus,
-                                Scalar fiber_area,
-                                Scalar fiber_density,
+    static void getForceLoop2(const Ordinal i,
+                                T scratch,
                                 ROSV l0,
                                 ROSV l,
                                 RASV current_coords,
@@ -267,43 +268,37 @@ namespace bio
                                 RWSV f_int)
     {
       Scalar local_l = l(i);
-      Scalar one_ovr_l = 1/local_l;
-      //// FIXME the force reactions are all messed up! need to figure out
-      //// how to get the struct data in here?
-      Scalar frc = getLinearReactionForce(l0(i), local_l, fiber_elastic_modulus,
-                                          fiber_area);
+      Scalar frc = getLinearReactionForce(l0(i), local_l,scratch);
+      Scalar frc_ovr_l = frc/local_l;
       auto n1 = connectivity(i * 2)*3;
       auto n2 = connectivity(i * 2 + 1)*3;
       Scalar elem_nrm_1 =
-          (current_coords(n2) - current_coords(n1)) *one_ovr_l;
+          (current_coords(n2) - current_coords(n1)) *frc_ovr_l;
       Scalar elem_nrm_2 =
-          (current_coords(n2 + 1) - current_coords(n1 + 1)) *one_ovr_l;
+          (current_coords(n2 + 1) - current_coords(n1 + 1)) *frc_ovr_l;
       Scalar elem_nrm_3 =
-          (current_coords(n2 + 2) - current_coords(n1 + 2)) *one_ovr_l;
-      Kokkos::atomic_sub(&f_int(n1),
-                         static_cast<Scalar>(frc * elem_nrm_1));
-      Kokkos::atomic_sub(&f_int(n1 + 1),
-                         static_cast<Scalar>(frc * elem_nrm_2));
-      Kokkos::atomic_sub(&f_int(n1 + 2),
-                         static_cast<Scalar>(frc * elem_nrm_3));
-      Kokkos::atomic_add(&f_int(n2), static_cast<Scalar>(frc * elem_nrm_1));
-      Kokkos::atomic_add(&f_int(n2 + 1),
-                         static_cast<Scalar>(frc * elem_nrm_2));
-      Kokkos::atomic_add(&f_int(n2 + 2),
-                         static_cast<Scalar>(frc * elem_nrm_3));
-      return local_l;
+          (current_coords(n2 + 2) - current_coords(n1 + 2)) *frc_ovr_l;
+      Kokkos::atomic_sub(&f_int(n1), elem_nrm_1);
+      Kokkos::atomic_add(&f_int(n2), elem_nrm_1);
+      Kokkos::atomic_sub(&f_int(n1 + 1), elem_nrm_2);
+      Kokkos::atomic_add(&f_int(n2 + 1), elem_nrm_2);
+      Kokkos::atomic_sub(&f_int(n1 + 2), elem_nrm_3);
+      Kokkos::atomic_add(&f_int(n2 + 2), elem_nrm_3);
     }
+    template <typename T>
     KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop3(const Ordinal i,
-                                Scalar visc_damp_coeff,
+                                T scratch,
                                 ROSV mass_matrix,
                                 ROSV v,
-                                ROSV f_ext,
                                 ROSV f_int,
                                 RWSV f)
     {
-      Scalar f_damp = visc_damp_coeff * mass_matrix(i / 3) * v(i);
-      Scalar local_residual = f_ext(i) - f_int(i);
+      // viscous damping*constant*mass matrix * velocity
+      Scalar f_damp = scratch(0) * mass_matrix(i / 3) * v(i);
+      // here we assume that the external force is zero on all free
+      // degrees of freedom
+      Scalar local_residual = f_int(i);
       f(i) = local_residual - f_damp;
       return local_residual * local_residual;
     }
@@ -325,11 +320,9 @@ namespace bio
                                Scalar dt,
                                ROSV mass_matrix,
                                ROSV f,
-                               RWSV a,
                                RWSV v)
     {
       Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
-      a(i) = a_local;
       Kokkos::atomic_add(&v(i), dt * a_local);
     }
     KOKKOS_FORCEINLINE_FUNCTION
@@ -340,34 +333,6 @@ namespace bio
                         RWSV u)
     {
       u(dof(i)) = values(i) * amp_t;
-    }
-    KOKKOS_FORCEINLINE_FUNCTION
-    static void applyAccelVelBC(const Ordinal i,
-                                Scalar a_amp,
-                                Scalar v_amp,
-                                Scalar visc_damp_coeff,
-                                ROOV dof,
-                                ROSV values,
-                                ROSV mass_matrix,
-                                RWSV a,
-                                RWSV v,
-                                RWSV f_int,
-                                RWSV f_ext,
-                                RWSV f_damp,
-                                RWSV f)
-    {
-      auto local_dof = dof(i);
-      Scalar value = values(i);
-      Scalar a_local = value * a_amp;
-      Scalar v_local = value * v_amp;
-      Scalar mass = mass_matrix(local_dof / 3);
-      Scalar f_damp_local = visc_damp_coeff * mass * v_local;
-      Scalar f_inertial = mass * a_local;
-      a(local_dof) = a_local;
-      v(local_dof) = v_local;
-      f_damp(local_dof) = f_damp_local;
-      f_ext(local_dof) = f_inertial + f_int(local_dof) + f_damp_local;
-      f(local_dof) = f_inertial;
     }
   };
 }  // namespace bio
