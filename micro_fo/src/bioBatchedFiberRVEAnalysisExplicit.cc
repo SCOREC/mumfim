@@ -2,5 +2,5 @@
 #include "bioMicroTypeDefinitions.h"
 namespace bio
 {
-  template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
+  //template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
 }

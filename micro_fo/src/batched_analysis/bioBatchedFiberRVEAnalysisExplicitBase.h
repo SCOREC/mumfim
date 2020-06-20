@@ -168,6 +168,7 @@ namespace bio
     // double length_ratio = length / orig_length;
     // double log_strain = log(length_ratio);
     // return elastic_modulus * area * log_strain / length_ratio;
+    // Normal 
     Scalar length_ratio = length / orig_length;
     Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
     return length_ratio * elastic_modulus * area * green_strain;
@@ -195,7 +196,7 @@ namespace bio
     // read write view types
     using RWSV = Kokkos::View<Scalar *, ExeSpace>;
     using RWOV = Kokkos::View<Ordinal *, ExeSpace>;
-    static bool run(const std::vector<RVE> & rves,
+    static bool run(int num_rves,
                     POT connectivity,
                     PST original_coordinates,
                     PST current_coordinates,
@@ -218,7 +219,7 @@ namespace bio
                     POT displacement_boundary_dof)
     {
       return Derived::run(
-          rves, connectivity, original_coordinates, current_coordinates,
+          num_rves, connectivity, original_coordinates, current_coordinates,
           displacement, velocity, acceleration, force_total, force_internal,
           force_external, force_damping, nodal_mass, original_length,
           current_length, residual, fiber_elastic_modulus, fiber_area,
@@ -241,23 +242,18 @@ namespace bio
                                  ROOV connectivity,
                                  RWSV l0)
     {
-      Ordinal n1 = connectivity(i * 2);
-      Ordinal n2 = connectivity(i * 2 + 1);
-      Scalar x1 = coords(n2 * 3) - coords(n1 * 3);
-      Scalar x2 = coords(n2 * 3 + 1) - coords(n1 * 3 + 1);
-      Scalar x3 = coords(n2 * 3 + 2) - coords(n1 * 3 + 2);
+      Ordinal n1 = connectivity(i * 2)*3;
+      Ordinal n2 = connectivity(i * 2 + 1)*3;
+      Scalar x1 = coords(n2) - coords(n1);
+      Scalar x2 = coords(n2 + 1) - coords(n1 + 1);
+      Scalar x3 = coords(n2 + 2) - coords(n1 + 2);
       l0(i) = sqrt(x1 * x1 + x2 * x2 + x3 * x3);
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static void getForceLoop1(const Ordinal i,
-                              Scalar visc_damp_coeff,
-                              ROSV mass_matrix,
-                              ROSV v,
-                              RWSV f_int,
-                              RWSV f_damp)
+                              RWSV f_int)
     {
       f_int(i) = 0;
-      f_damp(i) = visc_damp_coeff * mass_matrix(i / 3) * v(i);
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop2(const Ordinal i,
@@ -268,44 +264,47 @@ namespace bio
                                 ROSV l,
                                 RASV current_coords,
                                 ROOV connectivity,
-                                Scalar visc_damp_coeff,
                                 RWSV f_int)
     {
       Scalar local_l = l(i);
-      // FIXME the force reactions are all messed up! need to figure out
-      // how to get the struct data in here?
+      Scalar one_ovr_l = 1/local_l;
+      //// FIXME the force reactions are all messed up! need to figure out
+      //// how to get the struct data in here?
       Scalar frc = getLinearReactionForce(l0(i), local_l, fiber_elastic_modulus,
                                           fiber_area);
-      auto n1 = connectivity(i * 2);
-      auto n2 = connectivity(i * 2 + 1);
+      auto n1 = connectivity(i * 2)*3;
+      auto n2 = connectivity(i * 2 + 1)*3;
       Scalar elem_nrm_1 =
-          (current_coords(n2 * 3) - current_coords(n1 * 3)) / local_l;
+          (current_coords(n2) - current_coords(n1)) *one_ovr_l;
       Scalar elem_nrm_2 =
-          (current_coords(n2 * 3 + 1) - current_coords(n1 * 3 + 1)) / local_l;
+          (current_coords(n2 + 1) - current_coords(n1 + 1)) *one_ovr_l;
       Scalar elem_nrm_3 =
-          (current_coords(n2 * 3 + 2) - current_coords(n1 * 3 + 2)) / local_l;
-      Kokkos::atomic_add(&f_int(n1 * 3),
-                         static_cast<Scalar>(-frc * elem_nrm_1));
-      Kokkos::atomic_add(&f_int(n1 * 3 + 1),
-                         static_cast<Scalar>(-frc * elem_nrm_2));
-      Kokkos::atomic_add(&f_int(n1 * 3 + 2),
-                         static_cast<Scalar>(-frc * elem_nrm_3));
-      Kokkos::atomic_add(&f_int(n2 * 3), static_cast<Scalar>(frc * elem_nrm_1));
-      Kokkos::atomic_add(&f_int(n2 * 3 + 1),
+          (current_coords(n2 + 2) - current_coords(n1 + 2)) *one_ovr_l;
+      Kokkos::atomic_sub(&f_int(n1),
+                         static_cast<Scalar>(frc * elem_nrm_1));
+      Kokkos::atomic_sub(&f_int(n1 + 1),
                          static_cast<Scalar>(frc * elem_nrm_2));
-      Kokkos::atomic_add(&f_int(n2 * 3 + 2),
+      Kokkos::atomic_sub(&f_int(n1 + 2),
+                         static_cast<Scalar>(frc * elem_nrm_3));
+      Kokkos::atomic_add(&f_int(n2), static_cast<Scalar>(frc * elem_nrm_1));
+      Kokkos::atomic_add(&f_int(n2 + 1),
+                         static_cast<Scalar>(frc * elem_nrm_2));
+      Kokkos::atomic_add(&f_int(n2 + 2),
                          static_cast<Scalar>(frc * elem_nrm_3));
       return local_l;
     }
     KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop3(const Ordinal i,
+                                Scalar visc_damp_coeff,
+                                ROSV mass_matrix,
+                                ROSV v,
                                 ROSV f_ext,
                                 ROSV f_int,
-                                ROSV f_damp,
                                 RWSV f)
     {
+      Scalar f_damp = visc_damp_coeff * mass_matrix(i / 3) * v(i);
       Scalar local_residual = f_ext(i) - f_int(i);
-      f(i) = local_residual - f_damp(i);
+      f(i) = local_residual - f_damp;
       return local_residual * local_residual;
     }
     KOKKOS_FORCEINLINE_FUNCTION
@@ -319,7 +318,6 @@ namespace bio
     KOKKOS_FORCEINLINE_FUNCTION
     static void update(const Ordinal i, ROSV a, Scalar dt, RWSV v)
     {
-      // v(i) += dt * a(i);
       Kokkos::atomic_add(&v(i), dt * a(i));
     }
     KOKKOS_FORCEINLINE_FUNCTION
@@ -332,7 +330,6 @@ namespace bio
     {
       Scalar a_local = (1.0 / mass_matrix(i / 3)) * f(i);
       a(i) = a_local;
-      // v(i) += dt * a_local;
       Kokkos::atomic_add(&v(i), dt * a_local);
     }
     KOKKOS_FORCEINLINE_FUNCTION

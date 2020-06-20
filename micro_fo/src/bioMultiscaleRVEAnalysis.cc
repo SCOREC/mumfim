@@ -138,8 +138,6 @@ namespace bio
     std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks;
     std::vector<std::shared_ptr<const MicroSolutionStrategy>>
         solution_strategies;
-    double library_time = 0;
-    double scale_time = 0;
     for (std::size_t i = 0; i < to_add.size(); ++i)
     {
       micro_fo_header & hdr = hdrs[i];

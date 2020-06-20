@@ -15,6 +15,7 @@
 #include <Kokkos_DualView.hpp>
 #include <bioBatchedFiberRVEAnalysisExplicit.h>
 #include <memory>
+#include <PCU.h>
 template <typename T>
 void stressToMat(int idx, T stress_view, apf::Matrix3x3 & stress)
 {
@@ -40,6 +41,7 @@ int main(int argc, char * argv[])
     std::cerr<<"Usage: "<<argv[0]<<" job.yaml num_rves"<<std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
+  PCU_Switch_Comm(MPI_COMM_SELF);
   auto BatchNum = std::atoi(argv[2]);
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(argv[1], cases);
@@ -118,15 +120,15 @@ int main(int argc, char * argv[])
   double ornt_time2 = timer.seconds();
   double time1 = timer.seconds();
   bool result = batched_analysis.run(deformation_gradient, stress);
-  batched_analysis.computeMaterialStiffness(stiffness);
   stress.sync<Kokkos::HostSpace>();
-  stiffness.sync<Kokkos::HostSpace>();
   auto stress_h = stress.h_view;
-  auto stiffness_h = stiffness.h_view;
   std::cout<<std::endl;
   apf::Matrix3x3 strss;
   stressToMat(0, stress_h, strss);
   std::cout<<strss<<std::endl;
+  batched_analysis.computeMaterialStiffness(stiffness);
+  stiffness.sync<Kokkos::HostSpace>();
+  auto stiffness_h = stiffness.h_view;
   for (int i = 0; i < 6; ++i)
   {
     for (int j = 0; j < 6; ++j)

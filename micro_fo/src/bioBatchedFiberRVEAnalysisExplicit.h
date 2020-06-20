@@ -291,13 +291,6 @@ namespace bio
         updateVolume<ExeSpace>(deformation_gradients, current_volume);
       }
       deformation_gradients.template sync<HostMemorySpace>();
-      // apply the incremental deformation to the RVE
-      for (size_t i = 0; i < rves.size(); ++i)
-      {
-        auto deformation_gradient =
-            Kokkos::subview(deformation_gradients, i, Kokkos::ALL, Kokkos::ALL);
-        MeshFunctionType::updateRVECoords(rves[i], deformation_gradient.h_view);
-      }
       // apply the incremental deformation gradient to the boundaries and the
       // boundary_dof_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
@@ -446,7 +439,5 @@ namespace bio
       orientation_tensor.compute2D(normal, omega);
     }
   };
-  // the actual explicit instantionations can be found in the associated cc file
-  extern template class BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal>;
 }  // namespace bio
 #endif

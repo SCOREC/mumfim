@@ -1,5 +1,4 @@
 set(micro_fo_src_files
-  bioBatchedFiberRVEAnalysisExplicit.cc
   bioExplicitOutputWriter.cc
   bioFiberNetwork.cc
   bioFiberNetworkIO.cc

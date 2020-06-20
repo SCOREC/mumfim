@@ -17,7 +17,7 @@
 #include <apfMatrixUtil.h>
 #include <lasCSR.h>
 #include <lasCSRCore.h>
-#include <lasCorePETSc.h>
+//#include <lasCorePETSc.h>
 #include <lasSparskitExterns.h>
 namespace bio
 {
@@ -62,6 +62,7 @@ namespace bio
     buffer->resizeMatrixBuffer(ndofs * 100);
     this->slv = std::unique_ptr<las::Solve>(las::createSparskitLUSolve(buffer, 1e-6));
   }
+  /*
   template <>
   LinearStructs<las::petsc>::LinearStructs(FiberNetwork* fiber_network, int ndofs,
                                double solver_tol,
@@ -78,6 +79,7 @@ namespace bio
     // because we provide buffers
     this->slv = std::unique_ptr<las::Solve>(las::createPetscLUSolve(MPI_COMM_SELF));
   }
+  */
   template <typename T>
   LinearStructs<T>::~LinearStructs()
   {
