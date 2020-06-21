@@ -1,8 +1,23 @@
 #ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H__
 #define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H__
 #include "bioBatchedFiberRVEAnalysisExplicitBase.h"
+
+#define UPDATE_FREQ 100
+
 namespace bio
 {
+  template<typename Scalar, typename Ordinal>
+  struct ScratchRegister
+  {
+    Scalar viscous_damping_coefficient; // (0)
+    Scalar fiber_elastic_modulus;  // (1)
+    Scalar fiber_area; // (2)
+    Scalar fiber_density; // (3)
+    Scalar dt_crit; // (4)
+    Scalar residual; // (5)
+    Scalar dt_nphalf; // (6)
+    Ordinal step;
+  };
 
   template <typename Scalar, typename Ordinal, typename ExeSpace>
   struct TeamOuterLoop
@@ -43,17 +58,26 @@ namespace bio
         ROOV connectivity,
         RWSV l0, T scratch)
     {
-      Scalar l_min;
-      Kokkos::Min<Scalar> min_reducer(l_min);
-      Kokkos::parallel_reduce(element_policy, [=](Ordinal i, Scalar& local) {
-        TeamOuterLoop::getElementLength(i, coords, connectivity, l0);
-        min_reducer.join(local, l0(i));
-      }, min_reducer);
-      // might need a barrier here...
-      if(element_policy.member.team_rank() == 0)
+      if(scratch(0).step % UPDATE_FREQ == 0)
       {
-        Scalar sound_speed = sqrt(scratch(0).fiber_elastic_modulus / scratch(0).fiber_density);
-        scratch(0).dt_crit = l_min/sound_speed;
+        Scalar l_min;
+        Kokkos::Min<Scalar> min_reducer(l_min);
+        Kokkos::parallel_reduce(element_policy, [=](Ordinal i, Scalar& local) {
+          TeamOuterLoop::getElementLength(i, coords, connectivity, l0);
+          min_reducer.join(local, l0(i));
+        }, min_reducer);
+        // might need a barrier here...
+        if(element_policy.member.team_rank() == 0)
+        {
+          Scalar sound_speed = sqrt(scratch(0).fiber_elastic_modulus / scratch(0).fiber_density);
+          scratch(0).dt_crit = l_min/sound_speed;
+        }
+      }
+      else
+      {
+        Kokkos::parallel_for(element_policy, [=](Ordinal i) {
+          TeamOuterLoop::getElementLength(i, coords, connectivity, l0);
+        });
       }
     }
     template <typename ExePolicy, typename T>
@@ -75,28 +99,45 @@ namespace bio
       });
       // barrier needed between loop 1 and loop 2
       dof_policy.member.team_barrier();
+      // load the material properties into registers so we don't
+      // constantly hit the shared memory in the middle of the hot loop
+      Scalar elastic_modulus = scratch(0).fiber_elastic_modulus;
+      Scalar area = scratch(0).fiber_area;
       Kokkos::parallel_for(
           element_policy,
           [=](const Ordinal i) {
             TeamOuterLoop::getForceLoop2(
-                i, scratch, l0, l,
-                current_coords, connectivity,  f_int);
+                i, l0, l,
+                current_coords, connectivity,  f_int,elastic_modulus,area);
           });
       // barrier needed between loop 2 and loop3
       dof_policy.member.team_barrier();
-
-      Scalar residual = 0;
-      Kokkos::parallel_reduce(
-          dof_policy,
-          [=](const Ordinal i, Scalar & residual_update) {
-            residual_update +=
-                TeamOuterLoop::getForceLoop3(i, scratch, mass_matrix, v, f_int, f);
-          },
-          residual);
-      Kokkos::single(Kokkos::PerTeam(dof_policy.member), [=]()
+      // load the material properties into registers so we don't
+      // constantly hit the shared memory in the middle of the hot loop
+      Scalar viscous_damping_coefficient = scratch(0).viscous_damping_coefficient;
+      if(scratch(0).step % UPDATE_FREQ == 0)
       {
-        scratch(0).residual = sqrt(residual);
-      });
+        Scalar residual = 0;
+        Kokkos::parallel_reduce(
+            dof_policy,
+            [=](const Ordinal i, Scalar & residual_update) {
+              residual_update +=
+                  TeamOuterLoop::getForceLoop3(i, mass_matrix, v, f_int, f,viscous_damping_coefficient);
+            },
+            residual);
+        Kokkos::single(Kokkos::PerTeam(dof_policy.member), [=]()
+        {
+          scratch(0).residual = sqrt(residual);
+        });
+      }
+      else
+      {
+        Kokkos::parallel_for(
+            dof_policy,
+            [=](const Ordinal i) {
+                  TeamOuterLoop::getForceLoop3(i, mass_matrix, v, f_int, f, viscous_damping_coefficient);
+            });
+      }
       // we don't put barrier here, because we expect the user to place abarrier after the call if needed
     }
     template <typename ExePolicy>
@@ -167,7 +208,7 @@ namespace bio
       Kokkos::View<Scalar*,ExeSpace> dt_crit_d("dt_crit", num_rves);
       Kokkos::View<Scalar*,ExeSpace> elastic_modulus_d("elastic_modulus", num_rves);
       using ScratchPad =
-          Kokkos::View<ScratchRegister<Scalar>*,
+          Kokkos::View<ScratchRegister<Scalar,Ordinal>*,
                        typename ExeSpace::scratch_memory_space,
                        Kokkos::MemoryUnmanaged>;
         constexpr int num_scratch = 1;
@@ -213,6 +254,7 @@ namespace bio
                                   fiber_density.template getRow<ExeSpace>(i)(0);
                   scratch(0).dt_crit = 0;
                   scratch(0).residual = 10.0;
+                  scratch(0).step = 0;
               }
             // create the loop policies based on the lengths of the various
             // arrays
@@ -250,7 +292,6 @@ namespace bio
             team_member.team_barrier();
              dt_crit_d(i) = scratch(0).dt_crit;
           });
-      //Kokkos::fence();
       // run the main loop
       Kokkos::parallel_for(
           outer_policy.set_scratch_size(0,Kokkos::PerTeam(shared_bytes)),
@@ -286,6 +327,7 @@ namespace bio
                                   fiber_density.template getRow<ExeSpace>(i)(0);
                   scratch(0).dt_crit = dt_crit_d(i);
                   scratch(0).residual = 10.0;
+                  scratch(0).step = 0;
               }
             // create the loop policies based on the lengths of the various
             // arrays
@@ -327,9 +369,12 @@ namespace bio
                   free_dof_policy, scratch(0).dt_nphalf, nodal_mass_row,
                   force_total_row, velocity_row);
               team_member.team_barrier();
+              if(team_member.team_rank() == 0)
+              {
+                ++scratch(0).step;
+              }
             } while (scratch(0).residual > 1E-6);
           });
-      //Kokkos::fence();
       // Finalize Data
       Kokkos::parallel_for("FinalizeData",
           outer_policy.set_scratch_size(0,Kokkos::PerTeam(shared_bytes)),
@@ -364,6 +409,7 @@ namespace bio
                                   fiber_density.template getRow<ExeSpace>(i)(0);
                   scratch(0).dt_crit = dt_crit_d(i);
                   scratch(0).residual = 10.0;
+                  scratch(0).step = 0;
              }
             // create the loop policies based on the lengths of the various
             // arrays

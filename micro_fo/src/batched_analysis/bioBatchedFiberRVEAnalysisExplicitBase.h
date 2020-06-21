@@ -9,17 +9,6 @@
 #define TEAM_SIZE Kokkos::AUTO
 namespace bio
 {
-  template<typename Scalar>
-  struct ScratchRegister
-  {
-    Scalar viscous_damping_coefficient; // (0)
-    Scalar fiber_elastic_modulus;  // (1)
-    Scalar fiber_area; // (2)
-    Scalar fiber_density; // (3)
-    Scalar dt_crit; // (4)
-    Scalar residual; // (5)
-    Scalar dt_nphalf; // (6)
-  };
   template <typename ExeSpace,
             typename Ordinal,
             typename T,
@@ -168,11 +157,12 @@ namespace bio
           current_volume_d(i) = J * current_volume_d(i);
         });
   }
-  template <typename Scalar, typename T>
+  template <typename Scalar>
   KOKKOS_FORCEINLINE_FUNCTION Scalar
   getLinearReactionForce(Scalar orig_length,
                          Scalar length,
-                         T scratch
+                         Scalar elastic_modulus,
+                         Scalar area
                          )
   {
     // abaqus ...
@@ -183,8 +173,7 @@ namespace bio
     Scalar length_ratio = length / orig_length;
     Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
     // elastic_modulus * area
-    //return length_ratio * elastic_modulus * area * green_strain;
-    return length_ratio * scratch(0).fiber_elastic_modulus * scratch(0).fiber_area * green_strain;
+    return length_ratio * elastic_modulus * area * green_strain;
   }
   template <typename Derived,
             typename Scalar,
@@ -268,18 +257,18 @@ namespace bio
     {
       f_int(i) = 0;
     }
-    template <typename T>
     KOKKOS_FORCEINLINE_FUNCTION
     static void getForceLoop2(const Ordinal i,
-                                T scratch,
                                 ROSV l0,
                                 ROSV l,
                                 RASV current_coords,
                                 ROOV connectivity,
-                                RWSV f_int)
+                                RWSV f_int,
+                                Scalar elastic_modulus,
+                                Scalar area)
     {
       Scalar local_l = l(i);
-      Scalar frc = getLinearReactionForce(l0(i), local_l,scratch);
+      Scalar frc = getLinearReactionForce(l0(i), local_l, elastic_modulus,area);
       Scalar frc_ovr_l = frc/local_l;
       auto n1 = connectivity(i * 2)*3;
       auto n2 = connectivity(i * 2 + 1)*3;
@@ -296,17 +285,16 @@ namespace bio
       Kokkos::atomic_sub(&f_int(n1 + 2), elem_nrm_3);
       Kokkos::atomic_add(&f_int(n2 + 2), elem_nrm_3);
     }
-    template <typename T>
     KOKKOS_FORCEINLINE_FUNCTION
     static Scalar getForceLoop3(const Ordinal i,
-                                T scratch,
                                 ROSV mass_matrix,
                                 ROSV v,
                                 ROSV f_int,
-                                RWSV f)
+                                RWSV f,
+                                Scalar viscous_damping_coefficient)
     {
       // viscous damping*constant*mass matrix * velocity
-      Scalar f_damp = scratch(0).viscous_damping_coefficient * mass_matrix(i / 3) * v(i);
+      Scalar f_damp = viscous_damping_coefficient * mass_matrix(i / 3) * v(i);
       // here we assume that the external force is zero on all free
       // degrees of freedom
       Scalar local_residual = -f_int(i);
