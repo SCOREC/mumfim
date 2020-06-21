@@ -49,6 +49,7 @@ namespace bio
         TeamOuterLoop::getElementLength(i, coords, connectivity, l0);
         min_reducer.join(local, l0(i));
       }, min_reducer);
+      // might need a barrier here...
       if(element_policy.member.team_rank() == 0)
       {
         Scalar sound_speed = sqrt(scratch(1) / scratch(3));
@@ -123,7 +124,7 @@ namespace bio
     }
     template <typename ExePolicy>
     KOKKOS_INLINE_FUNCTION static void updates(ExePolicy dof_policy,
-                                               ROSV velocity,
+                                               RWSV velocity,
                                                ROSV mass_matrix,
                                                ROSV f,
                                                Scalar dt,
@@ -133,7 +134,8 @@ namespace bio
          
          Scalar a_local = (1/ mass_matrix(i / 3)) * f(i);
          Scalar v_local = velocity(i) + dt * a_local;
-         current_coordinates(i) = current_coordinates(i) + dt*v_local;
+         velocity(i) = v_local;
+         current_coordinates(i) = current_coordinates(i) + 2*dt*v_local;
       });
     }
     // note ever function we call has been hand tuned to reduce regsiter count so we
@@ -159,7 +161,7 @@ namespace bio
                     POT displacement_boundary_dof,
                     Ordinal num_threads)
     {
-      using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace, Kokkos::IndexType<Ordinal>, Kokkos::Schedule<Kokkos::Dynamic>>;
+      using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace, Kokkos::IndexType<Ordinal>, Kokkos::Schedule<Kokkos::Static>>;
       using member_type = typename OuterPolicyType::member_type;
       OuterPolicyType outer_policy(num_rves, num_threads);
       Kokkos::View<Scalar*,ExeSpace> dt_crit_d("dt_crit", num_rves);
@@ -177,7 +179,7 @@ namespace bio
       Kokkos::parallel_for("RunInitialization",
           outer_policy.set_scratch_size(0,Kokkos::PerTeam(shared_bytes)),
           KOKKOS_LAMBDA(member_type team_member) {
-            ScratchPad scratch(team_member.team_scratch(0), num_rves*num_scratch);
+            ScratchPad scratch(team_member.team_scratch(0), num_scratch);
             Ordinal i = team_member.league_rank();
             //// get the device views of the data
             auto connectivity_row = connectivity.template getRow<ExeSpace>(i);
@@ -246,20 +248,22 @@ namespace bio
                 element_policy, current_coordinates_row, connectivity_row,
                 current_length_row, scratch);
             team_member.team_barrier();
+            // presumably, we only need to do this over the free DOFs
             TeamOuterLoop::getForces(
-                element_policy, free_dof_policy, scratch,
+                element_policy, dof_policy, scratch,
                 original_length_row, current_length_row,
                 velocity_row, current_coordinates_row, connectivity_row,
                 nodal_mass_row, force_internal_row,
                 force_total_row);
+            team_member.team_barrier();
              dt_crit_d(i) = scratch(4);
           });
-
+      Kokkos::fence();
       // run the main loop
       Kokkos::parallel_for(
           outer_policy.set_scratch_size(0,Kokkos::PerTeam(shared_bytes)),
           KOKKOS_LAMBDA(member_type team_member) {
-            ScratchPad scratch(team_member.team_scratch(0), num_rves*num_scratch);
+            ScratchPad scratch(team_member.team_scratch(0), num_scratch);
             Ordinal i = team_member.league_rank();
             //// get the device views of the data
             auto connectivity_row = connectivity.template getRow<ExeSpace>(i);
@@ -297,7 +301,6 @@ namespace bio
                   // residual
                   scratch(5) = 10.0;
                   // scratch(6) dt_nphalf
-                  // scratch(7) l_min
               });
             // create the loop policies based on the lengths of the various
             // arrays
@@ -321,6 +324,8 @@ namespace bio
                 scratch(6) = dt_nphalf;
               }
               team_member.team_barrier();
+              //if(team_member.team_rank() == 0)
+                //printf("Start While %e, %e\n", scratch(4), scratch(5));
               TeamOuterLoop::updates(free_dof_policy, velocity_row, nodal_mass_row, force_total_row,
                                      scratch(6), current_coordinates_row);
               team_member.team_barrier();
@@ -342,11 +347,12 @@ namespace bio
               team_member.team_barrier();
             } while (scratch(5) > 1E-6);
           });
+      Kokkos::fence();
       // Finalize Data
       Kokkos::parallel_for("FinalizeData",
           outer_policy.set_scratch_size(0,Kokkos::PerTeam(shared_bytes)),
           KOKKOS_LAMBDA(member_type team_member) {
-            ScratchPad scratch(team_member.team_scratch(0), num_rves*num_scratch);
+            ScratchPad scratch(team_member.team_scratch(0), num_scratch);
             Ordinal i = team_member.league_rank();
             //// get the device views of the data
             auto connectivity_row = connectivity.template getRow<ExeSpace>(i);
@@ -383,7 +389,6 @@ namespace bio
                   // residual
                   scratch(5) = 10.0;
                   // scratch(6) dt_nphalf
-                  // scratch(7) l_min
               });
             // create the loop policies based on the lengths of the various
             // arrays
@@ -391,7 +396,8 @@ namespace bio
                 team_member, 0, current_length_row.extent(0));
             auto dof_policy = Kokkos::TeamThreadRange(
                 team_member, 0, displacement_row.extent(0));
-            //
+            // barrier needed to make sure we wait for shared data
+            team_member.team_barrier();
             // This extra call is required to getForces with the full dof_policy
             // to fill in the internal forces on the boundary (which is needed
             // for computation of the cauchy stresses).
@@ -405,6 +411,7 @@ namespace bio
               Kokkos::parallel_for(dof_policy, [=](const int i){
                   displacement_row(i) = current_coordinates_row(i) - original_coordinates_row(i);
               });
+            team_member.team_barrier();
           });
 
       return true;

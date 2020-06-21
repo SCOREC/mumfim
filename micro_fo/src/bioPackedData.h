@@ -78,8 +78,8 @@ class PackedData
     // it is the responsibilty of the user to sync and mark modified the
     // device data using the sync and modify functions. Therefore, we do
     // not make any assumptions about if they modify the data here
-   // return Kokkos::subview(data_.template view<Device>(), Kokkos::make_pair(row_index_d(idx), row_index_d(idx + 1)));
-    return Kokkos::View<DataType *, Device>(data_.template view<Device>(), Kokkos::make_pair(row_index_d(idx), row_index_d(idx + 1)));
+    return Kokkos::subview(data_.template view<Device>(), Kokkos::make_pair(row_index_d(idx), row_index_d(idx + 1)));
+    //return Kokkos::View<DataType *, Device>(data_.template view<Device>(), Kokkos::make_pair(row_index_d(idx), row_index_d(idx + 1)));
   }
   template <typename Device>
   void modify()

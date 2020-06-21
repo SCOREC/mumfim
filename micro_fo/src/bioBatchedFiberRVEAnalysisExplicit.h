@@ -48,15 +48,11 @@ namespace bio
     PackedScalarType current_coordinates;
     PackedScalarType displacement;
     PackedScalarType velocity;
-    PackedScalarType acceleration;
     PackedScalarType force_total;
     PackedScalarType force_internal;
-    PackedScalarType force_external;
-    PackedScalarType force_damping;
     PackedScalarType nodal_mass;
     PackedScalarType original_length;
     PackedScalarType current_length;
-    PackedScalarType residual;  // solutoin residual
     // Only deal with fiber networks with uniform material properties
     PackedScalarType fiber_elastic_modulus;
     PackedScalarType fiber_area;
@@ -169,16 +165,12 @@ namespace bio
       displacement_copy = Kokkos::create_mirror(
           ExeSpace(), displacement.template getAllRows<ExeSpace>());
       velocity = PackedScalarType(dof_counts);
-      acceleration = PackedScalarType(dof_counts);
       force_total = PackedScalarType(dof_counts);
       force_internal = PackedScalarType(dof_counts);
-      force_external = PackedScalarType(dof_counts);
-      force_damping = PackedScalarType(dof_counts);
       nodal_mass = PackedScalarType(mass_counts);
       original_length = PackedScalarType(element_counts);
       current_length = PackedScalarType(element_counts);
       // currently there is only one material property,
-      residual = PackedScalarType(residual_counts);
       fiber_elastic_modulus = PackedScalarType(material_counts);
       fiber_area = PackedScalarType(material_counts);
       fiber_density = PackedScalarType(material_counts);
@@ -213,19 +205,13 @@ namespace bio
                                        fixed_vert, boundary_verts[i]);
         auto fiber_elastic_modulus_row =
             fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
-        // fiber_elastic_modulus_row(0) =
-        // fiber_networks[i]->getFiberReaction(0).E;
         fiber_elastic_modulus_row(0) =
             fiber_networks[i]->getFiberReaction(0).getYoungModulus();
         auto fiber_area_row = fiber_area.template getRow<HostMemorySpace>(i);
-        // fiber_area_row(0) =
-        // fiber_networks[i]->getFiberReaction(0).fiber_area;
         fiber_area_row(0) =
             fiber_networks[i]->getFiberReaction(0).getFiberArea();
         auto fiber_density_row =
             fiber_density.template getRow<HostMemorySpace>(i);
-        // fiber_density_row(0) =
-        //    fiber_networks[i]->getFiberReaction(0).fiber_density;
         fiber_density_row(0) =
             fiber_networks[i]->getFiberReaction(0).getFiberDensity();
         auto viscous_damping_coefficient_row =
@@ -302,15 +288,11 @@ namespace bio
       current_coordinates.template sync<ExeSpace>();
       displacement.template sync<ExeSpace>();
       velocity.template sync<ExeSpace>();
-      acceleration.template sync<ExeSpace>();
       force_total.template sync<ExeSpace>();
       force_internal.template sync<ExeSpace>();
-      force_external.template sync<ExeSpace>();
-      force_damping.template sync<ExeSpace>();
       nodal_mass.template sync<ExeSpace>();
       original_length.template sync<ExeSpace>();
       current_length.template sync<ExeSpace>();
-      residual.template sync<ExeSpace>();
       fiber_elastic_modulus.template sync<ExeSpace>();
       fiber_area.template sync<ExeSpace>();
       fiber_density.template sync<ExeSpace>();
@@ -318,13 +300,13 @@ namespace bio
       critical_time_scale_factor.template sync<ExeSpace>();
       displacement_boundary_dof.template sync<ExeSpace>();
       // Run the specific implementation we are interested in
-      auto result = TeamOuterLoop<Scalar, LO, ExeSpace>::run(
-          rves, connectivity, original_coordinates, current_coordinates,
-          displacement, velocity, acceleration, force_total, force_internal,
-          force_external, force_damping, nodal_mass, original_length,
-          current_length, residual, fiber_elastic_modulus, fiber_area,
+      auto result = TeamOuterLoop<Scalar, LO, ExeSpace>::run(rves.size(),
+          connectivity, original_coordinates, current_coordinates,
+          displacement, velocity, force_total, force_internal,
+          nodal_mass, original_length,
+          current_length, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_dof);
+          critical_time_scale_factor, displacement_boundary_dof, 512);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_dof,
                                     current_coordinates, force_internal, sigma,

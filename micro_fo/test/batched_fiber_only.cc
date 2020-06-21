@@ -52,11 +52,12 @@ int main(int argc, char * argv[])
   bio::FiberNetworkLibrary network_library;
   auto fiber_network =
       network_library.load(file_name, file_name + ".params", 0, 0);
+
   std::vector<std::shared_ptr<const bio::FiberNetwork>> fiber_networks;
   std::vector<std::shared_ptr<const bio::MicroSolutionStrategy>>
       solution_strategies;
   std::shared_ptr<bio::MicroSolutionStrategy> shared_case{std::move(cases[0].ss)};
-
+  fiber_networks.reserve(BatchNum);
   for(int i=0; i<BatchNum; ++i)
   {
     fiber_networks.push_back(fiber_network);

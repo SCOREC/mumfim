@@ -298,7 +298,7 @@ namespace bio
       Scalar f_damp = scratch(0) * mass_matrix(i / 3) * v(i);
       // here we assume that the external force is zero on all free
       // degrees of freedom
-      Scalar local_residual = f_int(i);
+      Scalar local_residual = -f_int(i);
       f(i) = local_residual - f_damp;
       return local_residual * local_residual;
     }
