@@ -9,6 +9,17 @@
 #define TEAM_SIZE Kokkos::AUTO
 namespace bio
 {
+  template<typename Scalar>
+  struct ScratchRegister
+  {
+    Scalar viscous_damping_coefficient; // (0)
+    Scalar fiber_elastic_modulus;  // (1)
+    Scalar fiber_area; // (2)
+    Scalar fiber_density; // (3)
+    Scalar dt_crit; // (4)
+    Scalar residual; // (5)
+    Scalar dt_nphalf; // (6)
+  };
   template <typename ExeSpace,
             typename Ordinal,
             typename T,
@@ -173,7 +184,7 @@ namespace bio
     Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
     // elastic_modulus * area
     //return length_ratio * elastic_modulus * area * green_strain;
-    return length_ratio * scratch(1) * scratch(2) * green_strain;
+    return length_ratio * scratch(0).fiber_elastic_modulus * scratch(0).fiber_area * green_strain;
   }
   template <typename Derived,
             typename Scalar,
@@ -295,7 +306,7 @@ namespace bio
                                 RWSV f)
     {
       // viscous damping*constant*mass matrix * velocity
-      Scalar f_damp = scratch(0) * mass_matrix(i / 3) * v(i);
+      Scalar f_damp = scratch(0).viscous_damping_coefficient * mass_matrix(i / 3) * v(i);
       // here we assume that the external force is zero on all free
       // degrees of freedom
       Scalar local_residual = -f_int(i);
