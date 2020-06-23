@@ -276,7 +276,7 @@ namespace bio
       // apply the incremental deformation gradient to the boundaries and the
       // boundary_dof_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
-          rves.size(), deformation_gradients, original_coordinates,
+          rves.size(), deformation_gradients, current_coordinates,
           displacement);
       // sync all data to the execution space
       connectivity.template sync<ExeSpace>();
