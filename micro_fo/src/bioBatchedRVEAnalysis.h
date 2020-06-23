@@ -7,14 +7,18 @@
 #include "bioMicroFOParams.h"
 namespace bio
 {
-  template <typename Scalar, typename ExeSpace>
+  template <typename Scalar, typename Ordinal, typename ExeSpace>
   class BatchedRVEAnalysis
   {
     protected:
     // TODO convert the data representation to a kokkos view
-    Kokkos::DualView<Scalar * [6]> current_stress_;
+    Kokkos::DualView<Scalar * [6], ExeSpace> current_stress_;
+    Ordinal num_rves_;
 
     public:
+    BatchedRVEAnalysis(Ordinal num_rves) : num_rves_(num_rves) {
+      current_stress_ = Kokkos::DualView<Scalar * [6], ExeSpace>("current_stress", num_rves);
+    };
     virtual ~BatchedRVEAnalysis(){};
     // for now we only allow the case where every analysis needs to update
     // coords, or every analysis doesn't it is possible this isn't the most

@@ -26,7 +26,7 @@ namespace bio
             typename LocalOrdinal = bio::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
   class BatchedFiberRVEAnalysisExplicit
-      : public BatchedRVEAnalysis<Scalar, ExeSpace>
+      : public BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>
   {
     private:
     using LO = LocalOrdinal;
@@ -70,13 +70,10 @@ namespace bio
     OrientationTensorType orientation_tensor;
 
     public:
-    // class TagBatchLoopSingle{};
-    // class TagBatchLoopTeamOuterWhile {};
-    // class TagBatchLoopTeamInnerWhile {};
     BatchedFiberRVEAnalysisExplicit(
         std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks,
         std::vector<std::shared_ptr<const MicroSolutionStrategy>>
-            solution_strategies)
+            solution_strategies) : BatchedRVEAnalysis<Scalar,LocalOrdinal,ExeSpace>(fiber_networks.size())
     {
       if (fiber_networks.size() != solution_strategies.size())
       {
@@ -162,6 +159,7 @@ namespace bio
       original_coordinates = PackedScalarType(dof_counts);
       current_coordinates = PackedScalarType(dof_counts);
       displacement = PackedScalarType(dof_counts);
+      displacement_copy = DeviceScalarView(displacement.template getAllRows<ExeSpace>());
       displacement_copy = Kokkos::create_mirror(
           ExeSpace(), displacement.template getAllRows<ExeSpace>());
       velocity = PackedScalarType(dof_counts);
@@ -266,7 +264,6 @@ namespace bio
     {
       displacement.template sync<ExeSpace>();
       displacement.template modify<ExeSpace>();
-      // Kokkos::deep_copy(velocity.template getAllRows<ExeSpace>(),0);
       if (!update_coords)
       {
         Kokkos::deep_copy(displacement_copy,
@@ -276,7 +273,6 @@ namespace bio
       {
         updateVolume<ExeSpace>(deformation_gradients, current_volume);
       }
-      deformation_gradients.template sync<HostMemorySpace>();
       // apply the incremental deformation gradient to the boundaries and the
       // boundary_dof_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
@@ -299,6 +295,8 @@ namespace bio
       viscous_damping_coefficient.template sync<ExeSpace>();
       critical_time_scale_factor.template sync<ExeSpace>();
       displacement_boundary_dof.template sync<ExeSpace>();
+
+      Kokkos::deep_copy(velocity.template getAllRows<ExeSpace>(),0);
       // Run the specific implementation we are interested in
       auto result = TeamOuterLoop<Scalar, LO, ExeSpace>::run(rves.size(),
           connectivity, original_coordinates, current_coordinates,
@@ -318,7 +316,8 @@ namespace bio
       }
       else
       {
-        this->current_stress_ = sigma;
+        Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(), sigma.template view<ExeSpace>());
+        this->current_stress_.template modify<ExeSpace>();
       }
       return result;
     }
@@ -392,8 +391,6 @@ namespace bio
             break;
         }
         Fappd.template modify<HostMemorySpace>();
-        Kokkos::deep_copy(sigma1_d, 0);
-        sigma1.template modify<ExeSpace>();
         run(Fappd, sigma1, false);
         sigma1.template sync<ExeSpace>();
         // j is row, i is column

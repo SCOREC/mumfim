@@ -73,7 +73,6 @@ namespace bio
     boundary_dofs.template sync<ExeSpace>();
     coordinates.template sync<ExeSpace>();
     force.template sync<ExeSpace>();
-    stress.template modify<ExeSpace>();
     volume.template sync<ExeSpace>();
     scale_factor.template sync<ExeSpace>();
     auto stress_d = stress.template view<ExeSpace>();
@@ -128,6 +127,7 @@ namespace bio
                                  volume_d(team_member.league_rank());
               });
         });
+    stress.template modify<ExeSpace>();
   }
   template <typename ExeSpace, typename T1, typename T2>
   void updateVolume(T1 deformation_gradients, T2 current_volume)

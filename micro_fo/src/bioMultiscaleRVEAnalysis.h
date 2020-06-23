@@ -34,7 +34,7 @@ namespace bio
     std::vector<micro_fo_solver> slvr_prms;
     std::vector<micro_fo_int_solver> slvr_int_prms;
     using BatchedAnalysisType = std::unique_ptr<
-        BatchedRVEAnalysis<Scalar, Kokkos::DefaultExecutionSpace> >;
+        BatchedRVEAnalysis<Scalar, LocalOrdinal, Kokkos::DefaultExecutionSpace> >;
     /// std::vector<std::unique_ptr<RVEAnalysis>> ans;
     BatchedAnalysisType batched_analysis;
     // this is a workspace that the microscale solves can use.
