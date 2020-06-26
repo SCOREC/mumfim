@@ -32,8 +32,8 @@ namespace bio
     using LO = LocalOrdinal;
     // the packed types correspond to data which is packed to include multiple
     // RVEs. Each in the packed data corresponds to the data for that RVE
-    using PackedScalarType = PackedData<Scalar, LocalOrdinal, ExeSpace>;
-    using PackedOrdinalType = PackedData<LocalOrdinal, LocalOrdinal, ExeSpace>;
+    using PackedScalarType = PackedData<Scalar*, ExeSpace>;
+    using PackedOrdinalType = PackedData<LocalOrdinal*, ExeSpace>;
     using HostMemorySpace = typename PackedScalarType::host_mirror_space;
     using DeviceMemorySpace = typename PackedScalarType::memory_space;
     using DeviceScalarView = typename PackedScalarType::DeviceViewType;

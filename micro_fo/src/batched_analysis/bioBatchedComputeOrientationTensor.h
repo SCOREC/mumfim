@@ -14,8 +14,8 @@ namespace bio
     struct TagCompute2D
     {
     };
-    using PST = PackedData<Scalar, Ordinal, ExeSpace>;
-    using POT = PackedData<Ordinal, Ordinal, ExeSpace>;
+    using PST = PackedData<Scalar*, ExeSpace>;
+    using POT = PackedData<Ordinal*, ExeSpace>;
     using OrientationType = Kokkos::DualView<Scalar * [3][3], ExeSpace>;
     using NormalType = Kokkos::DualView<Scalar * [3], ExeSpace>;
     using OuterPolicyType3D = Kokkos::TeamPolicy<ExeSpace, TagCompute3D>;

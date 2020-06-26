@@ -181,8 +181,8 @@ namespace bio
             typename ExeSpace>
   struct BaseBatchedExplicit
   {
-    using PST = PackedData<Scalar, Ordinal, ExeSpace>;
-    using POT = PackedData<Ordinal, Ordinal, ExeSpace>;
+    using PST = PackedData<Scalar*, ExeSpace>;
+    using POT = PackedData<Ordinal*, ExeSpace>;
     using HostMemorySpace = typename PST::host_mirror_space;
     using DeviceMemorySpace = typename PST::memory_space;
     // read only view types
