@@ -15,7 +15,7 @@ namespace bio
     {
     };
     using PST = PackedData<Scalar*, ExeSpace>;
-    using POT = PackedData<Ordinal*, ExeSpace>;
+    using ConnectivityType = PackedData<Ordinal*[2], ExeSpace>;
     using OrientationType = Kokkos::DualView<Scalar * [3][3], ExeSpace>;
     using NormalType = Kokkos::DualView<Scalar * [3], ExeSpace>;
     using OuterPolicyType3D = Kokkos::TeamPolicy<ExeSpace, TagCompute3D>;
@@ -38,14 +38,14 @@ namespace bio
         Kokkos::View<Scalar[3],
                      typename ExeSpace::scratch_memory_space,
                      Kokkos::MemoryUnmanaged>;
-    POT connectivity_;
+    ConnectivityType connectivity_;
     PST coordinates_;
     // Ordinal team_size_;
     typename OuterPolicyType3D::index_type team_size_;
     OrientationDeviceViewType omega_d_;
     NormalDeviceViewType normal_d_;
     OrientationTensor(){};
-    OrientationTensor(POT connectivity, PST coordinates, Ordinal team_size)
+    OrientationTensor(ConnectivityType connectivity, PST coordinates, Ordinal team_size)
         : connectivity_(connectivity)
         , coordinates_(coordinates)
         , team_size_(team_size)
@@ -58,7 +58,7 @@ namespace bio
           coordinates_.template getRow<ExeSpace>(team_member.league_rank());
       auto connectivity_row =
           connectivity_.template getRow<ExeSpace>(team_member.league_rank());
-      auto num_edges = connectivity_row.extent(0) / 2;
+      auto num_edges = connectivity_row.extent(0);
       OrientationScratchPad scratch_orientation(team_member.team_scratch(0));
       NormalScratchPad scratch_normal(team_member.team_scratch(0));
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, 0, 3),
@@ -84,8 +84,8 @@ namespace bio
       team_member.team_barrier();
       Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, 0, num_edges), [=](const int i) {
-            auto n1 = connectivity_row(i * 2);
-            auto n2 = connectivity_row(i * 2 + 1);
+            auto n1 = connectivity_row(i,0);
+            auto n2 = connectivity_row(i,1);
             auto lx = coordinates_row(3 * n2) - coordinates_row(3 * n1);
             auto ly = coordinates_row(3 * n2 + 1) - coordinates_row(3 * n1 + 1);
             auto lz = coordinates_row(3 * n2 + 2) - coordinates_row(3 * n1 + 2);
@@ -132,7 +132,7 @@ namespace bio
           coordinates_.template getRow<ExeSpace>(team_member.league_rank());
       auto connectivity_row =
           connectivity_.template getRow<ExeSpace>(team_member.league_rank());
-      Ordinal num_edges = connectivity_row.extent(0) / 2;
+      Ordinal num_edges = connectivity_row.extent(0);
       OrientationScratchPad scratch_orientation(team_member.team_scratch(0));
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, 0, 3),
                            [=](const int i) {
@@ -143,8 +143,8 @@ namespace bio
       team_member.team_barrier();
       Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, 0, num_edges), [=](const int i) {
-            auto n1 = connectivity_row(i * 2);
-            auto n2 = connectivity_row(i * 2 + 1);
+            auto n1 = connectivity_row(i,0);
+            auto n2 = connectivity_row(i,1);
             auto lx = coordinates_row(3 * n2) - coordinates_row(3 * n1);
             auto ly = coordinates_row(3 * n2 + 1) - coordinates_row(3 * n1 + 1);
             auto lz = coordinates_row(3 * n2 + 2) - coordinates_row(3 * n1 + 2);

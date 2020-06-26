@@ -183,11 +183,13 @@ namespace bio
   {
     using PST = PackedData<Scalar*, ExeSpace>;
     using POT = PackedData<Ordinal*, ExeSpace>;
+    using ConnectivityType = PackedData<Ordinal*[2], ExeSpace>;
     using HostMemorySpace = typename PST::host_mirror_space;
     using DeviceMemorySpace = typename PST::memory_space;
     // read only view types
     using ROSV = Kokkos::View<const Scalar *, ExeSpace>;
     using ROOV = Kokkos::View<const Ordinal *, ExeSpace>;
+    using ConnectivityViewType = Kokkos::View<const Ordinal*[2]>;
     // Random Access View types
     using RASV = ROSV;  // Kokkos::View<const Scalar *,
                         // ExeSpace,
@@ -199,7 +201,7 @@ namespace bio
     using RWSV = Kokkos::View<Scalar *, ExeSpace>;
     using RWOV = Kokkos::View<Ordinal *, ExeSpace>;
     static bool run(int num_rves,
-                    POT connectivity,
+                    ConnectivityType connectivity,
                     PST original_coordinates,
                     PST current_coordinates,
                     PST displacement,
@@ -241,11 +243,11 @@ namespace bio
     KOKKOS_FORCEINLINE_FUNCTION
     static void getElementLength(const Ordinal i,
                                  ROSV coords,
-                                 ROOV connectivity,
+                                 ConnectivityViewType connectivity,
                                  RWSV l0)
     {
-      Ordinal n1 = connectivity(i * 2)*3;
-      Ordinal n2 = connectivity(i * 2 + 1)*3;
+      Ordinal n1 = connectivity(i,0)*3;
+      Ordinal n2 = connectivity(i,1)*3;
       Scalar x1 = coords(n2) - coords(n1);
       Scalar x2 = coords(n2 + 1) - coords(n1 + 1);
       Scalar x3 = coords(n2 + 2) - coords(n1 + 2);
@@ -262,7 +264,7 @@ namespace bio
                                 ROSV l0,
                                 ROSV l,
                                 RASV current_coords,
-                                ROOV connectivity,
+                                ConnectivityViewType connectivity,
                                 RWSV f_int,
                                 Scalar elastic_modulus,
                                 Scalar area)
@@ -270,8 +272,8 @@ namespace bio
       Scalar local_l = l(i);
       Scalar frc = getLinearReactionForce(l0(i), local_l, elastic_modulus,area);
       Scalar frc_ovr_l = frc/local_l;
-      auto n1 = connectivity(i * 2)*3;
-      auto n2 = connectivity(i * 2 + 1)*3;
+      auto n1 = connectivity(i,0)*3;
+      auto n2 = connectivity(i,1)*3;
       Scalar elem_nrm_1 =
           (current_coords(n2) - current_coords(n1)) *frc_ovr_l;
       Scalar elem_nrm_2 =

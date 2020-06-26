@@ -9,7 +9,7 @@ namespace bio
    * only free and only fixed portions of the dofs. This function assumes that
    * the first dof is zero, and that there are no gaps in the dofs
    */
-  template <typename Scalar, typename Ordinal, typename ExeSpace>
+  template <typename Scalar, typename Ordinal, typename Layout, typename ExeSpace>
   struct ReorderMesh
   {
     struct TagInitPermutation
@@ -30,13 +30,14 @@ namespace bio
     struct TagPermuteFixedDof
     {
     };
-    using RWOV = Kokkos::View<Ordinal *, ExeSpace>;
-    using ROOV = Kokkos::View<Ordinal *, ExeSpace>;
-    using RWSV = Kokkos::View<Scalar *, ExeSpace>;
+    using RWOV = Kokkos::View<Ordinal *, Layout, ExeSpace>;
+    using ROOV = Kokkos::View<Ordinal *, Layout, ExeSpace>;
+    using RWSV = Kokkos::View<Scalar *, Layout, ExeSpace>;
+    using ConnectivityType = Kokkos::View<Ordinal*[2], Layout, ExeSpace>;
     Ordinal nvert_;
     RWOV fixed_vert_;
     RWOV permutation_array_;
-    RWOV connectivity_;
+    ConnectivityType connectivity_;
     RWSV coordinates_;
     RWSV tmp_;
     ReorderMesh(Ordinal nvert, RWOV fixed_vert)
@@ -69,7 +70,10 @@ namespace bio
     KOKKOS_INLINE_FUNCTION
     void operator()(TagPermuteConnectivity, const int i) const
     {
-      connectivity_(i) = permutation_array_(connectivity_(i));
+      for(int j=0; j<2; ++j)
+      {
+        connectivity_(i,j) = permutation_array_(connectivity_(i,j));
+      }
     }
     KOKKOS_INLINE_FUNCTION
     void operator()(TagPermuteCoordinates, const int i) const
@@ -98,14 +102,14 @@ namespace bio
                                 0, permutation_array_.extent(0)),
                             *this);
     }
-    void applyPermutationToConnectivity(RWOV connectivity)
+    void applyPermutationToConnectivity(ConnectivityType connectivity)
     {
       connectivity_ = connectivity;
       Kokkos::parallel_for(
           Kokkos::RangePolicy<TagPermuteConnectivity, ExeSpace>(
               0, connectivity_.extent(0)),
           *this);
-      connectivity_ = RWOV();
+      connectivity_ = ConnectivityType();
     }
     void applyPermutationToCoordinates(RWSV coordinates)
     {

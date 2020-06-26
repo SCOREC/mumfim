@@ -19,11 +19,9 @@ namespace bio
     static_assert(
         Kokkos::SpaceAccessibility<HostSpace, Kokkos::HostSpace>::accessible,
         "mesh operations must have access to the host memory space");
-    using RWOV = Kokkos::View<Ordinal *, HostSpace>;
-    using RWSV = Kokkos::View<Scalar *, HostSpace>;
-    // using DeformationGradientView = Kokkos::View<Scalar[3][3], HostSpace>;
+    template <typename CVT>
     static void getConnectivity(apf::Mesh * m,
-                                RWOV connectivity_view,
+                                CVT connectivity_view,
                                 int cellDim)
     {
       bool first = true;
@@ -42,28 +40,30 @@ namespace bio
         if (first)
         {
           first = false;
-          if (connectivity_view.extent(0) != nelem * nverts)
+          if (connectivity_view.extent(0) != nelem ||
+              connectivity_view.extent(1) != nverts)
           {
-            std::cerr << "The connectivity_view has "
-                      << connectivity_view.extent(0)
-                      << "elements, but it should have " << nelem * nverts
-                      << "elements." << std::endl;
+            std::cerr << "The connectivity_view is the wrong size"
+              << "it should be a view with extents (" << nelem <<","<<nverts
+              << ") but it has extents ("<<connectivity_view.extent(0)<<","
+              <<connectivity_view.extent(1)<<")."<<std::endl;
             std::exit(EXIT_FAILURE);
           }
         }
         for (int j = 0; j < nverts; ++j)
         {
-          connectivity_view(i++) =
+          connectivity_view(i,j) =
               apf::getNumber(global, apf::Node(verts[j], 0));
         }
+        ++i;
       }
       m->end(it);
       apf::destroyGlobalNumbering(global);
     }
-    template <int NumValues = 3>
+    template <int NumValues = 3, typename FVT>
     static void getFieldValues(apf::Mesh * m,
                                apf::Field * field,
-                               RWSV field_view)
+                               FVT field_view)
     {
       apf::MeshIterator * it = m->begin(0);
       std::array<double, NumValues> values;
@@ -85,10 +85,11 @@ namespace bio
     // TODO this can be made more efficient by having the integrator load
     // direcetly into the Kokkos::View, but we will hold off on this
     // because ultimately we need device side integration routines
+    template <typename MVT>
     static void getNodalMass(apf::Mesh * mesh,
                              double fiber_density,
                              double fiber_area,
-                             RWSV mass_matrix_view)
+                             MVT mass_matrix_view)
     {
       auto nodal_mass =
           apf::createLagrangeField(mesh, "nodalMass_tmp", apf::SCALAR, 1);
@@ -102,6 +103,7 @@ namespace bio
       getFieldValues<1>(mesh, nodal_mass, mass_matrix_view);
       apf::destroyField(nodal_mass);
     }
+    template<typename RWOV>
     static void getFixedDof(apf::Numbering * numbering,
                             RWOV fixed_dof_view,
                             std::vector<apf::MeshEntity *> bnd_nds)
@@ -115,6 +117,7 @@ namespace bio
       }
     }
     // FIXME this is just a hack for now...assuming  naive ordering
+    template <typename RWOV>
     static void getFixedVert(apf::Numbering * numbering,
                              RWOV fixed_vert_view,
                              std::vector<apf::MeshEntity *> bnd_nds)

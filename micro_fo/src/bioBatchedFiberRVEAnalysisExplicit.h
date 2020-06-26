@@ -32,6 +32,8 @@ namespace bio
     using LO = LocalOrdinal;
     // the packed types correspond to data which is packed to include multiple
     // RVEs. Each in the packed data corresponds to the data for that RVE
+    using ConnectivityType = PackedData<LocalOrdinal*[2], ExeSpace>;
+
     using PackedScalarType = PackedData<Scalar*, ExeSpace>;
     using PackedOrdinalType = PackedData<LocalOrdinal*, ExeSpace>;
     using HostMemorySpace = typename PackedScalarType::host_mirror_space;
@@ -42,8 +44,10 @@ namespace bio
         BatchedApfMeshFunctions<Scalar, LocalOrdinal, HostMemorySpace>;
     using OrientationTensorType =
         OrientationTensor<Scalar, LocalOrdinal, ExeSpace>;
+    // the layout of all of the arrays should be the same
+    using ViewLayout = typename ConnectivityType::traits::array_layout;
     // Simulation state vectors
-    PackedOrdinalType connectivity;
+    ConnectivityType connectivity;
     PackedScalarType original_coordinates;
     PackedScalarType current_coordinates;
     PackedScalarType displacement;
@@ -125,7 +129,7 @@ namespace bio
             apf::countOwned(fiber_networks[i]->getNetworkMesh(), 1);
         // we assume that we are using trusses, so there are 2 vertices for each
         // element
-        connectivity_counts_h(i) = 2 * element_counts_h(i);
+        connectivity_counts_h(i) = element_counts_h(i);
         // the standard RVE we use is 0.5x0.5x0.5
         rves.push_back(RVE(0.5));
         boundary_verts.push_back({});
@@ -155,7 +159,7 @@ namespace bio
       // initialize analysis PackedData
       // here we are currently assuming that we are using truss elements,
       // so the number of vertices on each element is 2
-      connectivity = PackedOrdinalType(connectivity_counts);
+      connectivity = ConnectivityType(connectivity_counts);
       original_coordinates = PackedScalarType(dof_counts);
       current_coordinates = PackedScalarType(dof_counts);
       displacement = PackedScalarType(dof_counts);
@@ -229,13 +233,17 @@ namespace bio
                                        fiber_density_row(0), fiber_area_row(0),
                                        nodal_mass_row);
         // reorder the mesh
-        ReorderMesh<Scalar, LocalOrdinal, Kokkos::Serial> reorder(
+        ReorderMesh<Scalar, LocalOrdinal, ViewLayout, Kokkos::Serial> reorder(
             nodal_mass_row.extent(0), fixed_vert);
         reorder.createPermutationArray();
         reorder.applyPermutationToConnectivity(connectivity_row);
         reorder.applyPermutationToCoordinates(original_coordinates_row);
         reorder.applyPermutationToNodalValue(nodal_mass_row);
-        reorder.applyPermutationToConnectivity(fixed_vert);
+        // connectivity has changed to be nx2 so we would need
+        // to implement another reorder function for this, but
+        // we don't use fixed_vert anywhere past here, so there is not need
+        // for now
+        //reorder.applyPermutationToConnectivity(fixed_vert);
         reorder.applyPermutationToFixedDof(displacement_boundary_dof_row);
       }
       // mark the packed data as modified

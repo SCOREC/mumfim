@@ -41,6 +41,8 @@ namespace bio
     using typename BaseType::ROSV;
     using typename BaseType::RWOV;
     using typename BaseType::RWSV;
+    using typename BaseType::ConnectivityType;
+    using typename BaseType::ConnectivityViewType;
     template <typename ExePolicy>
     KOKKOS_INLINE_FUNCTION static void getCurrentCoords(ExePolicy dof_policy,
                                                         ROSV coords,
@@ -55,7 +57,7 @@ namespace bio
     KOKKOS_INLINE_FUNCTION static void getElementLengths(
         ExePolicy element_policy,
         ROSV coords,
-        ROOV connectivity,
+        ConnectivityViewType connectivity,
         RWSV l0, T scratch)
     {
       if(scratch(0).step % UPDATE_FREQ == 0)
@@ -88,7 +90,7 @@ namespace bio
                                                    ROSV l,
                                                    ROSV v,
                                                    RASV current_coords,
-                                                   ROOV connectivity,
+                                                   ConnectivityViewType connectivity,
                                                    ROSV mass_matrix,
                                                    RWSV f_int,
                                                    RWSV f)
@@ -184,7 +186,7 @@ namespace bio
     // that you are not incraseing the reg count using the --resource-usage flag
     // when modifying this code!
     static bool run(Ordinal num_rves,
-                    POT connectivity,
+                    ConnectivityType connectivity,
                     PST original_coordinates,
                     PST current_coordinates,
                     PST displacement,
