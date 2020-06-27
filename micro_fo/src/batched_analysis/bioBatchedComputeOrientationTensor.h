@@ -5,7 +5,7 @@
 #include "bioPackedData.h"
 namespace bio
 {
-  template <typename Scalar, typename Ordinal, typename ExeSpace>
+  template <typename Scalar, typename Ordinal, typename CoordinatesType, typename ConnectivityType, typename ExeSpace>
   struct OrientationTensor
   {
     struct TagCompute3D
@@ -14,8 +14,9 @@ namespace bio
     struct TagCompute2D
     {
     };
-    using PST = PackedData<Scalar*, ExeSpace>;
-    using ConnectivityType = PackedData<Ordinal*[2], ExeSpace>;
+    //using CoordinatesType = PackedData<Scalar*, ExeSpace>;
+    //using ConnectivityType = PackedData<Ordinal*[2], ExeSpace>;
+
     using OrientationType = Kokkos::DualView<Scalar * [3][3], ExeSpace>;
     using NormalType = Kokkos::DualView<Scalar * [3], ExeSpace>;
     using OuterPolicyType3D = Kokkos::TeamPolicy<ExeSpace, TagCompute3D>;
@@ -39,13 +40,13 @@ namespace bio
                      typename ExeSpace::scratch_memory_space,
                      Kokkos::MemoryUnmanaged>;
     ConnectivityType connectivity_;
-    PST coordinates_;
+    CoordinatesType coordinates_;
     // Ordinal team_size_;
     typename OuterPolicyType3D::index_type team_size_;
     OrientationDeviceViewType omega_d_;
     NormalDeviceViewType normal_d_;
     OrientationTensor(){};
-    OrientationTensor(ConnectivityType connectivity, PST coordinates, Ordinal team_size)
+    OrientationTensor(ConnectivityType connectivity, CoordinatesType coordinates, Ordinal team_size)
         : connectivity_(connectivity)
         , coordinates_(coordinates)
         , team_size_(team_size)
@@ -86,9 +87,9 @@ namespace bio
           Kokkos::TeamThreadRange(team_member, 0, num_edges), [=](const int i) {
             auto n1 = connectivity_row(i,0);
             auto n2 = connectivity_row(i,1);
-            auto lx = coordinates_row(3 * n2) - coordinates_row(3 * n1);
-            auto ly = coordinates_row(3 * n2 + 1) - coordinates_row(3 * n1 + 1);
-            auto lz = coordinates_row(3 * n2 + 2) - coordinates_row(3 * n1 + 2);
+            auto lx = coordinates_row(n2,0) - coordinates_row(n1,0);
+            auto ly = coordinates_row(n2,1) - coordinates_row(n1,1);
+            auto lz = coordinates_row(n2,2) - coordinates_row(n1,2);
             auto l = sqrt(lx * lx + ly * ly + lz * lz);
             // normalize the lx,ly,lz array
             lx = lx / l;
@@ -145,9 +146,9 @@ namespace bio
           Kokkos::TeamThreadRange(team_member, 0, num_edges), [=](const int i) {
             auto n1 = connectivity_row(i,0);
             auto n2 = connectivity_row(i,1);
-            auto lx = coordinates_row(3 * n2) - coordinates_row(3 * n1);
-            auto ly = coordinates_row(3 * n2 + 1) - coordinates_row(3 * n1 + 1);
-            auto lz = coordinates_row(3 * n2 + 2) - coordinates_row(3 * n1 + 2);
+            auto lx = coordinates_row(n2,0) - coordinates_row(n1,0);
+            auto ly = coordinates_row(n2,1) - coordinates_row(n1,1);
+            auto lz = coordinates_row(n2,2) - coordinates_row(n1,2);
             auto l = sqrt(lx * lx + ly * ly + lz * lz);
             lx = lx / l;
             ly = ly / l;

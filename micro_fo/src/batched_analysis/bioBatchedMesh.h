@@ -60,7 +60,8 @@ namespace bio
       m->end(it);
       apf::destroyGlobalNumbering(global);
     }
-    template <int NumValues = 3, typename FVT>
+    template <int NumValues = 3, typename FVT,
+             typename std::enable_if<FVT::rank==1,int>::type =0>
     static void getFieldValues(apf::Mesh * m,
                                apf::Field * field,
                                FVT field_view)
@@ -75,7 +76,31 @@ namespace bio
           apf::getComponents(field, v, 0, values.data());
           for (int v = 0; v < NumValues; ++v)
           {
-            field_view(i * NumValues + v) = values[v];
+            field_view(i) = values[v];
+          }
+          i++;
+        }
+      }
+      m->end(it);
+    }
+    template <int NumValues = 3, typename FVT,
+             typename std::enable_if<FVT::rank==2,int>::type =0>
+    static void getFieldValues(apf::Mesh * m,
+                               apf::Field * field,
+                               FVT field_view)
+    {
+      apf::MeshIterator * it = m->begin(0);
+      std::array<double, NumValues> values;
+      int i = 0;
+      while (apf::MeshEntity * v = m->iterate(it))
+      {
+        if (m->isOwned(v))
+        {
+          apf::getComponents(field, v, 0, values.data());
+          for (int v = 0; v < NumValues; ++v)
+          {
+            //field_view(i * NumValues + v) = values[v];
+            field_view(i, v) = values[v];
           }
           i++;
         }

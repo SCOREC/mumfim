@@ -27,23 +27,27 @@ namespace bio
     struct TagPermuteNodal
     {
     };
-    struct TagPermuteFixedDof
+    struct TagPermuteFixedVert
     {
     };
-    using RWOV = Kokkos::View<Ordinal *, Layout, ExeSpace>;
-    using ROOV = Kokkos::View<Ordinal *, Layout, ExeSpace>;
-    using RWSV = Kokkos::View<Scalar *, Layout, ExeSpace>;
+    using OrdinalVertViewType = Kokkos::View<Ordinal *, Layout, ExeSpace>;
+    using ScalarVertViewType = Kokkos::View<Scalar *, Layout, ExeSpace>;
+    using ScalarDofViewType = Kokkos::View<Scalar *[3], Layout, ExeSpace>;
     using ConnectivityType = Kokkos::View<Ordinal*[2], Layout, ExeSpace>;
+
     Ordinal nvert_;
-    RWOV fixed_vert_;
-    RWOV permutation_array_;
+    OrdinalVertViewType fixed_vert_;
+    OrdinalVertViewType permutation_array_;
     ConnectivityType connectivity_;
-    RWSV coordinates_;
-    RWSV tmp_;
-    ReorderMesh(Ordinal nvert, RWOV fixed_vert)
+    ScalarDofViewType coordinates_;
+    ScalarVertViewType nodal_data_;
+    ScalarVertViewType tmp_nodal_;
+    ScalarDofViewType tmp_dof_;
+
+    ReorderMesh(Ordinal nvert, OrdinalVertViewType fixed_vert)
         : nvert_(nvert)
         , fixed_vert_(fixed_vert)
-        , permutation_array_(RWOV("permutation array", nvert_))
+        , permutation_array_(OrdinalVertViewType("permutation array", nvert_))
     {
     }
     KOKKOS_INLINE_FUNCTION
@@ -78,19 +82,21 @@ namespace bio
     KOKKOS_INLINE_FUNCTION
     void operator()(TagPermuteCoordinates, const int i) const
     {
-      coordinates_(3 * permutation_array_(i / 3) + i % 3) = tmp_(i);
+      //coordinates_(3 * permutation_array_(i / 3) + i % 3) = tmp_dof_(i);
+      for(int j=0; j<3; ++j)
+      {
+        coordinates_(permutation_array_(i),j) = tmp_dof_(i,j);
+      }
     }
     KOKKOS_INLINE_FUNCTION
     void operator()(TagPermuteNodal, const int i) const
     {
-      coordinates_(permutation_array_(i)) = tmp_(i);
+      nodal_data_(permutation_array_(i)) = tmp_nodal_(i);
     }
     KOKKOS_INLINE_FUNCTION
-    void operator()(TagPermuteFixedDof, const int i) const
+    void operator()(TagPermuteFixedVert, const int i) const
     {
-      auto original_dof = fixed_vert_(i);
-      auto original_vert = original_dof / 3;
-      fixed_vert_(i) = 3 * permutation_array_(original_vert) + original_dof % 3;
+      fixed_vert_(i) = permutation_array_(fixed_vert_(i));
     }
     // create the map from the old to the new verts
     void createPermutationArray() const
@@ -111,39 +117,37 @@ namespace bio
           *this);
       connectivity_ = ConnectivityType();
     }
-    void applyPermutationToCoordinates(RWSV coordinates)
+    void applyPermutationToCoordinates(ScalarDofViewType coordinates)
     {
       coordinates_ = coordinates;
-      tmp_ = RWSV("coordinates", coordinates_.extent(0));
-      Kokkos::deep_copy(tmp_, coordinates_);
+      tmp_dof_ = ScalarDofViewType("coordinates", coordinates_.extent(0));
+      Kokkos::deep_copy(tmp_dof_, coordinates_);
       Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteCoordinates, ExeSpace>(
                                0, coordinates_.extent(0)),
                            *this);
       // unallocate the temporary view
-      tmp_ = RWSV();
-      coordinates_ = RWSV();
+      tmp_dof_ = ScalarDofViewType();
+      coordinates_ = ScalarDofViewType();
     }
-    void applyPermutationToNodalValue(RWSV nodal)
+    void applyPermutationToNodalValue(ScalarVertViewType nodal)
     {
-      coordinates_ = nodal;
-      tmp_ = RWSV("nodal data", coordinates_.extent(0));
-      Kokkos::deep_copy(tmp_, coordinates_);
+      nodal_data_ = nodal;
+      tmp_nodal_ = ScalarVertViewType("nodal data", nodal_data_.extent(0));
+      Kokkos::deep_copy(tmp_nodal_, nodal_data_);
       Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteNodal, ExeSpace>(
-                               0, coordinates_.extent(0)),
+                               0, nodal_data_.extent(0)),
                            *this);
       // unallocate the temporary view
-      tmp_ = RWSV();
+      tmp_nodal_ = ScalarVertViewType();
+      nodal_data_ = ScalarVertViewType();
     }
-    void applyPermutationToFixedDof(RWOV fixed_dof)
+    void applyPermutationToFixedVert()
     {
-      fixed_vert_ = fixed_dof;
-      Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteFixedDof, ExeSpace>(
+      Kokkos::parallel_for(Kokkos::RangePolicy<TagPermuteFixedVert, ExeSpace>(
                                0, fixed_vert_.extent(0)),
                            *this);
-      // unallocate the temporary view
-      fixed_vert_ = RWOV();
     }
-    ROOV getPermutationArray() { return permutation_array_; }
+    ScalarVertViewType getPermutationArray() { return permutation_array_; }
   };
 }  // namespace bio
 #endif

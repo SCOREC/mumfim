@@ -33,30 +33,33 @@ namespace bio
     // the packed types correspond to data which is packed to include multiple
     // RVEs. Each in the packed data corresponds to the data for that RVE
     using ConnectivityType = PackedData<LocalOrdinal*[2], ExeSpace>;
+    using DofDataType = PackedData<Scalar*[3], ExeSpace>;
+    using VertDataType = PackedData<Scalar*, ExeSpace>;
+    using OrdinalVertDataType = PackedData<LocalOrdinal*, ExeSpace>;
+    using ElementDataType = PackedData<Scalar*, ExeSpace>;
 
     using PackedScalarType = PackedData<Scalar*, ExeSpace>;
-    using PackedOrdinalType = PackedData<LocalOrdinal*, ExeSpace>;
     using HostMemorySpace = typename PackedScalarType::host_mirror_space;
     using DeviceMemorySpace = typename PackedScalarType::memory_space;
-    using DeviceScalarView = typename PackedScalarType::DeviceViewType;
+    using DofCopyType = typename DofDataType::DeviceViewType;
     // helper class typedefs
     using MeshFunctionType =
         BatchedApfMeshFunctions<Scalar, LocalOrdinal, HostMemorySpace>;
-    using OrientationTensorType =
-        OrientationTensor<Scalar, LocalOrdinal, ExeSpace>;
     // the layout of all of the arrays should be the same
     using ViewLayout = typename ConnectivityType::traits::array_layout;
+    using OrientationTensorType =
+        OrientationTensor<Scalar, LocalOrdinal, DofDataType, ConnectivityType, ExeSpace>;
     // Simulation state vectors
     ConnectivityType connectivity;
-    PackedScalarType original_coordinates;
-    PackedScalarType current_coordinates;
-    PackedScalarType displacement;
-    PackedScalarType velocity;
-    PackedScalarType force_total;
-    PackedScalarType force_internal;
-    PackedScalarType nodal_mass;
-    PackedScalarType original_length;
-    PackedScalarType current_length;
+    DofDataType original_coordinates;
+    DofDataType current_coordinates;
+    DofDataType displacement;
+    DofDataType velocity;
+    DofDataType force_total;
+    DofDataType force_internal;
+    VertDataType nodal_mass;
+    ElementDataType original_length;
+    ElementDataType current_length;
     // Only deal with fiber networks with uniform material properties
     PackedScalarType fiber_elastic_modulus;
     PackedScalarType fiber_area;
@@ -66,8 +69,8 @@ namespace bio
     PackedScalarType critical_time_scale_factor;
     // PackedScalarType energy_check_epsilon;
     // Boundary Condition data
-    PackedOrdinalType displacement_boundary_dof;
-    DeviceScalarView displacement_copy;
+    OrdinalVertDataType displacement_boundary_vert;
+    DofCopyType displacement_copy;
     Kokkos::DualView<Scalar *, ExeSpace> current_volume;
     Kokkos::DualView<Scalar *, ExeSpace> scale_factor;
     std::vector<RVE> rves;
@@ -93,21 +96,18 @@ namespace bio
       RowCountType material_counts("material counts", fiber_networks.size());
       RowCountType connectivity_counts("material counts",
                                        fiber_networks.size());
-      RowCountType mass_counts("mass counts", fiber_networks.size());
       // get the host data views
       auto dof_counts_h = dof_counts.h_view;
       auto fixed_dof_counts_h = fixed_dof_counts.h_view;
       auto element_counts_h = element_counts.h_view;
       auto material_counts_h = material_counts.h_view;
       auto connectivity_counts_h = connectivity_counts.h_view;
-      auto mass_counts_h = mass_counts.h_view;
       // mark the host side as modified
       dof_counts.template modify<HostMemorySpace>();
       fixed_dof_counts.template modify<HostMemorySpace>();
       element_counts.template modify<HostMemorySpace>();
       material_counts.template modify<HostMemorySpace>();
       connectivity_counts.template modify<HostMemorySpace>();
-      mass_counts.template modify<HostMemorySpace>();
       // fill the row counts data
       std::vector<std::vector<apf::MeshEntity *>> boundary_verts;
       rves.reserve(fiber_networks.size());
@@ -122,8 +122,7 @@ namespace bio
       for (size_t i = 0; i < fiber_networks.size(); ++i)
       {
         scale_factor.h_view(i) = fiber_networks[i]->getScaleConversion();
-        dof_counts_h(i) = fiber_networks[i]->getDofCount();
-        mass_counts_h(i) = dof_counts_h(i) / 3;
+        dof_counts_h(i) = fiber_networks[i]->getDofCount()/3;
         // since we are dealing with trusses all elements are just lines
         element_counts_h(i) =
             apf::countOwned(fiber_networks[i]->getNetworkMesh(), 1);
@@ -145,7 +144,7 @@ namespace bio
         // in each analysis should not change every time it is run (only the
         // values change), so we do not need to update the sizes each time we
         // run the analsis
-        fixed_dof_counts_h(i) = 3 * boundary_verts.back().size();
+        fixed_dof_counts_h(i) = boundary_verts.back().size();
         // fixed_dof_counts_h(i) = boundary_verts.back().size();
         // currently we only deal with one material property for all fibers
         // eventually this will be changed
@@ -160,18 +159,18 @@ namespace bio
       // here we are currently assuming that we are using truss elements,
       // so the number of vertices on each element is 2
       connectivity = ConnectivityType(connectivity_counts);
-      original_coordinates = PackedScalarType(dof_counts);
-      current_coordinates = PackedScalarType(dof_counts);
-      displacement = PackedScalarType(dof_counts);
-      displacement_copy = DeviceScalarView(displacement.template getAllRows<ExeSpace>());
+      original_coordinates = DofDataType(dof_counts);
+      current_coordinates = DofDataType(dof_counts);
+      displacement = DofDataType(dof_counts);
+      displacement_copy = DofCopyType(displacement.template getAllRows<ExeSpace>());
       displacement_copy = Kokkos::create_mirror(
           ExeSpace(), displacement.template getAllRows<ExeSpace>());
-      velocity = PackedScalarType(dof_counts);
-      force_total = PackedScalarType(dof_counts);
-      force_internal = PackedScalarType(dof_counts);
-      nodal_mass = PackedScalarType(mass_counts);
-      original_length = PackedScalarType(element_counts);
-      current_length = PackedScalarType(element_counts);
+      velocity = DofDataType(dof_counts);
+      force_total = DofDataType(dof_counts);
+      force_internal = DofDataType(dof_counts);
+      nodal_mass = VertDataType(dof_counts);
+      original_length = ElementDataType(element_counts);
+      current_length = ElementDataType(element_counts);
       // currently there is only one material property,
       fiber_elastic_modulus = PackedScalarType(material_counts);
       fiber_area = PackedScalarType(material_counts);
@@ -179,7 +178,7 @@ namespace bio
       viscous_damping_coefficient = PackedScalarType(material_counts);
       critical_time_scale_factor = PackedScalarType(residual_counts);
       // Boundary Condition data
-      displacement_boundary_dof = PackedOrdinalType(fixed_dof_counts);
+      displacement_boundary_vert = OrdinalVertDataType(fixed_dof_counts);
       // fill arrays that will be constant
       // we have to do this loop in the host space because most of the
       // data, and the mesh is not designed to go on the GPU.
@@ -195,16 +194,11 @@ namespace bio
             fiber_networks[i]->getNetworkMesh(),
             fiber_networks[i]->getNetworkMesh()->getCoordinateField(),
             original_coordinates_row);
-        auto displacement_boundary_dof_row =
-            displacement_boundary_dof.template getRow<HostMemorySpace>(i);
-        Kokkos::View<LO *, Kokkos::HostSpace> fixed_vert(
-            "fixed verts", displacement_boundary_dof_row.extent(0) / 3);
+        auto displacement_boundary_vert_row =
+            displacement_boundary_vert.template getRow<HostMemorySpace>(i);
         apf::NaiveOrder(fiber_networks[i]->getUNumbering());
-        MeshFunctionType::getFixedDof(fiber_networks[i]->getUNumbering(),
-                                      displacement_boundary_dof_row,
-                                      boundary_verts[i]);
         MeshFunctionType::getFixedVert(fiber_networks[i]->getUNumbering(),
-                                       fixed_vert, boundary_verts[i]);
+                                       displacement_boundary_vert_row, boundary_verts[i]);
         auto fiber_elastic_modulus_row =
             fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
         fiber_elastic_modulus_row(0) =
@@ -234,17 +228,12 @@ namespace bio
                                        nodal_mass_row);
         // reorder the mesh
         ReorderMesh<Scalar, LocalOrdinal, ViewLayout, Kokkos::Serial> reorder(
-            nodal_mass_row.extent(0), fixed_vert);
+                 nodal_mass_row.extent(0), displacement_boundary_vert_row);
         reorder.createPermutationArray();
         reorder.applyPermutationToConnectivity(connectivity_row);
         reorder.applyPermutationToCoordinates(original_coordinates_row);
         reorder.applyPermutationToNodalValue(nodal_mass_row);
-        // connectivity has changed to be nx2 so we would need
-        // to implement another reorder function for this, but
-        // we don't use fixed_vert anywhere past here, so there is not need
-        // for now
-        //reorder.applyPermutationToConnectivity(fixed_vert);
-        reorder.applyPermutationToFixedDof(displacement_boundary_dof_row);
+        reorder.applyPermutationToFixedVert();
       }
       // mark the packed data as modified
       connectivity.template modify<HostMemorySpace>();
@@ -255,7 +244,7 @@ namespace bio
       fiber_density.template modify<HostMemorySpace>();
       viscous_damping_coefficient.template modify<HostMemorySpace>();
       critical_time_scale_factor.template modify<HostMemorySpace>();
-      displacement_boundary_dof.template modify<HostMemorySpace>();
+      displacement_boundary_vert.template modify<HostMemorySpace>();
       // we need to initialize the current coordinates for the orientaiton
       // tensor since we want to compute this before we do any analysis runs
       Kokkos::deep_copy(
@@ -282,7 +271,7 @@ namespace bio
         updateVolume<ExeSpace>(deformation_gradients, current_volume);
       }
       // apply the incremental deformation gradient to the boundaries and the
-      // boundary_dof_values
+      // boundary_vert_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
           rves.size(), deformation_gradients, current_coordinates,
           displacement);
@@ -302,7 +291,7 @@ namespace bio
       fiber_density.template sync<ExeSpace>();
       viscous_damping_coefficient.template sync<ExeSpace>();
       critical_time_scale_factor.template sync<ExeSpace>();
-      displacement_boundary_dof.template sync<ExeSpace>();
+      displacement_boundary_vert.template sync<ExeSpace>();
 
       Kokkos::deep_copy(velocity.template getAllRows<ExeSpace>(),0);
       // Run the specific implementation we are interested in
@@ -312,9 +301,9 @@ namespace bio
           nodal_mass, original_length,
           current_length, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_dof, 512);
+          critical_time_scale_factor, displacement_boundary_vert, 512);
       // compute the stress from the force and displacement vectors
-      computeCauchyStress<ExeSpace>(displacement_boundary_dof,
+      computeCauchyStress<ExeSpace>(displacement_boundary_vert,
                                     current_coordinates, force_internal, sigma,
                                     current_volume, scale_factor);
       if (!update_coords)
