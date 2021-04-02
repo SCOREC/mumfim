@@ -51,12 +51,13 @@ namespace bio
         TeamOuterLoop::getCurrentCoord(i, coords, u, current_coords);
       });
     }
-    template <typename ExePolicy, typename T>
+    template <typename ExePolicy, typename T, typename Member>
     KOKKOS_INLINE_FUNCTION static void getElementLengths(
         ExePolicy element_policy,
         ConstScalarDofViewType coords,
         ConnectivityViewType connectivity,
-        ScalarElementViewType l0, T scratch)
+        ScalarElementViewType l0, T scratch,
+        const Member& team)
     {
       if(scratch(0).step % UPDATE_FREQ == 0)
       {
@@ -67,7 +68,7 @@ namespace bio
           min_reducer.join(local, l0(i));
         }, min_reducer);
         // might need a barrier here...
-        if(element_policy.member.team_rank() == 0)
+        if(team.team_rank() == 0)
         {
           Scalar sound_speed = sqrt(scratch(0).fiber_elastic_modulus / scratch(0).fiber_density);
           scratch(0).dt_crit = l_min/sound_speed;
@@ -80,7 +81,7 @@ namespace bio
         });
       }
     }
-    template <typename ExePolicy, typename T>
+    template <typename ExePolicy, typename T, typename Member>
     KOKKOS_INLINE_FUNCTION static void getForces(  ExePolicy element_policy,
                                                    ExePolicy vert_policy,
                                                    T scratch,
@@ -91,14 +92,15 @@ namespace bio
                                                    ConnectivityViewType connectivity,
                                                    ConstScalarVertViewType mass_matrix,
                                                    ScalarDofViewType f_int,
-                                                   ScalarDofViewType f)
+                                                   ScalarDofViewType f,
+                                                   const Member& team)
     {
       // swap force arrays and zero internal forces
       Kokkos::parallel_for(vert_policy, [=](const Ordinal i) {
         TeamOuterLoop::getForceLoop1(i, f_int);
       });
       // barrier needed between loop 1 and loop 2
-      vert_policy.member.team_barrier();
+      team.team_barrier();
       // load the material properties into registers so we don't
       // constantly hit the shared memory in the middle of the hot loop
       Scalar elastic_modulus = scratch(0).fiber_elastic_modulus;
@@ -111,7 +113,7 @@ namespace bio
                 current_coords, connectivity,  f_int,elastic_modulus,area);
           });
       // barrier needed between loop 2 and loop3
-      vert_policy.member.team_barrier();
+      team.team_barrier();
       // load the material properties into registers so we don't
       // constantly hit the shared memory in the middle of the hot loop
       Scalar viscous_damping_coefficient = scratch(0).viscous_damping_coefficient;
@@ -125,7 +127,7 @@ namespace bio
                   TeamOuterLoop::getForceLoop3(i, mass_matrix, v, f_int, f,viscous_damping_coefficient);
             },
             residual);
-        Kokkos::single(Kokkos::PerTeam(vert_policy.member), [=]()
+        Kokkos::single(Kokkos::PerTeam(team), [=]()
         {
           scratch(0).residual = sqrt(residual);
         });
@@ -265,7 +267,7 @@ namespace bio
             team_member.team_barrier();
             TeamOuterLoop::getElementLengths(
                 element_policy, original_coordinates_row, connectivity_row,
-                original_length_row, scratch);
+                original_length_row, scratch, team_member);
             // very important that we update the coordinates with the initial displacements
             // the main loop only updates coordinates by using c(n+1) = c(n) + du
             TeamOuterLoop::getCurrentCoords(
@@ -274,7 +276,7 @@ namespace bio
             team_member.team_barrier();
             TeamOuterLoop::getElementLengths(
                 element_policy, current_coordinates_row, connectivity_row,
-                current_length_row, scratch);
+                current_length_row, scratch, team_member);
             team_member.team_barrier();
             // presumably, we only need to do this over the free DOFs
             TeamOuterLoop::getForces(
@@ -282,7 +284,7 @@ namespace bio
                 original_length_row, current_length_row,
                 velocity_row, current_coordinates_row, connectivity_row,
                 nodal_mass_row, force_internal_row,
-                force_total_row);
+                force_total_row, team_member);
             team_member.team_barrier();
              dt_crit_d(i) = scratch(0).dt_crit;
           });
@@ -350,14 +352,14 @@ namespace bio
               // this policy also computes the critical dt (min element length/speed of sound
               TeamOuterLoop::getElementLengths(
                   element_policy, current_coordinates_row, connectivity_row,
-                  current_length_row, scratch);
+                  current_length_row, scratch, team_member);
               team_member.team_barrier();
               TeamOuterLoop::getForces(
                    element_policy, free_vert_policy, scratch,
                    original_length_row, current_length_row,
                   velocity_row, current_coordinates_row, connectivity_row,
                   nodal_mass_row, force_internal_row,
-                  force_total_row);
+                  force_total_row, team_member);
               team_member.team_barrier();
               TeamOuterLoop::updateAccelVels(
                   free_vert_policy, scratch(0).dt_nphalf, nodal_mass_row,
@@ -421,7 +423,7 @@ namespace bio
                    original_length_row, current_length_row,
                   velocity_row, current_coordinates_row, connectivity_row,
                   nodal_mass_row, force_internal_row,
-                  force_total_row);
+                  force_total_row, team_member);
             // Need to fill the displacement row with current_coords-initial_coords
               Kokkos::parallel_for(vert_policy, [=](const int i){
                   for(int j=0; j<3; ++j)

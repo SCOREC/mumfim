@@ -1,7 +1,6 @@
 #ifndef BIO_NEOHOOKEAN_INTEGRATOR_H_
 #define BIO_NEOHOOKEAN_INTEGRATOR_H_
 #include <ElementalSystem.h>
-#include <apfSIM.h>
 #include <apfShape.h>
 #include <math.h>  //natural log
 #include <cstring>

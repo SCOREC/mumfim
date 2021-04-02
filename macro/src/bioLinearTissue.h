@@ -1,18 +1,22 @@
 #ifndef BIO_LINEARTISSUE_H_
 #define BIO_LINEARTISSUE_H_
-#include <apfSimFEA.h>
+#include <apfFEA.h>
+#include <memory>
 namespace bio
 {
-  class LinearTissue : public amsi::apfSimFEA
+  class LinearTissue : public amsi::apfFEA
   {
     protected:
-    std::map<pGEntity, amsi::ElementalSystem*> constitutives;
+    std::map<int, std::unique_ptr<amsi::ElementalSystem> > constitutives;
     public:
-    LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, pACase iss, MPI_Comm cm);
-    ~LinearTissue();
+    LinearTissue(apf::Mesh * mesh,
+                 const amsi::ModelDefinition& problem_definition,
+                 const amsi::ModelDefinition& solution_strategy,
+                 const amsi::ModelDefinition& output,
+                 MPI_Comm cm);
     virtual void UpdateDOFs(const double * sol) override;
     virtual void Assemble(amsi::LAS * las) override;
-    apf::Field * getField(){ return apf_primary_field; }
+    apf::Field * getField() { return apf_primary_field; }
   };
-}
+}  // namespace bio
 #endif

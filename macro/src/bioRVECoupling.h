@@ -1,13 +1,14 @@
 #ifndef BIO_RVE_COUPLING_H_
 #define BIO_RVE_COUPLING_H_
 #include <bioMultiscaleMicroFOParams.h>
-#include <SimAttribute.h>
 #include <apf.h>
 #include <amsiMultiscale.h>
 #include <apfMesh.h>
+#include <model_traits/AssociatedModelTraits.h>
 namespace bio
 {
-  MicroscaleType getMicroscaleType(pAttribute multiscale_model);
+  MicroscaleType getMicroscaleType(
+      const mt::AssociatedCategoryNode * category_node);
 
   class RVECoupling
   {

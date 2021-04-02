@@ -46,6 +46,7 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
 };
 int main(int argc, char * argv[])
 {
+#ifdef HAVE_YAML
   {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
@@ -74,5 +75,6 @@ int main(int argc, char * argv[])
   fn_msh->end(itr);
   amsi::freeAnalysis();
   }
+#endif
   return 0;
 }

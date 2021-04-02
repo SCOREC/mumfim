@@ -12,8 +12,8 @@ if(LOGRUN)
   add_definitions(-DLOGRUN)
 endif()
 
-# Force the project to use the CXX11 standard
-set(CMAKE_CXX_STANDARD 11)
+# Force the project to use the CXX14 standard
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -42,6 +42,11 @@ if(DOXYGEN_FOUND)
 endif()
 
 find_package(SCOREC CONFIG REQUIRED)
+
+option(BUILD_EXTERNAL "build external libs with fetch content (except scorec)" ON)
+if(${BUILD_EXTERNAL})
+  add_subdirectory(external)
+endif()
+
 add_subdirectory(micro_fo)
-#add_subdirectory(micro_fm)
 add_subdirectory(macro)

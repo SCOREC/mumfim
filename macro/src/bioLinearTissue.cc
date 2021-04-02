@@ -1,66 +1,113 @@
-#include <amsiNeumannIntegrators.h>
-#include <amsiLinearElasticConstitutive.h>
-#include <apfFunctions.h>
-#include <sim.h>
 #include "bioLinearTissue.h"
+#include <amsiLinearElasticConstitutive.h>
+#include <amsiNeumannIntegrators.h>
+#include <apfFunctions.h>
+#include <gmi.h>
 namespace bio
 {
-  LinearTissue::LinearTissue(pGModel imdl, pParMesh imsh, pACase ipd, pACase iss, MPI_Comm cm)
-    : FEA(cm)
-    , constitutives()
-    , amsi::apfSimFEA(imdl,imsh,ipd,iss,cm)
+  LinearTissue::LinearTissue(apf::Mesh * mesh,
+                             const amsi::ModelDefinition & problem_definition,
+                             const amsi::ModelDefinition & solution_strategy,
+                             const amsi::ModelDefinition & output,
+                             MPI_Comm cm)
+      : constitutives()
+      , amsi::apfFEA(mesh,
+                     problem_definition,
+                     solution_strategy,
+                     output,
+                     {},
+                     {},
+                     "macro",
+                     cm)
   {
-    apf_primary_field = apf::createLagrangeField(apf_mesh,"linear_displacement",apf::VECTOR,1);
+    apf_primary_field = apf::createLagrangeField(
+        apf_mesh, "linear_displacement", apf::VECTOR, 1);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
-    GRIter ri = GM_regionIter(imdl);
-    pGEntity rgn = NULL;
-    while((rgn = (pGEntity)GRIter_next(ri)))
+    // FIXME Dirichlet BC entry should take a mt_type "displacement" to make
+    // this explicit
+    dirichlet_bcs.push_back(
+        amsi::DirichletBCEntry{.categories = {"displacement"}, .mt_name = "x"});
+    dirichlet_bcs.push_back(
+        amsi::DirichletBCEntry{.categories = {"displacement"}, .mt_name = "y"});
+    dirichlet_bcs.push_back(
+        amsi::DirichletBCEntry{.categories = {"displacement"}, .mt_name = "z"});
+    neumann_bcs.push_back(
+        amsi::NeumannBCEntry{.categories = {"pressure"},
+                             .mt_name = "magnitude",
+                             .mt_type = amsi::NeumannBCType::pressure});
+    neumann_bcs.push_back(
+        amsi::NeumannBCEntry{.categories = {"traction"},
+                             .mt_name = "direction",
+                             .mt_type = amsi::NeumannBCType::traction});
+    auto * gmodel = mesh->getModel();
+    if (gmodel == nullptr)
     {
-      pAttribute mm = GEN_attrib(rgn,"material model");
-      pAttribute cm = Attribute_childByType(mm,"continuum model");
-      // should check to make sure the continuum model is iso lin elastic
-      pAttributeTensor0 yngs = (pAttributeTensor0)Attribute_childByType(cm,"youngs modulus");
-      pAttributeTensor0 psn = (pAttributeTensor0)Attribute_childByType(cm,"poisson ratio");
-      double E = AttributeTensor0_value(yngs);
-      double v = AttributeTensor0_value(psn);
-      constitutives[rgn] = new amsi::LinearElasticIntegrator(apf_primary_field,1,E,v);
+      std::cerr << "Mesh must have attached model!\n";
+      exit(1);
     }
-    GRIter_delete(ri);
-    int dir_tps[] = {amsi::FieldUnit::displacement};
-    amsi::buildSimBCQueries(ipd,amsi::BCType::dirichlet,&dir_tps[0],(&dir_tps[0])+1,std::back_inserter(dir_bcs));
-    int neu_tps[] = {amsi::NeuBCType::traction,amsi::NeuBCType::pressure};
-    amsi::buildSimBCQueries(ipd,amsi::BCType::neumann,&neu_tps[0],(&neu_tps[0])+2,std::back_inserter(neu_bcs));
-    /*
-      int fei_tps[] = {amsi::ISO_LIN_ELASTIC};
-      amsi::buildSimFiniteElementIntegrators(pd,&feis[0],(&feis[0])+1),std::back_inserter(feis));
-    */
-  }
-  LinearTissue::~LinearTissue()
-  {
-    // clean up the elemental systems stored in constitutives
-    for(auto it=constitutives.begin(); it!=constitutives.end(); ++it)
+    static constexpr int dimension = 3;
+    auto * it = gmi_begin(gmodel, dimension);
+    struct gmi_ent * gent;
+    while ((gent = gmi_next(gmodel, it)))
     {
-      delete it->second;
+      int tag = gmi_tag(gmodel, gent);
+      const auto * region_traits =
+          problem_definition.associated->Find({dimension, tag});
+      if (region_traits == nullptr)
+      {
+        std::cerr << "region " << tag << "must have material model data\n";
+        MPI_Abort(AMSI_COMM_WORLD, 1);
+      }
+      const auto * material_model =
+          region_traits->FindCategoryByType("material model");
+      if (material_model == nullptr)
+      {
+        std::cerr << "material model must exist on region" << tag << "\n";
+        MPI_Abort(AMSI_COMM_WORLD, 1);
+      }
+      const auto * continuum_model =
+          material_model->FindCategoryByType("continuum model");
+      if (material_model == nullptr)
+      {
+        std::cerr << "continuum model must exist on region" << tag << "\n";
+        MPI_Abort(AMSI_COMM_WORLD, 1);
+      }
+      const auto * young_modulus = mt::MTCast<mt::ScalarMT>(
+          continuum_model->FindModelTrait("youngs modulus"));
+      const auto * poisson_ratio = mt::MTCast<mt::ScalarMT>(
+          continuum_model->FindModelTrait("poisson ratio"));
+      if (young_modulus == nullptr || poisson_ratio == nullptr)
+      {
+        std::cerr << "youngs modulus or poisson ratio missing on region " << tag
+                  << "\n";
+        exit(1);
+      }
+      constitutives[tag] = std::make_unique<amsi::LinearElasticIntegrator>(
+          apf_primary_field, 1, (*young_modulus)(), (*poisson_ratio)());
     }
+    gmi_end(gmodel, it);
   }
   void LinearTissue::UpdateDOFs(const double * sl)
   {
     amsi::WriteOp wrop;
-    amsi::FreeApplyOp frop(apf_primary_numbering,&wrop);
-    amsi::ApplyVector(apf_primary_numbering,apf_primary_field,sl,first_local_dof,&frop).run();
+    amsi::FreeApplyOp frop(apf_primary_numbering, &wrop);
+    amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sl,
+                      first_local_dof, &frop)
+        .run();
     apf::synchronize(apf_primary_field);
   }
-  void LinearTissue::Assemble(amsi::LAS* las)
+  void LinearTissue::Assemble(amsi::LAS * las)
   {
     ApplyBC_Neumann(las);
-    apf::MeshEntity* me = NULL;
+    apf::MeshEntity * me = NULL;
     auto it = apf_mesh->begin(analysis_dim);
     // FIXME shouldn't we skip non-owned elements similar to
     // apf::integrator::process(apf::Mesh*)?
-    while ((me = apf_mesh->iterate(it))) {
-      amsi::ElementalSystem* constitutive =
-          constitutives[R_whatIn((pRegion)me)];
-      apf::MeshElement* mlmt = apf::createMeshElement(apf_mesh, me);
+    while ((me = apf_mesh->iterate(it)))
+    {
+      auto & constitutive =
+          constitutives[apf_mesh->getModelTag(apf_mesh->toModel(me))];
+      apf::MeshElement * mlmt = apf::createMeshElement(apf_mesh, me);
       apf::Element * elm = apf::createElement(constitutive->getField(), mlmt);
       constitutive->process(mlmt);
       apf::NewArray<apf::Vector3> dofs;
@@ -75,5 +122,4 @@ namespace bio
     }
     apf_mesh->end(it);
   }
-  
-}
+}  // namespace bio

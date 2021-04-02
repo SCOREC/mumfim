@@ -1,42 +1,45 @@
 #ifndef BIO_TISSUEMULTISCALEANALYSIS_H_
 #define BIO_TISSUEMULTISCALEANALYSIS_H_
+#include <amsiAnalysis.h>
+#include <amsiMultiscale.h>
+#include <amsiPETScLAS.h>
+#include <apf.h>
+#include <model_traits/CategoryNode.h>
+#include <stdexcept>
+#include <string>
 #include "bioLinearTissue.h"
 #include "bioMultiscaleTissue.h"
 #include "bioTissueAnalysis.h"
 #include "bioVolumeConvergence.h"
-#include <amsiMultiscale.h>
-#include <amsiAnalysis.h>
-#include <apfsimWrapper.h>
-#include <apf.h>
-#include <MeshSim.h>
-#include <amsiPETScLAS.h>
-#include <string>
-#include <stdexcept>
 namespace bio
 {
   class MultiscaleTissueIteration : public amsi::Iteration
   {
-  protected:
+    protected:
     MultiscaleTissue * tssu;
     amsi::LAS * las;
     Iteration * fem_iter;
-  public:
-  MultiscaleTissueIteration(MultiscaleTissue* a, amsi::LAS* l)
-      : tssu(a), las(l), fem_iter(amsi::buildLinearFEMIteration(a, l))
-  {
-  }
-  ~MultiscaleTissueIteration() { delete fem_iter; }
-  void iterate();
+
+    public:
+    MultiscaleTissueIteration(MultiscaleTissue * a, amsi::LAS * l)
+        : tssu(a), las(l), fem_iter(amsi::buildLinearFEMIteration(a, l))
+    {
+    }
+    ~MultiscaleTissueIteration() { delete fem_iter; }
+    void iterate();
   };
   class MultiscaleTissueAnalysis : public TissueAnalysis
   {
-  public:
-    MultiscaleTissueAnalysis(pGModel imdl, pParMesh imsh, pACase pd, MPI_Comm cm);
+    public:
+    MultiscaleTissueAnalysis(apf::Mesh * mesh,
+                             std::unique_ptr<mt::CategoryNode> analysis_case,
+                             MPI_Comm cm);
     virtual void init();
     virtual void run();
     virtual void finalizeStep();
-  private:
+
+    private:
     size_t cplng;
   };
-} // end of namespace Biotissue
+}  // namespace bio
 #endif

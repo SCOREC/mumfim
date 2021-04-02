@@ -5,6 +5,8 @@ dep/scorecutil/build/
 dep/sparskit/dep/build/
 build_debug/
 build_release/
+*build*/
+.idea
 simmetrix_log
 tags
 compile_commands.json

@@ -3,7 +3,6 @@
 #include "bioNonlinearTissue.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
-#include <apfSIM.h>
 #include <cstring>
 #include <math.h> //natural log
 // Holmes-Mow Constitutive relationship.

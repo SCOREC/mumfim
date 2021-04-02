@@ -1,4 +1,6 @@
+if(NOT ${BUILD_EXTERNAL})
 find_package(amsi COMPONENTS multiscale REQUIRED)
+endif()
 
 # This test should be moved to las! not sure why bio specific stuff is used here
 # we don't actually check anything in this test anyways!
@@ -36,7 +38,9 @@ file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/fiber_networks
 
 
 # new unit tests require catch 2
+if(NOT ${BUILD_EXTERNAL})
 find_package(Catch2)
+endif()
 if(catch2_FOUND)
 include(ParseAndAddCatchTests)
 

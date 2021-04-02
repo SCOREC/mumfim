@@ -27,6 +27,7 @@ void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
 }
 int main(int argc, char * argv[])
 {
+#ifdef HAVE_YAML
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
@@ -125,4 +126,5 @@ int main(int argc, char * argv[])
 #endif
   amsi::freeAnalysis();
   return 0;
+#endif
 }

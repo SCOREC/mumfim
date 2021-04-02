@@ -1,24 +1,7 @@
-#include <simClassified.h>
 #include <apf.h>
 #include <cassert>
 namespace bio
 {
-  template <typename O>
-    void getFieldComponentsClassified(apf::Field * fld,
-                                      apf::ModelEntity * mdl_ent,
-                                      int nm_cmps,
-                                      int * cmps,
-                                      O out)
-  {
-    for(int ent_dim = 0; ent_dim < 3; ent_dim++)
-    {
-      amsi::SimClassifiedIter bgn = amsi::beginClassified(apf::getMesh(fld),
-                                                          mdl_ent,
-                                                          ent_dim);
-      amsi::SimClassifiedIter end = amsi::endClassified(bgn);
-      getFieldComponentsOn(fld,nm_cmps,cmps,bgn,end,out);
-    }
-  }
   template <typename I, typename O>
     void getFieldComponentsOn(apf::Field * fld,
                               int nm_cmps,

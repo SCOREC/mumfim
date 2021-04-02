@@ -2,16 +2,9 @@
 #define BIO_VARIABLE_RECOVERY_H_
 #include <apf.h>
 #include <apfMesh.h>
-#include <MeshSim.h>
 #include <vector>
 namespace bio
 {
-  template <typename O>
-    void getFieldComponentsClassified(apf::Field * fld,
-                                      apf::ModelEntity * mdl_ent,
-                                      int nm_cmps,
-                                      int * cmps,
-                                      O out);
   template <typename I, typename O>
     void getFieldComponentsOnEnts(apf::Field * fld,
                                   int nm_cmps,

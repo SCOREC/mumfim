@@ -1,18 +1,44 @@
 #ifndef BIO_TISSUE_ANALYSIS_H_
 #define BIO_TISSUE_ANALYSIS_H_
+#include <amsiNonlinearAnalysis.h>
 #include "bioNonlinearTissue.h"
 #include "bioVolumeConvergence.h"
-#include <amsiNonlinearAnalysis.h>
+#include <model_traits/CategoryNode.h>
 namespace bio
 {
+  /**
+   * Extracts the volume convergence regions from a simmetrix case
+   * @param solution_strategy associated solution strategy node
+   * @param las the amsi las system used for convergence
+   * @param out typically std::back_inserter to some sort of list type.
+   */
   template <typename O>
-    void buildLASConvergenceOperators(pACase ss, amsi::MultiIteration * it, amsi::LAS * las, O out);
+  void buildLASConvergenceOperators(
+      const mt::CategoryNode * solution_strategy,
+      amsi::MultiIteration * it,
+      amsi::LAS * las,
+      O out);
+
+  /**
+   * Extracts the volume convergence regions from a simmetrix case
+   * @param solution_strategy associated solution strategy node
+   * @param it amsi iterator
+   * @param u displacement
+   * @param vl_tks list of volumes tracked for volume convergence
+   * @param out typically std::back_inserter to some sort of list type.
+   */
   template <typename I, typename O>
-    void buildVolumeConvergenceOperators(pACase ss, amsi::Iteration * it, I vl_tks, apf::Field * u, O out);
+  void buildVolConvergenceOperators(
+      const mt::CategoryNode * solution_strategy,
+      amsi::MultiIteration * it,
+      apf::Field * u,
+      I vl_tks,
+      O out);
+
   class TissueAnalysis
   {
-  public:
-    TissueAnalysis(pGModel, pParMesh, pACase, MPI_Comm);
+    public:
+    TissueAnalysis(apf::Mesh* mesh, std::unique_ptr<const mt::CategoryNode> analysis_case, MPI_Comm);
     ~TissueAnalysis();
     virtual void run();
     virtual void init();
@@ -20,13 +46,12 @@ namespace bio
     virtual void finalizeStep();
     virtual void revert();
     virtual void deinit();
-  protected:
+
+    protected:
     // util
     MPI_Comm cm;
-    // simmetrix
-    pGModel mdl;
-    pParMesh msh;
-    pACase cs;
+    std::unique_ptr<const mt::CategoryNode> analysis_case;
+    apf::Mesh* mesh;
     // analysis
     double t;
     double dt;
@@ -35,11 +60,12 @@ namespace bio
     NonlinearTissue * tssu;
     // this is actually a MultiIteration
     amsi::MultiIteration * itr;
-    std::vector<amsi::Iteration*> itr_stps;
+    std::vector<amsi::Iteration *> itr_stps;
     // this is actually a MultiConvergence
     amsi::Convergence * cvg;
-    std::vector<amsi::Convergence*> cvg_stps;
-    std::map<pANode,VolCalc*> trkd_vols;
+    std::vector<amsi::Convergence *> cvg_stps;
+    // name of track volume model trait and ptr to volume calc
+    std::map<std::string, VolCalc *> trkd_vols;
     amsi::LAS * las;
     bool completed;
     // log filenames
@@ -57,38 +83,41 @@ namespace bio
     amsi::Log dsps;
     amsi::Log vols;
     // track model ents
-    std::vector<apf::ModelEntity*> frc_itms;
-    std::vector<apf::ModelEntity*> dsp_itms;
-    std::vector<apf::ModelEntity*> vol_itms;
+    std::vector<apf::ModelEntity *> frc_itms;
+    std::vector<apf::ModelEntity *> dsp_itms;
+    std::vector<apf::ModelEntity *> vol_itms;
   };
   class TissueIteration : public amsi::Iteration
   {
-  protected:
+    protected:
     NonlinearTissue * tssu;
     amsi::LAS * las;
-  public:
-  TissueIteration(NonlinearTissue* t, amsi::LAS* l) : tssu(t), las(l) {}
-  virtual void iterate()
-  {
-    LinearSolver(tssu, las);
-    tssu->iter();
-    las->iter();
-    amsi::Iteration::iterate();
+
+    public:
+    TissueIteration(NonlinearTissue * t, amsi::LAS * l) : tssu(t), las(l) {}
+    virtual void iterate()
+    {
+      LinearSolver(tssu, las);
+      tssu->iter();
+      las->iter();
+      amsi::Iteration::iterate();
     }
   };
   class TissueCheckpointIteration : public amsi::Iteration
   {
-  protected:
+    protected:
     TissueAnalysis * tssu;
-  public:
-  TissueCheckpointIteration(TissueAnalysis* t) : tssu(t) {}
-  virtual void iterate()
-  {
-    std::cout<<"Checkpointing iteration: "<<this->iteration()<<std::endl;
-    tssu->checkpoint();
-    amsi::Iteration::iterate();
+
+    public:
+    TissueCheckpointIteration(TissueAnalysis * t) : tssu(t) {}
+    virtual void iterate()
+    {
+      std::cout << "Checkpointing iteration: " << this->iteration()
+                << std::endl;
+      tssu->checkpoint();
+      amsi::Iteration::iterate();
     }
   };
-}
+}  // namespace bio
 #include "bioTissueAnalysis_impl.h"
 #endif

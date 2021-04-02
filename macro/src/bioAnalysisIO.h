@@ -1,7 +1,6 @@
 #ifndef BIO_ANALYSIS_IO_H_
 #define BIO_ANALYSIS_IO_H_
 #include <amsiUtil.h>
-#include <MeshSim.h>
 #include <apf.h>
 namespace bio
 {

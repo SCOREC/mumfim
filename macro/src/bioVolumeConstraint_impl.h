@@ -1,3 +1,4 @@
+#include <apfNumbering.h>
 namespace bio
 {
   template <typename I>

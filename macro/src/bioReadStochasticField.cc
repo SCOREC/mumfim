@@ -2,7 +2,6 @@
 #include <fstream>
 #include <string>
 #include <cstring>
-#include <SimUtil.h>
 #include <cassert>
 #include <limits>
 #include <bioReadStochasticField.h>

@@ -20,10 +20,12 @@ set(micro_fo_src_files
   bioFiberNetworkLibrary.cc
   bioApfPointers.cc)
 
+if(NOT ${BUILD_EXTERNAL})
 find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
 find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
+endif()
 
 find_package(Kokkos CONFIG REQUIRED)
 
@@ -53,9 +55,10 @@ target_include_directories(micro_fo PUBLIC
 target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale 
                       las_core Kokkos::kokkos
                       PRIVATE ${yaml-cpp_LIBRARIES})
+#if(yaml-cpp_FOUND OR BUILD_EXTERNAL)
 if(yaml-cpp_FOUND)
   target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)
-endif(yaml-cpp_FOUND)
+endif()
 
 set(ENABLE_VERBOSITY HIGH CACHE STRING "Enable Debug/Verbosity Level")
 set_property(CACHE ENABLE_VERBOSITY PROPERTY STRINGS HIGH MED LOW OFF)

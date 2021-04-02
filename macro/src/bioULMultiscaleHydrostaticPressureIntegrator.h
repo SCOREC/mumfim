@@ -4,7 +4,6 @@
 #include <amsiDeformation.h>
 #include <ElementalSystem.h>
 #include <apfShape.h>
-#include <apfSIM.h>
 #include <cstring>
 namespace bio
 {

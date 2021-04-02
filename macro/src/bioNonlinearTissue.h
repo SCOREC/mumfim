@@ -9,28 +9,27 @@
 // amsi
 #include <apfFEA.h>
 #include <Solvers.h>
-#include <NonLinElasticity.h>
 #include <Solvers.h>
 #include <amsiAnalysis.h>
 #include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <apfFEA.h>
 #include <apfFunctions.h>
-#include <apfsimWrapper.h>
 #include <iostream>
 #include <list>
 #include <string>
 #include <vector>
+#include <model_traits/CategoryNode.h>
 namespace bio
 {
   class CurrentCoordFunc;
-  class NonlinearTissue : public amsi::apfSimFEA
+  class NonlinearTissue : public amsi::apfFEA
   {
     protected:
     amsi::XpYFunc * xpyfnc;
-    std::map<pGEntity, amsi::ElementalSystem*> constitutives;
-    std::vector<StiffnessVariation*> stf_vrtn_cnst;
-    std::vector<VolumeConstraint*> vol_cnst;
+    std::map<apf::ModelEntity*, std::unique_ptr<amsi::ElementalSystem>> constitutives;
+    std::vector<std::unique_ptr<StiffnessVariation>> stf_vrtn_cnst;
+    std::vector<std::unique_ptr<VolumeConstraint>> vol_cnst;
     apf::Field * delta_u;
     apf::Field * current_coords;  // coordinates in current config
     apf::Field * strs;
@@ -45,11 +44,11 @@ namespace bio
     int load_step;
     int iteration;
     public:
-    NonlinearTissue(pGModel imdl, pParMesh imsh, pACase pd, pACase ss,
+    NonlinearTissue(apf::Mesh* mesh, const mt::CategoryNode& analysis_case,
                     MPI_Comm cm = AMSI_COMM_SCALE);
     virtual ~NonlinearTissue();
     void computeInitGuess(amsi::LAS* las);
-    void getLoadOn(pGEntity ent, double* frc);
+    void getLoadOn(apf::ModelEntity* ent, double* frc);
     void step();
     void iter();
     virtual void Assemble(amsi::LAS* las) override;

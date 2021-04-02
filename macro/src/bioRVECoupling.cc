@@ -1,27 +1,32 @@
 #include "bioRVECoupling.h"
-namespace bio{
-MicroscaleType getMicroscaleType(pAttribute multiscale_model)
+#include <model_traits/AssociatedModelTraits.h>
+namespace bio
 {
-  if(multiscale_model)
+  MicroscaleType getMicroscaleType(
+      const mt::AssociatedCategoryNode * category_node)
   {
-    char * multiscale_model_type = Attribute_imageClass(multiscale_model); 
-    if(strcmp(multiscale_model_type, "isotropic_neohookean") == 0)
+    if (category_node)
     {
-        delete [] multiscale_model_type;
-        return MicroscaleType::ISOTROPIC_NEOHOOKEAN;
-    }
-    else if(strcmp(multiscale_model_type, "fiber only") == 0)
-    {
-        delete [] multiscale_model_type;
-        return MicroscaleType::FIBER_ONLY;
-    }
-    else
-    {
-        std::cerr<<multiscale_model_type<<" is not a valid multiscale model type."<<std::endl;
-        delete []  multiscale_model_type;
+      if (category_node->GetType() != "multiscale model")
+      {
+        std::cerr << "must have multiscale model type\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
+      }
+      if (category_node->FindCategoryByType("isotropic_neohookean") != nullptr)
+      {
+        return MicroscaleType::ISOTROPIC_NEOHOOKEAN;
+      }
+      else if (category_node->FindCategoryByType("fiber only") != nullptr)
+      {
+        return MicroscaleType::FIBER_ONLY;
+      }
+      else
+      {
+        std::cerr << "Multiscale model type is not a valid. Must be "
+                     "\"isotropic_neohookean\" or \"fiber only\".\n";
+        MPI_Abort(AMSI_COMM_WORLD, 1);
+      }
     }
+    return MicroscaleType::NONE;
   }
-  return MicroscaleType::NONE;
-}
-}
+}  // namespace bio
