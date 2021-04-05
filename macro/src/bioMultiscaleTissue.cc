@@ -112,15 +112,15 @@ namespace bio
       if (ornt_tens)
       {
         const auto * ornt_tens_3D =
-            ornt_tens->FindCategoryByType("3D Orientation Tensor");
+            mt::GetCategoryModelTraitByType(ornt_tens, "3D Orientation Tensor");
         const auto * ornt_tens_2D =
-            ornt_tens->FindCategoryByType("2D Orientation Tensor");
-        compute_ornt_3D = ornt_tens_3D != nullptr;
-        compute_ornt_2D = ornt_tens_2D != nullptr;
+            mt::GetCategoryByType(ornt_tens, "2D Orientation Tensor");
+        compute_ornt_3D = (ornt_tens_3D != nullptr);
+        compute_ornt_2D = (ornt_tens_2D != nullptr);
         if (ornt_tens_2D != nullptr)
         {
-          const auto * axis =
-              mt::MTCast<mt::VectorMT>(ornt_tens_2D->GetModelTrait());
+          const auto * axis = mt::GetCategoryModelTraitByType<mt::VectorMT>(
+              ornt_tens_2D, "axis");
           if (axis == nullptr)
           {
             std::cerr << "2D orientation requires axis.\n";
@@ -396,37 +396,29 @@ namespace bio
                   << ").\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
+      auto micro_tp = getMicroscaleType(multiscale_model);
       multiscale_model = &multiscale_model->GetCategories()[0];
       const auto * stochastic_field =
           multiscale_model->FindCategoryByType("stochastic field");
-      auto micro_tp = getMicroscaleType(multiscale_model);
       if (micro_tp == MicroscaleType::FIBER_ONLY)
       {
-        const auto * directory_cat =
-            multiscale_model->FindCategoryByType("directory");
-        const auto * prefix_cat =
-            multiscale_model->FindCategoryByType("prefix");
-        const auto * count_cat = multiscale_model->FindCategoryByType("count");
-        if (directory_cat == nullptr || prefix_cat == nullptr || count_cat)
+        const auto * directory_mt =
+            mt::GetCategoryModelTraitByType<mt::StringMT>(multiscale_model,
+                                                          "directory");
+        const auto * prefix_mt = mt::GetCategoryModelTraitByType<mt::StringMT>(
+            multiscale_model, "prefix");
+        const auto * count_mt = mt::GetCategoryModelTraitByType<mt::IntMT>(
+            multiscale_model, "count");
+        if (directory_mt == nullptr || prefix_mt == nullptr ||
+            count_mt == nullptr)
         {
           std::cerr << "\"directory\", \"prefix\", and \"count\" categories "
                        "are required components of the multiscale model.\n";
           MPI_Abort(AMSI_COMM_WORLD, 1);
         }
-        const auto * directory_mt =
-            mt::MTCast<mt::StringMT>(directory_cat->GetModelTrait());
-        const auto * prefix_mt =
-            mt::MTCast<mt::StringMT>(prefix_cat->GetModelTrait());
-        const auto * count_mt =
-            mt::MTCast<mt::IntMT>(count_cat->GetModelTrait());
-        if (directory_mt == nullptr || prefix_mt == nullptr)
-        {
-          std::cerr << "\"directory\", \"prefix\", and \"count\" model traits "
-                       "are required components of the multiscale model.\n";
-          MPI_Abort(AMSI_COMM_WORLD, 1);
-        }
         std::string directory = (*directory_mt)();
         std::string prefix = (*prefix_mt)();
+        auto tp = directory + "/";
         int count = (*count_mt)();
         if (stochastic_field)
         {
@@ -452,16 +444,19 @@ namespace bio
           auto alignment_field =
               stochastic_field_map[stochastic_field_data.alignment_filename];
           auto centroid = apf::getLinearCentroid(apf_mesh, ent);
-          auto tp = directory + "/";
           tp += getNetworkSuffix(*alignment_field, *orientation_field, prefix,
                                  centroid[0], centroid[1], centroid[2],
                                  stochastic_field_data.alignment_num_bins,
                                  stochastic_field_data.orientation_num_bins);
-          if (std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
-          {
-            rve_dirs.push_back(tp);
-            rve_dir_cnts.push_back(count);
-          }
+        }
+        else
+        {
+          tp += prefix;
+        }
+        if (std::find(rve_dirs.begin(), rve_dirs.end(), tp) == rve_dirs.end())
+        {
+          rve_dirs.push_back(tp);
+          rve_dir_cnts.push_back(count);
         }
       }
     }
@@ -857,40 +852,34 @@ namespace bio
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
     const auto * multiscale_model =
-        material_model->FindCategoryByType("multiscale model");
+        mt::GetCategoryByType(material_model, "multiscale model");
     if (multiscale_model == nullptr)
     {
       std::cerr
           << "\"multiscale model\" material must exist in multiscale region.\n";
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
+    MicroscaleType micro_tp = getMicroscaleType(multiscale_model);
     multiscale_model = &multiscale_model->GetCategories()[0];
     const auto * stochastic_field =
-        multiscale_model->FindCategoryByType("stochastic field");
-    MicroscaleType micro_tp = getMicroscaleType(multiscale_model);
+        mt::GetCategoryByType(multiscale_model, "stochastic field");
     std::string tp;
     if (micro_tp == MicroscaleType::FIBER_ONLY)
     {
-      multiscale_model = multiscale_model->FindCategoryByType("fiber only");
-      const auto * directory_cat =
-          multiscale_model->FindCategoryByType("directory");
-      const auto * prefix_cat = multiscale_model->FindCategoryByType("prefix");
-      if (directory_cat == nullptr || prefix_cat == nullptr)
+      if (multiscale_model == nullptr)
+      {
+        std::cerr << "fiber only type should exist in the multiscale model";
+        std::abort();
+      }
+      const auto * directory_mt = mt::GetCategoryModelTraitByType<mt::StringMT>(
+          multiscale_model, "directory");
+      const auto * prefix_mt = mt::GetCategoryModelTraitByType<mt::StringMT>(
+          multiscale_model, "prefix");
+      if (directory_mt == nullptr || prefix_mt == nullptr)
       {
         std::cerr
             << "\"directory\" and \"prefix\" categories are components of "
                "the multiscale model.\n";
-        MPI_Abort(AMSI_COMM_WORLD, 1);
-      }
-      const auto * directory_mt =
-          mt::MTCast<mt::StringMT>(directory_cat->GetModelTrait());
-      const auto * prefix_mt =
-          mt::MTCast<mt::StringMT>(prefix_cat->GetModelTrait());
-      if (directory_mt == nullptr || prefix_mt == nullptr)
-      {
-        std::cerr << "\"directory\" and \"prefix\" model traits are required "
-                     "components of "
-                     "the multiscale model.\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
       std::string directory = (*directory_mt)();
@@ -937,7 +926,8 @@ namespace bio
       }
       else
       {
-        std::cerr << "network directory name not found in library.\n";
+        std::cerr << "network directory name " << tp
+                  << " not found in library.\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
     }

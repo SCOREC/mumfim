@@ -108,7 +108,7 @@ namespace bio
       const auto * material_model =
           mt::GetCategoryByType(model_traits, "material model");
       const auto * continuum_model =
-          mt::GetPrimaryCategoryByType(model_traits, "continuum model");
+          mt::GetPrimaryCategoryByType(material_model, "continuum model");
       const auto * youngs_modulus =
           mt::GetCategoryModelTraitByType<mt::ScalarMT>(continuum_model,
                                                         "youngs modulus");
@@ -267,7 +267,8 @@ namespace bio
   {
     auto model_dimension = apf_mesh->getModelType(ent);
     auto model_tag = apf_mesh->getModelTag(ent);
-    auto * associated_traits = problem_definition.associated->Find({model_dimension, model_tag});
+    auto * associated_traits =
+        problem_definition.associated->Find({model_dimension, model_tag});
     if (associated_traits == nullptr)
     {
       std::cerr << "Attempting to get Neumann BC on [" << model_dimension << ","
@@ -292,7 +293,7 @@ namespace bio
         exit(1);
       }
       const auto * load_trait =
-          category_node->FindModelTrait(neumann_bc.mt_name);
+          mt::GetCategoryModelTraitByType(category_node, neumann_bc.mt_name);
       const auto * const_load_trait = mt::MTCast<mt::VectorMT>(load_trait);
       const auto * time_function_load =
           mt::MTCast<mt::VectorFunctionMT<1>>(load_trait);

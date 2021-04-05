@@ -17,6 +17,11 @@
 #include <SimUtil.h>
 #include <gmi_sim.h>
 #endif
+bool file_exists(const std::string & name)
+{
+  std::ifstream f(name);
+  return f.good();
+}
 void display_help_string()
 {
   std::cout
@@ -106,6 +111,12 @@ int run_macro(int & argc, char **& argv, MPI_Comm cm)
   gmi_register_mesh();
   apf::Mesh * mesh =
       apf::loadMdsMesh(model_filename.c_str(), mesh_filename.c_str());
+  if (!file_exists(model_traits_filename))
+  {
+    std::cerr << "model traits file: " << model_traits_filename
+              << " doesn't exist.\n";
+    MPI_Abort(AMSI_COMM_WORLD, 1);
+  }
   auto model_traits = mt::ReadFromFile<mt::YAML>(model_traits_filename);
   const auto * case_traits = model_traits->FindCase(analysis_case);
   if (case_traits == nullptr)
@@ -141,8 +152,6 @@ int main(int argc, char ** argv)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if (parse_options(argc, argv))
   {
-    // MPI_Init(&argc, &argv);
-    // PCU_Comm_Init();
     amsi::initMultiscale(argc, argv, MPI_COMM_WORLD);
 #ifdef LOGRUN
     amsi::Log execution_time = amsi::activateLog("execution_time");

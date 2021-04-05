@@ -5,13 +5,12 @@
 #include "bioModelTraits.h"
 namespace bio
 {
-  TissueAnalysis::TissueAnalysis(
-      apf::Mesh * mesh,
-      std::unique_ptr<const mt::CategoryNode> analysis_case,
-      MPI_Comm c)
+  TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,
+                                 std::unique_ptr<const mt::CategoryNode> cs,
+                                 MPI_Comm c)
       : cm(c)
       , mesh(mesh)
-      , analysis_case(std::move(analysis_case))
+      , analysis_case(std::move(cs))
       , t(0.0)
       , dt(0.0)
       , stp(0)
@@ -40,6 +39,33 @@ namespace bio
       , dsp_itms()
       , vol_itms()
   {
+  }
+  TissueAnalysis::~TissueAnalysis()
+  {
+    // since we know all of the iteration steps are allocated on the heap delete
+    // them
+    for (auto itr_stp = itr_stps.begin(); itr_stp != itr_stps.end(); ++itr_stp)
+    {
+      delete (*itr_stp);
+      (*itr_stp) = NULL;
+    }
+    delete itr;
+    // since we know all of the convegence steps are allocated on the heap
+    // delete them
+    for (auto cvg_stp = cvg_stps.begin(); cvg_stp != cvg_stps.end(); ++cvg_stp)
+    {
+      delete (*cvg_stp);
+      (*cvg_stp) = NULL;
+    }
+    delete cvg;
+    delete tssu;
+    delete las;
+  }
+  void TissueAnalysis::init()
+  {
+    // util data
+    int rnk = -1;
+    MPI_Comm_rank(cm, &rnk);
     const auto * problem_definition =
         mt::GetPrimaryCategoryByType(analysis_case.get(), "problem definition");
     const auto * solution_strategy =
@@ -75,35 +101,6 @@ namespace bio
             model_entities.begin(), model_entities.end(), tssu->getUField());
       }
     }
-  }
-  TissueAnalysis::~TissueAnalysis()
-  {
-    // since we know all of the iteration steps are allocated on the heap delete
-    // them
-    for (auto itr_stp = itr_stps.begin(); itr_stp != itr_stps.end(); ++itr_stp)
-    {
-      delete (*itr_stp);
-      (*itr_stp) = NULL;
-    }
-    delete itr;
-    // since we know all of the convegence steps are allocated on the heap
-    // delete them
-    for (auto cvg_stp = cvg_stps.begin(); cvg_stp != cvg_stps.end(); ++cvg_stp)
-    {
-      delete (*cvg_stp);
-      (*cvg_stp) = NULL;
-    }
-    delete cvg;
-    delete tssu;
-    delete las;
-  }
-  void TissueAnalysis::init()
-  {
-    // util data
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
-    const auto * solution_strategy =
-        mt::GetPrimaryCategoryByType(analysis_case.get(), "solution strategy");
     // We want to do the tissue iteration after we compute the volumes
     itr_stps.push_back(new TissueIteration(tssu, las));
     itr_stps.push_back(new TissueCheckpointIteration(this));

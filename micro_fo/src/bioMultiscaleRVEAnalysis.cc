@@ -38,15 +38,13 @@ namespace bio
       , macro_step(0)
       , initial_update(true)
   {
+    assert(amsi::getMultiscaleManager() != nullptr);
+    assert(amsi::getScaleManager() != nullptr);
     M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(),
-                                 "macro",
-                                 "micro_fo");
+                                 amsi::getScaleManager(), "macro", "micro_fo");
     m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(),
-                                 "micro_fo",
-                                 "macro");
-    //PCU_Switch_Comm(MPI_COMM_SELF);
+                                 amsi::getScaleManager(), "micro_fo", "macro");
+    // PCU_Switch_Comm(MPI_COMM_SELF);
   }
   void MultiscaleRVEAnalysis::init()
   {

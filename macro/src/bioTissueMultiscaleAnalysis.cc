@@ -13,6 +13,7 @@
 #include <limits>
 #include <sstream>
 #include "bioAnalysisIO.h"
+#include "bioModelTraits.h"
 #include "bioMultiscaleConvergence.h"
 #include "bioMultiscaleTissue.h"
 #include "bioVolumeConvergence.h"
@@ -43,8 +44,41 @@ namespace bio
   // TODO move to constructor
   void MultiscaleTissueAnalysis::init()
   {
+    const auto * problem_definition =
+        mt::GetPrimaryCategoryByType(analysis_case.get(), "problem definition");
     const auto * solution_strategy =
         mt::GetPrimaryCategoryByType(analysis_case.get(), "solution strategy");
+    if (problem_definition == nullptr || solution_strategy == nullptr ||
+        problem_definition->GetType() != "macro" ||
+        solution_strategy->GetType() != "macro")
+    {
+      std::cerr << "Analysis case should have  \"problem definition\" and "
+                   "\"solution strategy\" of the \"macro\" analysis type.\n";
+      MPI_Abort(AMSI_COMM_WORLD, 1);
+    }
+    // analysis params
+    tssu = new MultiscaleTissue(mesh, *analysis_case, cm);
+    const auto * timesteps_trait = mt::GetCategoryModelTraitByType<mt::IntMT>(
+        solution_strategy, "num timesteps");
+    if (timesteps_trait == nullptr)
+    {
+      std::cerr << "\"solution strategy\" must have \"num timesteps\" trait";
+      MPI_Abort(AMSI_COMM_WORLD, 1);
+    }
+    mx_stp = (*timesteps_trait)();
+    dt = (double)1.0 / (double)mx_stp;
+    const auto * track_volume =
+        mt::GetCategoryByType(solution_strategy, "track volume");
+    if (track_volume != nullptr)
+    {
+      for (const auto & tracked_volume : track_volume->GetModelTraitNodes())
+      {
+        std::vector<apf::ModelEntity *> model_entities;
+        GetModelTraitNodeGeometry(mesh, &tracked_volume, model_entities);
+        trkd_vols[tracked_volume.GetName()] = new VolCalc(
+            model_entities.begin(), model_entities.end(), tssu->getUField());
+      }
+    }
     // compute the multiscale tissue iteration after the volumes have been
     // computed
     itr_stps.push_back(new MultiscaleTissueIteration(
@@ -53,9 +87,10 @@ namespace bio
     // properly)
     itr_stps.push_back(new TissueCheckpointIteration(this));
     itr = new amsi::MultiIteration(itr_stps.begin(), itr_stps.end());
-    buildLASConvergenceOperators(solution_strategy, itr, las, std::back_inserter(cvg_stps));
-    buildVolConvergenceOperators(solution_strategy, itr, tssu->getUField(), trkd_vols,
+    buildLASConvergenceOperators(solution_strategy, itr, las,
                                  std::back_inserter(cvg_stps));
+    buildVolConvergenceOperators(solution_strategy, itr, tssu->getUField(),
+                                 trkd_vols, std::back_inserter(cvg_stps));
     cvg = new MultiscaleConvergence(cvg_stps.begin(), cvg_stps.end(), cplng);
     static_cast<MultiscaleTissue *>(tssu)->initMicro();
     // output params

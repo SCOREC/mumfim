@@ -22,6 +22,7 @@ namespace bio
   {
     apf_primary_field = apf::createLagrangeField(
         apf_mesh, "linear_displacement", apf::VECTOR, 1);
+    apf::zeroField(apf_primary_field);
     apf_primary_numbering = apf::createNumbering(apf_primary_field);
     // FIXME Dirichlet BC entry should take a mt_type "displacement" to make
     // this explicit
@@ -59,31 +60,33 @@ namespace bio
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
       const auto * material_model =
-          region_traits->FindCategoryByType("material model");
+          mt::GetCategoryByType(region_traits, "material model");
       if (material_model == nullptr)
       {
         std::cerr << "material model must exist on region" << tag << "\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
       const auto * continuum_model =
-          material_model->FindCategoryByType("continuum model");
+          mt::GetPrimaryCategoryByType(material_model, "continuum model");
       if (material_model == nullptr)
       {
         std::cerr << "continuum model must exist on region" << tag << "\n";
         MPI_Abort(AMSI_COMM_WORLD, 1);
       }
-      const auto * young_modulus = mt::MTCast<mt::ScalarMT>(
-          continuum_model->FindModelTrait("youngs modulus"));
-      const auto * poisson_ratio = mt::MTCast<mt::ScalarMT>(
-          continuum_model->FindModelTrait("poisson ratio"));
-      if (young_modulus == nullptr || poisson_ratio == nullptr)
+      const auto * youngs_modulus =
+          mt::GetCategoryModelTraitByType<mt::ScalarMT>(continuum_model,
+                                                        "youngs modulus");
+      const auto * poisson_ratio =
+          mt::GetCategoryModelTraitByType<mt::ScalarMT>(continuum_model,
+                                                        "poisson ratio");
+      if (youngs_modulus == nullptr || poisson_ratio == nullptr)
       {
         std::cerr << "youngs modulus or poisson ratio missing on region " << tag
                   << "\n";
         exit(1);
       }
       constitutives[tag] = std::make_unique<amsi::LinearElasticIntegrator>(
-          apf_primary_field, 1, (*young_modulus)(), (*poisson_ratio)());
+          apf_primary_field, 1, (*youngs_modulus)(), (*poisson_ratio)());
     }
     gmi_end(gmodel, it);
   }

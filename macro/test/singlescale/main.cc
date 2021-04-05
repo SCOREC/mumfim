@@ -4,6 +4,7 @@
 #include <fenv.h>
 #include <getopt.h>
 #include <gmi_mesh.h>
+#include <lionPrint.h>
 #include <model_traits/ModelTraitsIO.h>
 #include <mpi.h>
 #include <iostream>
@@ -14,6 +15,11 @@
 #include <SimUtil.h>
 #include <gmi_sim.h>
 #endif
+bool file_exists(const std::string & name)
+{
+  std::ifstream f(name);
+  return f.good();
+}
 void display_help_string()
 {
   std::cout
@@ -80,6 +86,7 @@ bool parse_options(int & argc, char **& argv)
 }
 int main(int argc, char ** argv)
 {
+  lion_set_verbosity(1);
   int result = 0;
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
   if (parse_options(argc, argv))
@@ -98,6 +105,12 @@ int main(int argc, char ** argv)
     gmi_register_mesh();
     apf::Mesh * mesh =
         apf::loadMdsMesh(model_filename.c_str(), mesh_filename.c_str());
+    if (!file_exists(model_traits_filename))
+    {
+      std::cerr << "model traits file: " << model_traits_filename
+                << " doesn't exist.\n";
+      MPI_Abort(AMSI_COMM_WORLD, 1);
+    }
     auto model_traits = mt::ReadFromFile<mt::YAML>(model_traits_filename);
     const auto * case_traits = model_traits->FindCase(analysis_case);
     if (case_traits == nullptr)
