@@ -551,7 +551,7 @@ namespace bio
       prm.data[ORIENTATION_AXIS_X] = ornt_2D_axis[0];
       prm.data[ORIENTATION_AXIS_Y] = ornt_2D_axis[1];
       prm.data[ORIENTATION_AXIS_Z] = ornt_2D_axis[2];
-      prm.data[FIBER_RADIUS] = (*youngs_modulus)();
+      prm.data[FIBER_RADIUS] = (*radius)();
       prm.data[VOLUME_FRACTION] = (*volume_fraction)();
       prm.data[YOUNGS_MODULUS] = (*youngs_modulus)();
       prm.data[NONLINEAR_PARAM] =

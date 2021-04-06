@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(catch2)
 
 FetchContent_Declare(ModelTraits
         GIT_REPOSITORY https://github.com/jacobmerson/model-traits
-        GIT_TAG 8c5e9296435f25e552ee6d20108072239024585c
+        GIT_TAG 974b4574eb30dc9a5f150701628aedb0c262b6ba
         )
 FetchContent_MakeAvailable(ModelTraits)
 
@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 FetchContent_Declare(AMSI
         GIT_REPOSITORY https://github.com/jacobmerson/amsi
-        GIT_TAG 75f238f944426e9bb05344fca41091bbd77a55d1
+        GIT_TAG 22f8022f6016d0cf7eb64aa90bb54055792cab45
         )
 FetchContent_MakeAvailable(AMSI)
 
