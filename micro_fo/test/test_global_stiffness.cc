@@ -11,7 +11,6 @@
 #include <bioFiberRVEAnalysisStaticImplicit.h>
 int main(int argc, char * argv[])
 {
-#ifdef HAVE_YAML
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
   std::vector<bio::MicroCase> cases;
   bio::loadMicroFOFromYamlFile(
@@ -108,6 +107,5 @@ int main(int argc, char * argv[])
   delete mb;
   mb = NULL;
   amsi::freeAnalysis();
-#endif
   return 0;
 }
