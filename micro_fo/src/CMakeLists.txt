@@ -21,8 +21,7 @@ set(micro_fo_src_files
   bioApfPointers.cc)
 
 if(NOT ${BUILD_EXTERNAL})
-find_package(las HINTS "$ENV{DEVROOT}/install/las/lib/cmake/" REQUIRED) #COMPONENTS sparskit core)
-find_package(las_core HINTS "$ENV{DEVROOT}/install/las/lib/cmake" REQUIRED)
+find_package(las REQUIRED)
 find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
 find_package(yaml-cpp REQUIRED)
 endif()

@@ -11,13 +11,13 @@ FetchContent_MakeAvailable(catch2)
 
 FetchContent_Declare(ModelTraits
         GIT_REPOSITORY https://github.com/jacobmerson/model-traits
-        GIT_TAG 974b4574eb30dc9a5f150701628aedb0c262b6ba
+        GIT_TAG 473acad441042f5e9d25de8b79d6e9c33195bd32
         )
 FetchContent_MakeAvailable(ModelTraits)
 
 FetchContent_Declare(LAS
         GIT_REPOSITORY https://github.com/wrtobin/las
-        GIT_TAG 09c0c79dd40407271be3388a761b7f2b6ee2521f
+        GIT_TAG 53298b7265948ad96bd7a91df7ef5bd0e35f34f6
         )
 FetchContent_MakeAvailable(LAS)
 
