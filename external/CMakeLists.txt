@@ -28,7 +28,7 @@ FetchContent_Declare(yaml-cpp
 FetchContent_MakeAvailable(yaml-cpp)
 
 FetchContent_Declare(AMSI
-        GIT_REPOSITORY https://github.com/jacobmerson/amsi
+        GIT_REPOSITORY https://github.com/SCOREC/amsi
         GIT_TAG 22f8022f6016d0cf7eb64aa90bb54055792cab45
         )
 FetchContent_MakeAvailable(AMSI)
