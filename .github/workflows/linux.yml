@@ -38,7 +38,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
 
     - name: Install PUMI
-      run: cmake --install ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}}  --install-prefix ${{github.workspace}}/install/pumi
+      run: cmake --install ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}}  --prefix ${{github.workspace}}/install/pumi
 
     #- name: Test PUMI
     #  working-directory: ${{github.workspace}}/mumfim/build
