@@ -21,8 +21,10 @@ jobs:
 
     steps:
 
-    - name: install mpich
-      run: sudo apt install mpich
+    - name: install mpich and gcc
+      run: |
+           sudo apt update
+           sudo apt install gcc-10 g++-10 mpich
 
     - name: Checkout SCOREC core
       uses: actions/checkout@v2
@@ -32,9 +34,15 @@ jobs:
         submodules: recursive
 
     - name: Core Configure CMake
+      env:
+        MPICH_CC: gcc-10
+        MPICH_CXX: g++-10
       run: cmake -S ${{github.workspace}}/pumi -B ${{github.workspace}}/pumi/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DIS_TESTING=ON -DMESHES=${{github.workspace}}/pumi/pumi-meshes
 
     - name: Build PUMI
+      env:
+        MPICH_CC: gcc-10
+        MPICH_CXX: g++-10
       run: cmake --build ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
 
     - name: Install PUMI
@@ -51,9 +59,15 @@ jobs:
         path: mumfim
 
     - name: MuMFiM Configure CMake
+      env:
+        MPICH_CC: gcc-10
+        MPICH_CXX: g++-10
       run: cmake -S ${{github.workspace}}/mumfim  -B ${{github.workspace}}/mumfim/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE=ON -DSCOREC_DIR=${{github.workspace}}/install/pumi/lib/cmake/SCOREC
 
     - name: Build MuMFiM
+      env:
+        MPICH_CC: gcc-10
+        MPICH_CXX: g++-10
       run: cmake --build ${{github.workspace}}/mumfim/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
 
     - name: Test MuMFiM
