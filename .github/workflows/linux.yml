@@ -1,0 +1,60 @@
+name: Linux-build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  BUILD_TYPE: Release
+  BUILD_PARALLEL: 4
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+    name: ubuntu-test
+    
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: install mpich
+      run: sudo apt install mpich
+
+    - name: Checkout SCOREC core
+      uses: actions/checkout@v2
+      with:
+        repository: SCOREC/core
+        path: pumi
+
+    - name: Core Configure CMake
+      run: cmake -S ${{github.workspace}}/pumi -B ${{github.workspace}}/pumi/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_C_COMPILER=mpicc -DCMAKE_VERBOSE_MAKEFILE=ON -DIS_TESTING=OFF
+
+    - name: Build PUMI
+      run: cmake --build ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
+
+    - name: Install PUMI
+      run: cmake --install ${{github.workspace}}/pumi/build --config ${{env.BUILD_TYPE}}  --install-prefix ${{github.workspace}}/install/pumi
+
+    #- name: Test PUMI
+    #  working-directory: ${{github.workspace}}/mumfim/build
+    #  run: ctest  -C ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Checkout MuMFiM
+      uses: actions/checkout@v2
+      with:
+        repository: SCOREC/mumfim
+        path: mumfim
+
+    - name: MuMFiM Configure CMake
+      run: cmake -S ${{github.workspace}}/mumfim  -B ${{github.workspace}}/mumfim/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE=ON -DSCOREC_DIR=${{github.workspace}}/install/pumi/lib/cmake/SCOREC
+
+    - name: Build MuMFiM
+      run: cmake --build ${{github.workspace}}/mumfim/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
+
+    - name: Test MuMFiM
+      working-directory: ${{github.workspace}}/mumfim/build
+      run: ctest  -C ${{env.BUILD_TYPE}} --output-on-failure
+      
