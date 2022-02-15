@@ -16,7 +16,8 @@ jobs:
       fail-fast: false
     name: ubuntu-test
     
-    runs-on: ubuntu-latest
+    # work around until pumi is updated
+    runs-on: ubuntu-18.04
 
     steps:
 
