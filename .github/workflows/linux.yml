@@ -33,6 +33,7 @@ jobs:
         repository: SCOREC/core
         path: pumi
         submodules: recursive
+        ref: develop
 
     - name: Core Configure CMake
       env:
