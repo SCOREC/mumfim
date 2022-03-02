@@ -2,6 +2,7 @@
 #include <amsiControlService.h>
 #include <apfFunctions.h>
 #include <apfLabelRegions.h>
+#include <array>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>

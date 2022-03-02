@@ -149,7 +149,9 @@ int run_macro(int & argc, char **& argv, MPI_Comm cm)
 int main(int argc, char ** argv)
 {
   int result = 0;
+#if not defined(__APPLE__)
   feenableexcept(FE_DIVBYZERO | FE_INVALID);
+#endif
   if (parse_options(argc, argv))
   {
     amsi::initMultiscale(argc, argv, MPI_COMM_WORLD);
