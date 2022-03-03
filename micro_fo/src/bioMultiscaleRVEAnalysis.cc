@@ -153,7 +153,7 @@ namespace bio
             fiber_network_file, fiber_network_file + ".params", tp, rnd);
         fiber_networks.push_back(fiber_network);
         solution_strategies.push_back(
-            std::move(serializeSolutionStrategy(slvr_prm, slvr_int_prm)));
+            serializeSolutionStrategy(slvr_prm, slvr_int_prm));
         // FIXME This only needs to be done once per Fiber network, and
         // FIBER_RADIUS should come from network properties, not the multiscale
         // anlysis...FIBER_RADIUS needs to be removed from the communicated data

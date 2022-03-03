@@ -42,7 +42,7 @@ namespace bio
       Kokkos::deep_copy(omega.h_view, 0);
     }
     virtual void compute2DOrientationTensor(
-        Kokkos::DualView<Scalar * [3], ExeSpace> normal,
+        Kokkos::DualView<Scalar * [3], ExeSpace> /*normal*/,
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega)
     {
       omega.template modify<Kokkos::HostSpace>();

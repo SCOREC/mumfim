@@ -38,17 +38,17 @@ file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/fiber_networks
 
 
 # new unit tests require catch 2
-if(NOT ${BUILD_EXTERNAL})
-find_package(Catch2)
-endif()
-if(catch2_FOUND)
-include(ParseAndAddCatchTests)
+if (NOT ${BUILD_EXTERNAL})
+    find_package(Catch2)
+endif ()
+if (Catch2_FOUND)
+    include(ParseAndAddCatchTests)
 
-set(TEST_SOURCES test_main.cc
-                 test_reorder_mesh.cc
-                 test_kokkos_view_of_views.cc
-   )
-add_executable(unit_tests ${TEST_SOURCES})
-target_link_libraries(unit_tests PUBLIC Catch2::Catch2 micro_fo)
-ParseAndAddCatchTests(unit_tests)
-endif()
+    set(TEST_SOURCES test_main.cc
+            test_reorder_mesh.cc
+            test_kokkos_view_of_views.cc
+            )
+    add_executable(unit_tests ${TEST_SOURCES})
+    target_link_libraries(unit_tests PUBLIC Catch2::Catch2 micro_fo)
+    ParseAndAddCatchTests(unit_tests)
+endif ()

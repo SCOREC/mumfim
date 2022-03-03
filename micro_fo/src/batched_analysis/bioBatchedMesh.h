@@ -34,7 +34,6 @@ namespace bio
       int i = 0;
       while ((e = m->iterate(it)))
       {
-        auto etype = m->getType(e);
         apf::Downward verts;
         int nverts = m->getDownward(e, 0, verts);
         if (first)

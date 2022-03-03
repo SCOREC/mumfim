@@ -32,7 +32,7 @@ namespace bio
   void recoverMultiscaleStepResults(DualView orientation_tensor,
                                     DualViewNorm orientation_normal,
                                     BatchedAnalysisType * batched_analysis,
-                                    std::vector<micro_fo_header> & hdrs,
+                                    std::vector<micro_fo_header> & /*hdrs*/,
                                     std::vector<micro_fo_params> & prms,
                                     std::vector<micro_fo_step_result> & results)
   {

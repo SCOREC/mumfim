@@ -1,15 +1,9 @@
 #include <amsiAnalysis.h>
 #include <amsiDetectOscillation.h>
 #include <apf.h>
-#include <lasCSRCore.h>
-#include <lasCorePETSc.h>
 #include <mpi.h>
 #include <iostream>
-#include "bioFiberNetworkIO.h"
-#include "bioFiberRVEAnalysis.h"
 #include "bioMicroFOParams.h"
-#include "bioMultiscaleRVEAnalysis.h"
-#include "bioVerbosity.h"
 #include "bioFiberNetworkLibrary.h"
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
@@ -144,5 +138,5 @@ int main(int argc, char * argv[])
   std::cout << "Orientation Computation Took: " << ornt_time2 - ornt_time1
             << " seconds." << std::endl;
   amsi::freeAnalysis();
-  return 0;
+  return result;
 }

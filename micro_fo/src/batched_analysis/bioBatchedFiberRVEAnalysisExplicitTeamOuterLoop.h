@@ -194,7 +194,7 @@ namespace bio
                     T4 fiber_area,
                     T4 fiber_density,
                     T4 viscous_damping_coefficient,
-                    T4 critical_time_scale_factor,
+                    T4 /*critical_time_scale_factor*/,
                     T5 displacement_boundary_vert,
                     Ordinal num_threads)
     {
@@ -319,18 +319,18 @@ namespace bio
                                   fiber_elastic_modulus.template getRow<ExeSpace>(i)(0);
                   scratch(0).fiber_area = 
                                   fiber_area.template getRow<ExeSpace>(i)(0);
-                  scratch(0).fiber_density = 
-                                  fiber_density.template getRow<ExeSpace>(i)(0);
+                  scratch(0).fiber_density =
+                      fiber_density.template getRow<ExeSpace>(i)(0);
                   scratch(0).dt_crit = dt_crit_d(i);
                   scratch(0).residual = 10.0;
                   scratch(0).step = 0;
-              }
+            }
             // create the loop policies based on the lengths of the various
             // arrays
             auto element_policy = Kokkos::TeamThreadRange(
                 team_member, 0, current_length_row.extent(0));
-            auto vert_policy = Kokkos::TeamThreadRange(
-                team_member, 0, force_total_row.extent(0));
+            // auto vert_policy = Kokkos::TeamThreadRange(
+            //     team_member, 0, force_total_row.extent(0));
             auto free_vert_policy = Kokkos::TeamThreadRange(
                 team_member, 0,
                 force_total_row.extent(0) -

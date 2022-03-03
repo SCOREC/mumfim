@@ -36,12 +36,11 @@ namespace bio
     return es;
   }
   template <>
-  LinearStructs<las::sparskit>::LinearStructs(
-                               FiberNetwork* fiber_network,
-                               int ndofs,
-                               double solver_tol,
-                               std::shared_ptr<void> bfrs)
-                              : mSparsity(las::createCSR(fiber_network->getUNumbering(), ndofs),&las::destroySparsity<las::MICRO_BACKEND>)
+  LinearStructs<las::sparskit>::LinearStructs(FiberNetwork * fiber_network,
+                                              int ndofs,
+                                              double /*solver_tol*/,
+                                              std::shared_ptr<void> bfrs)
+      : mSparsity(las::createCSR(fiber_network->getUNumbering(), ndofs),&las::destroySparsity<las::MICRO_BACKEND>)
   {
     if (bfrs == nullptr)
     {
