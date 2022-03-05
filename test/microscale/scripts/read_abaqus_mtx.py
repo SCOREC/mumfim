@@ -1,10 +1,7 @@
 #! /lore/mersoj/anaconda2/bin/python
 import numpy as np
 import scipy
-from scipy.sparse import linalg
-from scipy import linalg
 from scipy.sparse import csr_matrix
-from scipy import io
 import stiffness_validity
 
 mat_file = "./abaqus/Job-1_STIF2.mtx"
