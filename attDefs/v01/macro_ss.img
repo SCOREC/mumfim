@@ -2,7 +2,6 @@
 #
 ## Fields
 type "num timesteps" : int d < 1 >;
-type "load balancing" : int r mapped <<-2 "none"> <-1 "user"> <1 "random"> <2 "equal">>;
 
 type "convergence operator" : void A e < n >;
 type "microscale convergence operator" : void A e < n >;
@@ -21,17 +20,6 @@ image "nonlinear iteration" : "convergence operator"
 {
   R "convergence type";
   R "reference value";
-  R "epsilon";
-  O "iteration cap";
-};
-
-
-type "track volume" : void e < r >;
-
-image "volume convergence" : "convergence operator"
-{
-  R "reference value";
-  R type "regions" : reference "track volume";
   R "epsilon";
   O "iteration cap";
 };
@@ -114,8 +102,6 @@ image "explicit timestep" : "microscale convergence operator"
 
 image "macro" : "solution strategy" {
   R "num timesteps";
-  R "load balancing";
-  O "track volume";
   O "convergence operator";
   O "microscale convergence operator";
 };

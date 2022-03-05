@@ -1,16 +1,5 @@
 13 # attdef file version
 ##
-# Fields
-type "field name" : string un p "Field Name";
-
-type "field" : void e < n > {
-  R "field name";
-  R type "unit" : int r mapped <<0 "none"> <1 "displacement">>;
-  R type "type" : int r mapped <<0 "full"> <1 "delta">>;
-  R type "order" : int;
-  R type "value type" : int r mapped <<0 "scalar"> <1 "vector"> <2 "matrix">>;
-  R type "solution" : int r mapped <<0 "false"> <1 "true">>;
-};
 
 #####################################################
 # Boundary Conditions
@@ -25,15 +14,6 @@ type "displacement" : void e < v e f r > {
  type "traction" : void e < f > {
   R type "direction":tensor1 3 E 1;
 };
-type "pressure" : void e < f > {
-  R type "magnitude":tensor0 3 E 1 d <0.0>;
-};
-
-#####################################################
-# Material Model Conditions
-# force reaction, radius and volume fraction would be best specified
-# on the fiber network models, but those are not currently in a proper
-# model format, though a conversion tool exists
 
 type "continuum model" : void A e < r >;
 
@@ -47,15 +27,6 @@ image "isotropic_neohookean" : "continuum model" {
   R "poisson ratio";
 };
 
-image "transverse_isotropic" : "continuum model" {
-  R "youngs modulus";
-  R "poisson ratio";
-  R type "axis" : tensor1 3 E 1;
-  R type "axial shear modulus" : tensor0 1 E 1 d < 10000.0 >;
-  R type "axial youngs modulus" : tensor0 1 E 1 d < 10000.0 >;
-};
-
-type "tag" : int;
 #type "structural member" : int r mapped <<0 "truss"> <1 "beam">> d <0>;
 type "structural member" : int r mapped <<0 "truss">> d <0>;
 
@@ -122,26 +93,6 @@ image "lagrange multiplier" : "constraint type"
   R type "beta" : double;
 };
 
-image "penalty method" : "constraint type"
-{
-  R type "beta" : double;
-};
-
-type "incompressible" : void e < r >
-{
-  R type "version" : int r mapped <<0 "region"> <1 "surface">>;
-  R "constraint type";
-};
-
-type "stiffness source" : void e < r >;
-type "stiffness sink" : void e < r >;
-
-type "stiffness gradient" : void e < n >
-{
-  R type "sources" : reference "stiffness source";
-  R type "sinks" : reference "stiffness sink";
-  R type "function" : double E 1;
-};
 
 #####################################################
 #! \toplevel
@@ -150,10 +101,5 @@ image "macro" : "problem definition" {
   O "field";
   O cat "constraint" "displacement";
   O cat "constraint" "traction";
-  O cat "constraint" "pressure";
-  O cat "constraint" "incompressible";
-  O "stiffness source";
-  O "stiffness sink";
-  O "stiffness gradient";
   O "material model";
 };
