@@ -11,10 +11,6 @@
 #include <string>
 #include "bioAnalysisIO.h"
 #include "bioTissueAnalysis.h"
-#ifdef HAVE_SIMMETRIX
-#include <SimUtil.h>
-#include <gmi_sim.h>
-#endif
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);
@@ -99,11 +95,6 @@ int main(int argc, char ** argv)
     if (rnk > 0) amsi::suppressOutput(std::cout);
     int sz = 0;
     MPI_Comm_size(AMSI_COMM_WORLD, &sz);
-#ifdef HAVE_SIMMETRIX
-    Sim_readLicenseFile(0);
-    gmi_sim_start();
-    gmi_register_sim();
-#endif
     gmi_register_mesh();
     apf::Mesh * mesh =
         apf::loadMdsMesh(model_filename.c_str(), mesh_filename.c_str());
@@ -125,10 +116,6 @@ int main(int argc, char ** argv)
                            AMSI_COMM_WORLD);
     an.init();
     an.run();
-#ifdef HAVE_SIMMETRIX
-    gmi_sim_stop();
-    Sim_unregisterAllKeys();
-#endif
     amsi::freeAnalysis();
   }
   return result;

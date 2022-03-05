@@ -32,8 +32,6 @@ namespace bio
       , load_step(0)
       , iteration(0)
   {
-    //    char * filename = "simLogFile.txt";
-    //    Sim_logOn(filename);
     apf_primary_field =
         apf::createLagrangeField(apf_mesh, "displacement", apf::VECTOR, 1);
     apf::zeroField(apf_primary_field);
@@ -243,7 +241,6 @@ namespace bio
   void NonlinearTissue::UpdateDOFs(const double * sol)
   {
     // accumulate displacement deltas into primary field
-    // apfSimFEA::UpdateDOFs(sol);
     amsi::AccumOp ac_op;
     amsi::FreeApplyOp frac_op(apf_primary_numbering, &ac_op);
     amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol,

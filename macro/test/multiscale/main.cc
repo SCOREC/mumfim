@@ -13,10 +13,6 @@
 #include <string>
 #include "bioMultiscaleTissue.h"
 #include "bioTissueMultiscaleAnalysis.h"
-#ifdef HAVE_SIMMETRIX
-#include <SimUtil.h>
-#include <gmi_sim.h>
-#endif
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);
@@ -103,11 +99,6 @@ int run_macro(int & argc, char **& argv, MPI_Comm cm)
   MPI_Comm_rank(cm, &rnk);
   int result = 0;
   amsi::createDataDistribution(amsi::getLocal(), "micro_fo_data");
-#ifdef HAVE_SIMMETRIX
-  Sim_readLicenseFile(0);
-  gmi_sim_start();
-  gmi_register_sim();
-#endif
   gmi_register_mesh();
   apf::Mesh * mesh =
       apf::loadMdsMesh(model_filename.c_str(), mesh_filename.c_str());
@@ -138,10 +129,6 @@ int run_macro(int & argc, char **& argv, MPI_Comm cm)
     std::fstream strss_fs(fname.str().c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(macro_stress, strss_fs);
   }
-#endif
-#ifdef HAVE_SIMMETRIX
-  gmi_sim_stop();
-  Sim_unregisterAllKeys();
 #endif
   amsi::freeAnalysis();
   return result;
