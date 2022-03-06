@@ -1,5 +1,5 @@
-add_subdirectory(macroscale)
-add_subdirectory(microscale)
+add_subdirectory(mumfim/macroscale)
+add_subdirectory(mumfim/microscale)
 
 if (NOT ${BUILD_EXTERNAL})
     find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
