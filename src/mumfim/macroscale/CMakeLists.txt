@@ -1,16 +1,16 @@
 set(biotissue_src_files
-        bioAnalysis.cc
-        bioLinearTissue.cc
-        bioMultiscaleTissue.cc
-        bioModelTraits.cc
-        bioNonlinearTissue.cc
-        bioReadStochasticField.cc
-        bioRVECoupling.cc
-        bioStiffnessVariation.cc
-        bioTissueAnalysis.cc
-        bioTissueMultiscaleAnalysis.cc
-        bioVolumeConstraint.cc
-        bioVolumeConvergence.cc)
+        Analysis.cc
+        LinearTissue.cc
+        MultiscaleTissue.cc
+        ModelTraits.cc
+        NonlinearTissue.cc
+        ReadStochasticField.cc
+        RVECoupling.cc
+        StiffnessVariation.cc
+        TissueAnalysis.cc
+        TissueMultiscaleAnalysis.cc
+        VolumeConstraint.cc
+        VolumeConvergence.cc)
 
 if (NOT ${BUILD_EXTERNAL})
     find_package(amsi COMPONENTS util analysis multiscale)

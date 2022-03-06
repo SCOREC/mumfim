@@ -2,15 +2,15 @@
 #include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <apfMDS.h>
-#include <mumfim/microscale/bioMultiscaleRVEAnalysis.h>
+#include <mumfim/microscale/MultiscaleRVEAnalysis.h>
 #include <getopt.h>
 #include <gmi_mesh.h>
 #include <las.h>
 #include <model_traits/ModelTraitsIO.h>
 #include <Kokkos_Core.hpp>
 #include <iostream>
-#include "mumfim/macroscale/bioMultiscaleTissue.h"
-#include "mumfim/macroscale/bioTissueMultiscaleAnalysis.h"
+#include "mumfim/macroscale/MultiscaleTissue.h"
+#include "mumfim/macroscale/TissueMultiscaleAnalysis.h"
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);

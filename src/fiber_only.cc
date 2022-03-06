@@ -4,10 +4,10 @@
 #include <mpi.h>
 #include <Kokkos_Core.hpp>
 #include <iostream>
-#include "mumfim/microscale/bioFiberNetwork.h"
-#include "mumfim/microscale/bioFiberNetworkLibrary.h"
-#include "mumfim/microscale/bioFiberRVEAnalysis.h"
-#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/microscale/FiberNetwork.h"
+#include "mumfim/microscale/FiberNetworkLibrary.h"
+#include "mumfim/microscale/FiberRVEAnalysis.h"
+#include "mumfim/microscale/MicroFOParams.h"
 void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
 {
   stress[0][0] = stress_arr[0];

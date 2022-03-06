@@ -2,10 +2,10 @@
 #include <amsiDetectOscillation.h>
 #include <mpi.h>
 #include <iostream>
-#include "mumfim/microscale/bioFiberRVEAnalysis.h"
-#include "mumfim/microscale/bioMicroFOParams.h"
-#include "mumfim/microscale/bioMultiscaleRVEAnalysis.h"
-#include <mumfim/microscale/bioFiberRVEAnalysisStaticImplicit.h>
+#include "mumfim/microscale/FiberRVEAnalysis.h"
+#include "mumfim/microscale/MicroFOParams.h"
+#include "mumfim/microscale/MultiscaleRVEAnalysis.h"
+#include <mumfim/microscale/FiberRVEAnalysisStaticImplicit.h>
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);

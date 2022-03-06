@@ -9,8 +9,8 @@
 #include <mpi.h>
 #include <iostream>
 #include <string>
-#include "mumfim/macroscale/bioAnalysisIO.h"
-#include "mumfim/macroscale/bioTissueAnalysis.h"
+#include "mumfim/macroscale/AnalysisIO.h"
+#include "mumfim/macroscale/TissueAnalysis.h"
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);

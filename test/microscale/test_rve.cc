@@ -1,4 +1,4 @@
-#include "mumfim/microscale/bioRVE.h"
+#include "mumfim/microscale/RVE.h"
 #include <PCU.h>
 #include <mpi.h>
 int main(int argc, char * argv[])
