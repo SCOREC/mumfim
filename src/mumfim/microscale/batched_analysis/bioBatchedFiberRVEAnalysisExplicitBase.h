@@ -5,8 +5,6 @@
 #include <limits>
 #include "bioPackedData.h"
 #include "bioRVE.h"
-//#define TEAM_SIZE 512
-#define TEAM_SIZE Kokkos::AUTO
 namespace mumfim
 {
   template <typename ExeSpace,

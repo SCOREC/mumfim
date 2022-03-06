@@ -252,7 +252,7 @@ namespace mumfim
           original_coordinates.template getAllRows<HostMemorySpace>());
       current_coordinates.template modify<HostMemorySpace>();
       orientation_tensor =
-          OrientationTensorType(connectivity, current_coordinates, 512);
+          OrientationTensorType(connectivity, current_coordinates, TEAM_SIZE);
     }
     virtual bool run(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> deformation_gradients,
@@ -301,7 +301,7 @@ namespace mumfim
           nodal_mass, original_length,
           current_length, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_vert, 512);
+          critical_time_scale_factor, displacement_boundary_vert, TEAM_SIZE);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_vert,
                                     current_coordinates, force_internal, sigma,

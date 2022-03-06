@@ -10,8 +10,7 @@ namespace mumfim
                              const amsi::ModelDefinition & solution_strategy,
                              const amsi::ModelDefinition & output,
                              MPI_Comm cm)
-      : constitutives()
-      , amsi::apfFEA(mesh,
+      : amsi::apfFEA(mesh,
                      problem_definition,
                      solution_strategy,
                      output,
@@ -19,6 +18,7 @@ namespace mumfim
                      {},
                      "macro",
                      cm)
+      , constitutives()
   {
     apf_primary_field = apf::createLagrangeField(
         apf_mesh, "linear_displacement", apf::VECTOR, 1);

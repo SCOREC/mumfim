@@ -114,7 +114,7 @@ int main(int argc, char * argv[])
   printf("\n");
   double ornt_time2 = timer.seconds();
   double time1 = timer.seconds();
-  bool result = batched_analysis.run(deformation_gradient, stress);
+  auto success = !batched_analysis.run(deformation_gradient, stress);
   stress.sync<Kokkos::HostSpace>();
   auto stress_h = stress.h_view;
   std::cout<<std::endl;
@@ -138,5 +138,5 @@ int main(int argc, char * argv[])
   std::cout << "Orientation Computation Took: " << ornt_time2 - ornt_time1
             << " seconds." << std::endl;
   amsi::freeAnalysis();
-  return result;
+  return success;
 }

@@ -3,23 +3,13 @@
 #include <apfFunctions.h>
 #include <apfLabelRegions.h>
 #include <array>
-#include <cassert>
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iomanip>
-#include <list>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include "bioAnalysis.h"
-#include "bioHolmesMowIntegrator.h"
 #include "bioNeoHookeanIntegrator.h"
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
-#include "bioVariableRecovery.h"
 #include "gmi.h"
 namespace mumfim
 {
@@ -76,7 +66,7 @@ namespace mumfim
       for (const auto & grad_nd : stiffness_gradient->GetCategoryNodes())
       {
         stf_vrtn_cnst.push_back(
-            buildStiffnessVariation(*stiffness_gradient, stf_vrtn));
+            buildStiffnessVariation(grad_nd, stf_vrtn));
       }
     }
     for (auto & cnst : stf_vrtn_cnst)
@@ -317,7 +307,7 @@ namespace mumfim
       }
     }
   }
-  void NonlinearTissue::recoverSecondaryVariables(int load_step)
+  void NonlinearTissue::recoverSecondaryVariables(int /* unused load_step */ )
   {
     //#ifdef SCOREC
     int rnk = -1;
