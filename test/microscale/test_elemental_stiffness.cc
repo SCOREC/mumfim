@@ -14,11 +14,11 @@ bool isclose(double a, double b, double rel_tol = 1E-5, double abs_tol = 1E-8)
 {
   return fabs(a - b) <= fmax(rel_tol * fmax(fabs(a), fabs(b)), abs_tol);
 }
-class TrussIntegratorElemStiff : public bio::TrussIntegrator
+class TrussIntegratorElemStiff : public mumfim::TrussIntegrator
 {
   public:
-  TrussIntegratorElemStiff(bio::FiberNetwork * fn, las::Mat * k, las::Vec * f)
-      : bio::TrussIntegrator(fn->getUNumbering(),
+  TrussIntegratorElemStiff(mumfim::FiberNetwork * fn, las::Mat * k, las::Vec * f)
+      : mumfim::TrussIntegrator(fn->getUNumbering(),
                              fn->getUField(),
                              fn->getXpUField(),
                              fn->getFiberReactions(),
@@ -41,24 +41,24 @@ class TrussIntegratorElemStiff : public bio::TrussIntegrator
       std::cout << "\n";
     }
     std::cout << "\n\n";
-    bio::TrussIntegrator::outElement();
+    mumfim::TrussIntegrator::outElement();
   }
 };
 int main(int argc, char * argv[])
 {
   {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
-  std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(argv[1], cases);
-  bio::printMicroFOCase(cases[0]);
+  std::vector<mumfim::MicroCase> cases;
+  mumfim::loadMicroFOFromYamlFile(argv[1], cases);
+  mumfim::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  bio::FiberNetworkLibrary network_library;
+  mumfim::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
   auto fiber_network = network_library.getUniqueCopy(0, 0);
   // I'm not confident that the move thing here works as intended
-  auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
+  auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
   auto truss_es = std::unique_ptr<apf::Integrator>{new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF())};
   auto fn_msh = an->getFn()->getNetworkMesh();
   apf::MeshEntity * me = NULL;

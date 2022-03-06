@@ -1,10 +1,10 @@
-#ifndef BIO_FIBERREACTIONS_H_
-#define BIO_FIBERREACTIONS_H_
+#ifndef MUMFIM_FIBERREACTIONS_H_
+#define MUMFIM_FIBERREACTIONS_H_
 #include <amsiEnumOps.h>
 #include <cmath>
 #include <cstddef>
 #include <utility>
-namespace bio
+namespace mumfim
 {
 #define FBR_RCT_TYPES(OP) OP(linear), OP(nonlinear), OP(num_fbr_constitutive)
   enum FiberConstitutive
@@ -45,5 +45,5 @@ namespace bio
   {
     std::pair<double, double> forceReaction(double, double) const;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

@@ -1,5 +1,5 @@
 #include "bioModelTraits.h"
-namespace bio
+namespace mumfim
 {
   void GetModelTraitNodeGeometry(apf::Mesh * mesh,
                               const mt::ModelTraitNode * mtn,

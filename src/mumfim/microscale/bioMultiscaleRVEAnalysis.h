@@ -1,5 +1,5 @@
-#ifndef BIO_MULTISCALE_RVE_ANALYSIS_H_
-#define BIO_MULTISCALE_RVE_ANALYSIS_H_
+#ifndef MUMFIM_MULTISCALE_RVE_ANALYSIS_H_
+#define MUMFIM_MULTISCALE_RVE_ANALYSIS_H_
 #include <amsiMultiscale.h>
 #include <amsiReporter.h>
 #include <vector>
@@ -7,7 +7,7 @@
 #include "bioBatchedFiberRVEAnalysisExplicit.h"
 #include "bioFiberNetworkLibrary.h"
 #include "bioMultiscaleMicroFOParams.h"
-namespace bio
+namespace mumfim
 {
   class MultiscaleRVEAnalysis
   {
@@ -65,5 +65,5 @@ namespace bio
 
   std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(micro_fo_solver & slvr, micro_fo_int_solver &slvr_int);
 
-}  // namespace bio
+}  // namespace mumfim
 #endif

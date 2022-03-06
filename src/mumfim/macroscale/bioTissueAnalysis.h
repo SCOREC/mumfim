@@ -1,10 +1,10 @@
-#ifndef BIO_TISSUE_ANALYSIS_H_
-#define BIO_TISSUE_ANALYSIS_H_
+#ifndef MUMFIM_TISSUE_ANALYSIS_H_
+#define MUMFIM_TISSUE_ANALYSIS_H_
 #include <amsiNonlinearAnalysis.h>
 #include "bioNonlinearTissue.h"
 #include "bioVolumeConvergence.h"
 #include <model_traits/CategoryNode.h>
-namespace bio
+namespace mumfim
 {
   /**
    * Extracts the volume convergence regions from a simmetrix case
@@ -118,6 +118,6 @@ namespace bio
       amsi::Iteration::iterate();
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #include "bioTissueAnalysis_impl.h"
 #endif

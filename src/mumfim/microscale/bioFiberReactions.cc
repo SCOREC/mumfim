@@ -1,6 +1,6 @@
 #include "bioFiberReactions.h"
 #include <vector>
-namespace bio
+namespace mumfim
 {
   std::pair<double, double> LinearReaction::forceReaction(double orig_length,
                                                           double length) const
@@ -73,4 +73,4 @@ namespace bio
   {
     return std::make_pair(0.0, 0.0);
   }
-}  // namespace bio
+}  // namespace mumfim

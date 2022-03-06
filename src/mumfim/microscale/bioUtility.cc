@@ -1,5 +1,5 @@
 #include "bioUtility.h"
-namespace bio
+namespace mumfim
 {
   apf::Matrix3x3 eye()
   {

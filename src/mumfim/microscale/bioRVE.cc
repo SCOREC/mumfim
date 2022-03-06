@@ -6,7 +6,7 @@
 #include <apfMeshUtil.h>
 #include <apfMDS.h>
 #include <apfConvert.h>
-namespace bio
+namespace mumfim
 {
   template <typename O>
   static void originCenterCube(O cbe_crnrs, double crd)

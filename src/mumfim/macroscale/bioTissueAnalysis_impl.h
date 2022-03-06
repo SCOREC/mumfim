@@ -2,7 +2,7 @@
 #include <model_traits/AssociatedModelTraits.h>
 #include <model_traits/ModelTraits.h>
 #include "bioVolumeConvergence.h"
-namespace bio
+namespace mumfim
 {
   template <typename O>
   void buildLASConvergenceOperators(const mt::CategoryNode * solution_strategy,
@@ -69,4 +69,4 @@ namespace bio
                    .release();
     }
   }
-}  // namespace bio
+}  // namespace mumfim

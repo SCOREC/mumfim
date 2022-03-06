@@ -1,11 +1,11 @@
-#ifndef BIO_MULTISCALE_COUPLING_H_
-#define BIO_MULTISCALE_COUPLING_H_
+#ifndef MUMFIM_MULTISCALE_COUPLING_H_
+#define MUMFIM_MULTISCALE_COUPLING_H_
 #include <apf.h>
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include "bioBatchedFiberRVEAnalysisExplicit.h"
 #include "bioMultiscaleMicroFOParams.h"
-namespace bio
+namespace mumfim
 {
   template <typename DualView>
   void copyOrientationResultsFromKokkosArray(
@@ -58,5 +58,5 @@ namespace bio
    * \warning This function assumes that all of the fibers have the same cross-sectional area
    */
   double calcScaleConversion(apf::Mesh * mesh, double fbr_area, double fbr_vol_frc);
-}  // namespace bio
+}  // namespace mumfim
 #endif

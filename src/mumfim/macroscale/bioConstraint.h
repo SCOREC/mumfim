@@ -1,8 +1,8 @@
-#ifndef BIO_CONSTRAINT_H_
-#define BIO_CONSTRAINT_H_
+#ifndef MUMFIM_CONSTRAINT_H_
+#define MUMFIM_CONSTRAINT_H_
 #include <apf.h>
 #include <amsiLAS.h>
-namespace bio
+namespace mumfim
 {
   class Constraint
   {

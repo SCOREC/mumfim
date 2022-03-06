@@ -1,11 +1,11 @@
-#ifndef BIO_FIBER_NETWORK_LIBRARY_H
-#define BIO_FIBER_NETWORK_LIBRARY_H
+#ifndef MUMFIM_FIBER_NETWORK_LIBRARY_H
+#define MUMFIM_FIBER_NETWORK_LIBRARY_H
 #include <bioFiberNetwork.h>
 #include <istream>
 #include <map>
 #include <memory>
 #include <utility>
-namespace bio
+namespace mumfim
 {
   class FiberNetwork;
   class FiberNetworkLibrary
@@ -44,5 +44,5 @@ namespace bio
                                       std::shared_ptr<FiberNetwork>>;
     LibType mLibrary;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

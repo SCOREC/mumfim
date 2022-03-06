@@ -2,7 +2,7 @@
 #include <apf.h>
 #include "bioUtility.h"
 #include <numeric>
-namespace bio
+namespace mumfim
 {
   static double calcRVEDimensionality(apf::Mesh* mesh,
                                double fbr_area,
@@ -21,4 +21,4 @@ namespace bio
     double conversion_factor = 1/(rve_dim*rve_dim);
     return conversion_factor;
   }
-}  // namespace bio
+}  // namespace mumfim

@@ -8,7 +8,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
-namespace bio
+namespace mumfim
 {
   class NetworkLoader
   {

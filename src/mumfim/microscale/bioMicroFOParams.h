@@ -1,9 +1,9 @@
-#ifndef BIO_MICRO_FO_PARAMS_H_
-#define BIO_MICRO_FO_PARAMS_H_
+#ifndef MUMFIM_MICRO_FO_PARAMS_H_
+#define MUMFIM_MICRO_FO_PARAMS_H_
 #include <amsiDetectOscillation.h>
 #include <string>
 #include <memory>
-namespace bio
+namespace mumfim
 {
   struct MicroCase;
   void printMicroFOCase(const MicroCase & cs);
@@ -106,5 +106,5 @@ namespace bio
     MicroOutput out;
     MicroCase() : pd(), ss(new MicroSolutionStrategy), out() {}
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

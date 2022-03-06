@@ -1,6 +1,6 @@
 #include "bioNeoHookeanRVEAnalysis.h"
 #include <apfMatrixUtil.h>
-namespace bio
+namespace mumfim
 {
   bool NeoHookeanRVEAnalysis::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {

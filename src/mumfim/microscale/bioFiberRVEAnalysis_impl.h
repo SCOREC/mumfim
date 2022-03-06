@@ -1,4 +1,4 @@
-namespace bio
+namespace mumfim
 {
   template <typename I>
   void applyRVEBC(I bnd_bgn, I bnd_end, apf::Numbering * nm, las::Mat * k, las::Vec * f)

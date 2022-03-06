@@ -1,5 +1,5 @@
-#ifndef BIO_HOLMESMOW_INTEGRATOR_H_
-#define BIO_HOLMESMOW_INTEGRATOR_H_
+#ifndef MUMFIM_HOLMESMOW_INTEGRATOR_H_
+#define MUMFIM_HOLMESMOW_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
@@ -7,7 +7,7 @@
 #include <math.h> //natural log
 // Holmes-Mow Constitutive relationship.
 // Equations are based on http://help.mrl.sci.utah.edu/help/index.jsp (FEBIO documentation)
-namespace bio
+namespace mumfim
 {
   class HolmesMowIntegrator : public amsi::ElementalSystem
   {

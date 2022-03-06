@@ -7,7 +7,7 @@
 #include "bioFiberNetwork.h"
 #include "bioApfPointers.h"
 #include "bioFiberNetworkIO.h"
-namespace bio
+namespace mumfim
 {
   FiberNetworkLibrary::FiberNetworkLibrary() : mLibrary(LibType())
   {
@@ -46,7 +46,7 @@ namespace bio
     // the Fiber network isn't in the library yet, so add it
     if (libIt == std::end(mLibrary))
     {
-      auto mesh = bio::make_unique(loadFromStream(network_stream));
+      auto mesh = mumfim::make_unique(loadFromStream(network_stream));
       FiberNetwork::reaction_ptr_type reactions(
           new FiberNetworkReactions(static_cast<apf::Mesh2*>(mesh.get()), params_stream));
       auto network = std::shared_ptr<FiberNetwork>{
@@ -97,4 +97,4 @@ namespace bio
     // return a nullptr if the fiber network doesn't exist in the library
     return std::unique_ptr<FiberNetwork>(nullptr);
   }
-}  // namespace bio
+}  // namespace mumfim

@@ -1,11 +1,11 @@
-#ifndef BIO_TRANSVERSELY_ISOTROPIC_NEOHOOKEAN_INTEGRATOR_H_
-#define BIO_TRANSVERSELY_ISOTROPIC_NEOHOOKEAN_INTEGRATOR_H_
+#ifndef MUMFIM_TRANSVERSELY_ISOTROPIC_NEOHOOKEAN_INTEGRATOR_H_
+#define MUMFIM_TRANSVERSELY_ISOTROPIC_NEOHOOKEAN_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <cstring>
 #include <math.h> //natural log
-namespace bio
+namespace mumfim
 {
   // 01/23/17: Transversely Isotropic NeoHookean Constitutive relation based on J. Bonet and A. J. Burton Comput. Methods Appl. Mech. Engrg. 162 (1998) 151-164.
   class TrnsIsoNeoHookeanIntegrator : public amsi::ElementalSystem

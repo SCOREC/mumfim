@@ -15,7 +15,7 @@
 #include <sstream>
 #include "bioNeoHookeanRVEAnalysis.h"
 #include "bioFiberNetworkLibrary.h"
-namespace bio
+namespace mumfim
 {
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() { }
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
@@ -119,15 +119,15 @@ namespace bio
     }
     initial_update = false;
     cs->Communicate(recv_init_ptrn, hdrs,
-                    amsi::mpi_type<bio::micro_fo_header>());
+                    amsi::mpi_type<mumfim::micro_fo_header>());
     cs->Communicate(recv_init_ptrn, prms,
-                    amsi::mpi_type<bio::micro_fo_params>());
+                    amsi::mpi_type<mumfim::micro_fo_params>());
     cs->Communicate(recv_init_ptrn, inis,
-                    amsi::mpi_type<bio::micro_fo_init_data>());
+                    amsi::mpi_type<mumfim::micro_fo_init_data>());
     cs->Communicate(recv_init_ptrn, slvr_prms,
-                    amsi::mpi_type<bio::micro_fo_solver>());
+                    amsi::mpi_type<mumfim::micro_fo_solver>());
     cs->Communicate(recv_init_ptrn, slvr_int_prms,
-                    amsi::mpi_type<bio::micro_fo_int_solver>());
+                    amsi::mpi_type<mumfim::micro_fo_int_solver>());
     // store the current communicator which should be AMSI_COMM_SCALE
     MPI_Comm comm = PCU_Get_Comm();
     // All of the APF mesh operations need to have the PCU communicator
@@ -242,7 +242,7 @@ namespace bio
         int rank = -1;
         MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
         // int ii = 0;
-        BIO_V1(double t0 = MPI_Wtime();)
+        MUMFIM_V1(double t0 = MPI_Wtime();)
         auto deformation_gradient_h = deformation_gradient.h_view;
         auto stress_h = stress.h_view;
         auto material_stiffness_h = material_stiffness.h_view;
@@ -284,8 +284,8 @@ namespace bio
             matStiffMatrix[j] = material_stiffness_h(i, row, col);
           }
         }
-        BIO_V1(double t1 = MPI_Wtime();)
-        BIO_V1(std::cout << "Computed " << results.size() << " RVEs in "
+        MUMFIM_V1(double t1 = MPI_Wtime();)
+        MUMFIM_V1(std::cout << "Computed " << results.size() << " RVEs in "
                          << t1 - t0 << " seconds. On rank " << rank << "."
                          << std::endl;)
         //PCU_Switch_Comm(AMSI_COMM_SCALE);
@@ -352,4 +352,4 @@ namespace bio
     return solution_strategy;
   }
  
-}  // namespace bio
+}  // namespace mumfim

@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include "bioMicroFOParams.h"
-namespace bio
+namespace mumfim
 {
   static std::ostream & operator<<(std::ostream & os,
                                    const DeformationGradient & dg)
@@ -138,14 +138,15 @@ namespace bio
     return os;
   };
   void printMicroFOCase(const MicroCase & cs) { std::cout << cs << std::endl; }
-}  // namespace bio
+}  // namespace mumfim
 #ifdef HAS_YAML_CPP
 namespace YAML
 {
   template <>
-  struct convert<bio::DetectOscillationParams>
+  struct convert<mumfim::DetectOscillationParams>
   {
-    static bool decode(const Node & node, bio::DetectOscillationParams & prms)
+    static bool decode(const Node & node,
+                       mumfim::DetectOscillationParams & prms)
     {
       auto type = node["Type"].as<std::string>();
       prms.maxMicroCutAttempts = node["Max Micro Cut Attempt"].as<int>();
@@ -181,21 +182,21 @@ namespace YAML
     }
   };
   template <>
-  struct convert<std::unique_ptr<bio::MicroSolutionStrategy>>
+  struct convert<std::unique_ptr<mumfim::MicroSolutionStrategy>>
   {
     static bool decode(const Node & node,
-                       std::unique_ptr<bio::MicroSolutionStrategy> & ss)
+                       std::unique_ptr<mumfim::MicroSolutionStrategy> & ss)
     {
       auto solver_type = node["Solver Type"].as<std::string>();
       if (solver_type == "Implicit")
       {
-        ss = std::make_unique<bio::MicroSolutionStrategy>();
-        ss->slvrType = bio::SolverType::Implicit;
+        ss = std::make_unique<mumfim::MicroSolutionStrategy>();
+        ss->slvrType = mumfim::SolverType::Implicit;
       }
       else if (solver_type == "Explicit")
       {
-        auto es = std::make_unique<bio::MicroSolutionStrategyExplicit>();
-        es->slvrType = bio::SolverType::Explicit;
+        auto es = std::make_unique<mumfim::MicroSolutionStrategyExplicit>();
+        es->slvrType = mumfim::SolverType::Explicit;
         es->print_history_frequency = node["Print History Frequency"].as<int>();
         es->print_field_frequency = node["Print Field Frequency"].as<int>();
         es->visc_damp_coeff = node["Viscous Damping Factor"].as<double>();
@@ -207,7 +208,7 @@ namespace YAML
         auto amplitude_type = node["Amplitude Type"].as<std::string>();
         if (amplitude_type == "Smooth Step")
         {
-          es->ampType = bio::AmplitudeType::SmoothStep;
+          es->ampType = mumfim::AmplitudeType::SmoothStep;
         }
         else
         {
@@ -219,7 +220,7 @@ namespace YAML
       }
       else if (solver_type == "Mixed")
       {
-        ss->slvrType = bio::SolverType::Mixed;
+        ss->slvrType = mumfim::SolverType::Mixed;
         std::cerr << "Mixed Solver Not Currently Implemented" << std::endl;
         std::abort();
       }
@@ -251,14 +252,14 @@ namespace YAML
         std::abort();
       }
       ss->oscPrms =
-          node["Detect Oscillation"].as<bio::DetectOscillationParams>();
+          node["Detect Oscillation"].as<mumfim::DetectOscillationParams>();
       return true;
     }
   };
   template <>
-  struct convert<bio::MicroOutput>
+  struct convert<mumfim::MicroOutput>
   {
-    static bool decode(const Node & node, bio::MicroOutput & out)
+    static bool decode(const Node & node, mumfim::MicroOutput & out)
     {
       out.threeDOrntTens = node["3D Orientation Tensor"].as<bool>();
       out.twoDOrntTens = node["2D Orientation Tensor"][0].as<bool>();
@@ -278,9 +279,9 @@ namespace YAML
     }
   };
   template <>
-  struct convert<bio::MicroProblemDefinition>
+  struct convert<mumfim::MicroProblemDefinition>
   {
-    static bool decode(const Node & node, bio::MicroProblemDefinition & pd)
+    static bool decode(const Node & node, mumfim::MicroProblemDefinition & pd)
     {
       pd.meshFile = node["Mesh"].as<std::string>();
       auto dg = node["Deformation Gradient"];
@@ -296,20 +297,20 @@ namespace YAML
     }
   };
   template <>
-  struct convert<bio::MicroCase>
+  struct convert<mumfim::MicroCase>
   {
-    static bool decode(const Node & node, bio::MicroCase & cs)
+    static bool decode(const Node & node, mumfim::MicroCase & cs)
     {
       cs.name = node["Case"].as<std::string>();
-      cs.pd = node["Problem Definition"].as<bio::MicroProblemDefinition>();
-      cs.out = node["Output"].as<bio::MicroOutput>();
+      cs.pd = node["Problem Definition"].as<mumfim::MicroProblemDefinition>();
+      cs.out = node["Output"].as<mumfim::MicroOutput>();
       cs.ss = node["Solution Strategy"]
-                  .as<std::unique_ptr<bio::MicroSolutionStrategy>>();
+                  .as<std::unique_ptr<mumfim::MicroSolutionStrategy>>();
       return true;
     }
   };
 }  // namespace YAML
-namespace bio
+namespace mumfim
 {
   static void loadMicroFOFromYamlStream(std::istream & fin,
                                         std::vector<MicroCase> & cases)
@@ -336,5 +337,5 @@ namespace bio
     }
     loadMicroFOFromYamlStream(fin, cases);
   }
-}  // namespace bio
+}  // namespace mumfim
 #endif

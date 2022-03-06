@@ -3,7 +3,7 @@
 #include <cmath>
 #include <fstream>
 #include "bioFiberNetwork.h"
-namespace bio
+namespace mumfim
 {
   class ParamLoader
   {
@@ -104,4 +104,4 @@ namespace bio
     ParamLoader ldr(msh);
     ldr.fromStream(strm, rctns);
   }
-}  // namespace bio
+}  // namespace mumfim

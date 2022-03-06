@@ -9,31 +9,31 @@ namespace amsi
     bool init;
   };
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_header>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_header>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
     {
-      MPI_Type_contiguous(bio::NUM_HEADER_FIELDS,MPI_INTEGER,&tp.val);
+      MPI_Type_contiguous(mumfim::NUM_HEADER_FIELDS,MPI_INTEGER,&tp.val);
       MPI_Type_commit(&tp.val);
       tp.init = true;
     }
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_params>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_params>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
     {
-      MPI_Type_contiguous(bio::NUM_PARAM_FIELDS,MPI_DOUBLE,&tp.val);
+      MPI_Type_contiguous(mumfim::NUM_PARAM_FIELDS,MPI_DOUBLE,&tp.val);
       MPI_Type_commit(&tp.val);
       tp.init = true;
     }
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_init_data>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_init_data>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
@@ -45,7 +45,7 @@ namespace amsi
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_data>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_data>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
@@ -57,7 +57,7 @@ namespace amsi
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_result>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_result>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
@@ -69,7 +69,7 @@ namespace amsi
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_step_result>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_step_result>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
@@ -81,24 +81,24 @@ namespace amsi
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_solver>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_solver>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
     {
-      MPI_Type_contiguous(bio::NUM_MICRO_SOLVER_FIELDS,MPI_DOUBLE,&tp.val);
+      MPI_Type_contiguous(mumfim::NUM_MICRO_SOLVER_FIELDS,MPI_DOUBLE,&tp.val);
       MPI_Type_commit(&tp.val);
       tp.init = true;
     }
     return tp.val;
   }
   template <>
-  MPI_Datatype mpi_type<bio::micro_fo_int_solver>()
+  MPI_Datatype mpi_type<mumfim::micro_fo_int_solver>()
   {
     static static_init<MPI_Datatype> tp;
     if(!tp.init)
     {
-      MPI_Type_contiguous(bio::NUM_MICRO_SOLVER_INT_FIELDS,MPI_INTEGER,&tp.val);
+      MPI_Type_contiguous(mumfim::NUM_MICRO_SOLVER_INT_FIELDS,MPI_INTEGER,&tp.val);
       MPI_Type_commit(&tp.val);
       tp.init = true;
     }

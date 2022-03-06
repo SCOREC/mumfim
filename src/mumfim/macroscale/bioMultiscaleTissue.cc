@@ -7,7 +7,7 @@
 #include "bioMicroFOParams.h"
 #include "bioULMultiscaleHydrostaticPressureIntegrator.h"
 #include "bioULMultiscaleIntegrator.h"
-namespace bio
+namespace mumfim
 {
   struct StochasticFieldData
   {
@@ -933,4 +933,4 @@ namespace bio
     }
     return ii;
   }
-}  // namespace bio
+}  // namespace mumfim

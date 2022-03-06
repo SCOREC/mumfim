@@ -1,12 +1,12 @@
-#ifndef BIO_RVE_H_
-#define BIO_RVE_H_
+#ifndef MUMFIM_RVE_H_
+#define MUMFIM_RVE_H_
 #include <apfFunctions.h> //amsi
 #include <apfFieldOp.h>
 #include <apf.h>
 #include <apfDynamicVector.h>
 #include <apfMesh.h>
 #include <cassert>
-namespace bio
+namespace mumfim
 {
   class FiberNetwork;
   class RVE

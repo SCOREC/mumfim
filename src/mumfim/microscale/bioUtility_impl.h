@@ -1,6 +1,6 @@
-#ifndef BIO_UTIL_IMPL_H_
-#define BIO_UTIL_IMPL_H_
-namespace bio
+#ifndef MUMFIM_UTIL_IMPL_H_
+#define MUMFIM_UTIL_IMPL_H_
+namespace mumfim
 {
   template <typename O>
     void calcDimMeasures(apf::Mesh * msh, int dim, O msrs)

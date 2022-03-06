@@ -1,13 +1,13 @@
-#ifndef BIO_VIEW_OF_VIEW_H
-#define BIO_VIEW_OF_VIEW_H
+#ifndef MUMFIM_VIEW_OF_VIEW_H
+#define MUMFIM_VIEW_OF_VIEW_H
 #include <Kokkos_Core.hpp>
 #include <vector>
 #include <cassert>
 #include "bioMicroTypeDefinitions.h"
-namespace bio
+namespace mumfim
 {
   template <typename DataType,
-            typename LocalOrdinal=bio::LocalOrdinal,
+            typename LocalOrdinal= mumfim::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
   class ViewOfView
   {
@@ -74,5 +74,5 @@ namespace bio
     dh_type dh_view;
     dd_type dd_view;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

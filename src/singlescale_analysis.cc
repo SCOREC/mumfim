@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
       std::cerr << "\"" << analysis_case << "\" is not a valid case name.\n";
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
-    bio::TissueAnalysis an(mesh,
+    mumfim::TissueAnalysis an(mesh,
                            std::make_unique<mt::CategoryNode>(*case_traits),
                            AMSI_COMM_WORLD);
     an.init();

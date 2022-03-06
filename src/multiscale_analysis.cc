@@ -86,7 +86,7 @@ int run_micro_fo(int & argc, char **& argv, MPI_Comm comm)
   int rnk = -1;
   MPI_Comm_rank(comm, &rnk);
   srand(8675309 + rnk);
-  bio::MultiscaleRVEAnalysis rves;
+  mumfim::MultiscaleRVEAnalysis rves;
   rves.init();
   rves.run();
   return 0;
@@ -115,7 +115,7 @@ int run_macro(int & argc, char **& argv, MPI_Comm cm)
     std::cerr << "\"" << analysis_case << "\" is not a valid case name.\n";
     MPI_Abort(AMSI_COMM_WORLD, 1);
   }
-  bio::MultiscaleTissueAnalysis an(
+  mumfim::MultiscaleTissueAnalysis an(
       mesh, std::make_unique<mt::CategoryNode>(*case_traits), cm);
   an.init();
   an.run();

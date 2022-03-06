@@ -12,7 +12,7 @@
 #include <memory>
 #include "bioFiberNetworkIO.h"
 
-namespace bio
+namespace mumfim
 {
   FiberNetworkReactions::FiberNetworkReactions(apf::Mesh2 * msh, std::istream & strm)
   {
@@ -51,7 +51,7 @@ namespace bio
     }
   }
   FiberNetworkBase::FiberNetworkBase(const FiberNetworkBase & other) : 
-    mMesh(bio::make_unique(apf::createMdsMesh(gmi_load(".null") , other.mMesh.get()))),
+    mMesh(mumfim::make_unique(apf::createMdsMesh(gmi_load(".null") , other.mMesh.get()))),
     mReactions(other.mReactions), mRVEType(other.mRVEType) 
   {
   }
@@ -136,7 +136,7 @@ namespace bio
   }
   // TODO this function will need to be updated if we ever use partitioned mesh
   // at the microscale
-  void get3DOrientationTensor(bio::FiberNetwork* fn, double omega[9])
+  void get3DOrientationTensor(mumfim::FiberNetwork* fn, double omega[9])
   {
     for (int i = 0; i < 9; ++i) {
       omega[i] = 0;
@@ -170,7 +170,7 @@ namespace bio
   }
   // TODO this function will need to be updated if we ever use partitioned mesh
   // at the microscale
-  void get2DOrientationTensor(bio::FiberNetwork* fn, double const normal[3],
+  void get2DOrientationTensor(mumfim::FiberNetwork* fn, double const normal[3],
                               double omega[9])
   {
     for (int i = 0; i < 9; ++i) {

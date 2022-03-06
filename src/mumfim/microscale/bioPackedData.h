@@ -1,5 +1,5 @@
-#ifndef BIO_PACKED_DATA_H
-#define BIO_PACKED_DATA_H
+#ifndef MUMFIM_PACKED_DATA_H
+#define MUMFIM_PACKED_DATA_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <Kokkos_Pair.hpp>

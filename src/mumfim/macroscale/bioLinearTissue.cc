@@ -3,7 +3,7 @@
 #include <amsiNeumannIntegrators.h>
 #include <apfFunctions.h>
 #include <gmi.h>
-namespace bio
+namespace mumfim
 {
   LinearTissue::LinearTissue(apf::Mesh * mesh,
                              const amsi::ModelDefinition & problem_definition,
@@ -125,4 +125,4 @@ namespace bio
     }
     apf_mesh->end(it);
   }
-}  // namespace bio
+}  // namespace mumfim

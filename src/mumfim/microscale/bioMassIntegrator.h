@@ -1,10 +1,10 @@
-#ifndef BIO_MASS_INTEGRATOR_H_
-#define BIO_MASS_INTEGRATOR_H_
+#ifndef MUMFIM_MASS_INTEGRATOR_H_
+#define MUMFIM_MASS_INTEGRATOR_H_
 #include <apf.h>
 #include <apfDynamicMatrix.h>
 #include <apfNumbering.h>
 //#include "bioFiberReactions.h"
-namespace bio
+namespace mumfim
 {
   /*
    * Currently only the row sum technique is implemented (referenced in
@@ -49,5 +49,5 @@ namespace bio
     void atPoint(apf::Vector3 const & p, double w, double dV) override;
     void outElement() override;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

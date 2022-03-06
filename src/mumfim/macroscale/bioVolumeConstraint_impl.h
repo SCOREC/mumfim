@@ -1,5 +1,5 @@
 #include <apfNumbering.h>
-namespace bio
+namespace mumfim
 {
   template <typename I>
     VolumeConstraint::VolumeConstraint(I mdl_ent_bgn, I mdl_ent_end, apf::Numbering * n)

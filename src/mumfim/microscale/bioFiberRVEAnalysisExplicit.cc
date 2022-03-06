@@ -19,7 +19,7 @@
 #include "bioFiberRVEAnalysisExplicit_impl.h"
 #include "bioMassIntegrator.h"
 #include <Kokkos_Core.hpp>
-namespace bio
+namespace mumfim
 {
   FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
                              std::unique_ptr<MicroSolutionStrategy> ss,
@@ -74,7 +74,7 @@ namespace bio
     }
   bool FiberRVEAnalysisExplicit::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {
-    BIO_V3(
+    MUMFIM_V3(
     std::cout << "F=[";
     std::cout << dfmGrd[0] << " " << dfmGrd[1] << " " << dfmGrd[2] << "; ";
     std::cout << dfmGrd[3] << " " << dfmGrd[4] << " " << dfmGrd[5] << "; ";
@@ -241,4 +241,4 @@ namespace bio
     //total_time = old_total_time;
     //load_time = old_total_time;
   }
-}  // namespace bio
+}  // namespace mumfim

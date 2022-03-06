@@ -1,7 +1,7 @@
 #include "bioAnalysis.h"
 #include <cassert>
 #include <cstring>
-namespace bio
+namespace mumfim
 {
   static const char * const ConstitutiveTypes[] = {CONSTITUTIVE_TYPES(MAKE_STRING_OP)};
   const char * getConstitutiveTypeString(int ii)

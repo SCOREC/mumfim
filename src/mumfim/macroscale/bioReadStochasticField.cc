@@ -8,7 +8,8 @@
 #include <cmath>
 
 
-namespace bio {
+namespace mumfim
+{
 //using vec3d = std::vector<std::vector<std::vector<double>>>;
 
 static int readRFGrid(const char * RFGFileName, double & x0, double & y0, double & z0,

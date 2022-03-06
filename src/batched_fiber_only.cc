@@ -37,20 +37,20 @@ int main(int argc, char * argv[])
   }
   PCU_Switch_Comm(MPI_COMM_SELF);
   auto BatchNum = std::atoi(argv[2]);
-  std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(argv[1], cases);
-  bio::printMicroFOCase(cases[0]);
+  std::vector<mumfim::MicroCase> cases;
+  mumfim::loadMicroFOFromYamlFile(argv[1], cases);
+  mumfim::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  bio::FiberNetworkLibrary network_library;
+  mumfim::FiberNetworkLibrary network_library;
   auto fiber_network =
       network_library.load(file_name, file_name + ".params", 0, 0);
 
-  std::vector<std::shared_ptr<const bio::FiberNetwork>> fiber_networks;
-  std::vector<std::shared_ptr<const bio::MicroSolutionStrategy>>
+  std::vector<std::shared_ptr<const mumfim::FiberNetwork>> fiber_networks;
+  std::vector<std::shared_ptr<const mumfim::MicroSolutionStrategy>>
       solution_strategies;
-  std::shared_ptr<bio::MicroSolutionStrategy> shared_case{std::move(cases[0].ss)};
+  std::shared_ptr<mumfim::MicroSolutionStrategy> shared_case{std::move(cases[0].ss)};
   fiber_networks.reserve(BatchNum);
   for(int i=0; i<BatchNum; ++i)
   {
@@ -60,10 +60,10 @@ int main(int argc, char * argv[])
   
   using ExeSpace = Kokkos::DefaultExecutionSpace;
   // using ExeSpace = Kokkos::Serial;
-  // using Scalar = float;//bio::Scalar;
-  using Scalar = bio::Scalar;
-  using Ordinal = bio::LocalOrdinal;
-  bio::BatchedFiberRVEAnalysisExplicit<Scalar, Ordinal, ExeSpace>
+  // using Scalar = float;//mumfim::Scalar;
+  using Scalar = mumfim::Scalar;
+  using Ordinal = mumfim::LocalOrdinal;
+  mumfim::BatchedFiberRVEAnalysisExplicit<Scalar, Ordinal, ExeSpace>
       batched_analysis(std::move(fiber_networks),
                        std::move(solution_strategies));
   Kokkos::DualView<Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",BatchNum);

@@ -1,11 +1,12 @@
-#ifndef BIO_NEOHOOKEAN_INTEGRATOR_H_
-#define BIO_NEOHOOKEAN_INTEGRATOR_H_
+#ifndef MUMFIM_NEOHOOKEAN_INTEGRATOR_H_
+#define MUMFIM_NEOHOOKEAN_INTEGRATOR_H_
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <math.h>  //natural log
 #include <cstring>
 #include "bioNonlinearTissue.h"
-namespace bio {
+namespace mumfim
+{
   // Parameters from V. Lai et al. Journal of Biomechanical Engineering, Vol
   // 135, 071007 (2013)
   //

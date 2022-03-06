@@ -1,12 +1,12 @@
-#ifndef BIO_MULTISCALE_TISSUE_H_
-#define BIO_MULTISCALE_TISSUE_H_
+#ifndef MUMFIM_MULTISCALE_TISSUE_H_
+#define MUMFIM_MULTISCALE_TISSUE_H_
 #include <memory>
 #include <unordered_map>
 #include "bioMultiscaleTissue.h"
 #include "bioNonlinearTissue.h"
 #include "bioRVECoupling.h"
 #include "bioReadStochasticField.h"
-namespace bio
+namespace mumfim
 {
   using StochasticFieldMap = std::map<std::string, std::shared_ptr<GridData> >;
   // refactor so this is only dealing with a single type of RVE
@@ -85,6 +85,6 @@ namespace bio
      */
     int getRVEDirectoryIndex(apf::MeshEntity* rgn);
   };
-}  // namespace bio
+}  // namespace mumfim
 #include "bioMultiscaleTissue_impl.h"
 #endif

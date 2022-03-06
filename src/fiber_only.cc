@@ -37,16 +37,16 @@ int main(int argc, char * argv[])
     std::cerr<<"Usage: "<<argv[0]<<" job.yaml"<<std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
-  std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(argv[1], cases);
-  bio::printMicroFOCase(cases[0]);
+  std::vector<mumfim::MicroCase> cases;
+  mumfim::loadMicroFOFromYamlFile(argv[1], cases);
+  mumfim::printMicroFOCase(cases[0]);
   std::string file_name = cases[0].pd.meshFile;
   int rank = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  bio::FiberNetworkLibrary network_library;
+  mumfim::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
   auto fiber_network = network_library.getUniqueCopy(0, 0);
-  auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
+  auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
   Kokkos::Timer timer;
   double ornt_time1 = timer.seconds();
   double omega[9];
@@ -92,7 +92,7 @@ int main(int argc, char * argv[])
   std::cout<<std::endl;
   // DEBUG
   /*
-  bio::DeformationGradient dg(1,0,0,0,1,0,0,0,1);
+  mumfim::DeformationGradient dg(1,0,0,0,1,0,0,0,1);
   result = an->run(dg, stress);
   an->computeMaterialStiffness(C);
   std::cout<<"Stress from run"<<std::endl;

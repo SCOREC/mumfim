@@ -7,7 +7,7 @@
 #include <pumi.h>
 #include <memory>
 #include "bioModelTraits.h"
-namespace bio
+namespace mumfim
 {
   // pass in the "stiffness gradient category node
   std::unique_ptr<StiffnessVariation> buildStiffnessVariation(
@@ -196,4 +196,4 @@ namespace bio
       , fn(std::move(fn))
   {
   }
-}  // namespace bio
+}  // namespace mumfim

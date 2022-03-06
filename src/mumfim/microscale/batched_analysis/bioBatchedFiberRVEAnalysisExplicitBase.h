@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
-#define BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
+#ifndef MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
+#define MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
 #include <Kokkos_Core.hpp>
 #include <array>
 #include <limits>
@@ -7,7 +7,7 @@
 #include "bioRVE.h"
 //#define TEAM_SIZE 512
 #define TEAM_SIZE Kokkos::AUTO
-namespace bio
+namespace mumfim
 {
   template <typename ExeSpace,
             typename Ordinal,
@@ -288,5 +288,5 @@ namespace bio
       }
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

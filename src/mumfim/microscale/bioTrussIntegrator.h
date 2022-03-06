@@ -1,5 +1,5 @@
-#ifndef BIO_TRUSS_INTEGRATOR_H_
-#define BIO_TRUSS_INTEGRATOR_H_
+#ifndef MUMFIM_TRUSS_INTEGRATOR_H_
+#define MUMFIM_TRUSS_INTEGRATOR_H_
 #include <amsiElementalSystem.h>
 #include <apf.h>
 #include <apfDynamicMatrix.h>
@@ -17,7 +17,7 @@ namespace las
   class Mat;
   class Vec;
 }  // namespace las
-namespace bio
+namespace mumfim
 {
   // class ElementalSystem;
   /**
@@ -85,5 +85,5 @@ namespace bio
     virtual void atPoint(const apf::Vector3 &, double, double);
     virtual void outElement();
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

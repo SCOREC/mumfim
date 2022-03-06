@@ -1,7 +1,7 @@
-#ifndef BIO_AMPLITUDE_H_
-#define BIO_AMPLITUDE_H_
+#ifndef MUMFIM_AMPLITUDE_H_
+#define MUMFIM_AMPLITUDE_H_
 #include <iostream>
-namespace bio
+namespace mumfim
 {
 // FIXME Use CRTP here because we call this a lot, and we don't want class
 // overhead!
@@ -100,5 +100,5 @@ namespace bio
         return 0;
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

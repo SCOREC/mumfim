@@ -1,9 +1,9 @@
-#ifndef BIO_VARIABLE_RECOVERY_H_
-#define BIO_VARIABLE_RECOVERY_H_
+#ifndef MUMFIM_VARIABLE_RECOVERY_H_
+#define MUMFIM_VARIABLE_RECOVERY_H_
 #include <apf.h>
 #include <apfMesh.h>
 #include <vector>
-namespace bio
+namespace mumfim
 {
   template <typename I, typename O>
     void getFieldComponentsOnEnts(apf::Field * fld,

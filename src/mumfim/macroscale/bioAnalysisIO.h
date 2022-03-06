@@ -1,8 +1,8 @@
-#ifndef BIO_ANALYSIS_IO_H_
-#define BIO_ANALYSIS_IO_H_
+#ifndef MUMFIM_ANALYSIS_IO_H_
+#define MUMFIM_ANALYSIS_IO_H_
 #include <amsiUtil.h>
 #include <apf.h>
-namespace bio
+namespace mumfim
 {
   class NonlinearTissue;
   /**

@@ -1,7 +1,7 @@
-#ifndef BIO_MULTISCALE_MICRO_FO_PARAMS_H_
-#define BIO_MULTISCALE_MICRO_FO_PARAMS_H_
+#ifndef MUMFIM_MULTISCALE_MICRO_FO_PARAMS_H_
+#define MUMFIM_MULTISCALE_MICRO_FO_PARAMS_H_
 #include <amsiMPI.h>
-namespace bio
+namespace mumfim
 {
   enum class MicroscaleType
   {
@@ -106,20 +106,20 @@ namespace bio
 namespace amsi
 {
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_header>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_header>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_params>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_params>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_solver>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_solver>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_int_solver>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_int_solver>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_init_data>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_init_data>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_data>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_data>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_result>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_result>();
   template <>
-    MPI_Datatype mpi_type<bio::micro_fo_step_result>();
+    MPI_Datatype mpi_type<mumfim::micro_fo_step_result>();
 }
 #endif

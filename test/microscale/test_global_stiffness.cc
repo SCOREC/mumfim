@@ -12,40 +12,38 @@
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
-  std::vector<bio::MicroCase> cases;
-  bio::loadMicroFOFromYamlFile(
+  std::vector<mumfim::MicroCase> cases;
+  mumfim::loadMicroFOFromYamlFile(
       "./test_global_stiffness_data/global_stiffness.yaml", cases);
   las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
   for (std::size_t i = 0; i < cases.size(); ++i)
   //for (std::size_t i = 0; i < 1; ++i)
   {
-    bio::printMicroFOCase(cases[i]);
+    mumfim::printMicroFOCase(cases[i]);
     std::string file_name = cases[i].pd.meshFile;
     int rank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-
-    bio::FiberNetworkLibrary network_library;
+    mumfim::FiberNetworkLibrary network_library;
     network_library.load(file_name,file_name+".params",0,0);
     auto fiber_network = network_library.getUniqueCopy(0, 0);
-    auto solution_strategy = std::unique_ptr<bio::MicroSolutionStrategy>{new bio::MicroSolutionStrategy};
+    auto solution_strategy = std::unique_ptr<mumfim::MicroSolutionStrategy>{new mumfim::MicroSolutionStrategy};
     // set the solution strategy to give me an implicit run so that I can get
     // the stiffness matrix. All the other parameters don't matter...
-    auto osc_prms = bio::DetectOscillationParams();
+    auto osc_prms = mumfim::DetectOscillationParams();
     osc_prms.maxIterations = 10;
     osc_prms.maxMicroCutAttempts = 2;
     osc_prms.microAttemptCutFactor  = 2;
     osc_prms.oscType = amsi::DetectOscillationType::IterationOnly;
     osc_prms.prevNormFactor = 0.2;
 
-    solution_strategy->slvrType = bio::SolverType::Implicit;
+    solution_strategy->slvrType = mumfim::SolverType::Implicit;
     solution_strategy->slvrTolerance = 1E-6;
     solution_strategy->cnvgTolerance = 1E-6;
     solution_strategy->oscPrms = osc_prms;
 
-    auto an = bio::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy));
-    //auto an = bio::createF
-    dynamic_cast<bio::FiberRVEAnalysisSImplicit*>(an.get())->computeStiffnessMatrix();
+    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy));
+    //auto an = mumfim::createF
+    dynamic_cast<mumfim::FiberRVEAnalysisSImplicit*>(an.get())->computeStiffnessMatrix();
     if(an == nullptr)
     {
       std::cerr<<"Something went wrong, the analysis doesn't exist!"<<std::endl;

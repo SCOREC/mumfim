@@ -1,6 +1,6 @@
 #include "bioRVECoupling.h"
 #include <model_traits/AssociatedModelTraits.h>
-namespace bio
+namespace mumfim
 {
   MicroscaleType getMicroscaleType(
       const mt::AssociatedCategoryNode * category_node)
@@ -29,4 +29,4 @@ namespace bio
     }
     return MicroscaleType::NONE;
   }
-}  // namespace bio
+}  // namespace mumfim

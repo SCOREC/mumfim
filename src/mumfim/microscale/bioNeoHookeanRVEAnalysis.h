@@ -1,11 +1,12 @@
-#ifndef BIO_NEOHOOKEAN_RVE_ANALYSIS_H_
-#define BIO_NEOHOOKEAN_RVE_ANALYSIS_H_
+#ifndef MUMFIM_NEOHOOKEAN_RVE_ANALYSIS_H_
+#define MUMFIM_NEOHOOKEAN_RVE_ANALYSIS_H_
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleMicroFOParams.h"
 #include "bioRVEAnalysis.h"
 #include <apfMatrix.h>
 #include <apfDynamicMatrix.h>
-namespace bio {
+namespace mumfim
+{
 class NeoHookeanRVEAnalysis : public RVEAnalysis
 {
   protected:

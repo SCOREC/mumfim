@@ -1,10 +1,10 @@
-#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H
-#define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H
+#ifndef MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H
+#define MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_TEAM_OUTER_LOOP_H
 #include "bioBatchedFiberRVEAnalysisExplicitBase.h"
 
 #define UPDATE_FREQ 100
 
-namespace bio
+namespace mumfim
 {
   template<typename Scalar, typename Ordinal>
   struct ScratchRegister
@@ -437,5 +437,5 @@ namespace bio
       return true;
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

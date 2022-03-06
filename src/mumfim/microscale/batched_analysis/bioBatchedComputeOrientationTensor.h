@@ -1,9 +1,9 @@
-#ifndef BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
-#define BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
+#ifndef MUMFIM_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
+#define MUMFIM_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include "bioPackedData.h"
-namespace bio
+namespace mumfim
 {
   template <typename Scalar, typename Ordinal, typename CoordinatesType, typename ConnectivityType, typename ExeSpace>
   struct OrientationTensor
@@ -207,5 +207,5 @@ namespace bio
       normal_d_ = NormalDeviceViewType{};
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

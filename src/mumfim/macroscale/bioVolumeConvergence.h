@@ -1,8 +1,8 @@
-#ifndef BIO_VOLUME_CONVERGENCE_H_
-#define BIO_VOLUME_CONVERGENCE_H_
+#ifndef MUMFIM_VOLUME_CONVERGENCE_H_
+#define MUMFIM_VOLUME_CONVERGENCE_H_
 #include <apfMeasure.h>
 #include "bioNonlinearTissue.h"
-namespace bio
+namespace mumfim
 {
   class VolCalc : public amsi::Iteration, public amsi::PerStep
   {
@@ -50,5 +50,5 @@ namespace bio
       amsi::MultiIteration * it,
       VolCalc * vl,
       apf::Field * fld);
-}  // namespace bio
+}  // namespace mumfim
 #endif

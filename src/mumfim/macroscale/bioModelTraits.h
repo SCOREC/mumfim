@@ -1,9 +1,9 @@
-#ifndef BIO_BIOMODELTRAITS_H
-#define BIO_BIOMODELTRAITS_H
+#ifndef MUMFIM_BIOMODELTRAITS_H
+#define MUMFIM_BIOMODELTRAITS_H
 #include <apf.h>
 #include <model_traits/ModelTraits.h>
 #include <apfMesh.h>
-namespace bio
+namespace mumfim
 {
   void GetModelTraitNodeGeometry(apf::Mesh * mesh,
                               const mt::ModelTraitNode * mtn,

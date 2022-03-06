@@ -30,7 +30,7 @@ TEST_CASE("view of views", "[kokkos]")
     }
     data.push_back(innerData);
   }
-  bio::ViewOfView<double> vofv(data);
+  mumfim::ViewOfView<double> vofv(data);
   auto hh_view = vofv.h_view();
   auto dd_view = vofv.d_view();
   REQUIRE(hh_view.extent(0) == data.size());

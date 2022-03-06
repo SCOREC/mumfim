@@ -1,12 +1,12 @@
-#ifndef BIO_STIFFNESS_VARIATION_H_
-#define BIO_STIFFNESS_VARIATION_H_
+#ifndef MUMFIM_STIFFNESS_VARIATION_H_
+#define MUMFIM_STIFFNESS_VARIATION_H_
 #include <apf.h>
 #include <model_traits/CategoryNode.h>
 #include <model_traits/ModelTrait.h>
 #include <apfMesh.h>
 #include <cstring>
 #include <memory>
-namespace bio
+namespace mumfim
 {
   class StiffnessVariation;
   std::unique_ptr<StiffnessVariation> buildStiffnessVariation(
@@ -38,5 +38,5 @@ namespace bio
     void populate_stf_vrtn_fld();
     void calculate_mdl_fc_coord(apf::ModelEntity * mdl_fc, apf::Vector3& mdl_fc_xyz);
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

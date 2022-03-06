@@ -19,7 +19,7 @@
 #include <lasCSRCore.h>
 //#include <lasCorePETSc.h>
 #include <lasSparskitExterns.h>
-namespace bio
+namespace mumfim
 {
   // todo: rename (shouldn't have reference to micro in a single-scale file)
   apf::Integrator * createImplicitMicroElementalSystem(FiberNetwork * fn,
@@ -244,4 +244,4 @@ namespace bio
     //ApplyDeformationGradient(F, fn_msh, fn_du, fn_u).run();
     ApplyIncrementalDeformationGradient(F, fn_msh, fn_du, fn_u).run();
   }
-};  // namespace bio
+};  // namespace mumfim

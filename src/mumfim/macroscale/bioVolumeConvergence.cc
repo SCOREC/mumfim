@@ -4,7 +4,7 @@
 #include <amsiNonlinearConvergenceOperator.h>
 #include <gmi.h>
 #include "bioModelTraits.h"
-namespace bio
+namespace mumfim
 {
   struct CalcDV : public amsi::to_R1
   {
@@ -144,4 +144,4 @@ namespace bio
     MPI_Abort(AMSI_COMM_WORLD, 1);
     return nullptr;
   }
-}  // namespace bio
+}  // namespace mumfim

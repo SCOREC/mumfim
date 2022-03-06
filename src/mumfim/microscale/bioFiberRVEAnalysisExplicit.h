@@ -1,11 +1,11 @@
-#ifndef BIO_FIBER_RVE_ANALYSIS_EXPLICIT
-#define BIO_FIBER_RVE_ANALYSIS_EXPLICIT
+#ifndef MUMFIM_FIBER_RVE_ANALYSIS_EXPLICIT
+#define MUMFIM_FIBER_RVE_ANALYSIS_EXPLICIT
 #include "bioExplicitAmplitude.h"
 #include "bioFiberNetwork.h"
 #include "bioFiberRVEAnalysis.h"
 #include "bioExplicitOutputWriter.h"
 #include <string>
-namespace bio
+namespace mumfim
 {
   // TODO FIXME deal with network with multiple material properties
   class FiberRVEAnalysisExplicit : public FiberRVEAnalysis
@@ -62,5 +62,5 @@ namespace bio
     // for finite differencing
     virtual void computeMaterialStiffness(double C[36]) final;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

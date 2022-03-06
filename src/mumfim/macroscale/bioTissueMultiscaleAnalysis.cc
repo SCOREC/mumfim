@@ -17,7 +17,7 @@
 #include "bioMultiscaleConvergence.h"
 #include "bioMultiscaleTissue.h"
 #include "bioVolumeConvergence.h"
-namespace bio
+namespace mumfim
 {
   void MultiscaleTissueIteration::iterate()
   {
@@ -129,4 +129,4 @@ namespace bio
     cs->scaleBroadcast(cplng, &completed);
   }
   void MultiscaleTissueAnalysis::run() { TissueAnalysis::run(); }
-}  // namespace bio
+}  // namespace mumfim

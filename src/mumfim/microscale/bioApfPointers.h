@@ -1,10 +1,10 @@
-#ifndef BIO_APF_CUSTOM_DELETERS_H_
-#define BIO_APF_CUSTOM_DELETERS_H_
+#ifndef MUMFIM_APF_CUSTOM_DELETERS_H_
+#define MUMFIM_APF_CUSTOM_DELETERS_H_
 #include <memory>
 namespace apf {
   class Mesh;
 }
-namespace bio
+namespace mumfim
 {
   // auto deleteMesh = [](apf::Mesh* mesh)
   //{
@@ -18,5 +18,5 @@ namespace bio
   using mesh_unique_ptr_type =
       std::unique_ptr<apf::Mesh, decltype(&deleteMesh)>;
   mesh_unique_ptr_type make_unique(apf::Mesh *);
-}  // namespace bio
+}  // namespace mumfim
 #endif

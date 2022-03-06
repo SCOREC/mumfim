@@ -1,11 +1,11 @@
-#ifndef BIO_RVE_COUPLING_H_
-#define BIO_RVE_COUPLING_H_
+#ifndef MUMFIM_RVE_COUPLING_H_
+#define MUMFIM_RVE_COUPLING_H_
 #include <bioMultiscaleMicroFOParams.h>
 #include <apf.h>
 #include <amsiMultiscale.h>
 #include <apfMesh.h>
 #include <model_traits/AssociatedModelTraits.h>
-namespace bio
+namespace mumfim
 {
   MicroscaleType getMicroscaleType(
       const mt::AssociatedCategoryNode * category_node);
@@ -78,11 +78,11 @@ namespace bio
       void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat, I4 micro_slvr, I5 micro_int_slvr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(ptrn,hdr,amsi::mpi_type<bio::micro_fo_header>());
-      cs->Communicate(ptrn,prm,amsi::mpi_type<bio::micro_fo_params>());
-      cs->Communicate(ptrn,dat,amsi::mpi_type<bio::micro_fo_init_data>());
-      cs->Communicate(ptrn,micro_slvr,amsi::mpi_type<bio::micro_fo_solver>());
-      cs->Communicate(ptrn,micro_int_slvr,amsi::mpi_type<bio::micro_fo_int_solver>());
+      cs->Communicate(ptrn,hdr,amsi::mpi_type<mumfim::micro_fo_header>());
+      cs->Communicate(ptrn,prm,amsi::mpi_type<mumfim::micro_fo_params>());
+      cs->Communicate(ptrn,dat,amsi::mpi_type<mumfim::micro_fo_init_data>());
+      cs->Communicate(ptrn,micro_slvr,amsi::mpi_type<mumfim::micro_fo_solver>());
+      cs->Communicate(ptrn,micro_int_slvr,amsi::mpi_type<mumfim::micro_fo_int_solver>());
     }
     size_t addRVEs(int sz)
     {
@@ -100,12 +100,12 @@ namespace bio
     void sendRVEData(std::vector<micro_fo_data> & bfr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(snd_ptrn,bfr,amsi::mpi_type<bio::micro_fo_data>());
+      cs->Communicate(snd_ptrn,bfr,amsi::mpi_type<mumfim::micro_fo_data>());
     }
     void recvRVEData()
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(rcv_ptrn,rsts, amsi::mpi_type<bio::micro_fo_result>());
+      cs->Communicate(rcv_ptrn,rsts, amsi::mpi_type<mumfim::micro_fo_result>());
     }
     micro_fo_result * getRVEResult(apf::MeshEntity * me, int ip)
     {
@@ -115,7 +115,7 @@ namespace bio
     void recvRVEStepData()
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
-      cs->Communicate(rcv_ptrn,stp_rslt,amsi::mpi_type<bio::micro_fo_step_result>());
+      cs->Communicate(rcv_ptrn,stp_rslt,amsi::mpi_type<mumfim::micro_fo_step_result>());
 
     }
     micro_fo_step_result * getRVEStepResult(apf::MeshEntity * me, int ip) {

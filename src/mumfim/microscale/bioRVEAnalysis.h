@@ -1,7 +1,7 @@
-#ifndef BIO_RVE_ANALYSIS_H_
-#define BIO_RVE_ANALYSIS_H_
+#ifndef MUMFIM_RVE_ANALYSIS_H_
+#define MUMFIM_RVE_ANALYSIS_H_
 #include "bioMicroFOParams.h"
-namespace bio
+namespace mumfim
 {
   class RVEAnalysis
   {
@@ -24,5 +24,5 @@ namespace bio
     RVEAnalysis(const RVEAnalysis & an);
     RVEAnalysis();
   };
-} // namespace bio
+} // namespace mumfim
 #endif

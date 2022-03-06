@@ -1,6 +1,6 @@
 #include <apf.h>
 #include <cassert>
-namespace bio
+namespace mumfim
 {
   template <typename I, typename O>
     void getFieldComponentsOn(apf::Field * fld,

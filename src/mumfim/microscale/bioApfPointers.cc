@@ -2,7 +2,7 @@
 #include <apfMesh.h>
 #include <apf.h>
 
-namespace bio
+namespace mumfim
 {
   mesh_unique_ptr_type make_unique(apf::Mesh * mesh)
   {

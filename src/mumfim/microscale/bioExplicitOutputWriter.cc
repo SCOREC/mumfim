@@ -9,7 +9,8 @@
 #include <iostream>
 #include <stdio.h>
 
-namespace bio{
+namespace mumfim
+{
   /*
 ExplicitOutputWriter::ExplicitOutputWriter(apf::Mesh * mesh, std::string folder, std::string pvdName,
                      double & W_int, double & W_ext, double & W_damp,

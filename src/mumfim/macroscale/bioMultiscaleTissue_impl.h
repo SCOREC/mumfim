@@ -1,5 +1,5 @@
 #include "amsiDeformation.h"
-namespace bio
+namespace mumfim
 {
   /*
     template <typename O>

@@ -1,7 +1,7 @@
 #include "bioFiberRVEAnalysisStaticImplicit.h"
 #include "bioVerbosity.h"
 #include <memory>
-namespace bio
+namespace mumfim
 {
   struct val_gen
   {
@@ -78,7 +78,7 @@ namespace bio
         an->getFn()->getUNumbering(), an->getFn()->getUField(), s, 0, &fr_acm)
         .run();
     ops->restore(an->getU(), s);
-    BIO_V2(int rank = -1; MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
+    MUMFIM_V2(int rank = -1; MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
            std::cout << "RVE: " << an->getFn()->getRVEType() << " Iter: "
                      << this->iteration() << " Rank: " << rank << "\n";)
     Iteration::iterate();
@@ -104,7 +104,7 @@ namespace bio
       maxMicroAttempts = tmpRVE->max_cut_attempt;
       microAttemptCutFactor = tmpRVE->attempt_cut_factor;
       attemptCutFactor = std::pow(microAttemptCutFactor, microAttemptCount - 1);
-      BIO_V1(if (attemptCutFactor > 1) std::cout
+      MUMFIM_V1(if (attemptCutFactor > 1) std::cout
                  << "Micro Attempt: " << microAttemptCount
                  << " cutting the original applied displacement by: "
                  << attemptCutFactor << " on rank: " << rank << "\n";)
@@ -114,16 +114,16 @@ namespace bio
       for (unsigned int microAttemptIter = 1;
            microAttemptIter <= attemptCutFactor; ++microAttemptIter)
       {
-        BIO_V3(std::cout << "Rank: " << rank << " F=";)
+        MUMFIM_V3(std::cout << "Rank: " << rank << " F=";)
         for (int j = 0; j < 9; ++j)
         {
           double I = j % 4 == 0 ? 1 : 0;
           // cut the displacement gradient (not the deformation gradient)
           appliedDefm[j] =
               (((dfmGrd[j] - I) * microAttemptIter) / attemptCutFactor) + I;
-          BIO_V3(std::cout << appliedDefm[j] << " ";)
+          MUMFIM_V3(std::cout << appliedDefm[j] << " ";)
         }
-        BIO_V3(std::cout << "\n";)
+        MUMFIM_V3(std::cout << "\n";)
         applyGuessSolution(tmpRVE, appliedDefm);
         FiberRVEIterationSImplicit rveItr(tmpRVE);
         std::vector<amsi::Iteration *> itr_stps;
@@ -191,4 +191,4 @@ namespace bio
       computeStiffnessMatrix();
       FiberRVEAnalysis::computeCauchyStress(sigma);
     }
-}  // namespace bio
+}  // namespace mumfim

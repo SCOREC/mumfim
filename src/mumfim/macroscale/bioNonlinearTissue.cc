@@ -21,7 +21,7 @@
 #include "bioTrnsIsoNeoHookeanIntegrator.h"
 #include "bioVariableRecovery.h"
 #include "gmi.h"
-namespace bio
+namespace mumfim
 {
   NonlinearTissue::NonlinearTissue(apf::Mesh * mesh,
                                    const mt::CategoryNode & analysis_case,
@@ -358,4 +358,4 @@ namespace bio
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
     apf::setMatrix(strs, m_ent, 0, eps);
   }
-}  // namespace bio
+}  // namespace mumfim

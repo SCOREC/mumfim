@@ -1,5 +1,5 @@
-#ifndef BIO_FIBER_RVE_ANALYSIS_H_
-#define BIO_FIBER_RVE_ANALYSIS_H_
+#ifndef MUMFIM_FIBER_RVE_ANALYSIS_H_
+#define MUMFIM_FIBER_RVE_ANALYSIS_H_
 #include <amsiNonlinearAnalysis.h>
 #include <lasSparskit.h>
 #include <lasSparskitExterns.h>
@@ -11,7 +11,7 @@
 #include "bioTrussIntegrator.h"
 #include "bioMultiscaleMicroFOParams.h"
 #include "bioRVEAnalysis.h"
-namespace bio
+namespace mumfim
 {
   /* \brief create the elemental system integrator
    */
@@ -132,6 +132,6 @@ namespace bio
   // when working with implicit solves
   void applyGuessSolution(FiberRVEAnalysis * ans,
                           const DeformationGradient & dfmGrd);
-}  // namespace bio
+}  // namespace mumfim
 #include "bioFiberRVEAnalysis_impl.h"
 #endif

@@ -21,7 +21,7 @@
 #include "bioMassIntegrator.h"
 #include "bioVerbosity.h"
 #include <Kokkos_Core.hpp>
-namespace bio
+namespace mumfim
 {
   KOKKOS_INLINE_FUNCTION
   static bool isClose(double a,
@@ -107,7 +107,7 @@ namespace bio
                "displacements.\n";
         return false;
       }
-      BIO_V3(std::cout << "This problem has: " << nnds << " nodes and " << nelem
+      MUMFIM_V3(std::cout << "This problem has: " << nnds << " nodes and " << nelem
                        << " elements\n";
              std::cout << "Using Deformation Gradient BC has fixed "
                        << disp_nfixed << " of " << ndof
@@ -120,7 +120,7 @@ namespace bio
                           f_int_d, f_int_last_d, f_ext_d, f_ext_last_d,
                           f_damp_d, f_damp_last_d, f_d, residual);
       // else
-      BIO_V3(std::cout << "The initial timestep is dt=" << dt_crit
+      MUMFIM_V3(std::cout << "The initial timestep is dt=" << dt_crit
                        << ".\nIf the analysis continues with a comprable dt "
                           "the analysis "
                           "will take approximately "
@@ -260,7 +260,7 @@ namespace bio
         writer->writeHistoryData(itr_prev + n_step, W_int, W_ext, W_damp, W_kin, current_time);
       }
       itr_prev = n_step;
-      BIO_V3(std::cout << "Microscale has successfully completed in " << n_step
+      MUMFIM_V3(std::cout << "Microscale has successfully completed in " << n_step
                        << " timesteps.\n";)
       return true;
     }
@@ -448,8 +448,8 @@ namespace bio
                            double fiber_area)
     {
       // to get analytical solution use third order integration
-      bio::MassIntegrator massInt(nodalMass, density, fiber_area, 3,
-                                  bio::MassLumpType::RowSum);
+      mumfim::MassIntegrator massInt(nodalMass, density, fiber_area, 3,
+                                     mumfim::MassLumpType::RowSum);
       massInt.process(mesh, 1);
     }
     void getCurrentCoords(int ndof,
@@ -1600,4 +1600,4 @@ namespace bio
       deleteArray(current_coords_d);
     }
   };
-}  // namespace bio
+}  // namespace mumfim

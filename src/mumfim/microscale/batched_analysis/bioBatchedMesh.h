@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_MESH_H
-#define BIO_BATCHED_MESH_H
+#ifndef MUMFIM_BATCHED_MESH_H
+#define MUMFIM_BATCHED_MESH_H
 #include <apf.h>           // for extractCoordinateArray
 #include <apfConvert.h>    // for extractCoordinateArray
 #include <apfMesh2.h>      // for extractCoordinateArray
@@ -10,7 +10,7 @@
 #include "bioMicroFOParams.h"
 #include "bioRVE.h"
 #include "bioUtility.h"
-namespace bio
+namespace mumfim
 {
   // functions that need to interact with the apf mesh
   template <typename Scalar, typename Ordinal, typename HostSpace>
@@ -166,5 +166,5 @@ namespace bio
                                           rve.getUField());
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

@@ -1,5 +1,5 @@
-#ifndef BIO_VOLUME_CONSTRAINT_H_
-#define BIO_VOLUME_CONSTRAINT_H_
+#ifndef MUMFIM_VOLUME_CONSTRAINT_H_
+#define MUMFIM_VOLUME_CONSTRAINT_H_
 #include <ElementalSystem.h>
 #include <amsiDofHolder.h>
 #include <amsiLAS.h>
@@ -11,7 +11,7 @@
 #include <memory>
 #include "bioConstraint.h"
 #include <amsiReporter.h>
-namespace bio
+namespace mumfim
 {
   class VolumeConstraint;
   std::unique_ptr<VolumeConstraint> buildVolumeConstraint(
@@ -198,6 +198,6 @@ namespace bio
     void setPrevVol(double vol) { prev_vol = vol;}
   };
   */
-}  // namespace bio
+}  // namespace mumfim
 #include "bioVolumeConstraint_impl.h"
 #endif

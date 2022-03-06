@@ -1,11 +1,11 @@
-#ifndef BIO_ULMULTISCALE_INTEGRATOR_H_
-#define BIO_ULMULTISCALE_INTEGRATOR_H_
+#ifndef MUMFIM_ULMULTISCALE_INTEGRATOR_H_
+#define MUMFIM_ULMULTISCALE_INTEGRATOR_H_
 #include "bioNonlinearTissue.h"
 #include <ElementalSystem.h>
 #include <apfShape.h>
 #include <cstring>
 #include <apfMatrixUtil.h>
-namespace bio
+namespace mumfim
 {
   // this class is a mess...
   // the field passed in can't be used to create meshelements for use in the

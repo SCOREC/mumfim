@@ -1,7 +1,7 @@
-#ifndef BIO_BATCHED_REORDER_MESH_H
-#define BIO_BATCHED_REORDER_MESH_H
+#ifndef MUMFIM_BATCHED_REORDER_MESH_H
+#define MUMFIM_BATCHED_REORDER_MESH_H
 #include <Kokkos_Core.hpp>
-namespace bio
+namespace mumfim
 {
   /**
    * Reorder the mesh for analysis. This places all of the fixed vertices at the
@@ -149,5 +149,5 @@ namespace bio
     }
     ScalarVertViewType getPermutationArray() { return permutation_array_; }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

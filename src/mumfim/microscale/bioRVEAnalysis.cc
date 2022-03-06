@@ -1,7 +1,7 @@
 #include "bioRVEAnalysis.h"
 #include "bioMicroFOParams.h"
 #include <apfMatrix.h>
-namespace bio
+namespace mumfim
 {
   RVEAnalysis::RVEAnalysis()
   {

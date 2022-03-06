@@ -5,7 +5,7 @@
 #include <gmi.h>
 #include <algorithm>
 #include "bioModelTraits.h"
-namespace bio
+namespace mumfim
 {
   std::unique_ptr<VolumeConstraint> buildVolumeConstraint(
       const mt::CategoryNode & category_node,
@@ -680,4 +680,4 @@ namespace bio
     lambda_dVdu += BVG;
   }
  */
-}  // namespace bio
+}  // namespace mumfim

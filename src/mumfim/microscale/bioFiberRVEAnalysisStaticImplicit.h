@@ -1,9 +1,10 @@
-#ifndef BIO_FIBER_RVE_ANALYSIS_STATIC_IMPLICIT_H
-#define BIO_FIBER_RVE_ANALYSIS_STATIC_IMPLICIT_H
+#ifndef MUMFIM_FIBER_RVE_ANALYSIS_STATIC_IMPLICIT_H
+#define MUMFIM_FIBER_RVE_ANALYSIS_STATIC_IMPLICIT_H
 
 #include "bioFiberRVEAnalysis.h"
 
-namespace bio {
+namespace mumfim
+{
   class FiberRVEAnalysisSImplicit : public FiberRVEAnalysis
   {
     protected:

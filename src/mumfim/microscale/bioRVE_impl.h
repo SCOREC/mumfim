@@ -1,6 +1,6 @@
 #include "bioFiberNetwork.h"
 #include <apfDynamicMatrix.h>
-namespace bio
+namespace mumfim
 {
   template <typename I, typename O>
     void getBoundaryVerts(const RVE * rve,

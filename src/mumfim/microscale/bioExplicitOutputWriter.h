@@ -1,9 +1,9 @@
-#ifndef BIO_OUTPUT_WRITER_H
-#define BIO_OUTPUT_WRITER_H
+#ifndef MUMFIM_OUTPUT_WRITER_H
+#define MUMFIM_OUTPUT_WRITER_H
 #include <apf.h>
 #include <string>
 
-namespace bio
+namespace mumfim
 {
 // stolen from amsi
 // FIXME remove and use amsi version (this is here from ETFEM transition)

@@ -1,7 +1,7 @@
 #include <apfMeasure.h>
 #include <apfWrapper.h>
 #include "bioNonlinearTissue.h"
-namespace bio
+namespace mumfim
 {
   template <typename I>
   void logVolumes(I bgn_mdl_itm,
@@ -87,4 +87,4 @@ namespace bio
       }
     }
   }
-}  // namespace bio
+}  // namespace mumfim

@@ -1,5 +1,5 @@
-#ifndef BIO_TISSUEMULTISCALEANALYSIS_H_
-#define BIO_TISSUEMULTISCALEANALYSIS_H_
+#ifndef MUMFIM_TISSUEMULTISCALEANALYSIS_H_
+#define MUMFIM_TISSUEMULTISCALEANALYSIS_H_
 #include <amsiAnalysis.h>
 #include <amsiMultiscale.h>
 #include <amsiPETScLAS.h>
@@ -11,7 +11,7 @@
 #include "bioMultiscaleTissue.h"
 #include "bioTissueAnalysis.h"
 #include "bioVolumeConvergence.h"
-namespace bio
+namespace mumfim
 {
   class MultiscaleTissueIteration : public amsi::Iteration
   {
@@ -41,5 +41,5 @@ namespace bio
     private:
     size_t cplng;
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

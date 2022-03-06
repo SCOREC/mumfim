@@ -1,8 +1,8 @@
-#ifndef BIO_ANALYSIS_H_
-#define BIO_ANALYSIS_H_
+#ifndef MUMFIM_ANALYSIS_H_
+#define MUMFIM_ANALYSIS_H_
 #include <vector>
 
-namespace bio
+namespace mumfim
 {
 using vec3d = std::vector<std::vector<std::vector<double>>>;
 //typedef std::vector<std::vector<std::vector<double>>> vec3d;

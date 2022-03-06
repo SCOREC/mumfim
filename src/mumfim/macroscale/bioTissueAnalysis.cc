@@ -3,7 +3,7 @@
 #include <iostream>
 #include "bioAnalysisIO.h"
 #include "bioModelTraits.h"
-namespace bio
+namespace mumfim
 {
   TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,
                                  std::unique_ptr<const mt::CategoryNode> cs,
@@ -267,4 +267,4 @@ namespace bio
     amsi::deleteLog(state);
 #endif
   }
-}  // namespace bio
+}  // namespace mumfim

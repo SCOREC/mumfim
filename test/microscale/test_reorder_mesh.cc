@@ -17,7 +17,7 @@ TEST_CASE("reorder mesh", "[mesh]")
     fixed_verts_h(i) = fixed_verts[i];
   }
   Kokkos::deep_copy(fixed_verts_d, fixed_verts_h);
-  bio::ReorderMesh<Scalar, Ordinal, ExeSpace::array_layout, ExeSpace> reorder(
+  mumfim::ReorderMesh<Scalar, Ordinal, ExeSpace::array_layout, ExeSpace> reorder(
       nverts, fixed_verts_d);
   reorder.createPermutationArray();
   SECTION("Check connectivity")

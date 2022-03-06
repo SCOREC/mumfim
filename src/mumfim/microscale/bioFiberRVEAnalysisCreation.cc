@@ -3,7 +3,8 @@
 #include "bioFiberRVEAnalysisStaticImplicit.h"
 #include <memory>
 
-namespace bio {
+namespace mumfim
+{
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fn,
       std::unique_ptr<MicroSolutionStrategy> ss,

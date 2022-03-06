@@ -1,5 +1,5 @@
-#ifndef BIO_FIBER_NETWORK_H_
-#define BIO_FIBER_NETWORK_H_
+#ifndef MUMFIM_FIBER_NETWORK_H_
+#define MUMFIM_FIBER_NETWORK_H_
 #include <apf.h>
 #include <apfFunctions.h>  // amsi
 #include <apfMesh2.h>
@@ -10,7 +10,7 @@
 #include "bioApfPointers.h"
 #include "bioFiber.h"
 #include "bioFiberReactions.h"
-namespace bio
+namespace mumfim
 {
   class FiberNetworkReactions
   {
@@ -29,7 +29,7 @@ namespace bio
   class FiberNetworkBase
   {
     public:
-    using mesh_ptr_type = bio::mesh_unique_ptr_type;
+    using mesh_ptr_type = mumfim::mesh_unique_ptr_type;
     using reaction_ptr_type = std::shared_ptr<FiberNetworkReactions>;
     FiberNetworkBase(mesh_ptr_type mesh, reaction_ptr_type reactions);
     FiberNetworkBase(const FiberNetworkBase & other);
@@ -140,15 +140,15 @@ namespace bio
    * \param network pointer to the the fiber network
    * \param \out omega the orientation tensor
    */
-  void get3DOrientationTensor(bio::FiberNetwork * network, double omega[9]);
+  void get3DOrientationTensor(mumfim::FiberNetwork * network, double omega[9]);
   /**
    * get the mean orientation vector of the rve projected into the plane defined
    * by the normal \param network pointer to the the fiber network \param normal
    * the normal vector to the plane to project the vectors into \param \out
    * omega orientation tensor
    */
-  void get2DOrientationTensor(bio::FiberNetwork * network,
+  void get2DOrientationTensor(mumfim::FiberNetwork * network,
                               double const normal[3],
                               double omega[9]);
-}  // namespace bio
+}  // namespace mumfim
 #endif

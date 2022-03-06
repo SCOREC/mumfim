@@ -1,6 +1,6 @@
-#ifndef BIO_MULTISCALE_CONVERGENCE_H_
-#define BIO_MULTISCALE_CONVERGENCE_H_
-namespace bio
+#ifndef MUMFIM_MULTISCALE_CONVERGENCE_H_
+#define MUMFIM_MULTISCALE_CONVERGENCE_H_
+namespace mumfim
 {
   // a multi-convergence wrapper that broadcasts to the
   // micro-scale if the rest of the convergence operations

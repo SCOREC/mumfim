@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
-#define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
+#ifndef MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
+#define MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
 #include <memory>
 #include <vector>
 #include "bioBatchedRVEAnalysis.h"
@@ -18,12 +18,12 @@
 #include "bioBatchedMesh.h"
 #include "bioBatchedReorderMesh.h"
 #include "bioRVE.h"
-namespace bio
+namespace mumfim
 {
   // void updateRVECoords(RVE &rve, const DeformationGradient &
   // incremental_deformation_gradient);
-  template <typename Scalar = bio::Scalar,
-            typename LocalOrdinal = bio::LocalOrdinal,
+  template <typename Scalar = mumfim::Scalar,
+            typename LocalOrdinal = mumfim::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
   class BatchedFiberRVEAnalysisExplicit
       : public BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>
@@ -415,5 +415,5 @@ namespace bio
       orientation_tensor.compute2D(normal, omega);
     }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

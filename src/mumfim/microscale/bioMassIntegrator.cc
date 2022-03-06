@@ -1,6 +1,6 @@
 #include "bioMassIntegrator.h"
 #include <cassert>
-namespace bio
+namespace mumfim
 {
   void MassIntegrator::inElement(apf::MeshElement * me)
   {
@@ -53,4 +53,4 @@ namespace bio
     }
     apf::destroyElement(mass_elmt);
   }
-}  // namespace bio
+}  // namespace mumfim

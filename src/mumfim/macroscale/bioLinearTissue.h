@@ -1,8 +1,8 @@
-#ifndef BIO_LINEARTISSUE_H_
-#define BIO_LINEARTISSUE_H_
+#ifndef MUMFIM_LINEARTISSUE_H_
+#define MUMFIM_LINEARTISSUE_H_
 #include <apfFEA.h>
 #include <memory>
-namespace bio
+namespace mumfim
 {
   class LinearTissue : public amsi::apfFEA
   {
@@ -18,5 +18,5 @@ namespace bio
     virtual void Assemble(amsi::LAS * las) override;
     apf::Field * getField() { return apf_primary_field; }
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif

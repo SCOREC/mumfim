@@ -1,5 +1,5 @@
-#ifndef BIO_NONLINEAR_TISSUE_H_
-#define BIO_NONLINEAR_TISSUE_H_
+#ifndef MUMFIM_NONLINEAR_TISSUE_H_
+#define MUMFIM_NONLINEAR_TISSUE_H_
 #include "bioLinearTissue.h"
 #include "bioStiffnessVariation.h"
 #include "bioVolumeConstraint.h"
@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <model_traits/CategoryNode.h>
-namespace bio
+namespace mumfim
 {
   class CurrentCoordFunc;
   class NonlinearTissue : public amsi::apfFEA

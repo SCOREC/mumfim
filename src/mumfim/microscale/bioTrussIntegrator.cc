@@ -1,6 +1,6 @@
 #include "bioTrussIntegrator.h"
 #include "bioUtility.h"
-namespace bio
+namespace mumfim
 {
   void TrussIntegrator::inElement(apf::MeshElement * me)
   {
@@ -68,4 +68,4 @@ namespace bio
     amsi::destroyApfElementalSystem(es);
     apf::destroyElement(elmt);
   }
-}  // namespace bio
+}  // namespace mumfim

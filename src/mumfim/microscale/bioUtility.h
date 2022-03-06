@@ -1,12 +1,12 @@
-#ifndef BIO_UTIL_H_
-#define BIO_UTIL_H_
+#ifndef MUMFIM_UTIL_H_
+#define MUMFIM_UTIL_H_
 #include "apfFieldOp.h" //amsi
 #include <apf.h>
 #include <apfMesh2.h>
 #include <apfNumbering.h>
 #include <type_traits>
 #include <Kokkos_Core.hpp> // for KOKKOS_INLINE_FUNCTION
-namespace bio
+namespace mumfim
 {
   /**
    * Calculate the primary measure (lenght, area, volume) for every entity

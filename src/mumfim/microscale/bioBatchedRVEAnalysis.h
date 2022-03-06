@@ -1,11 +1,11 @@
-#ifndef BIO_BATCHED_RVE_ANALYSIS_H
-#define BIO_BATCHED_RVE_ANALYSIS_H
+#ifndef MUMFIM_BATCHED_RVE_ANALYSIS_H
+#define MUMFIM_BATCHED_RVE_ANALYSIS_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <array>
 #include <vector>
 #include "bioMicroFOParams.h"
-namespace bio
+namespace mumfim
 {
   template <typename Scalar, typename Ordinal, typename ExeSpace>
   class BatchedRVEAnalysis
@@ -51,5 +51,5 @@ namespace bio
     // RVEAnalysis(const RVEAnalysis & an);
     // RVEAnalysis();
   };
-}  // namespace bio
+}  // namespace mumfim
 #endif
