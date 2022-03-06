@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_REORDER_MESH_H__
-#define BIO_BATCHED_REORDER_MESH_H__
+#ifndef BIO_BATCHED_REORDER_MESH_H
+#define BIO_BATCHED_REORDER_MESH_H
 #include <Kokkos_Core.hpp>
 namespace bio
 {

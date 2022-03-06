@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_MESH_H__
-#define BIO_BATCHED_MESH_H__
+#ifndef BIO_BATCHED_MESH_H
+#define BIO_BATCHED_MESH_H
 #include <apf.h>           // for extractCoordinateArray
 #include <apfConvert.h>    // for extractCoordinateArray
 #include <apfMesh2.h>      // for extractCoordinateArray

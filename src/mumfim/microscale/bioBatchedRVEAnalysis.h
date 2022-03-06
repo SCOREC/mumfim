@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_RVE_ANALYSIS_H__
-#define BIO_BATCHED_RVE_ANALYSIS_H__
+#ifndef BIO_BATCHED_RVE_ANALYSIS_H
+#define BIO_BATCHED_RVE_ANALYSIS_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <array>
@@ -16,10 +16,10 @@ namespace bio
     Ordinal num_rves_;
 
     public:
-    BatchedRVEAnalysis(Ordinal num_rves) : num_rves_(num_rves) {
+    explicit BatchedRVEAnalysis(Ordinal num_rves) : num_rves_(num_rves) {
       current_stress_ = Kokkos::DualView<Scalar * [6], ExeSpace>("current_stress", num_rves);
     };
-    virtual ~BatchedRVEAnalysis(){};
+    virtual ~BatchedRVEAnalysis()= default;;
     // for now we only allow the case where every analysis needs to update
     // coords, or every analysis doesn't it is possible this isn't the most
     // efficient choice, and we can re-evaluate this at a later time

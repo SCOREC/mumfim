@@ -1,5 +1,5 @@
-#ifndef BIO_VIEW_OF_VIEW_H__
-#define BIO_VIEW_OF_VIEW_H__
+#ifndef BIO_VIEW_OF_VIEW_H
+#define BIO_VIEW_OF_VIEW_H
 #include <Kokkos_Core.hpp>
 #include <vector>
 #include <cassert>

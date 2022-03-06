@@ -1,5 +1,5 @@
-#ifndef __OUTPUT_WRITER_H__
-#define __OUTPUT_WRITER_H__
+#ifndef BIO_OUTPUT_WRITER_H
+#define BIO_OUTPUT_WRITER_H
 #include <apf.h>
 #include <string>
 

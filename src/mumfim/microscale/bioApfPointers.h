@@ -1,5 +1,5 @@
-#ifndef BIO_APF_CUSTOM_DELETERS_H__
-#define BIO_APF_CUSTOM_DELETERS_H__
+#ifndef BIO_APF_CUSTOM_DELETERS_H_
+#define BIO_APF_CUSTOM_DELETERS_H_
 #include <memory>
 namespace apf {
   class Mesh;

@@ -1,5 +1,5 @@
-#ifndef BIO_FIBER_NETWORK_LIBRARY_H__
-#define BIO_FIBER_NETWORK_LIBRARY_H__
+#ifndef BIO_FIBER_NETWORK_LIBRARY_H
+#define BIO_FIBER_NETWORK_LIBRARY_H
 #include <bioFiberNetwork.h>
 #include <istream>
 #include <map>

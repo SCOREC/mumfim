@@ -11,8 +11,8 @@
 #include <cfenv>
 #include <iostream>
 #include <string>
-#include "../../../src/macroscale/bioMultiscaleTissue.h"
-#include "../../../src/macroscale/bioTissueMultiscaleAnalysis.h"
+#include "bioMultiscaleTissue.h"
+#include "bioTissueMultiscaleAnalysis.h"
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);

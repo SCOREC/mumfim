@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H__
-#define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H__
+#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
+#define BIO_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
 #include <memory>
 #include <vector>
 #include "bioBatchedRVEAnalysis.h"

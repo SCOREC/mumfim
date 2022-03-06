@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H__
-#define BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H__
+#ifndef BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
+#define BIO_BATCHED_FIBER_RVE_ANALYSIS_BASE_H
 #include <Kokkos_Core.hpp>
 #include <array>
 #include <limits>

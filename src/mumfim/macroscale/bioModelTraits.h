@@ -1,5 +1,5 @@
-#ifndef BIOTISSUE_BIOMODELTRAITS_H
-#define BIOTISSUE_BIOMODELTRAITS_H
+#ifndef BIO_BIOMODELTRAITS_H
+#define BIO_BIOMODELTRAITS_H
 #include <apf.h>
 #include <model_traits/ModelTraits.h>
 #include <apfMesh.h>

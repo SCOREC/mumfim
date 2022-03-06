@@ -1,5 +1,5 @@
-#ifndef __BIO_MICRO_TYPES_H__
-#define __BIO_MICRO_TYPES_H__
+#ifndef BIO_MICRO_TYPES_H
+#define BIO_MICRO_TYPES_H
 namespace bio
 {
   using Scalar=double;

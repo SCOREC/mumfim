@@ -1,5 +1,5 @@
-#ifndef BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H__
-#define BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H__
+#ifndef BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
+#define BIO_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include "bioPackedData.h"
@@ -45,7 +45,7 @@ namespace bio
     typename OuterPolicyType3D::index_type team_size_;
     OrientationDeviceViewType omega_d_;
     NormalDeviceViewType normal_d_;
-    OrientationTensor(){};
+    OrientationTensor()= default;;
     OrientationTensor(ConnectivityType connectivity, CoordinatesType coordinates, Ordinal team_size)
         : connectivity_(connectivity)
         , coordinates_(coordinates)

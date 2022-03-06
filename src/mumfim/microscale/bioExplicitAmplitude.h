@@ -1,5 +1,5 @@
-#ifndef __AMPLITUDE_H__
-#define __AMPLITUDE_H__
+#ifndef BIO_AMPLITUDE_H_
+#define BIO_AMPLITUDE_H_
 #include <iostream>
 namespace bio
 {
@@ -10,23 +10,23 @@ namespace bio
   struct Amplitude
   {
     virtual double operator()(double time) const = 0;
-    virtual double derivative(double t) const
+    [[nodiscard]] virtual double derivative(double t) const
     {
       return (operator()(t + diffEPS) - operator()(t - diffEPS)) /
              (2 * diffEPS);
     }
-    virtual double secondDerivative(double t) const
+    [[nodiscard]] virtual double secondDerivative(double t) const
     {
       return (operator()(t + diffEPS) -
               2 * operator()(t) + operator()(t - diffEPS)) /
              (diffEPS * diffEPS);
     }
-    virtual ~Amplitude() {}
+    virtual ~Amplitude() = default;
   };
   struct SmoothAmp : public Amplitude
   {
     double t_max;
-    SmoothAmp(double t_max) : t_max(t_max) { }
+    explicit SmoothAmp(double t_max) : t_max(t_max) { }
     double operator()(double t) const override
     {
       if ( t<= t_max)
