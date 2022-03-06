@@ -48,11 +48,6 @@ namespace bio
       }
       return dg;
     }
-    DeformationGradient& operator=(DeformationGradient dfmGrd)
-    {
-      std::swap(data, dfmGrd.data);
-      return *this;
-    }
   };
   struct Axis
   {
@@ -109,7 +104,7 @@ namespace bio
     MicroProblemDefinition pd;
     std::unique_ptr<MicroSolutionStrategy> ss;
     MicroOutput out;
-    MicroCase() : ss(new MicroSolutionStrategy) {}
+    MicroCase() : pd(), ss(new MicroSolutionStrategy), out() {}
   };
 }  // namespace bio
 #endif

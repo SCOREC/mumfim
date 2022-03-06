@@ -62,12 +62,10 @@ static int readRFGrid(const char * RFGFileName, double & x0, double & y0, double
   return 0;
 }
 
-//enum class InterpType { Nearest };
-// take a grid and 
 static int interpolateGridData(double x0, double y0, double z0, double dx, double dy, double dz,
                         int Nx, int Ny, int Nz,const vec3d & grid,
                         double px, double py, double pz, double & val,
-                        InterpType tp)
+                        InterpType /* unused */)
 {
   if ((px < x0 || px > x0+Nx*dx) ||
       (py < y0 || py > y0+Ny*dy) ||

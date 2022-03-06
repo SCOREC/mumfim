@@ -376,13 +376,13 @@ namespace bio
     {
       static_cast<T &>(*this).deleteArray_(data);
     }
-    void zeroHostData(H_RWDA data, int n)
+    void zeroHostData(H_RWDA data)
     {
-      static_cast<T &>(*this).zeroHostData_(data, n);
+      static_cast<T &>(*this).zeroHostData_(data);
     }
-    void zeroDeviceData(D_RWDA data, int n)
+    void zeroDeviceData(D_RWDA data)
     {
-      static_cast<T &>(*this).zeroDeviceData_(data, n);
+      static_cast<T &>(*this).zeroDeviceData_(data);
     }
     H_RWDA createHostDoubleArray(int size)
     {
@@ -441,7 +441,7 @@ namespace bio
       return static_cast<T &>(*this).createHostIntArrayFromRaw_(raw_array,
                                                                 size);
     }
-    void computeMassMatrix(int nnds,
+    void computeMassMatrix(int /* unused */,
                            apf::Mesh * mesh,
                            apf::Field * nodalMass,
                            double density,
@@ -632,26 +632,26 @@ namespace bio
                          apf::Field * mass_field = NULL,
                          ExplicitOutputWriter * writer = NULL)
         : analysis_name(analysis_name)
-        , mesh(mesh)
-        , total_time(total_time)
         , amp(amp)
-        , print_history_frequency(print_history_frequency)
-        , print_field_frequency(print_field_frequency)
-        , print_field_by_num_frames(print_field_by_num_frames)
-        , crit_time_scale_factor(crit_time_scale_factor)
-        , energy_check_eps(energy_check_eps)
-        , visc_damp_coeff(visc_damp_coeff)
-        , fiber_elastic_modulus(fiber_elastic_modulus)
-        , fiber_area(fiber_area)
-        , fiber_density(fiber_density)
-        , coordinate_field(coordinate_field)
+        , mesh(mesh)
         , u_field(u_field)
         , v_field(v_field)
         , a_field(a_field)
         , f_int_field(f_int_field)
         , f_ext_field(f_ext_field)
         , nodalMass(mass_field)
+        , coordinate_field(coordinate_field)
         , mass_field_initialized(false)
+        , fiber_density(fiber_density)
+        , fiber_elastic_modulus(fiber_elastic_modulus)
+        , fiber_area(fiber_area)
+        , visc_damp_coeff(visc_damp_coeff)
+        , print_field_by_num_frames(print_field_by_num_frames)
+        , print_field_frequency(print_field_frequency)
+        , print_history_frequency(print_history_frequency)
+        , total_time(total_time)
+        , crit_time_scale_factor(crit_time_scale_factor)
+        , energy_check_eps(energy_check_eps)
         , writer(writer)
         , own_writer(false)
     {
@@ -835,12 +835,12 @@ namespace bio
       l0_d = createDeviceDoubleArray(nelem);
       l_d = createDeviceDoubleArray(nelem);
       current_coords_d = createDeviceDoubleArray(ndof);
-      zeroDeviceData(f_int_last_d, ndof);
+      zeroDeviceData(f_int_last_d);
       // zeroDeviceData(f_ext_d, ndof);
-      zeroDeviceData(f_ext_last_d, ndof);
-      zeroDeviceData(f_damp_d, ndof);
-      zeroDeviceData(f_damp_last_d, ndof);
-      zeroDeviceData(f_d, ndof);
+      zeroDeviceData(f_ext_last_d);
+      zeroDeviceData(f_damp_d);
+      zeroDeviceData(f_damp_last_d);
+      zeroDeviceData(f_d);
     }
     ~ExplicitAnalysisSerial()
     {
@@ -857,8 +857,8 @@ namespace bio
     }
 
     public:
-    void zeroDeviceData_(double * data, int n) { std::fill_n(data, ndof, 0); }
-    void zeroHostData_(double * data, int n) { std::fill_n(data, ndof, 0); }
+    void zeroDeviceData_(double * data) { std::fill_n(data, ndof, 0); }
+    void zeroHostData_(double * data) { std::fill_n(data, ndof, 0); }
     double * createHostDoubleArray_(int size) { return new double[size]; }
     int * createHostIntArray_(int size) { return new int[size]; }
     double * createDeviceDoubleArray_(int size) { return new double[size]; }
@@ -1168,7 +1168,7 @@ namespace bio
   {
     public:
     template <typename D>
-    void deleteArray_(D data)
+    void deleteArray_(D /* unused */ )
     {
     }
     KKH_RWDA createHostDoubleArrayFromRaw_(double * raw_array, int size)
@@ -1447,14 +1447,14 @@ namespace bio
                 KKD_RODA f_ext,
                 KKD_RODA f_damp_last,
                 KKD_RODA f_damp)
-          : du_(du)
+          : value_count(3)
+          , du_(du)
           , f_int_last_(f_int_last)
           , f_int_(f_int)
           , f_ext_last_(f_ext_last)
           , f_ext_(f_ext)
           , f_damp_last_(f_damp_last)
           , f_damp_(f_damp)
-          , value_count(3)
       {
       }
       KOKKOS_INLINE_FUNCTION

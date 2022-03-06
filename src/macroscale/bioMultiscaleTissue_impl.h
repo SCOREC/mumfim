@@ -35,7 +35,7 @@ namespace bio
   {
     apf::MeshEntity * rgn = NULL;
     apf::MeshIterator * it = apf_mesh->begin(3);
-    while(rgn = apf_mesh->iterate(it))
+    while((rgn = apf_mesh->iterate(it)))
     {
       apf::MeshElement * mlm = apf::createMeshElement(apf_mesh,rgn);
       int ng = apf::countIntPoints(mlm,getOrder(mlm));

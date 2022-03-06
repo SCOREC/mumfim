@@ -50,7 +50,7 @@ namespace bio
     // a single iteration
     bool system_initialized;
     unsigned long itr_prev;
-    void computeDisplacementBC(const DeformationGradient & dfmGrd);
+    void computeDisplacementBC();
     void copyForceDataToForceVec();
     void copyDispDataToDispVec();
     ExplicitOutputWriter * writer; 

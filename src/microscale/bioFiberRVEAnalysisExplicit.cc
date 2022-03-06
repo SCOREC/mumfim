@@ -95,7 +95,7 @@ namespace bio
     }
     // see what happens when we initially apply affine solution
     applyGuessSolution(this, dfmGrd);
-    computeDisplacementBC(dfmGrd);
+    computeDisplacementBC();
     // since for debugging use we are putting the external forces into the du field
     // we need to zero that field after apply the guess solution...otherwise we apply
     // external forces at every point in the field which is bad...
@@ -168,8 +168,7 @@ namespace bio
     disp_bound_init_vals = NULL;
     return rtn;
   }
-  void FiberRVEAnalysisExplicit::computeDisplacementBC(
-      const DeformationGradient & dfmGrd)
+  void FiberRVEAnalysisExplicit::computeDisplacementBC()
   {
     disp_bound_nfixed = 3 * bnd_nds[RVE::all].size();
     disp_bound_dof = new int[disp_bound_nfixed];
