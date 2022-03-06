@@ -1,8 +1,8 @@
-#include "bioTissueAnalysis.h"
+#include "mumfim/macroscale/bioTissueAnalysis.h"
 #include <apf.h>
 #include <iostream>
-#include "bioAnalysisIO.h"
-#include "bioModelTraits.h"
+#include "mumfim/macroscale/bioAnalysisIO.h"
+#include "mumfim/macroscale/bioModelTraits.h"
 namespace mumfim
 {
   TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,

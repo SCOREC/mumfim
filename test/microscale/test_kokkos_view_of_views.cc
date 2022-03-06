@@ -1,5 +1,5 @@
 #include <vector>
-#include "bioViewOfView.h"
+#include "mumfim/microscale/bioViewOfView.h"
 #include "catch2/catch.hpp"
 #include <Kokkos_Core.hpp>
 

@@ -1,6 +1,6 @@
 #ifndef MUMFIM_RVE_COUPLING_H_
 #define MUMFIM_RVE_COUPLING_H_
-#include <bioMultiscaleMicroFOParams.h>
+#include <mumfim/microscale/bioMultiscaleMicroFOParams.h>
 #include <apf.h>
 #include <amsiMultiscale.h>
 #include <apfMesh.h>

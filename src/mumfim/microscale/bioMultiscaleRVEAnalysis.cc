@@ -5,13 +5,11 @@
 #include <apfFEA.h>  // amsi
 #include <apfMDS.h>
 #include <apfMeshIterator.h>  // amsi
-#include <bioVerbosity.h>
+#include <mumfim/microscale/bioVerbosity.h>
 #include <gmi.h>
 #include <cassert>
-#include "bioFiberNetworkIO.h"
 #include "bioFiberRVEAnalysis.h"
 #include "bioMultiscaleMicroFOParams.h"
-#include <fstream>
 #include <sstream>
 #include "bioNeoHookeanRVEAnalysis.h"
 #include "bioFiberNetworkLibrary.h"

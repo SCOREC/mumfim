@@ -24,7 +24,7 @@ target_link_libraries(biotissue
         amsi::multiscale)
 
 target_include_directories(biotissue PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-        "$<INSTALL_INTERFACE:include/biotissue>")
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>"
+        "$<INSTALL_INTERFACE:include>")
 
 install(TARGETS biotissue DESTINATION lib)

@@ -4,9 +4,9 @@
 #include <model_traits/AssociatedModelTraits.h>
 #include <map>
 #include <string>
-#include "bioMicroFOParams.h"
-#include "bioULMultiscaleHydrostaticPressureIntegrator.h"
-#include "bioULMultiscaleIntegrator.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/macroscale/bioULMultiscaleHydrostaticPressureIntegrator.h"
+#include "mumfim/macroscale/bioULMultiscaleIntegrator.h"
 namespace mumfim
 {
   struct StochasticFieldData

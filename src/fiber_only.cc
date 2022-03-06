@@ -1,18 +1,13 @@
 #include <amsiAnalysis.h>
 #include <amsiDetectOscillation.h>
 #include <apf.h>
-#include <lasCSRCore.h>
-#include <lasCorePETSc.h>
 #include <mpi.h>
 #include <Kokkos_Core.hpp>
 #include <iostream>
-#include "bioFiberNetwork.h"
-#include "bioFiberNetworkIO.h"
-#include "bioFiberNetworkLibrary.h"
-#include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOParams.h"
-#include "bioMultiscaleRVEAnalysis.h"
-#include "bioVerbosity.h"
+#include "mumfim/microscale/bioFiberNetwork.h"
+#include "mumfim/microscale/bioFiberNetworkLibrary.h"
+#include "mumfim/microscale/bioFiberRVEAnalysis.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
 void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
 {
   stress[0][0] = stress_arr[0];

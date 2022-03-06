@@ -1,14 +1,11 @@
 #include <amsiAnalysis.h>
 #include <amsiDetectOscillation.h>
-#include <apf.h>
 #include <mpi.h>
 #include <iostream>
-#include "bioFiberNetworkIO.h"
-#include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOParams.h"
-#include "bioMultiscaleRVEAnalysis.h"
-#include "bioVerbosity.h"
-#include <bioFiberRVEAnalysisStaticImplicit.h>
+#include "mumfim/microscale/bioFiberRVEAnalysis.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/microscale/bioMultiscaleRVEAnalysis.h"
+#include <mumfim/microscale/bioFiberRVEAnalysisStaticImplicit.h>
 int main(int argc, char * argv[])
 {
   amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);

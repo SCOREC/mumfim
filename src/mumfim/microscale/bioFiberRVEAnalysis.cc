@@ -2,22 +2,16 @@
 
 #include <PCU.h>
 #include <apfMeshIterator.h>
-#include <bioVerbosity.h>
 #include <las.h>
 #include <lasConfig.h>
 #include <lasSys.h>
 #include "bioFiber.h"
 #include "bioFiberNetwork.h"
-#include "bioFiberNetworkIO.h"
-#include "bioMultiscaleCoupling.h"
-#include "bioVerbosity.h"
 #include "bioMicroFOParams.h"
 #include "bioMultiscaleMicroFOParams.h"
 #include "bioUtility.h"
 #include <apfMatrixUtil.h>
-#include <lasCSR.h>
 #include <lasCSRCore.h>
-//#include <lasCorePETSc.h>
 #include <lasSparskitExterns.h>
 namespace mumfim
 {

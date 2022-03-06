@@ -13,10 +13,10 @@
 #include <apfMeshIterator.h>  // iterator for RVE Functions
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
-#include "bioBatchedComputeOrientationTensor.h"
-#include "bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
-#include "bioBatchedMesh.h"
-#include "bioBatchedReorderMesh.h"
+#include "mumfim/microscale/batched_analysis/bioBatchedComputeOrientationTensor.h"
+#include "mumfim/microscale/batched_analysis/bioBatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
+#include "mumfim/microscale/batched_analysis/bioBatchedMesh.h"
+#include "mumfim/microscale/batched_analysis/bioBatchedReorderMesh.h"
 #include "bioRVE.h"
 namespace mumfim
 {

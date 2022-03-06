@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cassert>
 #include <limits>
-#include <bioReadStochasticField.h>
+#include <mumfim/macroscale/bioReadStochasticField.h>
 #include <cmath>
 
 

@@ -3,11 +3,11 @@
 #include <apf.h>
 #include <mpi.h>
 #include <iostream>
-#include "bioMicroFOParams.h"
-#include "bioFiberNetworkLibrary.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/microscale/bioFiberNetworkLibrary.h"
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
-#include <bioBatchedFiberRVEAnalysisExplicit.h>
+#include <mumfim/microscale/bioBatchedFiberRVEAnalysisExplicit.h>
 #include <memory>
 #include <PCU.h>
 template <typename T>

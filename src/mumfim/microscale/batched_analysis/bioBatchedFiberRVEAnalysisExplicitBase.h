@@ -3,8 +3,8 @@
 #include <Kokkos_Core.hpp>
 #include <array>
 #include <limits>
-#include "bioPackedData.h"
-#include "bioRVE.h"
+#include "mumfim/microscale/bioPackedData.h"
+#include "mumfim/microscale/bioRVE.h"
 namespace mumfim
 {
   template <typename ExeSpace,

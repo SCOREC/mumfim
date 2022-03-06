@@ -117,5 +117,5 @@ namespace mumfim
   void getRVEDisplacement(RVE * rve, apf::DynamicVector & u);
   void getRVEReferenceCoords(RVE * rve, apf::DynamicVector & xyz_0);
 }
-#include <bioRVE_impl.h>
+#include <mumfim/microscale/bioRVE_impl.h>
 #endif

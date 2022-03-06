@@ -48,14 +48,17 @@ if(VERBOSITY_FLAGS)
     set_target_properties(micro_fo PROPERTIES COMPILE_FLAGS ${VERBOSITY_FLAGS})
 endif()
 
+#target_include_directories(micro_fo PUBLIC
+#                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+#                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/batched_analysis>
+#                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+#                                    $<INSTALL_INTERFACE:include/biotissue>)
 target_include_directories(micro_fo PUBLIC
-                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/batched_analysis>
-                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-                                    $<INSTALL_INTERFACE:include/biotissue>)
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+        $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale 
-                      las_core Kokkos::kokkos
+target_link_libraries(micro_fo PUBLIC las amsi::util amsi::analysis amsi::multiscale
+        las_core Kokkos::kokkos
                       PRIVATE yaml-cpp)
 if(yaml-cpp_FOUND)
   target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)

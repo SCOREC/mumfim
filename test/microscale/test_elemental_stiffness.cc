@@ -4,11 +4,10 @@
 #include <mpi.h>
 #include <cmath>
 #include <iostream>
-#include "bioFiberNetworkIO.h"
-#include "bioFiberRVEAnalysis.h"
-#include "bioMicroFOParams.h"
-#include "bioMultiscaleRVEAnalysis.h"
-#include "bioVerbosity.h"
+#include "mumfim/microscale/bioFiberNetworkIO.h"
+#include "mumfim/microscale/bioFiberRVEAnalysis.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/microscale/bioMultiscaleRVEAnalysis.h"
 // see python implementation...
 bool isclose(double a, double b, double rel_tol = 1E-5, double abs_tol = 1E-8)
 {

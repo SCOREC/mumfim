@@ -2,7 +2,7 @@
 #define MUMFIM_BATCHED_COMPUTE_ORIENTATION_TENSOR_H
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
-#include "bioPackedData.h"
+#include "mumfim/microscale/bioPackedData.h"
 namespace mumfim
 {
   template <typename Scalar, typename Ordinal, typename CoordinatesType, typename ConnectivityType, typename ExeSpace>

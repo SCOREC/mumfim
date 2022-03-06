@@ -1,6 +1,6 @@
 #ifndef MUMFIM_FIBER_NETWORK_LIBRARY_H
 #define MUMFIM_FIBER_NETWORK_LIBRARY_H
-#include <bioFiberNetwork.h>
+#include <mumfim/microscale/bioFiberNetwork.h>
 #include <istream>
 #include <map>
 #include <memory>

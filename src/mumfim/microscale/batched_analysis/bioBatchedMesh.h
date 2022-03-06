@@ -6,10 +6,10 @@
 #include <apfNumbering.h>  // for getNumbering (getFixedDOF)
 #include <Kokkos_Core.hpp>
 #include <iostream>
-#include "bioMassIntegrator.h"
-#include "bioMicroFOParams.h"
-#include "bioRVE.h"
-#include "bioUtility.h"
+#include "mumfim/microscale/bioMassIntegrator.h"
+#include "mumfim/microscale/bioMicroFOParams.h"
+#include "mumfim/microscale/bioRVE.h"
+#include "mumfim/microscale/bioUtility.h"
 namespace mumfim
 {
   // functions that need to interact with the apf mesh

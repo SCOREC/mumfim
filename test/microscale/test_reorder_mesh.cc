@@ -1,7 +1,7 @@
 #include <array>
 #include "catch2/catch.hpp"
 #include <Kokkos_Core.hpp>
-#include <bioBatchedReorderMesh.h>
+#include <mumfim/microscale/batched_analysis/bioBatchedReorderMesh.h>
 using Ordinal=int;
 using Scalar=double;
 using ExeSpace=Kokkos::DefaultExecutionSpace;
