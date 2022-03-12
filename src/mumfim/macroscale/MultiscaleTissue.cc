@@ -72,7 +72,8 @@ namespace mumfim
   }
   MultiscaleTissue::MultiscaleTissue(apf::Mesh * mesh,
                                      const mt::CategoryNode & analysis_case,
-                                     MPI_Comm cm)
+                                     MPI_Comm cm,
+                                     const amsi::Multiscale & amsi_multiscale)
       : NonlinearTissue(mesh, analysis_case, cm)
       , mltscl(NULL)
       , crt_rve(apf::createIPField(apf_mesh, "micro_rve_type", apf::SCALAR, 1))
@@ -84,18 +85,22 @@ namespace mumfim
       , fo_cplg(apf_mesh,
                 crt_rve,
                 prv_rve,
-                apf::getShape(apf_primary_field)->getOrder())
+                apf::getShape(apf_primary_field)->getOrder(),
+                amsi_multiscale)
       , nm_rves(0)
       , rve_dirs()
+      , multiscale_(amsi_multiscale)
   {
     ornt_3D = apf::createIPField(apf_mesh, "ornt_tens_3D", apf::MATRIX, 1);
     ornt_2D = apf::createIPField(apf_mesh, "ornt_tens_2D", apf::MATRIX, 1);
     mltscl = new ULMultiscaleIntegrator(&fo_cplg, strn, strs, apf_primary_field,
                                         dfm_grd, 1);
-    M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(), "macro", "micro_fo");
-    m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(), "micro_fo", "macro");
+    M2m_id =
+        amsi::getRelationID(multiscale_.getMultiscaleManager(),
+                            multiscale_.getScaleManager(), "macro", "micro_fo");
+    m2M_id =
+        amsi::getRelationID(multiscale_.getMultiscaleManager(),
+                            multiscale_.getScaleManager(), "micro_fo", "macro");
     apf::zeroField(ornt_3D);
     apf::zeroField(ornt_2D);
     apf::zeroField(crt_rve);

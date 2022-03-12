@@ -17,6 +17,7 @@
 #include "MultiscaleConvergence.h"
 #include "MultiscaleTissue.h"
 #include "VolumeConvergence.h"
+#include <amsiMultiscale.h>
 namespace mumfim
 {
   void MultiscaleTissueIteration::iterate()
@@ -33,12 +34,14 @@ namespace mumfim
   MultiscaleTissueAnalysis::MultiscaleTissueAnalysis(
       apf::Mesh * mesh,
       std::unique_ptr<mt::CategoryNode> analysis_case,
-      MPI_Comm cm)
+      MPI_Comm cm,
+      const amsi::Multiscale & amsi_multiscale)
       : TissueAnalysis(mesh, std::move(analysis_case), cm)
-      , cplng(getRelationID(amsi::getMultiscaleManager(),
-                            amsi::getScaleManager(),
+      , cplng(getRelationID(amsi_multiscale.getMultiscaleManager(),
+                            amsi_multiscale.getScaleManager(),
                             "macro",
                             "micro_fo"))
+      , multiscale_(amsi_multiscale)
   {
   }
   // TODO move to constructor
@@ -57,7 +60,7 @@ namespace mumfim
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
     // analysis params
-    tssu = new MultiscaleTissue(mesh, *analysis_case, cm);
+    tssu = new MultiscaleTissue(mesh, *analysis_case, cm, multiscale_);
     const auto * timesteps_trait = mt::GetCategoryModelTraitByType<mt::IntMT>(
         solution_strategy, "num timesteps");
     if (timesteps_trait == nullptr)

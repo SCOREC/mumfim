@@ -8,13 +8,14 @@
 #include <mumfim/microscale/FiberRVEAnalysisStaticImplicit.h>
 int main(int argc, char * argv[])
 {
-  amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
+  amsi::MPI mpi(argc, argv);
+  amsi::Analysis an{{}, argc, argv, MPI_COMM_WORLD, mpi};
   std::vector<mumfim::MicroCase> cases;
   mumfim::loadMicroFOFromYamlFile(
       "./test_global_stiffness_data/global_stiffness.yaml", cases);
-  las::LasCreateMat* mb = las::getMatBuilder<las::sparskit>(0);
+  las::LasCreateMat * mb = las::getMatBuilder<las::sparskit>(0);
   for (std::size_t i = 0; i < cases.size(); ++i)
-  //for (std::size_t i = 0; i < 1; ++i)
+  // for (std::size_t i = 0; i < 1; ++i)
   {
     mumfim::printMicroFOCase(cases[i]);
     std::string file_name = cases[i].pd.meshFile;
@@ -101,6 +102,5 @@ int main(int argc, char * argv[])
   }
   delete mb;
   mb = NULL;
-  amsi::freeAnalysis();
   return 0;
 }

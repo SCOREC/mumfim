@@ -46,18 +46,19 @@ class TrussIntegratorElemStiff : public mumfim::TrussIntegrator
 int main(int argc, char * argv[])
 {
   {
-  amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
-  std::vector<mumfim::MicroCase> cases;
-  mumfim::loadMicroFOFromYamlFile(argv[1], cases);
-  mumfim::printMicroFOCase(cases[0]);
-  std::string file_name = cases[0].pd.meshFile;
-  int rank = -1;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  mumfim::FiberNetworkLibrary network_library;
-  network_library.load(file_name,file_name+".params",0,0);
-  auto fiber_network = network_library.getUniqueCopy(0, 0);
-  // I'm not confident that the move thing here works as intended
-  auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
+    amsi::MPI mpi(argc, argv);
+    amsi::Analysis analysis{{}, argc, argv, MPI_COMM_WORLD, mpi};
+    std::vector<mumfim::MicroCase> cases;
+    mumfim::loadMicroFOFromYamlFile(argv[1], cases);
+    mumfim::printMicroFOCase(cases[0]);
+    std::string file_name = cases[0].pd.meshFile;
+    int rank = -1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    mumfim::FiberNetworkLibrary network_library;
+    network_library.load(file_name, file_name + ".params", 0, 0);
+    auto fiber_network = network_library.getUniqueCopy(0, 0);
+    // I'm not confident that the move thing here works as intended
+    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
   auto truss_es = std::unique_ptr<apf::Integrator>{new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF())};
   auto fn_msh = an->getFn()->getNetworkMesh();
   apf::MeshEntity * me = NULL;
@@ -71,7 +72,6 @@ int main(int argc, char * argv[])
     ++ii;
   }
   fn_msh->end(itr);
-  amsi::freeAnalysis();
   }
   return 0;
 }

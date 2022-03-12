@@ -17,11 +17,18 @@ if (NOT ${BUILD_EXTERNAL})
 endif ()
 
 add_library(biotissue ${biotissue_src_files})
+#target_link_libraries(biotissue
+#        micro_fo
+#        amsi::util
+#        amsi::analysis
+#        amsi::multiscale)
 target_link_libraries(biotissue
+        PUBLIC
         micro_fo
         amsi::util
         amsi::analysis
-        amsi::multiscale)
+        amsi::multiscale
+        amsi::amsi)
 
 target_include_directories(biotissue PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>"

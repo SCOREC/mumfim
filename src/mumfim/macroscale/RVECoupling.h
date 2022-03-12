@@ -5,6 +5,7 @@
 #include <amsiMultiscale.h>
 #include <apfMesh.h>
 #include <model_traits/AssociatedModelTraits.h>
+#include <amsiControlService.h>
 namespace mumfim
 {
   MicroscaleType getMicroscaleType(
@@ -23,18 +24,25 @@ namespace mumfim
     std::vector<micro_fo_step_result> stp_rslt;
     size_t snd_ptrn;
     size_t rcv_ptrn;
-  public:
-  RVECoupling(apf::Mesh * m, apf::Field * crt, apf::Field * old, int o)
-      : msh(m)
-      , rst_fst(NULL)
-      , crt_rve(crt)
-      , prv_rve(old)
-      , fld_ord(o)
-      , rve_cnt(0)
-      , rsts()
-      , stp_rslt()
-      , snd_ptrn()
-      , rcv_ptrn()
+    const amsi::Multiscale & multiscale_;
+
+    public:
+    RVECoupling(apf::Mesh * m,
+                apf::Field * crt,
+                apf::Field * old,
+                int o,
+                const amsi::Multiscale & amsi_multiscale_)
+        : msh(m)
+        , rst_fst(NULL)
+        , crt_rve(crt)
+        , prv_rve(old)
+        , fld_ord(o)
+        , rve_cnt(0)
+        , rsts()
+        , stp_rslt()
+        , snd_ptrn()
+        , rcv_ptrn()
+        , multiscale_(amsi_multiscale_)
     {
       rst_fst = apf::createIPField(msh,"micro_fo_rve_offset",apf::SCALAR,1);
       int ip_id = 0;
@@ -56,20 +64,22 @@ namespace mumfim
     }
     void initCoupling()
     {
-      amsi::ControlService * cs = amsi::ControlService::Instance();
-      amsi::Task * macro = amsi::getLocal();
-      amsi::DataDistribution * dd = amsi::createDataDistribution(macro,"micro_fo_data");
+      auto cs = multiscale_.getControlService();
+      auto * macro = multiscale_.getScaleManager()->getLocalTask();
+      amsi::DataDistribution * dd =
+          amsi::createDataDistribution(macro, "micro_fo_data");
       (*dd) = 0;
-      amsi::Assemble(dd,macro->comm());
-      snd_ptrn = cs->CreateCommPattern("micro_fo_data","macro","micro_fo");
+      amsi::Assemble(dd, macro->comm());
+      snd_ptrn = cs->CreateCommPattern("micro_fo_data", "macro", "micro_fo");
       cs->CommPattern_Reconcile(snd_ptrn);
-      rcv_ptrn = cs->RecvCommPattern("macro_fo_data","micro_fo","micro_fo_results","macro");
+      rcv_ptrn = cs->RecvCommPattern("macro_fo_data", "micro_fo",
+                                     "micro_fo_results", "macro");
       cs->CommPattern_Reconcile(rcv_ptrn);
     }
     template <typename I>
       void deleteRVEs(I dlt_bgn, I dlt_end)
     {
-      amsi::ControlService * cs = amsi::ControlService::Instance();
+      auto * cs = multiscale_.getControlService();
       std::vector<int> to_dlt;
       std::copy(dlt_bgn,dlt_end,std::back_inserter(to_dlt));
       cs->RemoveData(snd_ptrn,to_dlt);
@@ -77,7 +87,7 @@ namespace mumfim
     template <typename I1, typename I2, typename I3, typename I4, typename I5>
       void sendNewRVEs(size_t ptrn, I1 hdr, I2 prm, I3 dat, I4 micro_slvr, I5 micro_int_slvr)
     {
-      amsi::ControlService * cs = amsi::ControlService::Instance();
+      auto * cs = multiscale_.getControlService();
       cs->Communicate(ptrn,hdr,amsi::mpi_type<mumfim::micro_fo_header>());
       cs->Communicate(ptrn,prm,amsi::mpi_type<mumfim::micro_fo_params>());
       cs->Communicate(ptrn,dat,amsi::mpi_type<mumfim::micro_fo_init_data>());
@@ -86,7 +96,7 @@ namespace mumfim
     }
     size_t addRVEs(int sz)
     {
-      amsi::ControlService * cs = amsi::ControlService::Instance();
+      auto * cs = multiscale_.getControlService();
       size_t cnt = sz;
       size_t add_id = cs->addData(snd_ptrn,cnt);
       rve_cnt += sz;
@@ -94,7 +104,7 @@ namespace mumfim
     }
     void updateRecv()
     {
-      amsi::ControlService::Instance()->CommPattern_Reconcile(rcv_ptrn);
+      multiscale_.getControlService()->CommPattern_Reconcile(rcv_ptrn);
     }
     // todo (h) : template or pointer
     void sendRVEData(std::vector<micro_fo_data> & bfr)

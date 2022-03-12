@@ -11,6 +11,7 @@
 #include <string>
 #include "mumfim/macroscale/AnalysisIO.h"
 #include "mumfim/macroscale/TissueAnalysis.h"
+#include "amsiAnalysis.h"
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);
@@ -89,7 +90,10 @@ int main(int argc, char ** argv)
 #endif
   if (parse_options(argc, argv))
   {
-    amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
+    amsi::MPI mpi(argc, argv, MPI_COMM_WORLD);
+    auto amsi_options = amsi::readAmsiOptions(model_traits_filename);
+    amsi::Analysis(amsi_options.analysis.value(), argc, argv, MPI_COMM_WORLD,
+                   mpi);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
     if (rnk > 0) amsi::suppressOutput(std::cout);
@@ -116,7 +120,6 @@ int main(int argc, char ** argv)
                            AMSI_COMM_WORLD);
     an.init();
     an.run();
-    amsi::freeAnalysis();
   }
   return result;
 }

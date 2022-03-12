@@ -25,7 +25,7 @@ void stressToMat(int idx, T stress_view, apf::Matrix3x3 & stress)
 }
 int main(int argc, char * argv[])
 {
-  amsi::initAnalysis(argc, argv, MPI_COMM_WORLD);
+  amsi::MPI mpi{argc, argv, MPI_COMM_WORLD};
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
@@ -137,6 +137,5 @@ int main(int argc, char * argv[])
   std::cout << "Took: " << time2 - time1 << " seconds." << std::endl;
   std::cout << "Orientation Computation Took: " << ornt_time2 - ornt_time1
             << " seconds." << std::endl;
-  amsi::freeAnalysis();
   return success;
 }

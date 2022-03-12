@@ -15,7 +15,8 @@ namespace mumfim
     public:
     MultiscaleTissue(apf::Mesh * mesh,
                      const mt::CategoryNode & analysis_case,
-                     MPI_Comm cm);
+                     MPI_Comm cm,
+                     const amsi::Multiscale &);
     ~MultiscaleTissue();
     virtual void Assemble(amsi::LAS * las) override;
     void computeRVEs();
@@ -84,6 +85,7 @@ namespace mumfim
      * simmetrix simmodeler data for the ModelEntity ent.
      */
     int getRVEDirectoryIndex(apf::MeshEntity* rgn);
+    const amsi::Multiscale & multiscale_;
   };
 }  // namespace mumfim
 #include "MultiscaleTissue_impl.h"

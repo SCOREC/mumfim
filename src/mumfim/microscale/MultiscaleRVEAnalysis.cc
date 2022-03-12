@@ -13,10 +13,15 @@
 #include <sstream>
 #include "NeoHookeanRVEAnalysis.h"
 #include "FiberNetworkLibrary.h"
+#include "mumfim/exceptions.h"
+#include <amsiCommunicationManager.h>
+#include <amsiControlService.h>
+#include <amsiTaskManager.h>
 namespace mumfim
 {
-  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() { }
-  MultiscaleRVEAnalysis::MultiscaleRVEAnalysis()
+  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() {}
+  MultiscaleRVEAnalysis::MultiscaleRVEAnalysis(
+      const amsi::Multiscale & amsi_multiscale)
       : eff()
       , wgt()
       , tmg()
@@ -35,14 +40,24 @@ namespace mumfim
       , macro_iter(0)
       , macro_step(0)
       , initial_update(true)
+      , multiscale_(amsi_multiscale)
   {
-    assert(amsi::getMultiscaleManager() != nullptr);
-    assert(amsi::getScaleManager() != nullptr);
-    M2m_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(), "macro", "micro_fo");
-    m2M_id = amsi::getRelationID(amsi::getMultiscaleManager(),
-                                 amsi::getScaleManager(), "micro_fo", "macro");
-    // PCU_Switch_Comm(MPI_COMM_SELF);
+    if (multiscale_.getMultiscaleManager() == nullptr)
+    {
+      throw mumfim_error{
+          "Multiscale RVE Analysis cannot run without a multiscale manager"};
+    }
+    if (multiscale_.getScaleManager() == nullptr)
+    {
+      throw mumfim_error{
+          "Multiscale RVE Analysis cannot run without a scale manager"};
+    }
+    M2m_id =
+        amsi::getRelationID(multiscale_.getMultiscaleManager(),
+                            multiscale_.getScaleManager(), "macro", "micro_fo");
+    m2M_id =
+        amsi::getRelationID(multiscale_.getMultiscaleManager(),
+                            multiscale_.getScaleManager(), "micro_fo", "macro");
   }
   void MultiscaleRVEAnalysis::init()
   {
@@ -59,8 +74,9 @@ namespace mumfim
   }
   void MultiscaleRVEAnalysis::initCoupling()
   {
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    rve_dd = amsi::createDataDistribution(amsi::getLocal(), "macro_fo_data");
+    auto * cs = multiscale_.getControlService();
+    rve_dd = amsi::createDataDistribution(
+        multiscale_.getScaleManager()->getLocalTask(), "macro_fo_data");
     recv_ptrn = cs->RecvCommPattern("micro_fo_data", "macro", "macro_fo_data",
                                     "micro_fo");
     cs->CommPattern_Reconcile(recv_ptrn);

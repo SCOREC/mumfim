@@ -1,6 +1,7 @@
 #ifndef MUMFIM_MULTISCALE_RVE_ANALYSIS_H_
 #define MUMFIM_MULTISCALE_RVE_ANALYSIS_H_
 #include <amsiMultiscale.h>
+#include <amsiDataDistribution.h>
 #include <amsiReporter.h>
 #include <vector>
 //#include "bioFiberRVEAnalysis.h"
@@ -23,7 +24,7 @@ namespace mumfim
     amsi::DataDistribution * rve_dd;
     size_t M2m_id;
     size_t m2M_id;
-   
+    const amsi::Multiscale & multiscale_;
     // number of different RVE realizations of a given type
     // each different type (physical set of parameters) is
     // stored in a different folder.
@@ -57,7 +58,7 @@ namespace mumfim
     void updateCoupling();
 
     public:
-    MultiscaleRVEAnalysis();
+    MultiscaleRVEAnalysis(const amsi::Multiscale & amsi_multiscale);
     ~MultiscaleRVEAnalysis();
     virtual void init();
     virtual void run();

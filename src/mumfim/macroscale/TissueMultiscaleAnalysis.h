@@ -33,13 +33,15 @@ namespace mumfim
     public:
     MultiscaleTissueAnalysis(apf::Mesh * mesh,
                              std::unique_ptr<mt::CategoryNode> analysis_case,
-                             MPI_Comm cm);
+                             MPI_Comm cm,
+                             const amsi::Multiscale & amsi_multiscale);
     virtual void init();
     virtual void run();
     virtual void finalizeStep();
 
     private:
     size_t cplng;
+    const amsi::Multiscale & multiscale_;
   };
 }  // namespace mumfim
 #endif
