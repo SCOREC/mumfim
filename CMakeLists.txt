@@ -17,17 +17,15 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Add warning and error flags
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
-
 if(BUILD_TESTS)
   message(STATUS "BUILDING TESTS")
   function(add_mpi_test name file no_mpi_proc)
     message(STATUS "Adding test " ${name})
-    add_executable(${name} ${file})
-    set(test_parameters ${CMAKE_CURRENT_BINARY_DIR}/${name} ${ARGN})
-    add_test(NAME ${name} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${no_mpi_proc}
-  ${MPIEXEC_PREFLAGS} ${test_parameters} )
+    if (NOT TARGET ${name})
+      add_executable(${name} ${file})
+    endif ()
+    set(test_parameters $<TARGET_FILE:${name}> ${ARGN})
+    add_test(NAME ${name} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${no_mpi_proc} ${MPIEXEC_PREFLAGS} ${test_parameters})
   endfunction(add_mpi_test)
 endif(BUILD_TESTS)
 
