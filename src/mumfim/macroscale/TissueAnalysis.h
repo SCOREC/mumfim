@@ -34,11 +34,13 @@ namespace mumfim
       apf::Field * u,
       I vl_tks,
       O out);
-
   class TissueAnalysis
   {
     public:
-    TissueAnalysis(apf::Mesh* mesh, std::unique_ptr<const mt::CategoryNode> analysis_case, MPI_Comm);
+    TissueAnalysis(apf::Mesh * mesh,
+                   std::unique_ptr<const mt::CategoryNode> cs,
+                   MPI_Comm c,
+                   const amsi::Analysis & amsi_analysis);
     ~TissueAnalysis();
     virtual void run();
     virtual void init();

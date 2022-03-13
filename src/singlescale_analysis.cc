@@ -92,8 +92,8 @@ int main(int argc, char ** argv)
   {
     amsi::MPI mpi(argc, argv, MPI_COMM_WORLD);
     auto amsi_options = amsi::readAmsiOptions(model_traits_filename);
-    amsi::Analysis(amsi_options.analysis.value(), argc, argv, MPI_COMM_WORLD,
-                   mpi);
+    amsi::Analysis amsi_analysis(amsi_options.analysis.value(), argc, argv,
+                                 MPI_COMM_WORLD, mpi);
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
     if (rnk > 0) amsi::suppressOutput(std::cout);
@@ -116,8 +116,8 @@ int main(int argc, char ** argv)
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
     mumfim::TissueAnalysis an(mesh,
-                           std::make_unique<mt::CategoryNode>(*case_traits),
-                           AMSI_COMM_WORLD);
+                              std::make_unique<mt::CategoryNode>(*case_traits),
+                              AMSI_COMM_WORLD, amsi_analysis);
     an.init();
     an.run();
   }

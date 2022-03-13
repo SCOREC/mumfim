@@ -1,5 +1,3 @@
-#include <amsiAnalysis.h>
-#include <amsiDetectOscillation.h>
 #include <apf.h>
 #include <mpi.h>
 #include <iostream>

@@ -309,10 +309,10 @@ namespace mumfim
   }
   void NonlinearTissue::recoverSecondaryVariables(int /* unused load_step */ )
   {
+    /*
     //#ifdef SCOREC
     int rnk = -1;
     MPI_Comm_rank(AMSI_COMM_SCALE, &rnk);
-    /*
     std::stringstream fnm;
     fnm << amsi::fs->getResultsDir() << "/qlty.stp_" << load_step << ".rnk_"
         << rnk << ".dat";

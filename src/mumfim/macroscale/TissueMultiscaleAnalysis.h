@@ -34,6 +34,7 @@ namespace mumfim
     MultiscaleTissueAnalysis(apf::Mesh * mesh,
                              std::unique_ptr<mt::CategoryNode> analysis_case,
                              MPI_Comm cm,
+                             const amsi::Analysis & amsi_analysis,
                              const amsi::Multiscale & amsi_multiscale);
     virtual void init();
     virtual void run();

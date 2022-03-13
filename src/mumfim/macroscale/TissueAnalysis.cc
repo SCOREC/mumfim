@@ -7,15 +7,16 @@ namespace mumfim
 {
   TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,
                                  std::unique_ptr<const mt::CategoryNode> cs,
-                                 MPI_Comm c)
+                                 MPI_Comm c,
+                                 const amsi::Analysis & amsi_analysis)
       : cm(c)
-      , mesh(mesh)
       , analysis_case(std::move(cs))
+      , mesh(mesh)
       , t(0.0)
       , dt(0.0)
       , stp(0)
       , mx_stp(1)
-      , tssu(NULL)
+      , tssu(nullptr)
       , itr()
       , itr_stps()
       , cvg()
@@ -24,11 +25,11 @@ namespace mumfim
       , las(new amsi::PetscLAS(0, 0))
       , completed(false)
       , state_fn()
-      , constraint_fn(amsi::fs->getResultsDir() + "/constraints.log")
-      , frcs_fn(amsi::fs->getResultsDir() + "/loads.log")
-      , nrms_fn(amsi::fs->getResultsDir() + "/norms.log")
-      , dsps_fn(amsi::fs->getResultsDir() + "/disps.log")
-      , vols_fn(amsi::fs->getResultsDir() + "/vols.log")
+      , constraint_fn(amsi_analysis.getResultsDir() + "/constraints.log")
+      , frcs_fn(amsi_analysis.getResultsDir() + "/loads.log")
+      , nrms_fn(amsi_analysis.getResultsDir() + "/norms.log")
+      , dsps_fn(amsi_analysis.getResultsDir() + "/disps.log")
+      , vols_fn(amsi_analysis.getResultsDir() + "/vols.log")
       , state()
       , constraints()
       , frcs()
@@ -47,7 +48,7 @@ namespace mumfim
     for (auto itr_stp = itr_stps.begin(); itr_stp != itr_stps.end(); ++itr_stp)
     {
       delete (*itr_stp);
-      (*itr_stp) = NULL;
+      (*itr_stp) = nullptr;
     }
     delete itr;
     // since we know all of the convegence steps are allocated on the heap
@@ -55,7 +56,7 @@ namespace mumfim
     for (auto cvg_stp = cvg_stps.begin(); cvg_stp != cvg_stps.end(); ++cvg_stp)
     {
       delete (*cvg_stp);
-      (*cvg_stp) = NULL;
+      (*cvg_stp) = nullptr;
     }
     delete cvg;
     delete tssu;
@@ -84,7 +85,7 @@ namespace mumfim
         solution_strategy, "num timesteps");
     if (timesteps_trait == nullptr)
     {
-      std::cerr << "\"solution strategy\" must have \"num timesteps\" trait";
+      std::cerr << R"("solution strategy" must have "num timesteps" trait)";
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
     mx_stp = (*timesteps_trait)();

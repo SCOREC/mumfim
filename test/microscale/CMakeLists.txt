@@ -1,21 +1,21 @@
 if(NOT ${BUILD_EXTERNAL})
-find_package(amsi COMPONENTS multiscale REQUIRED)
+find_package(amsi REQUIRED)
 endif()
 
 add_mpi_test(rve test_rve.cc 1)
-target_link_libraries(rve micro_fo)
+target_link_libraries(rve PUBLIC micro_fo)
 
 add_mpi_test(fiber_only ../../src/fiber_only.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml)
-target_link_libraries(fiber_only micro_fo)
+target_link_libraries(fiber_only PUBLIC micro_fo)
 
 add_mpi_test(batched_fiber_only ../../src/batched_fiber_only.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml 1)
-target_link_libraries(batched_fiber_only PUBLIC micro_fo) 
+target_link_libraries(batched_fiber_only PUBLIC micro_fo)
 
 file(COPY "fiber_only.yaml" DESTINATION
           "${CMAKE_CURRENT_BINARY_DIR}")
 
 add_mpi_test(test_global_stiffness test_global_stiffness.cc 1)
-target_link_libraries(test_global_stiffness micro_fo)
+target_link_libraries(test_global_stiffness PUBLIC micro_fo)
 
 file(COPY "test_global_stiffness_data" DESTINATION
           "${CMAKE_CURRENT_BINARY_DIR}/")
@@ -23,7 +23,7 @@ file(COPY "test_global_stiffness_data" DESTINATION
 # FIXME This test doesn't actually check anything...need to update this test case to make sure
 # that we actually test that the elemental stiffness matrix is getting computed properly!
 add_mpi_test(test_elemental_stiffness test_elemental_stiffness.cc 1 ${CMAKE_CURRENT_BINARY_DIR}/fiber_only.yaml)
-target_link_libraries(test_elemental_stiffness micro_fo)
+target_link_libraries(test_elemental_stiffness PUBLIC micro_fo)
 
 #add_mpi_test(test_mass_integrator ./test_mass_integrator.cc 1)
 #target_link_libraries(test_mass_integrator micro_fo)

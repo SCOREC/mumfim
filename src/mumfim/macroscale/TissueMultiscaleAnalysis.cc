@@ -35,8 +35,9 @@ namespace mumfim
       apf::Mesh * mesh,
       std::unique_ptr<mt::CategoryNode> analysis_case,
       MPI_Comm cm,
+      const amsi::Analysis & amsi_analysis,
       const amsi::Multiscale & amsi_multiscale)
-      : TissueAnalysis(mesh, std::move(analysis_case), cm)
+      : TissueAnalysis(mesh, std::move(analysis_case), cm, amsi_analysis)
       , cplng(getRelationID(amsi_multiscale.getMultiscaleManager(),
                             amsi_multiscale.getScaleManager(),
                             "macro",

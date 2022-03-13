@@ -2,7 +2,6 @@
 #include "MultiscaleRVEAnalysis.h"
 #include <amsiDetectOscillation.h>
 #include <amsiNonlinearAnalysis.h>
-#include <apfFEA.h>  // amsi
 #include <apfMDS.h>
 #include <apfMeshIterator.h>  // amsi
 #include <mumfim/microscale/Verbosity.h>
@@ -19,7 +18,7 @@
 #include <amsiTaskManager.h>
 namespace mumfim
 {
-  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() {}
+  MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() = default;
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis(
       const amsi::Multiscale & amsi_multiscale)
       : eff()
@@ -27,9 +26,10 @@ namespace mumfim
       , tmg()
       , recv_ptrn()
       , send_ptrn()
-      , rve_dd(NULL)
+      , rve_dd(nullptr)
       , M2m_id()
       , m2M_id()
+      , multiscale_(amsi_multiscale)
       , rve_tp_cnt(0)
       , hdrs()
       , prms()
@@ -40,7 +40,6 @@ namespace mumfim
       , macro_iter(0)
       , macro_step(0)
       , initial_update(true)
-      , multiscale_(amsi_multiscale)
   {
     if (multiscale_.getMultiscaleManager() == nullptr)
     {

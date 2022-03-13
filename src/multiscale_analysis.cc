@@ -87,7 +87,7 @@ int run_micro_fo(int & argc,
   auto analysis_options = amsi::readAmsiOptions(model_traits_filename);
   analysis_options.analysis->use_petsc = false;
   amsi::Analysis analysis(analysis_options.analysis.value(), argc, argv, comm,
-                          multiscale.mpi);
+                          multiscale.getMPI());
   Kokkos::ScopeGuard kokkos(argc, argv);
   las::initLAS(&argc, &argv, comm);
   int rnk = -1;
@@ -104,7 +104,8 @@ int run_macro(int & argc,
               amsi::Multiscale & multiscale)
 {
   auto analysis_options = amsi::readAmsiOptions(model_traits_filename);
-  amsi::Analysis analysis(analysis_options.analysis.value(), argc, argv, cm);
+  amsi::Analysis amsi_analysis(analysis_options.analysis.value(), argc, argv,
+                               cm, multiscale.getMPI());
   int rnk = -1;
   MPI_Comm_rank(cm, &rnk);
   int result = 0;
@@ -130,7 +131,8 @@ int run_macro(int & argc,
     MPI_Abort(AMSI_COMM_WORLD, 1);
   }
   mumfim::MultiscaleTissueAnalysis an(
-      mesh, std::make_unique<mt::CategoryNode>(*case_traits), cm, multiscale);
+      mesh, std::make_unique<mt::CategoryNode>(*case_traits), cm, amsi_analysis,
+      multiscale);
   an.init();
   an.run();
 #ifdef LOGRUN
