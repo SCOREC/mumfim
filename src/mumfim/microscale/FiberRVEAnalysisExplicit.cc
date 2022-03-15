@@ -1,16 +1,10 @@
 #include "FiberRVEAnalysisExplicit.h"
-#include <PCU.h>
 #include <apf.h>
-#include <apfConvert.h>
 #include <apfMesh2.h>
-#include <las.h>
-#include <lionPrint.h>
 #include <mpi.h>
 #include <cassert>
-#include <iomanip>
 #include <iostream>
 #include <limits>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "ExplicitAmplitude.h"
@@ -18,13 +12,17 @@
 #include "FiberNetworkIO.h"
 #include "FiberRVEAnalysisExplicit_impl.h"
 #include "MassIntegrator.h"
-#include <Kokkos_Core.hpp>
+#include <amsiAnalysis.h>
+#include "mumfim/exceptions.h"
+
 namespace mumfim
 {
-  FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
-                             std::unique_ptr<MicroSolutionStrategy> ss,
-                             std::shared_ptr<void> workspace)
-        : FiberRVEAnalysis(std::move(fn),std::move(ss), workspace)
+  FiberRVEAnalysisExplicit::FiberRVEAnalysisExplicit(
+      std::unique_ptr<FiberNetwork> fn,
+      std::unique_ptr<MicroSolutionStrategy> ss,
+      std::shared_ptr<void> workspace,
+      const amsi::Analysis & amsi_analysis)
+      : FiberRVEAnalysis(std::move(fn),std::move(ss), workspace)
         , serial_gpu_cutoff(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->serial_gpu_cutoff)
         , total_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->total_time)
         , load_time(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->load_time)
@@ -45,11 +43,10 @@ namespace mumfim
         , itr_prev(0)
     {
       std::stringstream sout;
-      int rnk = -1;
-      MPI_Comm_rank(AMSI_COMM_WORLD, &rnk);
+      auto rnk = amsi_analysis.getComm().rank();
       sout << "rnk_" << rnk << "_fn_" << getFn()->getRVEType()<<"_explicit";
       analysis_name = sout.str();
-      std::string dir = amsi::fs ? amsi::fs->getResultsDir() : ".";
+      auto dir = amsi_analysis.getResultsDir();
       writer = new ExplicitOutputWriter(mFiberNetwork->getNetworkMesh(),
                  (dir + "/" + analysis_name).c_str(),
                  (analysis_name + ".pvd").c_str());
@@ -63,8 +60,9 @@ namespace mumfim
       }
       else
       {
-        std::cerr<<"Incorrect Amplitude type selected ("<<static_cast<int>(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->ampType)<<")"<<std::endl;
-        std::abort();
+        std::stringstream ss;
+        ss<<"Incorrect Amplitude type selected ("<<static_cast<int>(static_cast<MicroSolutionStrategyExplicit*>(mSolutionStrategy.get())->ampType)<<")"<<std::endl;
+        throw mumfim_error{ss.str()};
       }
       //amp = new SmoothAmpHold(1.0, total_time);
       assert(fiber_density > 0);

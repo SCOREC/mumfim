@@ -7,7 +7,7 @@ namespace mumfim
 {
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fn,
-      std::unique_ptr<MicroSolutionStrategy> ss,
+      std::unique_ptr<MicroSolutionStrategy> ss, const amsi::Analysis& amsi_analysis,
       std::shared_ptr<void> workspace) {
 
     auto analysis = std::unique_ptr<FiberRVEAnalysis>{nullptr};
@@ -17,7 +17,8 @@ namespace mumfim
       std::abort();
     }
     else if (ss->slvrType == SolverType::Explicit) {
-       analysis.reset(new FiberRVEAnalysisExplicit(std::move(fn), std::move(ss), workspace));
+       analysis.reset(new FiberRVEAnalysisExplicit(std::move(fn), std::move(ss),
+                                                  workspace, amsi_analysis));
     }
     else if (ss->slvrType == SolverType::Implicit) {
       analysis.reset(new FiberRVEAnalysisSImplicit(std::move(fn), std::move(ss), workspace));

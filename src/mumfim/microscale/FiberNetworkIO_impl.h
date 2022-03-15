@@ -87,18 +87,6 @@ namespace mumfim
     }
   };
   template <typename O>
-  void loadParamsFromFile(apf::Mesh2 * msh, const std::string & fnm, O rctns)
-  {
-    std::ifstream strm(fnm.c_str());
-    if (!strm.is_open())
-    {
-      std::cerr << "Could not open parameter file " << fnm << " for reading.\n";
-      MPI_Abort(AMSI_COMM_WORLD, 1);
-    }
-    ParamLoader ldr(msh);
-    ldr.fromStream(strm, rctns);
-  }
-  template <typename O>
   void loadParamsFromStream(apf::Mesh2 * msh, std::istream & strm, O rctns)
   {
     ParamLoader ldr(msh);

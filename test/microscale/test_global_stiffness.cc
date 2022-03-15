@@ -9,7 +9,7 @@
 int main(int argc, char * argv[])
 {
   amsi::MPI mpi(argc, argv);
-  amsi::Analysis an{{}, argc, argv, MPI_COMM_WORLD, mpi};
+  amsi::Analysis amsi_analysis{{}, argc, argv, MPI_COMM_WORLD, mpi};
   std::vector<mumfim::MicroCase> cases;
   mumfim::loadMicroFOFromYamlFile(
       "./test_global_stiffness_data/global_stiffness.yaml", cases);
@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
     solution_strategy->cnvgTolerance = 1E-6;
     solution_strategy->oscPrms = osc_prms;
 
-    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy));
+    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(solution_strategy), amsi_analysis);
     //auto an = mumfim::createF
     dynamic_cast<mumfim::FiberRVEAnalysisSImplicit*>(an.get())->computeStiffnessMatrix();
     if(an == nullptr)

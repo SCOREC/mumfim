@@ -23,6 +23,7 @@ void stressToMat(double * stress_arr, apf::Matrix3x3 & stress)
 int main(int argc, char * argv[])
 {
   amsi::MPI mpi{argc, argv, MPI_COMM_WORLD};
+  amsi::Analysis amsi_analysis{{}, argc, argv, MPI_COMM_WORLD,mpi};
 #ifdef MICRO_USING_PETSC
   las::initPETScLAS(&argc, &argv, MPI_COMM_WORLD);
 #endif
@@ -41,7 +42,7 @@ int main(int argc, char * argv[])
   mumfim::FiberNetworkLibrary network_library;
   network_library.load(file_name,file_name+".params",0,0);
   auto fiber_network = network_library.getUniqueCopy(0, 0);
-  auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
+  auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss),amsi_analysis);
   Kokkos::Timer timer;
   double ornt_time1 = timer.seconds();
   double omega[9];

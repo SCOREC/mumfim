@@ -5,6 +5,7 @@
 #include "FiberRVEAnalysis.h"
 #include "ExplicitOutputWriter.h"
 #include <string>
+#include <amsiAnalysis.h>
 namespace mumfim
 {
   // TODO FIXME deal with network with multiple material properties
@@ -13,7 +14,8 @@ namespace mumfim
     public:
     FiberRVEAnalysisExplicit(std::unique_ptr<FiberNetwork> fn,
                              std::unique_ptr<MicroSolutionStrategy> ss,
-                             std::shared_ptr<void> workspace);
+                             std::shared_ptr<void> workspace,
+                             const amsi::Analysis & amsi_analysis);
     ~FiberRVEAnalysisExplicit()
     {
       delete writer;

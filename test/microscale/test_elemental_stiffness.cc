@@ -58,7 +58,7 @@ int main(int argc, char * argv[])
     network_library.load(file_name, file_name + ".params", 0, 0);
     auto fiber_network = network_library.getUniqueCopy(0, 0);
     // I'm not confident that the move thing here works as intended
-    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss));
+    auto an = mumfim::createFiberRVEAnalysis(std::move(fiber_network), std::move(cases[0].ss),analysis);
   auto truss_es = std::unique_ptr<apf::Integrator>{new TrussIntegratorElemStiff(an->getFn(), an->getK(), an->getF())};
   auto fn_msh = an->getFn()->getNetworkMesh();
   apf::MeshEntity * me = NULL;

@@ -7,6 +7,7 @@
 #include "FiberNetwork.h"
 #include "ApfPointers.h"
 #include "FiberNetworkIO.h"
+#include "mumfim/exceptions.h"
 namespace mumfim
 {
   FiberNetworkLibrary::FiberNetworkLibrary() : mLibrary(LibType())
@@ -22,16 +23,18 @@ namespace mumfim
     std::ifstream network_stream(network_name);
     if (!network_stream.is_open())
     {
-      std::cerr << "Cannot open the microscale network file " << network_name
-                << " aborting analysis" << std::endl;
-      MPI_Abort(AMSI_COMM_WORLD, 1);
+      std::stringstream ss;
+      ss << "Cannot open the microscale network file " << network_name
+                << " aborting analysis";
+      throw mumfim_error{ss.str()};
     }
     std::ifstream params_stream(params_name);
     if (!network_stream.is_open())
     {
-      std::cerr << "Cannot open the microscale parameters file " << params_name
-                << " aborting analysis" << std::endl;
-      MPI_Abort(AMSI_COMM_WORLD, 1);
+      std::stringstream ss;
+      ss << "Cannot open the microscale parameters file " << params_name
+                << " aborting analysis";
+      throw mumfim_error{ss.str()};
     }
     return load(network_stream, params_stream, net_type, net_id);
   }

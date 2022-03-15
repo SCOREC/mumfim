@@ -11,6 +11,7 @@
 #include "TrussIntegrator.h"
 #include "MultiscaleMicroFOParams.h"
 #include "RVEAnalysis.h"
+#include "amsiAnalysis.h"
 namespace mumfim
 {
   /* \brief create the elemental system integrator
@@ -103,7 +104,7 @@ namespace mumfim
   };
   std::unique_ptr<FiberRVEAnalysis> createFiberRVEAnalysis(
       std::unique_ptr<FiberNetwork> fiber_network,
-      std::unique_ptr<MicroSolutionStrategy> solution_strategy,
+      std::unique_ptr<MicroSolutionStrategy> solution_strategy, const amsi::Analysis& analysis,
       std::shared_ptr<void> workspace = nullptr);
   std::unique_ptr<LinearStructs<las::MICRO_BACKEND>>
     createLinearStructs(

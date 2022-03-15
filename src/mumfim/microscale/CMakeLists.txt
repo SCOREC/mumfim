@@ -22,7 +22,7 @@ set(micro_fo_src_files
 
 if(NOT ${BUILD_EXTERNAL})
 find_package(las REQUIRED)
-find_package(amsi COMPONENTS util analysis multiscale REQUIRED)
+find_package(amsi COMPONENTS REQUIRED)
 find_package(yaml-cpp REQUIRED)
 endif()
 
