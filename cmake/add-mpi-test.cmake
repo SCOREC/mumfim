@@ -1,0 +1,8 @@
+  function(add_mpi_test name file no_mpi_proc)
+    message(STATUS "Adding test " ${name})
+    if (NOT TARGET ${name})
+      add_executable(${name} ${file})
+    endif ()
+    set(test_parameters $<TARGET_FILE:${name}> ${ARGN})
+    add_test(NAME ${name} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${no_mpi_proc} ${MPIEXEC_PREFLAGS} ${test_parameters})
+  endfunction(add_mpi_test)
