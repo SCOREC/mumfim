@@ -25,16 +25,18 @@ void display_help_string()
   std::cout
       << "Usage: singlescale [OPTIONS]\n"
       << "  [-h, --help]                              display this help text\n"
-      << "  [-g, --model model_file]                  the model file (.dmg)\n"
+      << "  [-g, --model model_file]                  the model file (.smd)\n"
       << "  [-c, --case string]                       a string specifying the "
          "analysis case to run\n"
       << "  [-m, --mesh mesh_file]                    the mesh file (.smb)\n"
-      << "  [-b, --balancing]                         model traits filename\n";
+      << "  [-b, --traits]                         model traits filename\n"
+      << "  [-a, --amsi]                           amsi options filename\n";
 }
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
 std::string model_traits_filename;
+std::string amsi_options_filename;
 // std::string vol_log("volume");
 bool parse_options(int & argc, char **& argv)
 {
@@ -49,6 +51,7 @@ bool parse_options(int & argc, char **& argv)
         {"mesh", required_argument, 0, 'm'},
         {"balancing", required_argument, 0, 'b'},
         {"case", required_argument, 0, 'c'},
+        {"amsi", required_argument, 0, 'a'},
     };
     int option_index = 0;
     int option =
@@ -70,6 +73,9 @@ bool parse_options(int & argc, char **& argv)
         break;
       case 'c':
         analysis_case = optarg;
+        break;
+      case 'a':
+        amsi_options_filename = optarg;
         break;
       case -1:
         // end of options
@@ -94,7 +100,7 @@ int main(int argc, char ** argv)
   if (parse_options(argc, argv))
   {
     amsi::MPI mpi(argc, argv, MPI_COMM_WORLD);
-    auto amsi_options = amsi::readAmsiOptions(model_traits_filename);
+    auto amsi_options = amsi::readAmsiOptions(amsi_options_filename);
     amsi::Analysis amsi_analysis(amsi_options.analysis.value(), argc, argv,
                                  MPI_COMM_WORLD, mpi);
     int rnk = -1;

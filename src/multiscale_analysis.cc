@@ -30,12 +30,14 @@ void display_help_string()
       << "  [-m, --mesh mesh_file]                    the mesh file (.smb)\n"
       << "  [-c, --case string]                       a string specifying the "
          "analysis case to run\n"
-      << "  [-b, --traits]                         model traits filename\n";
+      << "  [-b, --traits]                         model traits filename\n"
+      << "  [-a, --amsi]                           amsi options filename\n";
 }
 std::string model_filename("");
 std::string mesh_filename("");
 std::string analysis_case("");
 std::string model_traits_filename("");
+std::string amsi_options_filename("");
 bool parse_options(int & argc, char **& argv)
 {
   bool result = true;
@@ -48,7 +50,9 @@ bool parse_options(int & argc, char **& argv)
         {"model", required_argument, 0, 'g'},
         {"mesh", required_argument, 0, 'm'},
         {"traits", required_argument, 0, 'b'},
-        {"case", required_argument, 0, 'c'}};
+        {"case", required_argument, 0, 'c'},
+        {"amsi", required_argument, 0, 'a'},
+    };
     int option_index = 0;
     int option =
         getopt_long(argc, argv, "hl:m:g:b:c:", long_options, &option_index);
@@ -69,6 +73,8 @@ bool parse_options(int & argc, char **& argv)
         break;
       case 'c':
         analysis_case = optarg;
+      case 'a':
+        amsi_options_filename = optarg;
         break;
       case -1:
         // end of options
@@ -87,7 +93,7 @@ int run_micro_fo(int & argc,
                  MPI_Comm comm,
                  amsi::Multiscale & multiscale)
 {
-  auto analysis_options = amsi::readAmsiOptions(model_traits_filename);
+  auto analysis_options = amsi::readAmsiOptions(amsi_options_filename);
   analysis_options.analysis->use_petsc = false;
   amsi::Analysis analysis(analysis_options.analysis.value(), argc, argv, comm,
                           multiscale.getMPI());
@@ -106,7 +112,7 @@ int run_macro(int & argc,
               MPI_Comm cm,
               amsi::Multiscale & multiscale)
 {
-  auto analysis_options = amsi::readAmsiOptions(model_traits_filename);
+  auto analysis_options = amsi::readAmsiOptions(amsi_options_filename);
   amsi::Analysis amsi_analysis(analysis_options.analysis.value(), argc, argv,
                                cm, multiscale.getMPI());
   int rnk = -1;
