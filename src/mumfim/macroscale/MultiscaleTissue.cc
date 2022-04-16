@@ -75,26 +75,44 @@ namespace mumfim
                                      MPI_Comm cm,
                                      const amsi::Multiscale & amsi_multiscale)
       : NonlinearTissue(mesh, analysis_case, cm)
-      , mltscl(NULL)
+      , mltscl(nullptr)
       , crt_rve(apf::createIPField(apf_mesh, "micro_rve_type", apf::SCALAR, 1))
       , prv_rve(apf::createIPField(apf_mesh, "micro_old_type", apf::SCALAR, 1))
       , compute_ornt_3D(false)
       , compute_ornt_2D(false)
-      , ornt_3D(NULL)
-      , ornt_2D(NULL)
+      , ornt_3D(nullptr)
+      , ornt_2D(nullptr)
       , fo_cplg(apf_mesh,
                 crt_rve,
                 prv_rve,
                 apf::getShape(apf_primary_field)->getOrder(),
                 amsi_multiscale)
       , nm_rves(0)
-      , rve_dirs()
       , multiscale_(amsi_multiscale)
   {
+    const mt::DimIdGeometry whole_model{9,1};
+    const auto minimum_stiffness = std::invoke([&,this]()->double {
+          const auto * multiscale_model = mt::GetCategoryByType(mt::GetCategoryByType(problem_definition.associated->Find(whole_model), "material model"),"multiscale model");
+          const auto* minimum_stiffness_mt = mt::GetCategoryModelTraitByType<mt::ScalarMT>(multiscale_model,"minimum stiffness");
+          if(minimum_stiffness_mt != nullptr){
+            return (*minimum_stiffness_mt)();
+          }
+          else {
+            return -1;
+          }
+
+        });
+
+    auto * microscale_stress = apf::createIPField(apf_mesh, "microscale_stress", apf::MATRIX, 1);
+    auto* microscale_strain = apf::createIPField(apf_mesh, "microscale_strain", apf::MATRIX, 1);
+    auto* microscale_dfm_grd = apf::createIPField(apf_mesh, "microscale_F", apf::MATRIX, 1);
+    apf::zeroField(microscale_stress);
+    apf::zeroField(microscale_strain);
+    apf::zeroField(microscale_dfm_grd);
     ornt_3D = apf::createIPField(apf_mesh, "ornt_tens_3D", apf::MATRIX, 1);
     ornt_2D = apf::createIPField(apf_mesh, "ornt_tens_2D", apf::MATRIX, 1);
-    mltscl = new ULMultiscaleIntegrator(&fo_cplg, strn, strs, apf_primary_field,
-                                        dfm_grd, 1);
+    mltscl = new ULMultiscaleIntegrator(&fo_cplg, microscale_strain, microscale_stress, apf_primary_field,
+                                        microscale_dfm_grd, 1,minimum_stiffness);
     M2m_id =
         amsi::getRelationID(multiscale_.getMultiscaleManager(),
                             multiscale_.getScaleManager(), "macro", "micro_fo");
@@ -105,16 +123,13 @@ namespace mumfim
     apf::zeroField(ornt_2D);
     apf::zeroField(crt_rve);
     apf::zeroField(prv_rve);
-    // DEBUG
-    test_inc_dfm = apf::createIPField(apf_mesh, "inc_F", apf::MATRIX, 1);
-    // END DEBUG
     // get properties for output orientation tensor
-    const auto * whole_model_traits = output.associated->Find({9, 1});
-    if (whole_model_traits)
+    const auto * whole_model_traits = output.associated->Find(whole_model);
+    if (whole_model_traits != nullptr)
     {
       const auto * ornt_tens =
           whole_model_traits->FindCategoryByType("output orientation tensor");
-      if (ornt_tens)
+      if (ornt_tens != nullptr)
       {
         const auto * ornt_tens_3D =
             mt::GetCategoryModelTraitByType(ornt_tens, "3D Orientation Tensor");
@@ -157,26 +172,12 @@ namespace mumfim
                      << "start_fea" << std::endl;
 #endif
     apfFEA::ApplyBC_Neumann(las);
-    apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
-    apf::MeshEntity * me = NULL;
-    while ((me = apf_mesh->iterate(it)))
-    {
-      apf::MeshElement * mlm = apf::createMeshElement(current_coords, me);
-      amsi::ElementalSystem * sys =
-          getIntegrator(me, 0);  // ERROR: assumes 1 type per ent
-      apf::Element * elm = apf::createElement(sys->getField(), mlm);
-      sys->process(mlm);
-      apf::NewArray<apf::Vector3> dofs;
-      apf::getVectorNodes(elm, dofs);
-      apf::NewArray<int> ids;
-      apf::getElementNumbers(apf_primary_numbering, me, ids);
-      AssembleDOFs(las, sys->numElementalDOFs(), &ids[0], &dofs[0],
-                   &sys->getKe()(0, 0), &sys->getfe()(0),
-                   sys->includesBodyForces());
-      apf::destroyElement(elm);
-      apf::destroyMeshElement(mlm);
-    }
-    apf_mesh->end(it);
+    // wrap getIntegrator in lambda because invoke
+    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int ip)
+                              { return getIntegrator(me, ip); });
+
+    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int ip)
+                              { return constitutives[apf_mesh->toModel(me)].get(); });
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
 #ifdef LOGRUN
