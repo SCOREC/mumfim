@@ -55,7 +55,7 @@ bool parse_options(int & argc, char **& argv)
     };
     int option_index = 0;
     int option =
-        getopt_long(argc, argv, "hl:m:g:b:c:", long_options, &option_index);
+        getopt_long(argc, argv, "hl:m:g:b:c:a:", long_options, &option_index);
     switch (option)
     {
       case 'h':
