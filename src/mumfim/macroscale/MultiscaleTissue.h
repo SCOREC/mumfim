@@ -37,9 +37,6 @@ namespace mumfim
     double ornt_2D_axis[3];
     apf::Field * ornt_3D;
     apf::Field * ornt_2D;
-    // DEBUG
-    apf::Field * test_inc_dfm;
-    // END DEBUG
     RVECoupling fo_cplg;
     int nm_rves;
     StochasticFieldMap stochastic_field_map;
@@ -86,6 +83,31 @@ namespace mumfim
      */
     int getRVEDirectoryIndex(apf::MeshEntity* rgn);
     const amsi::Multiscale & multiscale_;
+
+    template <typename T>
+    void AssembleIntegratorIntoLAS(amsi::LAS * las, T integrator) {
+
+    static_assert(std::is_invocable_r_v<amsi::ElementalSystem*,T, apf::MeshEntity*, int> );
+    apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
+    apf::MeshEntity * me = nullptr;
+    while ((me = apf_mesh->iterate(it)))
+    {
+      apf::MeshElement * mlm = apf::createMeshElement(current_coords, me);
+      auto* sys = std::invoke(integrator, me, 0);
+      apf::Element * elm = apf::createElement(sys->getField(), mlm);
+      sys->process(mlm);
+      apf::NewArray<apf::Vector3> dofs;
+      apf::getVectorNodes(elm, dofs);
+      apf::NewArray<int> ids;
+      apf::getElementNumbers(apf_primary_numbering, me, ids);
+      AssembleDOFs(las, sys->numElementalDOFs(), &ids[0], &dofs[0],
+                   &sys->getKe()(0, 0), &sys->getfe()(0),
+                   sys->includesBodyForces());
+      apf::destroyElement(elm);
+      apf::destroyMeshElement(mlm);
+    }
+    apf_mesh->end(it);
+    }
   };
 }  // namespace mumfim
 #include "MultiscaleTissue_impl.h"

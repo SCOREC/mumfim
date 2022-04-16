@@ -103,18 +103,6 @@ namespace mumfim
           apf::Vector3 p;
           apf::getIntPoint(mlm,1,ip,p);
           amsi::deformationGradient(e,p,F);
-          // DEBUG
-          if(load_step == 0 && iteration == 0)
-          {
-            apf::setMatrix(test_inc_dfm, rgn, ip, F);
-          }
-          else
-          {
-            apf::Matrix3x3 prv_F;
-            apf::getMatrix(test_inc_dfm, rgn, ip, prv_F);
-            apf::setMatrix(test_inc_dfm, rgn, ip, F*prv_F);
-          }
-          // DEBUG
           micro_fo_data data;
           for(int ii = 0; ii < 3; ++ii)
             for(int jj = 0; jj < 3; ++jj)

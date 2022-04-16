@@ -5,6 +5,7 @@
 #include <math.h>  //natural log
 #include <cstring>
 #include "NonlinearTissue.h"
+#include <amsiDeformation.h>
 namespace mumfim
 {
   // Parameters from V. Lai et al. Journal of Biomechanical Engineering, Vol
@@ -51,15 +52,20 @@ namespace mumfim
       // element of current coordinate field w.r.t. reference coordinate mesh
       // elements
       ccrce = apf::createElement(current_coords, me);
+      ref_lmnt =
+          apf::createMeshElement(apf::getMesh(f), apf::getMeshEntity(me));
+      du_lmnt = apf::createElement(f, ref_lmnt);
     }
-    void outElement()
+    void outElement() final
     {
       apf::destroyElement(cccce);
       apf::destroyElement(ccrce);
       apf::destroyMeshElement(ccme);
+      apf::destroyMeshElement(ref_lmnt);
+      apf::destroyElement(du_lmnt);
       ElementalSystem::outElement();
     }
-    bool includesBodyForces() { return true; }
+    bool includesBodyForces()final { return true; }
     void atPoint(apf::Vector3 const &p, double w, double)
     {
       int &nen = nenodes;   // = 4 (tets)
@@ -71,10 +77,14 @@ namespace mumfim
       double detJ = apf::getJacobianDeterminant(J, dim);
       apf::Matrix3x3 F;
       apf::getVectorGrad(ccrce, p, F);  // F=dx/dX
+      amsi::deformationGradient(du_lmnt, p, F);
+
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me),
+                     current_integration_point, F);
       double detF = getDeterminant(F);
       if (detF < 0.0) {
         std::cout << "error: detF < 0" << std::endl;
-        exit(EXIT_FAILURE);
+        std::abort();
       }
       apf::NewArray<apf::Vector3> grads;
       apf::getShapeGrads(cccce, p, grads);
@@ -107,8 +117,6 @@ namespace mumfim
       */
       // Calculate Cauchy stress from compressible NeoHookean equation. See
       // Bonet and Wood 2nd Ed. PP.163.
-      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me),
-                     current_integration_point, F);
       apf::DynamicMatrix leftCauchyGreen(3, 3);   // leftCauchyGreen.zero();
       apf::DynamicMatrix rightCauchyGreen(3, 3);  // rightCauchyGreen.zero();
       apf::DynamicMatrix FT(3, 3);
@@ -224,6 +232,8 @@ namespace mumfim
     apf::Element *cccce;
     apf::Element *ccrce;
     apf::MeshElement *ccme;
+    apf::MeshElement* ref_lmnt;
+    apf::Element* du_lmnt;
     //
     double ShearModulus;
     double PoissonsRatio;
