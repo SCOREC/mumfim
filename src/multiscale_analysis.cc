@@ -13,6 +13,9 @@
 #include "mumfim/macroscale/TissueMultiscaleAnalysis.h"
 #include "amsi.h"
 #include "mumfim/exceptions.h"
+#if not defined(__APPLE__)
+#include <cfenv>
+#endif
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);
