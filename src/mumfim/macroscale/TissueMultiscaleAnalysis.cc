@@ -97,16 +97,6 @@ namespace mumfim
                                  trkd_vols, std::back_inserter(cvg_stps));
     cvg = new MultiscaleConvergence(cvg_stps.begin(), cvg_stps.end(), cplng);
     static_cast<MultiscaleTissue *>(tssu)->initMicro();
-#ifdef LOGRUN
-    std::ostringstream cnvrt;
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
-    cnvrt << rnk;
-    state_fn =
-        amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
-    // initialize logging
-    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
-#endif
   }
   void MultiscaleTissueAnalysis::finalizeStep()
   {

@@ -26,6 +26,16 @@ namespace mumfim
       , completed(false)
       , state_fn()
   {
+#ifdef LOGRUN
+    int rnk = -1;
+    std::stringstream cnvrt;
+    MPI_Comm_rank(cm, &rnk);
+    cnvrt << rnk;
+    state_fn =
+        amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
+    state = amsi::activateLog("tissue_efficiency");
+    amsi::log(state) << "STEP, ITER,   T, DESC\n"<< "   0,    0, 0.0, init\n";
+#endif
   }
   TissueAnalysis::~TissueAnalysis()
   {
@@ -96,15 +106,6 @@ namespace mumfim
     buildVolConvergenceOperators(solution_strategy,itr,tssu->getUField(),trkd_vols,std::back_inserter(cvg_stps));
     cvg = new amsi::MultiConvergence(cvg_stps.begin(), cvg_stps.end());
     // output params
-#ifdef LOGRUN
-    std::stringstream cnvrt;
-    MPI_Comm_rank(cm, &rnk);
-    cnvrt << rnk;
-    state_fn =
-        amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
-    amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl
-                     << "   0,    0, 0.0, init" << std::endl;
-#endif
   }
   void TissueAnalysis::run()
   {
