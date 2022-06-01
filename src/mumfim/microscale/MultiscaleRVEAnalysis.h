@@ -13,11 +13,6 @@ namespace mumfim
   class MultiscaleRVEAnalysis
   {
     private:
-    // logging
-    amsi::Log eff;
-    amsi::Log wgt;
-    amsi::Log tmg;
-    amsi::Log rve_tp_lg;
     // multiscale
     size_t recv_ptrn;
     size_t send_ptrn;
@@ -52,7 +47,6 @@ namespace mumfim
     int macro_step;
     bool initial_update;
     // funcs
-    void initLogging();
     void initCoupling();
     void initAnalysis();
     void updateCoupling();

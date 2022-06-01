@@ -72,22 +72,8 @@ namespace mumfim
     bool completed;
     // log filenames
     std::string state_fn;
-    std::string constraint_fn;
-    std::string frcs_fn;
-    std::string nrms_fn;
-    std::string dsps_fn;
-    std::string vols_fn;
     // logs
     amsi::Log state;
-    amsi::Log constraints;
-    amsi::Log frcs;
-    amsi::Log nrms;
-    amsi::Log dsps;
-    amsi::Log vols;
-    // track model ents
-    std::vector<apf::ModelEntity *> frc_itms;
-    std::vector<apf::ModelEntity *> dsp_itms;
-    std::vector<apf::ModelEntity *> vol_itms;
   };
   class TissueIteration : public amsi::Iteration
   {

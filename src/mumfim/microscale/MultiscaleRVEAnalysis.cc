@@ -21,10 +21,7 @@ namespace mumfim
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() = default;
   MultiscaleRVEAnalysis::MultiscaleRVEAnalysis(
       const amsi::Multiscale & amsi_multiscale)
-      : eff()
-      , wgt()
-      , tmg()
-      , recv_ptrn()
+      : recv_ptrn()
       , send_ptrn()
       , rve_dd(nullptr)
       , M2m_id()
@@ -60,16 +57,8 @@ namespace mumfim
   }
   void MultiscaleRVEAnalysis::init()
   {
-    initLogging();
     initCoupling();
     initAnalysis();
-  }
-  void MultiscaleRVEAnalysis::initLogging()
-  {
-    eff = amsi::activateLog("micro_fo_efficiency");
-    wgt = amsi::activateLog("micro_fo_weights");
-    tmg = amsi::activateLog("micro_fo_timing");
-    rve_tp_lg = amsi::activateLog("rve_type_log");
   }
   void MultiscaleRVEAnalysis::initCoupling()
   {
@@ -201,12 +190,6 @@ namespace mumfim
     // reset the PCU communictor back to its original state so that
     // our scale wide communications can proceed
     PCU_Switch_Comm(comm);
-    int rank = -1;
-    MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
-    std::stringstream ss;
-    ss << amsi::fs->getResultsDir() << "/rve_tp." << rank << ".log";
-    std::ofstream rve_tp_lg_fs(ss.str().c_str(), (std::ios::out | std::ios::app));
-    amsi::flushToStream(rve_tp_lg, rve_tp_lg_fs);
     cs->CommPattern_UpdateInverted(recv_ptrn, send_ptrn);
     cs->CommPattern_Assemble(send_ptrn);
     cs->CommPattern_Reconcile(send_ptrn);

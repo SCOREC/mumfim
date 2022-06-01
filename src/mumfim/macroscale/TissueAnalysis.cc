@@ -25,20 +25,6 @@ namespace mumfim
       , las(new amsi::PetscLAS(0, 0))
       , completed(false)
       , state_fn()
-      , constraint_fn(amsi_analysis.getResultsDir() + "/constraints.log")
-      , frcs_fn(amsi_analysis.getResultsDir() + "/loads.log")
-      , nrms_fn(amsi_analysis.getResultsDir() + "/norms.log")
-      , dsps_fn(amsi_analysis.getResultsDir() + "/disps.log")
-      , vols_fn(amsi_analysis.getResultsDir() + "/vols.log")
-      , state()
-      , constraints()
-      , frcs()
-      , nrms()
-      , dsps()
-      , vols()
-      , frc_itms()
-      , dsp_itms()
-      , vol_itms()
   {
   }
   TissueAnalysis::~TissueAnalysis()
@@ -112,30 +98,10 @@ namespace mumfim
     // output params
 #ifdef LOGRUN
     std::stringstream cnvrt;
+    MPI_Comm_rank(cm, &rnk);
     cnvrt << rnk;
     state_fn =
         amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
-    amsi::getTrackedModelItems(cs, "output force",
-                               std::back_inserter(frc_itms));
-    amsi::getTrackedModelItems(cs, "output displacement",
-                               std::back_inserter(dsp_itms));
-    amsi::getTrackedModelItems(cs, "output volume",
-                               std::back_inserter(vol_itms));
-    // initialize logging
-    state = amsi::activateLog("tissue_efficiency");
-    if (rnk == 0)
-    {
-      constraints = amsi::activateLog("constraints");
-      frcs = amsi::activateLog("loads");
-      nrms = amsi::activateLog("norms");
-      dsps = amsi::activateLog("displacement");
-      vols = amsi::activateLog("volume");
-      amsi::log(constraints) << "STEP, ITER, LAMBDA, BETA" << std::endl;
-      amsi::log(frcs) << "STEP, ENT, I, J, K" << std::endl;
-      amsi::log(nrms) << "STEP, ENT, NRM" << std::endl;
-      amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
-      amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
-    }
     amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl
                      << "   0,    0, 0.0, init" << std::endl;
 #endif
@@ -148,7 +114,7 @@ namespace mumfim
     // write the initial state of everything
     t += dt;
     tssu->setSimulationTime(t);
-    logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp, tssu->getUField());
+    //logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp, tssu->getUField());
     tssu->computeInitGuess(las);
     completed = false;
     while (!completed)
@@ -195,10 +161,10 @@ namespace mumfim
                   << std::endl;
         finalizeStep();
       }
-      logDisps(dsp_itms.begin(), dsp_itms.end(), dsps, stp, tssu->getUField());
-      logForces(frc_itms.begin(), frc_itms.end(), frcs, stp, tssu);
-      logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp,
-                 tssu->getUField());
+      //logDisps(dsp_itms.begin(), dsp_itms.end(), dsps, stp, tssu->getUField());
+      //logForces(frc_itms.begin(), frc_itms.end(), frcs, stp, tssu);
+      //logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp,
+      //           tssu->getUField());
       std::cout << "checkpointing (macro)" << std::endl;
       std::cout << "Rewriting at end of load step to include orientation data"
                 << std::endl;
@@ -219,22 +185,6 @@ namespace mumfim
   void TissueAnalysis::checkpoint()
   {
 #ifdef LOGRUN
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
-    if (rnk == 0)
-    {
-      std::ofstream frcs_fs(frcs_fn.c_str(), std::ios::out | std::ios::app);
-      std::ofstream dsps_fs(dsps_fn.c_str(), std::ios::out | std::ios::app);
-      std::ofstream vols_fs(vols_fn.c_str(), std::ios::out | std::ios::app);
-      std::ofstream nrms_fs(nrms_fn.c_str(), std::ios::out | std::ios::app);
-      std::ofstream cnst_fs(constraint_fn.c_str(),
-                            std::ios::out | std::ios::app);
-      amsi::flushToStream(frcs, frcs_fs);
-      amsi::flushToStream(dsps, dsps_fs);
-      amsi::flushToStream(vols, vols_fs);
-      amsi::flushToStream(nrms, nrms_fs);
-      amsi::flushToStream(constraints, cnst_fs);
-    }
     std::ofstream st_fs(state_fn.c_str(), std::ios::out | std::ios::app);
     amsi::flushToStream(state, st_fs);
 #endif
@@ -255,16 +205,6 @@ namespace mumfim
   void TissueAnalysis::deinit()
   {
 #ifdef LOGRUN
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
-    if (rnk == 0)
-    {
-      amsi::deleteLog(vols);
-      amsi::deleteLog(dsps);
-      amsi::deleteLog(nrms);
-      amsi::deleteLog(frcs);
-      amsi::deleteLog(constraints);
-    }
     amsi::deleteLog(state);
 #endif
   }

@@ -206,7 +206,7 @@ int main(int argc, char ** argv)
     amsi::log(execution_time)
         << amsi::getElapsedTime(execution_time) << std::endl;
     std::stringstream filename;
-    filename << amsi::fs->getResultsDir() << "execution_time." << rank
+    filename << amsi::fs->getResultsDir() << "/execution_time." << rank
              << ".log";
     {
       std::fstream tm_fs(filename.str().c_str(), std::ios::out | std::ios::app);

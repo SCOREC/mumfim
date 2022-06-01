@@ -97,33 +97,14 @@ namespace mumfim
                                  trkd_vols, std::back_inserter(cvg_stps));
     cvg = new MultiscaleConvergence(cvg_stps.begin(), cvg_stps.end(), cplng);
     static_cast<MultiscaleTissue *>(tssu)->initMicro();
-    // output params
 #ifdef LOGRUN
     std::ostringstream cnvrt;
+    int rnk = -1;
+    MPI_Comm_rank(cm, &rnk);
     cnvrt << rnk;
     state_fn =
         amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
-    amsi::getTrackedModelItems(cs, "output force",
-                               std::back_inserter(frc_itms));
-    amsi::getTrackedModelItems(cs, "output displacement",
-                               std::back_inserter(dsp_itms));
-    amsi::getTrackedModelItems(cs, "output volume",
-                               std::back_inserter(vol_itms));
     // initialize logging
-    state = amsi::activateLog("tissue_efficiency");
-    if (rnk == 0)
-    {
-      constraints = amsi::activateLog("constraints");
-      frcs = amsi::activateLog("loads");
-      nrms = amsi::activateLog("norms");
-      dsps = amsi::activateLog("displacement");
-      vols = amsi::activateLog("volume");
-      amsi::log(constraints) << "STEP, ITER, LAMBDA, BETA" << std::endl;
-      amsi::log(frcs) << "STEP, ENT, I, J, K" << std::endl;
-      amsi::log(nrms) << "STEP, ENT, NRM" << std::endl;
-      amsi::log(dsps) << "STEP, ENT, X, Y, Z" << std::endl;
-      amsi::log(vols) << "STEP, ENT, VOL" << std::endl;
-    }
     amsi::log(state) << "STEP, ITER,   T, DESC" << std::endl;
 #endif
   }
