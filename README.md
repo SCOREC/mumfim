@@ -65,3 +65,18 @@ allow the user to select the element type and enter the appropriate number of pa
 ### Microscale only input file
 The microscale only input file is a relatively self explanatory yaml input file. See
 [here](../test/microscale/fiber_only.yaml) for an example.
+
+# Preparing the Model
+1. Setup model and mesh in simmodeler. Attribute definition template in Simmodeler called `macro`. 
+2. Convert mesh to pumi mesh (requires pumi +simmetrix)
+   ```console
+   $ convert SimmetrixModel.smd SimmetrixMesh.sms OutPumiMesh.smb [--native-model=native_model.x_t]
+   ```
+3. Convert model to PUMI model (requires pumi +simmetrix)
+   ```console
+   $ mdlConvert SimmetrixModel.smd PumiModel.dmg  
+   ```
+4. Convert model atributes to yaml (requires model-traits +simmetrix)
+   ```console
+   $ smd2yaml SimmetrixModel.smd > ModelTraitsModel.yaml
+   ```
