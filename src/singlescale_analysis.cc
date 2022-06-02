@@ -12,6 +12,9 @@
 #include "mumfim/macroscale/AnalysisIO.h"
 #include "mumfim/macroscale/TissueAnalysis.h"
 #include "amsiAnalysis.h"
+#if not defined(__APPLE__)
+#include <cfenv>
+#endif
 bool file_exists(const std::string & name)
 {
   std::ifstream f(name);
