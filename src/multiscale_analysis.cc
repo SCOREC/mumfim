@@ -2,17 +2,17 @@
 #include <amsiMultiscale.h>
 #include <amsiUtil.h>
 #include <apfMDS.h>
-#include <mumfim/microscale/MultiscaleRVEAnalysis.h>
 #include <getopt.h>
 #include <gmi_mesh.h>
 #include <las.h>
 #include <model_traits/ModelTraitsIO.h>
+#include <mumfim/microscale/MultiscaleRVEAnalysis.h>
 #include <Kokkos_Core.hpp>
 #include <iostream>
-#include "mumfim/macroscale/MultiscaleTissue.h"
-#include "mumfim/macroscale/TissueMultiscaleAnalysis.h"
 #include "amsi.h"
 #include "mumfim/exceptions.h"
+#include "mumfim/macroscale/MultiscaleTissue.h"
+#include "mumfim/macroscale/MultiscaleTissueAnalysis.h"
 #if not defined(__APPLE__)
 #include <cfenv>
 #endif

@@ -1,4 +1,4 @@
-#include "TissueMultiscaleAnalysis.h"
+#include "MultiscaleTissueAnalysis.h"
 #include <Solvers.h>
 #include <amsiCasters.h>
 #include <amsiMultiscale.h>
@@ -17,7 +17,6 @@
 #include "MultiscaleConvergence.h"
 #include "MultiscaleTissue.h"
 #include "VolumeConvergence.h"
-#include <amsiMultiscale.h>
 namespace mumfim
 {
   void MultiscaleTissueIteration::iterate()
