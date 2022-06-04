@@ -103,5 +103,4 @@ namespace mumfim
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(cplng, &completed);
   }
-  void MultiscaleTissueAnalysis::run() { TissueAnalysis::run(); }
 }  // namespace mumfim

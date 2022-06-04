@@ -36,9 +36,8 @@ namespace mumfim
                              MPI_Comm cm,
                              const amsi::Analysis & amsi_analysis,
                              const amsi::Multiscale & amsi_multiscale);
-    virtual void init();
-    virtual void run();
-    virtual void finalizeStep();
+    virtual void init() final;
+    virtual void finalizeStep() final;
 
     private:
     size_t cplng;
