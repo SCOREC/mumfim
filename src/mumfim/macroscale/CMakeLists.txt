@@ -9,6 +9,7 @@ set(biotissue_src_files
         StiffnessVariation.cc
         TissueAnalysis.cc
         MultiscaleTissueAnalysis.cc
+        SinglescaleTissueAnalysis.cc
         VolumeConstraint.cc
         VolumeConvergence.cc)
 

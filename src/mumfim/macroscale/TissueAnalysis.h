@@ -41,9 +41,8 @@ namespace mumfim
                    std::unique_ptr<const mt::CategoryNode> cs,
                    MPI_Comm c,
                    const amsi::Analysis & amsi_analysis);
-    ~TissueAnalysis();
+    virtual ~TissueAnalysis();
     virtual void run();
-    virtual void init();
     virtual void checkpoint();
     virtual void finalizeStep();
 
@@ -72,6 +71,8 @@ namespace mumfim
     std::string state_fn;
     // logs
     amsi::Log state;
+    void addVolumeTracking(apf::Mesh * mesh,
+                           const mt::CategoryNode * solution_strategy);
   };
   class TissueIteration : public amsi::Iteration
   {

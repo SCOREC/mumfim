@@ -142,7 +142,6 @@ int run_macro(int & argc,
   mumfim::MultiscaleTissueAnalysis an(
       mesh, std::make_unique<mt::CategoryNode>(*case_traits), cm, amsi_analysis,
       multiscale);
-  an.init();
   an.run();
 #ifdef LOGRUN
   amsi::Log macro_stress = amsi::activateLog("macro_stresses");

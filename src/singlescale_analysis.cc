@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include "mumfim/macroscale/AnalysisIO.h"
-#include "mumfim/macroscale/TissueAnalysis.h"
+#include "mumfim/macroscale/SinglescaleTissueAnalysis.h"
 #include "amsiAnalysis.h"
 #if not defined(__APPLE__)
 #include <cfenv>
@@ -124,10 +124,9 @@ int main(int argc, char ** argv)
       std::cerr << "\"" << analysis_case << "\" is not a valid case name.\n";
       MPI_Abort(AMSI_COMM_WORLD, 1);
     }
-    mumfim::TissueAnalysis an(mesh,
+    mumfim::SinglescaleTissueAnalysis an(mesh,
                               std::make_unique<mt::CategoryNode>(*case_traits),
                               AMSI_COMM_WORLD, amsi_analysis);
-    an.init();
     an.run();
   }
   return result;
