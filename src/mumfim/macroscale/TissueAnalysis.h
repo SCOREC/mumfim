@@ -46,8 +46,6 @@ namespace mumfim
     virtual void init();
     virtual void checkpoint();
     virtual void finalizeStep();
-    virtual void revert();
-    virtual void deinit();
 
     protected:
     // util

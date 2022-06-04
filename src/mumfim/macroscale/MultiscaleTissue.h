@@ -34,7 +34,7 @@ namespace mumfim
     apf::Field * prv_rve;
     bool compute_ornt_3D;
     bool compute_ornt_2D;
-    double ornt_2D_axis[3];
+    double ornt_2D_axis[3]{};
     apf::Field * ornt_3D;
     apf::Field * ornt_2D;
     RVECoupling fo_cplg;

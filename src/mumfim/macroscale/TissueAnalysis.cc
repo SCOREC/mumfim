@@ -57,6 +57,9 @@ namespace mumfim
     delete cvg;
     delete tssu;
     delete las;
+#ifdef LOGRUN
+    amsi::deleteLog(state);
+#endif
   }
   void TissueAnalysis::init()
   {
@@ -180,7 +183,6 @@ namespace mumfim
       std::cout << "Finalizing step (macro)" << std::endl;
       finalizeStep();
     }
-    deinit();
   }
   void TissueAnalysis::finalizeStep(){};
   void TissueAnalysis::checkpoint()
@@ -201,12 +203,5 @@ namespace mumfim
     apf::writeVtkFiles(
         std::string(amsi::fs->getResultsDir() + "/" + cnvrt.str()).c_str(),
         tssu->getMesh());
-  }
-  void TissueAnalysis::revert() {}
-  void TissueAnalysis::deinit()
-  {
-#ifdef LOGRUN
-    amsi::deleteLog(state);
-#endif
   }
 }  // namespace mumfim
