@@ -45,17 +45,21 @@ namespace mumfim
                                    T integrator,
                                    apf::Field * coordinates = nullptr)
     {
+      static_assert(std::is_invocable_r_v<amsi::ElementalSystem *, T,
+                                          apf::MeshEntity *, int>);
       if (coordinates == nullptr)
       {
         coordinates = apf_mesh->getCoordinateField();
       }
-      static_assert(std::is_invocable_r_v<amsi::ElementalSystem *, T,
-                                          apf::MeshEntity *, int>);
       apf::MeshIterator * it =
           amsi::apfFEA::apf_mesh->begin(amsi::FEA::analysis_dim);
       apf::MeshEntity * me = nullptr;
-      while ((me = amsi::apfFEA::apf_mesh->iterate(it)))
+      while ((me = apf_mesh->iterate(it)))
       {
+        if (!apf_mesh->isOwned(me))
+        {
+          continue;
+        }
         apf::MeshElement * mlm = apf::createMeshElement(coordinates, me);
         auto * sys = std::invoke(integrator, me, 0);
         apf::Element * elm = apf::createElement(sys->getField(), mlm);
