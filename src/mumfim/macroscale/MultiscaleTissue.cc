@@ -4,9 +4,10 @@
 #include <model_traits/AssociatedModelTraits.h>
 #include <map>
 #include <string>
-#include "mumfim/microscale/MicroFOParams.h"
+#include "TissueBase.h"
 #include "mumfim/macroscale/ULMultiscaleHydrostaticPressureIntegrator.h"
 #include "mumfim/macroscale/ULMultiscaleIntegrator.h"
+#include "mumfim/microscale/MicroFOParams.h"
 namespace mumfim
 {
   struct StochasticFieldData
@@ -174,10 +175,10 @@ namespace mumfim
     apfFEA::ApplyBC_Neumann(las);
     // wrap getIntegrator in lambda because invoke
     AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int ip)
-                              { return getIntegrator(me, ip); });
+                              { return getIntegrator(me, ip); }, current_coords);
 
-    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int ip)
-                              { return constitutives[apf_mesh->toModel(me)].get(); });
+    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
+                              { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
 #ifdef LOGRUN

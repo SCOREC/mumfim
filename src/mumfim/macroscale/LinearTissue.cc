@@ -10,14 +10,14 @@ namespace mumfim
                              const amsi::ModelDefinition & solution_strategy,
                              const amsi::ModelDefinition & output,
                              MPI_Comm cm)
-      : amsi::apfFEA(mesh,
-                     problem_definition,
-                     solution_strategy,
-                     output,
-                     {},
-                     {},
-                     "macro",
-                     cm)
+      : TissueBase(mesh,
+                   problem_definition,
+                   solution_strategy,
+                   output,
+                   {},
+                   {},
+                   "macro",
+                   cm)
       , constitutives()
   {
     apf_primary_field = apf::createLagrangeField(
@@ -101,28 +101,15 @@ namespace mumfim
   }
   void LinearTissue::Assemble(amsi::LAS * las)
   {
+    // For the LinearTissue, the coordinate field is assumed to be the meshes
+    // coordinate field. This is unlike what's used in NonlinearTissue and
+    // MultiscaleTissue
     ApplyBC_Neumann(las);
-    apf::MeshEntity * me = NULL;
-    auto it = apf_mesh->begin(analysis_dim);
-    // FIXME shouldn't we skip non-owned elements similar to
-    // apf::integrator::process(apf::Mesh*)?
-    while ((me = apf_mesh->iterate(it)))
-    {
-      auto & constitutive =
-          constitutives[apf_mesh->getModelTag(apf_mesh->toModel(me))];
-      apf::MeshElement * mlmt = apf::createMeshElement(apf_mesh, me);
-      apf::Element * elm = apf::createElement(constitutive->getField(), mlmt);
-      constitutive->process(mlmt);
-      apf::NewArray<apf::Vector3> dofs;
-      apf::getVectorNodes(elm, dofs);
-      apf::NewArray<int> ids;
-      apf::getElementNumbers(apf_primary_numbering, me, ids);
-      AssembleDOFs(las, constitutive->numElementalDOFs(), &ids[0], &dofs[0],
-                   &constitutive->getKe()(0, 0), &constitutive->getfe()(0),
-                   constitutive->includesBodyForces());
-      apf::destroyElement(elm);
-      apf::destroyMeshElement(mlmt);
-    }
-    apf_mesh->end(it);
+    AssembleIntegratorIntoLAS(
+        las,
+        [this](apf::MeshEntity * me, int) {
+          return constitutives[apf_mesh->getModelTag(apf_mesh->toModel(me))]
+              .get();
+        });
   }
 }  // namespace mumfim

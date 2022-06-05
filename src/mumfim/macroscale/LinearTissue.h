@@ -2,9 +2,10 @@
 #define MUMFIM_LINEARTISSUE_H_
 #include <apfFEA.h>
 #include <memory>
+#include "TissueBase.h"
 namespace mumfim
 {
-  class LinearTissue : public amsi::apfFEA
+  class LinearTissue : public TissueBase
   {
     protected:
     std::map<int, std::unique_ptr<amsi::ElementalSystem> > constitutives;

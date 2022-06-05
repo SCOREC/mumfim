@@ -16,7 +16,7 @@ namespace mumfim
   NonlinearTissue::NonlinearTissue(apf::Mesh * mesh,
                                    const mt::CategoryNode & analysis_case,
                                    MPI_Comm cm)
-      : amsi::apfFEA(mesh, analysis_case, {}, {}, "macro", cm)
+      : TissueBase(mesh, analysis_case, {}, {}, "macro", cm)
       , constitutives()
       , dv_prev(0.0)
       , load_step(0)
@@ -196,31 +196,12 @@ namespace mumfim
   void NonlinearTissue::Assemble(amsi::LAS * las)
   {
     ApplyBC_Neumann(las);
-    apf::MeshEntity * me = NULL;
     // custom iterator would be perfect for switching for multiscale version
-    auto it = apf_mesh->begin(analysis_dim);
-    // FIXME shouldn't we skip non-owned elements similar to
-    // apf::integrator::process(apf::Mesh*)?
-    while ((me = apf_mesh->iterate(it)))
-    {
-      amsi::ElementalSystem * constitutive =
-          constitutives[apf_mesh->toModel(me)].get();
-      apf::MeshElement * mlmt = apf::createMeshElement(apf_mesh, me);
-      apf::Element * elm = apf::createElement(constitutive->getField(), mlmt);
-      // amsi::ElementalSystem * sys = getElementalSystem(me,0); // assumes 1
-      // type of system per element
-      constitutive->process(mlmt);
-      apf::NewArray<apf::Vector3> dofs;
-      apf::getVectorNodes(elm, dofs);
-      apf::NewArray<int> ids;
-      apf::getElementNumbers(apf_primary_numbering, me, ids);
-      AssembleDOFs(las, constitutive->numElementalDOFs(), &ids[0], &dofs[0],
-                   &constitutive->getKe()(0, 0), &constitutive->getfe()(0),
-                   constitutive->includesBodyForces());
-      apf::destroyElement(elm);
-      apf::destroyMeshElement(mlmt);
-    }
-    apf_mesh->end(it);
+    // FIXME !!! here createMeshELement is using the mesh (Original coords),
+    // BUT Constitutives Should be set to Use the deformed coords for consistency
+    // with the multiscale analysis
+    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
+    { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
     double nrm = 0.0;
     las->GetVectorNorm(nrm);
     // process constraints

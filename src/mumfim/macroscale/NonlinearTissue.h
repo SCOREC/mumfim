@@ -20,10 +20,11 @@
 #include <string>
 #include <vector>
 #include <model_traits/CategoryNode.h>
+#include "TissueBase.h"
 namespace mumfim
 {
   class CurrentCoordFunc;
-  class NonlinearTissue : public amsi::apfFEA
+  class NonlinearTissue : public TissueBase
   {
     protected:
     amsi::XpYFunc * xpyfnc;
