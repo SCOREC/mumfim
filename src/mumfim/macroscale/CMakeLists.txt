@@ -11,7 +11,7 @@ set(biotissue_src_files
         MultiscaleTissueAnalysis.cc
         SinglescaleTissueAnalysis.cc
         VolumeConstraint.cc
-        VolumeConvergence.cc UpdatedLagrangianMaterialIntegrator.cc UpdatedLagrangianMaterialIntegrator.h)
+        VolumeConvergence.cc UpdatedLagrangianMaterialIntegrator.cc UpdatedLagrangianMaterialIntegrator.h materials/NeoHookean.cc materials/Materials.h ApfMatrixUtils.cc ApfMatrixUtils.h materials/MultiscaleMaterial.cc)
 
 if (NOT ${BUILD_EXTERNAL})
     find_package(amsi COMPONENTS util analysis multiscale)

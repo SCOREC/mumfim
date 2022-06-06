@@ -5,6 +5,7 @@
 #include <apfShape.h>
 #include <cmath>  //natural log
 #include <cstring>
+#include "materials/Materials.h"
 #include "NonlinearTissue.h"
 #include "UpdatedLagrangianMaterialIntegrator.h"
 namespace mumfim
@@ -20,21 +21,23 @@ namespace mumfim
   class NeoHookeanIntegrator : public amsi::ElementalSystem
   {
     public:
-    NeoHookeanIntegrator(NonlinearTissue * nonlinear_tissue,
-                         apf::Field * displacements,
+    NeoHookeanIntegrator(apf::Field * displacements,
                          apf::Field * dfm_grd,
                          apf::Field * current_coords,
+                         apf::Field * cauchy_stress_field,
+                         apf::Field * green_lagrange_strain_field,
                          double youngs_modulus,
                          double poisson_ratio,
                          int o)
         : ElementalSystem(displacements, o)
         , current_integration_point(0)
-        , analysis(nonlinear_tissue)
         , dim(0)
         , dfm_grd_fld(dfm_grd)
         , current_coords(current_coords)
         , ShearModulus(0.0)
         , PoissonsRatio(poisson_ratio)
+        , cauchy_stress_field_(cauchy_stress_field)
+        , green_lagrange_strain_field_(green_lagrange_strain_field)
     {
       ShearModulus = youngs_modulus / (2.0 * (1.0 + poisson_ratio));
     }
@@ -53,7 +56,6 @@ namespace mumfim
       cccce = apf::createElement(current_coords, ccme);
       // element of current coordinate field w.r.t. reference coordinate mesh
       // elements
-      ccrce = apf::createElement(current_coords, me);
       ref_lmnt =
           apf::createMeshElement(apf::getMesh(f), apf::getMeshEntity(me));
       du_lmnt = apf::createElement(f, ref_lmnt);
@@ -61,7 +63,6 @@ namespace mumfim
     void outElement() final
     {
       apf::destroyElement(cccce);
-      apf::destroyElement(ccrce);
       apf::destroyMeshElement(ccme);
       apf::destroyMeshElement(ref_lmnt);
       apf::destroyElement(du_lmnt);
@@ -78,7 +79,6 @@ namespace mumfim
       apf::getJacobianInv(ccme, p, Jinv);
       double detJ = apf::getJacobianDeterminant(J, dim);
       apf::Matrix3x3 F;
-      apf::getVectorGrad(ccrce, p, F);  // F=dx/dX
       amsi::deformationGradient(du_lmnt, p, F);
       apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me),
                      current_integration_point, F);
@@ -219,34 +219,36 @@ namespace mumfim
         for (int jj = 0; jj < nedof; jj++)
           Ke(ii, jj) += w * detJ * (K0(ii, jj) + K1(ii, jj));
       }
-      // E_G = 1/2(C-I), C=F^T.F
-      apf::Matrix3x3 greenStrain(
-          0.5 * (rightCauchyGreen(0, 0) - 1), 0.5 * rightCauchyGreen(0, 1),
-          0.5 * rightCauchyGreen(0, 2), 0.5 * rightCauchyGreen(1, 0),
-          0.5 * (rightCauchyGreen(1, 1) - 1), 0.5 * rightCauchyGreen(1, 2),
-          0.5 * rightCauchyGreen(2, 0), 0.5 * rightCauchyGreen(2, 1),
-          0.5 * (rightCauchyGreen(2, 2) - 1));
-      analysis->storeStrain(me, greenStrain);
-      analysis->storeStress(me, Cauchy);
+      // Calculate rightCauchyGreen tensor.
+      auto green_strain = computeGreenLagrangeStrain(F);
+      apf::setMatrix(dfm_grd_fld, apf::getMeshEntity(me), current_integration_point, F);
+      apf::setMatrix(green_lagrange_strain_field_, apf::getMeshEntity(me), current_integration_point, green_strain);
+      apf::Matrix3x3 cauchy_stress_matrix;
+      for(size_t i=0; i<3; ++i) {
+        for(size_t j=0; j<3; ++j) {
+          cauchy_stress_matrix[i][j] = Cauchy[i][j];
+        }
+      }
+      apf::setMatrix(cauchy_stress_field_, apf::getMeshEntity(me), current_integration_point, cauchy_stress_matrix);
       current_integration_point++;
     }
     int current_integration_point;
 
     private:
-    NonlinearTissue * analysis;
     int dim;
     apf::Mesh * msh;
     apf::Field * dfm_grd_fld;
     // new stuff to try out new apf functions
     apf::Field * current_coords;
     apf::Element * cccce;
-    apf::Element * ccrce;
     apf::MeshElement * ccme;
     apf::MeshElement * ref_lmnt;
     apf::Element * du_lmnt;
     //
     double ShearModulus;
     double PoissonsRatio;
+    apf::Field* cauchy_stress_field_;
+    apf::Field* green_lagrange_strain_field_;
   };
 }  // namespace mumfim
 #endif

@@ -3,22 +3,11 @@
 #include <ElementalSystem.h>
 #include <amsiDeformation.h>
 #include <mumfim/exceptions.h>
+#include "materials/Materials.h"
+#include "ApfMatrixUtils.h"
+#include <sstream>
 namespace mumfim
 {
-  constexpr int num_symmetric_components(int n) { return (n * (n + 1)) / 2; }
-  [[nodiscard]]
-  apf::DynamicVector dynamic_matrix_to_voigt(const apf::DynamicMatrix & mat);
-  [[nodiscard]]
-  apf::Matrix3x3 computeGreenLagrangeStrain(const apf::Matrix3x3 & F);
-  [[nodiscard]]
-  apf::DynamicMatrix computeLeftCauchyGreen(const apf::Matrix3x3 & F);
-  [[nodiscard]]
-  apf::DynamicMatrix computeRightCauchyGreen(const apf::Matrix3x3 & F);
-  struct MaterialResult
-  {
-    apf::DynamicMatrix cauchy_stress;
-    apf::DynamicMatrix material_stiffness;
-  };
   template <typename MaterialConstitutiveFunction>
   class UpdatedLagrangianMaterialIntegrator : public amsi::ElementalSystem
   {
@@ -68,10 +57,22 @@ namespace mumfim
     // are updated to the current iteration
     void atPoint(apf::Vector3 const & p, double w, double dV) override
     {
+      if(dV <= 0) {
+        std::stringstream ss;
+        ss <<"Elemement has negative Jacobian! (" << dV <<")";
+        throw mumfim_error(ss.str());
+      }
       apf::MeshEntity * mesh_entity = apf::getMeshEntity(me);
       // Compute the deformation gradient and strain tensor
       apf::Matrix3x3 F;
       amsi::deformationGradient(du_lmnt, p, F);
+      auto detF = apf::getDeterminant(F);
+      if(detF<=0) {
+        std::stringstream ss;
+        ss <<"Elemement has negative deformation gradient! (" << detF <<")\n";
+        ss<<"F=\n"<<F;
+        throw mumfim_error(ss.str());
+      }
       const MaterialResult consitutive_response =
           constitutive_function_(F, mesh_entity, current_integration_point);
       const auto & material_stiffness = consitutive_response.material_stiffness;

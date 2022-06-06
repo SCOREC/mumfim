@@ -9,12 +9,6 @@
 #include "mumfim/macroscale/RVECoupling.h"
 namespace mumfim
 {
-  // this class is a mess...
-  // the field passed in can't be used to create meshelements for use in the
-  //  process function, which expects deformed xpu elements
-  // but the deformation gradient calculation requires the element
-  // including just the incremenetal displacements
-  //
   // In this integrator we have made the assumption that the number of field
   // components is the dimenstion. We may want to replace the dim calls with
   // num_fild_components
@@ -37,7 +31,7 @@ namespace mumfim
         , minimum_stiffness(minimum_stiffness)
     {
     }
-    void inElement(apf::MeshElement * me)
+    void inElement(apf::MeshElement * me) override
     {
       ElementalSystem::inElement(me);
       ref_lmnt =

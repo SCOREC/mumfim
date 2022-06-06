@@ -1,1 +1,2 @@
+add_subdirectory(macroscale)
 add_subdirectory(microscale)

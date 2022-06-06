@@ -51,8 +51,7 @@ namespace mumfim
       {
         coordinates = apf_mesh->getCoordinateField();
       }
-      apf::MeshIterator * it =
-          amsi::apfFEA::apf_mesh->begin(amsi::FEA::analysis_dim);
+      apf::MeshIterator * it = apf_mesh->begin(analysis_dim);
       apf::MeshEntity * me = nullptr;
       while ((me = apf_mesh->iterate(it)))
       {
@@ -68,13 +67,13 @@ namespace mumfim
         apf::getVectorNodes(elm, dofs);
         apf::NewArray<int> ids;
         apf::getElementNumbers(apf_primary_numbering, me, ids);
-        amsi::FEA::AssembleDOFs(las, sys->numElementalDOFs(), &ids[0], &dofs[0],
+        AssembleDOFs(las, sys->numElementalDOFs(), &ids[0], &dofs[0],
                                 &sys->getKe()(0, 0), &sys->getfe()(0),
                                 sys->includesBodyForces());
         apf::destroyElement(elm);
         apf::destroyMeshElement(mlm);
       }
-      amsi::apfFEA::apf_mesh->end(it);
+      apf_mesh->end(it);
     }
   };
 }  // namespace mumfim

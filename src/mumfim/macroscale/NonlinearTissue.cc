@@ -116,7 +116,7 @@ namespace mumfim
         // solve?
         constitutives[reinterpret_cast<apf::ModelEntity *>(gent)] =
             std::make_unique<NeoHookeanIntegrator>(
-                this, apf_primary_field, dfm_grd, current_coords,
+                apf_primary_field, dfm_grd, current_coords, strs, strn,
                 (*youngs_modulus)(), (*poisson_ratio)(), 1);
       }
       else if (continuum_model->GetType() == "transverse_isotropic")
