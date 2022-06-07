@@ -10,6 +10,7 @@
 #include <Kokkos_Core.hpp>
 #include <iostream>
 #include "amsi.h"
+#include "amsiExceptions.h"
 #include "mumfim/exceptions.h"
 #include "mumfim/macroscale/MultiscaleTissue.h"
 #include "mumfim/macroscale/MultiscaleTissueAnalysis.h"
@@ -118,26 +119,25 @@ int run_macro(int & argc,
   int rnk = -1;
   MPI_Comm_rank(cm, &rnk);
   int result = 0;
-  std::cerr << "Creating distribution\n";
   amsi::createDataDistribution(multiscale.getScaleManager()->getLocalTask(),
                                "micro_fo_data");
-  std::cerr << "loading mesh\n";
   gmi_register_mesh();
   apf::Mesh * mesh =
       apf::loadMdsMesh(model_filename.c_str(), mesh_filename.c_str());
-  std::cerr << "loading model traits\n";
   if (!file_exists(model_traits_filename))
   {
-    std::cerr << "model traits file: " << model_traits_filename
+    std::stringstream ss;
+    ss << "model traits file: " << model_traits_filename
               << " doesn't exist.\n";
-    MPI_Abort(AMSI_COMM_WORLD, 1);
+    throw mumfim::mumfim_error(ss.str());
   }
   auto model_traits = mt::ReadFromFile<mt::YAML>(model_traits_filename);
   const auto * case_traits = model_traits->FindCase(analysis_case);
   if (case_traits == nullptr)
   {
-    std::cerr << "\"" << analysis_case << "\" is not a valid case name.\n";
-    MPI_Abort(AMSI_COMM_WORLD, 1);
+    std::stringstream ss;
+    ss << "\"" << analysis_case << "\" is not a valid case name.\n";
+    throw mumfim::mumfim_error(ss.str());
   }
   mumfim::MultiscaleTissueAnalysis an(
       mesh, std::make_unique<mt::CategoryNode>(*case_traits), cm, amsi_analysis,
