@@ -17,6 +17,7 @@
 #include "MultiscaleConvergence.h"
 #include "MultiscaleTissue.h"
 #include "VolumeConvergence.h"
+#include "mumfim/exceptions.h"
 namespace mumfim
 {
   void MultiscaleTissueIteration::iterate()
@@ -44,8 +45,11 @@ namespace mumfim
       , multiscale_(amsi_multiscale)
   {
     const auto * solution_strategy =
-        mt::GetPrimaryCategoryByType(analysis_case.get(), "solution strategy");
-    tssu = new MultiscaleTissue(mesh, *analysis_case, cm, multiscale_);
+        mt::GetPrimaryCategoryByType((this->analysis_case.get()), "solution strategy");
+    if(solution_strategy == nullptr) {
+      throw mumfim_error("solution strategy is required for multiscale analysis");
+    }
+    tssu = new MultiscaleTissue(mesh, *(this->analysis_case), cm, multiscale_);
     addVolumeTracking(mesh,solution_strategy);
     // compute the multiscale tissue iteration after the volumes have been
     // computed
