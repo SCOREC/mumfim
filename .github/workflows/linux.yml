@@ -1,0 +1,33 @@
+name: Linux-build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BUILD_TYPE: Release
+  BUILD_PARALLEL: 4
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+    name: ubuntu-test
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j ${{env.BUILD_PARALLEL}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest  -C ${{env.BUILD_TYPE}} --output-on-failure
+      
