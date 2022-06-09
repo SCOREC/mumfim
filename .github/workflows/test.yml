@@ -22,9 +22,10 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Configure
-      run: git clone -c feature.manyFiles=true https://github.com/spack/spack.git
-      run: . spack/share/spack/setup-env.sh
-      run: time spack spec zlib
-      run: spack find -b
+      run: |
+        git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+        . spack/share/spack/setup-env.sh
+        time spack spec zlib
+        spack find -b
 
     
