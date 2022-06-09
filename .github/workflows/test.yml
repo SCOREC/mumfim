@@ -22,5 +22,6 @@ jobs:
         . spack/share/spack/setup-env.sh
         time spack spec zlib
         spack find -b
+        spack install zlib
 
     
