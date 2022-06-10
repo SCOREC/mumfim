@@ -23,6 +23,8 @@ jobs:
         spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.18
         spack buildcache keys --install --trust
 
+        git clone git@github.com:jacobmerson/mumfim-spack.git
+
         spack env create mumfim
         spack env activate mumfim
         
