@@ -22,13 +22,10 @@ jobs:
         . spack/share/spack/setup-env.sh
         spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.18
         spack buildcache keys --install --trust
-        
-        apt install gcc-7 gfortran-7
-        spack compilers find
 
         spack env create mumfim
         spack env activate mumfim
-
+        
         spack install mumfim%gcc@7.5.0
 
     
