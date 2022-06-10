@@ -20,10 +20,15 @@ jobs:
     - run: |
         git clone -c feature.manyFiles=true https://github.com/spack/spack.git
         . spack/share/spack/setup-env.sh
-        time spack spec zlib
-        spack find -b
         spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.18
         spack buildcache keys --install --trust
-        spack install zlib
+        
+        apt install gcc-7 gfortran-7
+        spack compilers find
+
+        spack env create mumfim
+        spack env activate mumfim
+
+        spack install mumfim%gcc@7.5.0
 
     
