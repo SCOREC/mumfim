@@ -24,11 +24,6 @@ jobs:
         spack mirror add binary_mirror  https://binaries.spack.io/releases/v0.18
         spack buildcache keys --install --trust
     
-    - name: compilers
-      run: |
-        sudo apt install gcc-7 gfortran-7
-        spack compilers find
-    
     - name: mumfim
       run: |
         git clone https://github.com/jacobmerson/mumfim-spack.git
