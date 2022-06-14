@@ -36,6 +36,9 @@ jobs:
         
         spack install 
 
-        ls
+        cd `spack location -b mumfim`
+        ctest
+
+      
 
     
