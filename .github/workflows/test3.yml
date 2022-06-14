@@ -30,7 +30,7 @@ jobs:
         cd ~
     
         git clone https://github.com/jacobmerson/mumfim-spack.git
-        spack add ~/mumfim-spack
+        spack repo add ~/mumfim-spack/mumfim
         
         spack install mumfim%gcc@7.5.0
 
