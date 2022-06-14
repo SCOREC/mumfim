@@ -28,6 +28,8 @@ jobs:
 
         spack env create mumfim
         spack env activate mumfim
+
+        spack repo add ~/mumfim-spack
         
         spack install mumfim%gcc@7.5.0
 
