@@ -1,5 +1,6 @@
 # MuMFiM
 multiscale biological tissue implementation using amsi
+![build](https://github.com/SCOREC/mumfim/actions/workflows/run_tests.yml/badge.svg?branch=develop)
 
 ## Installation
 The easiest way to build mumfim is through [spack](https://github.com/spack/spack). See the
