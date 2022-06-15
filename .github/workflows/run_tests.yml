@@ -37,7 +37,7 @@ jobs:
         spack install 
 
         cd `spack location -b mumfim`
-        ctest
+        ctest --output-on-failure
 
       
 
