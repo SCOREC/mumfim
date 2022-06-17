@@ -10,8 +10,8 @@ namespace test
     {
       for (size_t j = 0; j < a.getColumns(); ++j)
       {
-        REQUIRE_THAT(a(i, j), Catch::WithinRel(b(i, j), 1E-6) ||
-                                  Catch::WithinULP(b(i, j), 4));
+        REQUIRE_THAT(a(i, j), Catch::WithinRel(b(i, j), 0.001) ||
+                                  Catch::WithinULP(b(i, j), 6));
       }
     }
   }
@@ -22,7 +22,7 @@ namespace test
     for (size_t i = 0; i < a.size(); ++i)
     {
       REQUIRE_THAT(a(i),
-                   Catch::WithinRel(b(i), 1E-6) || Catch::WithinULP(b(i), 4));
+                   Catch::WithinRel(b(i), 0.001) || Catch::WithinULP(b(i), 6));
     }
   }
 }  // namespace test
