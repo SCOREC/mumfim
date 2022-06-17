@@ -10,7 +10,8 @@ namespace test
     {
       for (size_t j = 0; j < a.getColumns(); ++j)
       {
-        REQUIRE(a(i, j) == Approx(b(i, j)));
+        REQUIRE_THAT(a(i, j), Catch::WithinRel(b(i, j), 1E-6) ||
+                                  Catch::WithinULP(b(i, j), 4));
       }
     }
   }
@@ -18,8 +19,10 @@ namespace test
                                const apf::DynamicVector & b)
   {
     REQUIRE(a.size() == b.size());
-    for(size_t i = 0; i<a.size(); ++i) {
-      REQUIRE(a(i) == Approx(b(i)));
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      REQUIRE_THAT(a(i),
+                   Catch::WithinRel(b(i), 1E-6) || Catch::WithinULP(b(i), 4));
     }
   }
 }  // namespace test
