@@ -211,21 +211,15 @@ namespace mumfim
   }
   void NonlinearTissue::UpdateDOFs(const double * sol)
   {
-    // accumulate displacement deltas into primary field
-    amsi::AccumOp ac_op;
-    amsi::FreeApplyOp frac_op(apf_primary_numbering, &ac_op);
-    amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol,
-                      first_local_dof, &frac_op)
-        .run();
-    // amsi::PrintField(apf_primary_field,std::cout).run();
+    // rewrite for SNES. Here the solution vector we have is the
+    // full displacements
+    // FIXME: Detangle this code once SNES is working
     amsi::WriteOp wr_op;
     amsi::FreeApplyOp frwr_op(apf_primary_numbering, &wr_op);
-    amsi::ApplyVector(apf_primary_numbering, delta_u, sol, first_local_dof,
+    amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol, first_local_dof,
                       &frwr_op)
         .run();
-    // amsi::PrintField(delta_u,std::cout).run();
     apf::synchronize(apf_primary_field);
-    apf::synchronize(delta_u);
   }
   /**
    * get the Neumann boundary condition value on the specified entity

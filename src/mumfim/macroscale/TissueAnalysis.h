@@ -85,7 +85,9 @@ namespace mumfim
     virtual void iterate()
     {
       LinearSolver(tssu, las);
+
       tssu->iter();
+      // copies LHS/RHS into "old" state as needed for computing convergence
       las->iter();
       amsi::Iteration::iterate();
     }
