@@ -132,26 +132,25 @@ namespace mumfim
     tssu->computeInitGuess(las);
     completed = false;
     SNES snes(cm);
+    MumfimPetscCall(SNESSetFromOptions(snes));
     auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(las);
     if (petsc_las == nullptr)
     {
       std::cerr << "Current solver only works with petsc backend!\n";
       std::exit(1);
     }
-    auto JMat = petsc_las->GetMatrix();
-    auto x = petsc_las->GetSolutionVector();
-    auto residual = petsc_las->GetVector();
-    // MumfimPetscCall(SNESCreate(cm,&snes));
+    Mat AMat, PMat;
+    MumfimPetscCall(MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES,&PMat));
+    MumfimPetscCall(MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES,&AMat));
     MumfimPetscCall(SNESSetFunction(
-        snes, residual,
+        snes, NULL,
         [](::SNES s, Vec displacement, Vec residual,
            void * ctx) -> PetscErrorCode
         {
-          std::cerr << "Calling function forming\n";
+
+          static int num_calls = 0;
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
-          //std::cout<<petsc_las->GetSolutionVector() <<" "<<displacement<<std::endl;
-          //assert(petsc_las->GetSolutionVector() == displacement);
           // Given the trial displacement x, compute the residual
           // an->itr->iterate(); // this doesn't work as is. Writing out steps
           // See amsi::Solvers.cc LinearIteration
@@ -159,68 +158,41 @@ namespace mumfim
           // 1. Write the new solution into the displacement field
           // las->iter() // we don't need to do this step since we are just
           // using the K/r storage in las not actually computing residuals
-          // if (iteration() == 0) tssu->updateMicro();
-          double * sol;
-          VecGetArray(displacement, &sol);
-          // an->las->GetSolution(sol);
+          const double * sol;
+          VecGetArrayRead(displacement, &sol);
           an->tssu->UpdateDOFs(sol);
-          VecRestoreArray(displacement, &sol);
+          VecRestoreArrayRead(displacement, &sol);
           an->tssu->ApplyBC_Dirichlet();
           an->tssu->RenumberDOFs();
           int gbl, lcl, off;
           an->tssu->GetDOFInfo(gbl, lcl, off);
           an->las->Reinitialize(gbl, lcl, off);
-          //MatAssemblyBegin(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
-          //MatAssemblyEnd(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
-          VecAssemblyBegin(residual);
-          VecAssemblyEnd(residual);
-          VecZeroEntries(residual);
-          //an->las->Zero();
+          an->las->Zero();
           // assembles into Mat/vec
           an->tssu->Assemble(an->las);
-          //MatAssemblyBegin(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
-          //MatAssemblyEnd(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
-          VecAssemblyBegin(residual);
-          VecAssemblyEnd(residual);
+          VecAssemblyBegin(petsc_las->GetVector());
+          VecAssemblyEnd(petsc_las->GetVector());
+          MatAssemblyBegin(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
+          MatAssemblyEnd(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
           an->tssu->iter();
+          VecCopy(petsc_las->GetVector(), residual);
           return 0;
         },
         static_cast<void *>(this)));
     MumfimPetscCall(SNESSetJacobian(
-        snes, JMat, JMat,
-        [](::SNES snes, Vec displacement, Mat Amat, Mat Pmat, void * ctx) -> PetscErrorCode
+        snes, AMat, AMat,
+        [](::SNES snes, Vec displacement, Mat Amat, Mat Pmat,
+           void * ctx) -> PetscErrorCode
         {
-          // FIXME verify that the state of x is the same as solution as is passed to the SETFunction. If So, we don't need to reassemble
-          std::cerr << "Calling jacobian forming\n";
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
-          std::cout<<petsc_las->GetSolutionVector() <<" "<<displacement<<std::endl;
-          //assert(petsc_las->GetSolutionVector() == displacement);
-          assert(Amat == Pmat);
-          double * sol;
-          VecGetArray(displacement, &sol);
-          // an->las->GetSolution(sol);
-          an->tssu->UpdateDOFs(sol);
-          VecRestoreArray(displacement, &sol);
-          an->tssu->ApplyBC_Dirichlet();
-          an->tssu->RenumberDOFs();
-          int gbl, lcl, off;
-          an->tssu->GetDOFInfo(gbl, lcl, off);
-          an->las->Reinitialize(gbl, lcl, off);
-          MatAssemblyBegin(Amat,MAT_FINAL_ASSEMBLY);
-          MatAssemblyEnd(Amat,MAT_FINAL_ASSEMBLY);
-          MatZeroEntries(Amat);
-          //an->las->Zero();
-          // assembles into Mat/vec
-          an->tssu->Assemble(an->las);
-          MatAssemblyBegin(Amat,MAT_FINAL_ASSEMBLY);
-          MatAssemblyEnd(Amat,MAT_FINAL_ASSEMBLY);
-          an->tssu->iter();
-          return 0; },
+          MatCopy(petsc_las->GetMatrix(),Amat,SAME_NONZERO_PATTERN);
+          MatScale(Amat,-1);
+          return 0;
+        },
         static_cast<void *>(this)));
     while (!completed)
     {
-      // petsc_snes.Solve();
 #ifdef LOGRUN
       amsi::log(state) << stp << ", " << itr->iteration() << ", " << MPI_Wtime()
                        << ", "
@@ -230,7 +202,7 @@ namespace mumfim
       // TODO wrap SNES in RAII class so create/destroy is exception safe
       // initialize SNES
       // solve
-      MumfimPetscCall(SNESSolve(snes, nullptr, x));
+      MumfimPetscCall(SNESSolve(snes, nullptr, petsc_las->GetSolutionVector()));
       const auto converged = std::invoke(
           [&snes]()
           {
@@ -382,7 +354,7 @@ namespace mumfim
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
     int iteration = itr->iteration() - 1;
-    std::cout << "ITERATION: " << iteration << std::endl;
+    //std::cout << "ITERATION: " << iteration << std::endl;
     std::stringstream cnvrt;
     cnvrt << "msh_stp_" << stp << "_iter_";
     // amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);
