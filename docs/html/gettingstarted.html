@@ -54,7 +54,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>scorec-mumfim documentation</li>
+      <li>Getting Started</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -65,11 +65,45 @@
            <div itemprop="articleBody">
              
   <div class="section" id="welcome-to-scorec-mumfim-s-documentation">
-<h1>scorec-mumfim documentation<a class="headerlink" href="#welcome-to-scorec-mumfim-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 </div>
-<p>multiscale biological tissue implementation using amsi</p>
+<h2>Installation</h2>
+<h4>Windows</h4>
+<p>
+  1. Install windows subsystem for linux. Follow the directions given on this website: https://docs.microsoft.com/en-us/windows/wsl/install<br><br>
+  2. Install spack. In the command line, run the following commands.<br>
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># create parent directory for all spack things</span><br>
+    <code>mkdir spack && cd spack<br></code>
+    <code>export SPACK_ROOT=`pwd`<br></code>
+    
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># download spack</span><br>
+    <code>git clone https://github.com/spack/spack.git</code><br>
+    
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># make sure to clear any modules which you<br>
+      # don't want to interfere with spack<br></span>
+    <code>module purge<br></code>
+    
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># add spack to the command line</span><br>
+    <code>source $SPACK_ROOT/spack/share/spack/setup-env.sh<br></code>
+    You can add <code>source $SPACK_ROOT/spack/share/spack/setup-env.sh<br></code> to .bashrc in your home directory.<br><br>
+  3.  Install mumfim.<br>
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># download the mumfim spack repo</span><br>
+    <code>git clone git@github.com:jacobmerson/mumfim-spack.git</code><br>
+  
+    <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># add repositories to spack</span><br>
+    <code>spack repo add mumfim-spack/mumfim</code>
+
+</p>
+<h2>Run a test case</h2>
+<p>
+  We will be running a single scale test case to verify proper installation. You will need to download a folder containing petsc_options, yaml, dmg, and smb files. 
+  In the command line, run the following commands.<br>
+  <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># go to test case directory</span><br>
+  <code>cd path/to/test-case</code><br>
+  <span style="font-family: 'Courier New', Courier, monospace; color:green; font-size: 9.5pt;"># run test case</span><br>
+  <code>mumfim_singlescale -b uniaxial_extension.yaml -m voronoi_test_coarse.smb<br> -c delaunay -a uniaxial_extension.yaml -g voronoi_test.dmg</code><br>
+</p>
 <ul class="simple">
 </ul>
 
