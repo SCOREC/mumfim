@@ -21,12 +21,12 @@
 
 project = 'scorec-mumfim'
 copyright = '2022, Jacob Merson'
-author = 'Jacob Merson'
+author = 'Leon Lei'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = ''
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -101,7 +101,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'scorec-mumfimdoc'
+htmlhelp_basename = 'scorec-mumfim'
 
 
 # -- Options for LaTeX output ------------------------------------------------
