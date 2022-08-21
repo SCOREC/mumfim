@@ -37,6 +37,8 @@ namespace mumfim
                              const amsi::Analysis & amsi_analysis,
                              const amsi::Multiscale & amsi_multiscale);
     virtual void finalizeStep() final;
+    virtual void finalizeIteration(bool ) final;
+
 
     private:
     size_t cplng;

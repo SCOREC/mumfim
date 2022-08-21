@@ -101,6 +101,7 @@ namespace mumfim
   }
   void MultiscaleRVEAnalysis::updateCoupling()
   {
+    int rank;
     std::vector<micro_fo_init_data> inis;
     std::vector<int> to_delete;
     amsi::ControlService * cs = amsi::ControlService::Instance();
@@ -201,6 +202,10 @@ namespace mumfim
     {
       updateCoupling();
     }
+    else {
+      std::cerr<<"Very surprised that I am here!\n";
+      std::abort();
+    }
       // send the initial step result data to the macroscale to output
       // get the size of the step results vector
       std::vector<micro_fo_step_result> step_results(hdrs.size());
@@ -229,7 +234,7 @@ namespace mumfim
       while (!step_complete)
       {
         // migration
-        if (macro_iter == 0) updateCoupling();
+        //if (macro_iter == 0) updateCoupling();
         // send the initial microscale rve states back to the macroscale
         std::vector<micro_fo_data> data;
         cs->Communicate(recv_ptrn, data, amsi::mpi_type<micro_fo_data>());

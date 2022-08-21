@@ -7,8 +7,8 @@
 #include "mumfim/macroscale/AnalysisIO.h"
 #include "mumfim/macroscale/ModelTraits.h"
 #include "mumfim/macroscale/PetscSNES.h"
-//#define MumfimPetscCall(petsc_error_code) if(petsc_error_code) [[unlikely]] {
-// throw mumfim::petsc_error(petsc_error_code); }
+// #define MumfimPetscCall(petsc_error_code) if(petsc_error_code) [[unlikely]] {
+//  throw mumfim::petsc_error(petsc_error_code); }
 namespace mumfim
 {
   TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,
@@ -87,14 +87,6 @@ namespace mumfim
       }
     }
   }
-  PetscErrorCode ComputeJacobian(SNES, Vec, Mat, Mat, void * ctx)
-  {
-    auto tissue_analysis = static_cast<TissueAnalysis *>(ctx);
-  }
-  PetscErrorCode ComputeResidual(SNES, Vec, Vec, void * ctx)
-  {
-    auto tissue_analysis = static_cast<TissueAnalysis *>(ctx);
-  }
   TissueAnalysis::~TissueAnalysis()
   {
     // since we know all of the iteration steps are allocated on the heap delete
@@ -121,7 +113,7 @@ namespace mumfim
   }
   void TissueAnalysis::run()
   {
-    tssu->preRun();
+    tssu->preRun();  // calls updateMicro for multiscale analysis
     tssu->recoverSecondaryVariables(stp);
     checkpoint();
     // write the initial state of everything
@@ -140,17 +132,31 @@ namespace mumfim
       std::exit(1);
     }
     Mat AMat, PMat;
-    MumfimPetscCall(MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES,&PMat));
-    MumfimPetscCall(MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES,&AMat));
+    MumfimPetscCall(
+        MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES, &PMat));
+    MumfimPetscCall(
+        MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES, &AMat));
     MumfimPetscCall(SNESSetFunction(
         snes, NULL,
         [](::SNES s, Vec displacement, Vec residual,
            void * ctx) -> PetscErrorCode
         {
+          PetscInt iteration;
+          SNESGetIterationNumber(s, &iteration);
+          // bit hacky...if the last finalized iteration is same as previous
 
           static int num_calls = 0;
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
+          // in this case, we have called Function another time without checking
+          // for convergence
+          if(an->iteration > 0) {
+            an->finalizeIteration(false);
+          }
+          // Note iteration is not here an actual count of the iterations performed
+          // instead it is a test to make sure we call finalize iteration
+          // in the correct order between here and the call to check convergence
+          ++an->iteration;
           // Given the trial displacement x, compute the residual
           // an->itr->iterate(); // this doesn't work as is. Writing out steps
           // See amsi::Solvers.cc LinearIteration
@@ -186,11 +192,33 @@ namespace mumfim
         {
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
-          MatCopy(petsc_las->GetMatrix(),Amat,SAME_NONZERO_PATTERN);
-          MatScale(Amat,-1);
+          MatCopy(petsc_las->GetMatrix(), Amat, SAME_NONZERO_PATTERN);
+          MatScale(Amat, -1);
           return 0;
         },
         static_cast<void *>(this)));
+    MumfimPetscCall(SNESSetConvergenceTest(
+        snes,
+        [](::SNES snes, PetscInt it, PetscReal xnorm, PetscReal gnorm,
+           PetscReal f, SNESConvergedReason * reason,
+           void * ctx) -> PetscErrorCode
+        {
+          //if(it >2 )
+          //  *reason = SNESConvergedReason::SNES_CONVERGED_ITS;
+          //else
+          //  *reason = SNESConvergedReason::SNES_CONVERGED_ITERATING;
+          auto * an = static_cast<TissueAnalysis *>(ctx);
+          auto error= SNESConvergedDefault(snes,it,xnorm,gnorm,f,reason,ctx);
+          bool converged = (reason != nullptr && *reason != SNES_CONVERGED_ITERATING);
+          // For MultiscaleAnalysis this informs microscale if the step is done
+          an->finalizeIteration(converged);
+          // HACK set this to zero so we don't finalize iteration
+          // in form function
+          an->iteration = 0;
+          return error;
+          //return 0;
+        },
+        static_cast<void *>(this), NULL));
     while (!completed)
     {
 #ifdef LOGRUN
@@ -221,7 +249,7 @@ namespace mumfim
       if (converged < 0)
       {
         completed = true;
-        finalizeStep();
+        //finalizeStep(); // shouldn't call this here since it's called at the end
         std::stringstream ss;
         ss << "Step " << stp << "failed to converge\n";
         ss << SNESConvergedReasons[converged];
@@ -233,22 +261,6 @@ namespace mumfim
         completed = true;
         std::cout << "Final load step converged. Case complete." << std::endl;
       }
-      // Crux here is to figure out what is las->step(), tssu->step(), itr
-      // doing. convergence criteria can be set via what is being done during
-      // the iteration currently? This needs to get moved to either FormJacobian
-      // or FormFunction
-      /*
-       * iteration:
-       *  Multiscale:
-       *  SingleScale:
-       */
-      /*
-      if (amsi::numericalSolve(itr, cvg))
-      {
-        las->step();
-        tssu->step();
-      }
-       */
       std::cout << "checkpointing (macro)" << std::endl;
       std::cout << "Rewriting at end of load step to include orientation data"
                 << std::endl;
@@ -344,6 +356,7 @@ namespace mumfim
     }
     */
   void TissueAnalysis::finalizeStep(){};
+  void TissueAnalysis::finalizeIteration(bool){};
   void TissueAnalysis::checkpoint()
   {
 #ifdef LOGRUN
@@ -354,7 +367,7 @@ namespace mumfim
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
     int iteration = itr->iteration() - 1;
-    //std::cout << "ITERATION: " << iteration << std::endl;
+    // std::cout << "ITERATION: " << iteration << std::endl;
     std::stringstream cnvrt;
     cnvrt << "msh_stp_" << stp << "_iter_";
     // amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);

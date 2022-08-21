@@ -276,6 +276,8 @@ namespace mumfim
   }
   void MultiscaleTissue::updateRVEExistence()
   {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     std::vector<micro_fo_header> nw_hdrs;
     std::vector<micro_fo_params> nw_prms;
     std::vector<micro_fo_init_data> nw_data;

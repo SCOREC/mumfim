@@ -106,7 +106,7 @@ namespace mumfim
     {
       multiscale_.getControlService()->CommPattern_Reconcile(rcv_ptrn);
     }
-    // todo (h) : template or pointer
+    // todo (h) : template or pointer (span!)
     void sendRVEData(std::vector<micro_fo_data> & bfr)
     {
       amsi::ControlService * cs = amsi::ControlService::Instance();
