@@ -1,21 +1,22 @@
-#include "MultiscaleCoupling.h"
 #include "MultiscaleRVEAnalysis.h"
-#include <amsiDetectOscillation.h>
-#include <amsiNonlinearAnalysis.h>
-#include <apfMDS.h>
-#include <apfMeshIterator.h>  // amsi
-#include <mumfim/microscale/Verbosity.h>
-#include <gmi.h>
-#include <cassert>
-#include "FiberRVEAnalysis.h"
-#include "MultiscaleMicroFOParams.h"
-#include <sstream>
-#include "NeoHookeanRVEAnalysis.h"
-#include "FiberNetworkLibrary.h"
-#include "mumfim/exceptions.h"
 #include <amsiCommunicationManager.h>
 #include <amsiControlService.h>
+#include <amsiDetectOscillation.h>
+#include <amsiNonlinearAnalysis.h>
 #include <amsiTaskManager.h>
+#include <apfMDS.h>
+#include <apfMeshIterator.h>  // amsi
+#include <gmi.h>
+#include <mumfim/microscale/Verbosity.h>
+#include <cassert>
+#include <sstream>
+#include "BatchedNeohookeanAnalysis.h"
+#include "FiberNetworkLibrary.h"
+#include "FiberRVEAnalysis.h"
+#include "MultiscaleCoupling.h"
+#include "MultiscaleMicroFOParams.h"
+#include "NeoHookeanRVEAnalysis.h"
+#include "mumfim/exceptions.h"
 namespace mumfim
 {
   MultiscaleRVEAnalysis::~MultiscaleRVEAnalysis() = default;
@@ -90,13 +91,15 @@ namespace mumfim
       rve_tp_dirs[ii] = new char[cnt];
       // don't have to block to wait since we know the message was available for
       // size info
-      cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_dirs[ii][0], cnt);
+      cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_dirs[ii][0],
+                         cnt);
     }
     rve_tp_cnt.resize(num_rve_tps);
-    cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_cnt[0], num_rve_tps);
-    //assert(rqsts.size() == num_rve_tps);
-    // note rather than waiting for all of the communication, we can interleave
-    // creating some of the new structures with some of the communication
+    cs->aRecvBroadcast(std::back_inserter(rqsts), M2m_id, &rve_tp_cnt[0],
+                       num_rve_tps);
+    // assert(rqsts.size() == num_rve_tps);
+    //  note rather than waiting for all of the communication, we can interleave
+    //  creating some of the new structures with some of the communication
     MPI_Waitall(rqsts.size(), &rqsts[0], MPI_STATUSES_IGNORE);
   }
   void MultiscaleRVEAnalysis::updateCoupling()
@@ -183,29 +186,34 @@ namespace mumfim
     }
     if (to_add.size() > 0)
     {
+      // batched_analysis = BatchedAnalysisType{
+      //     new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
+      //                                         Kokkos::DefaultExecutionSpace>{
+      //         std::move(fiber_networks), std::move(solution_strategies)}};
       batched_analysis = BatchedAnalysisType{
-          new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
-                                              Kokkos::DefaultExecutionSpace>{
-              std::move(fiber_networks), std::move(solution_strategies)}};
+          new BatchedNeohookeanAnalysis<Scalar, LocalOrdinal,
+                                        Kokkos::DefaultExecutionSpace>(
+              static_cast<int>(fiber_networks.size()),10000,0.3)};
     }
-    // reset the PCU communictor back to its original state so that
-    // our scale wide communications can proceed
-    PCU_Switch_Comm(comm);
-    cs->CommPattern_UpdateInverted(recv_ptrn, send_ptrn);
-    cs->CommPattern_Assemble(send_ptrn);
-    cs->CommPattern_Reconcile(send_ptrn);
-  }
-  void MultiscaleRVEAnalysis::run()
-  {
-    amsi::ControlService * cs = amsi::ControlService::Instance();
-    if (macro_step == 0 && macro_iter == 0)
+      // reset the PCU communictor back to its original state so that
+      // our scale wide communications can proceed
+      PCU_Switch_Comm(comm);
+      cs->CommPattern_UpdateInverted(recv_ptrn, send_ptrn);
+      cs->CommPattern_Assemble(send_ptrn);
+      cs->CommPattern_Reconcile(send_ptrn);
+    }
+    void MultiscaleRVEAnalysis::run()
     {
-      updateCoupling();
-    }
-    else {
-      std::cerr<<"Very surprised that I am here!\n";
-      std::abort();
-    }
+      amsi::ControlService * cs = amsi::ControlService::Instance();
+      if (macro_step == 0 && macro_iter == 0)
+      {
+        updateCoupling();
+      }
+      else
+      {
+        std::cerr << "Very surprised that I am here!\n";
+        std::abort();
+      }
       // send the initial step result data to the macroscale to output
       // get the size of the step results vector
       std::vector<micro_fo_step_result> step_results(hdrs.size());
@@ -227,130 +235,141 @@ namespace mumfim
         cs->Communicate(send_ptrn, step_results,
                         amsi::mpi_type<micro_fo_step_result>());
       }
-    bool sim_complete = false;
-    while (!sim_complete)
-    {
-      bool step_complete = false;
-      while (!step_complete)
+      bool sim_complete = false;
+      while (!sim_complete)
       {
-        // migration
-        //if (macro_iter == 0) updateCoupling();
-        // send the initial microscale rve states back to the macroscale
-        std::vector<micro_fo_data> data;
-        cs->Communicate(recv_ptrn, data, amsi::mpi_type<micro_fo_data>());
-        std::vector<micro_fo_result> results(data.size());
-        PCU_Switch_Comm(MPI_COMM_SELF);
-        int rank = -1;
-        MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
-        // int ii = 0;
-        MUMFIM_V1(double t0 = MPI_Wtime();)
-        auto deformation_gradient_h = deformation_gradient.h_view;
-        auto stress_h = stress.h_view;
-        auto material_stiffness_h = material_stiffness.h_view;
-        deformation_gradient.modify<Kokkos::HostSpace>();
-        // fill the deformation gradient data
-        for (std::size_t i = 0; i < results.size(); ++i)
+        bool step_complete = false;
+        while (!step_complete)
         {
-          for (int ei = 0; ei < 3; ++ei)
+          // migration
+          // if (macro_iter == 0) updateCoupling();
+          // send the initial microscale rve states back to the macroscale
+          std::vector<micro_fo_data> data;
+          cs->Communicate(recv_ptrn, data, amsi::mpi_type<micro_fo_data>());
+          std::vector<micro_fo_result> results(data.size());
+          PCU_Switch_Comm(MPI_COMM_SELF);
+          int rank = -1;
+          MPI_Comm_rank(AMSI_COMM_WORLD, &rank);
+          // int ii = 0;
+          MUMFIM_V1(double t0 = MPI_Wtime();)
+          auto deformation_gradient_h = deformation_gradient.h_view;
+          auto stress_h = stress.h_view;
+          auto material_stiffness_h = material_stiffness.h_view;
+          deformation_gradient.modify<Kokkos::HostSpace>();
+          // fill the deformation gradient data
+          for (std::size_t i = 0; i < results.size(); ++i)
           {
-            for (int ej = 0; ej < 3; ++ej)
+            for (int ei = 0; ei < 3; ++ei)
             {
-              deformation_gradient_h(i, ei, ej) = data[i].data[ei * 3 + ej];
+              for (int ej = 0; ej < 3; ++ej)
+              {
+                deformation_gradient_h(i, ei, ej) = data[i].data[ei * 3 + ej];
+              }
             }
           }
+          batched_analysis->run(deformation_gradient, stress);
+          batched_analysis->computeMaterialStiffness(material_stiffness);
+          stress.sync<Kokkos::HostSpace>();
+          material_stiffness.sync<Kokkos::HostSpace>();
+          // fill the results data
+          for (std::size_t i = 0; i < results.size(); ++i)
+          {
+            double * sigma = &(results[i].data[0]);
+            double * avgVolStress = &(results[i].data[6]);
+            double * matStiffMatrix = &(results[i].data[9]);
+            for (int j = 0; j < 6; ++j)
+            {
+              sigma[j] = stress_h(i, j);
+            }
+            // avg vol stress which we don't currently use
+            for (int j = 0; j < 3; ++j)
+            {
+              avgVolStress[j] = 0;
+            }
+            for (int j = 0; j < 36; ++j)
+            {
+              int row = (j) / 6;
+              int col = (j) % 6;
+              matStiffMatrix[j] = material_stiffness_h(i, row, col);
+            }
+          }
+          MUMFIM_V1(double t1 = MPI_Wtime();)
+          MUMFIM_V1(std::cout << "Computed " << results.size() << " RVEs in "
+                              << t1 - t0 << " seconds. On rank " << rank << "."
+                              << std::endl;)
+          // PCU_Switch_Comm(AMSI_COMM_SCALE);
+          cs->Communicate(send_ptrn, results,
+                          amsi::mpi_type<micro_fo_result>());
+          macro_iter++;
+          cs->scaleBroadcast(M2m_id, &step_complete);
         }
-        batched_analysis->run(deformation_gradient, stress);
-        batched_analysis->computeMaterialStiffness(material_stiffness);
-        stress.sync<Kokkos::HostSpace>();
-        material_stiffness.sync<Kokkos::HostSpace>();
-        // fill the results data
-        for (std::size_t i = 0; i < results.size(); ++i)
-        {
-          double * sigma = &(results[i].data[0]);
-          double * avgVolStress = &(results[i].data[6]);
-          double * matStiffMatrix = &(results[i].data[9]);
-          for (int j = 0; j < 6; ++j)
-          {
-            sigma[j] = stress_h(i, j);
-          }
-          // avg vol stress which we don't currently use
-          for (int j = 0; j < 3; ++j)
-          {
-            avgVolStress[j] = 0;
-          }
-          for (int j = 0; j < 36; ++j)
-          {
-            int row = (j) / 6;
-            int col = (j) % 6;
-            matStiffMatrix[j] = material_stiffness_h(i, row, col);
-          }
-        }
-        MUMFIM_V1(double t1 = MPI_Wtime();)
-        MUMFIM_V1(std::cout << "Computed " << results.size() << " RVEs in "
-                         << t1 - t0 << " seconds. On rank " << rank << "."
-                         << std::endl;)
-        //PCU_Switch_Comm(AMSI_COMM_SCALE);
-        cs->Communicate(send_ptrn, results, amsi::mpi_type<micro_fo_result>());
-        macro_iter++;
-        cs->scaleBroadcast(M2m_id, &step_complete);
+        // get the size of the step results vector
+        std::vector<micro_fo_step_result> step_results(hdrs.size());
+        // recover step results and set the step results vector
+        recoverMultiscaleStepResults(
+            orientation_tensor, orientation_tensor_normal,
+            batched_analysis.get(), hdrs, prms, step_results);
+        // communicate the step results back to the macro scale
+        cs->Communicate(send_ptrn, step_results,
+                        amsi::mpi_type<micro_fo_step_result>());
+        macro_iter = 0;
+        macro_step++;
+        cs->scaleBroadcast(M2m_id, &sim_complete);
       }
-      // get the size of the step results vector
-      std::vector<micro_fo_step_result> step_results(hdrs.size());
-      // recover step results and set the step results vector
-      recoverMultiscaleStepResults(
-          orientation_tensor, orientation_tensor_normal, batched_analysis.get(),
-          hdrs, prms, step_results);
-      // communicate the step results back to the macro scale
-      cs->Communicate(
-          send_ptrn, step_results, amsi::mpi_type<micro_fo_step_result>());
-      macro_iter = 0;
-      macro_step++;
-      cs->scaleBroadcast(M2m_id, &sim_complete);
     }
-  }
-  std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(micro_fo_solver & slvr, micro_fo_int_solver & slvr_int)
-  {
-    auto solver_type = static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
-    auto solution_strategy = std::unique_ptr<MicroSolutionStrategy>{nullptr};
-    if(solver_type == SolverType::Explicit)
+    std::unique_ptr<MicroSolutionStrategy> serializeSolutionStrategy(
+        micro_fo_solver & slvr, micro_fo_int_solver & slvr_int)
     {
-      solution_strategy.reset(new MicroSolutionStrategyExplicit);
-      auto sse = static_cast<MicroSolutionStrategyExplicit*>(solution_strategy.get());
-      sse->total_time = slvr.data[LOAD_TIME]+slvr.data[HOLD_TIME];
-      sse->load_time = slvr.data[LOAD_TIME];
-      sse->crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
-      sse->visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
-      sse->energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
-      sse->ampType = static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
-      sse->print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
-      sse->print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
-      sse->print_field_by_num_frames = slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
-      sse->serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
+      auto solver_type =
+          static_cast<SolverType>(slvr_int.data[MICRO_SOLVER_TYPE]);
+      auto solution_strategy = std::unique_ptr<MicroSolutionStrategy>{nullptr};
+      if (solver_type == SolverType::Explicit)
+      {
+        solution_strategy.reset(new MicroSolutionStrategyExplicit);
+        auto sse = static_cast<MicroSolutionStrategyExplicit *>(
+            solution_strategy.get());
+        sse->total_time = slvr.data[LOAD_TIME] + slvr.data[HOLD_TIME];
+        sse->load_time = slvr.data[LOAD_TIME];
+        sse->crit_time_scale_factor = slvr.data[CRITICAL_TIME_SCALE_FACTOR];
+        sse->visc_damp_coeff = slvr.data[VISCOUS_DAMPING_FACTOR];
+        sse->energy_check_eps = slvr.data[ENERGY_CHECK_EPSILON];
+        sse->ampType =
+            static_cast<AmplitudeType>(slvr_int.data[AMPLITUDE_TYPE]);
+        sse->print_history_frequency = slvr_int.data[PRINT_HISTORY_FREQUENCY];
+        sse->print_field_frequency = slvr_int.data[PRINT_FIELD_FREQUENCY];
+        sse->print_field_by_num_frames =
+            slvr_int.data[PRINT_FIELD_BY_NUM_FRAMES];
+        sse->serial_gpu_cutoff = slvr_int.data[SERIAL_GPU_CUTOFF];
+      }
+      else if (solver_type == SolverType::Implicit)
+      {
+        solution_strategy.reset(new MicroSolutionStrategy);
+      }
+      else
+      {
+        std::cerr << "Attempting to use a type of solver which has not been "
+                     "implemented yet.\n";
+        std::cerr << "This is most likely configuration error, but it could "
+                     "also happen if there";
+        std::cerr << " is an MPI communication error" << std::endl;
+        std::abort();
+      }
+      // set the combined solver parameters
+      if (solution_strategy != nullptr)
+      {
+        solution_strategy->cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
+        solution_strategy->slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
+        solution_strategy->oscPrms.maxIterations =
+            slvr_int.data[MAX_MICRO_ITERS];
+        solution_strategy->oscPrms.maxMicroCutAttempts =
+            slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
+        solution_strategy->oscPrms.microAttemptCutFactor =
+            slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
+        solution_strategy->oscPrms.oscType =
+            static_cast<amsi::DetectOscillationType>(
+                slvr_int.data[DETECT_OSCILLATION_TYPE]);
+        solution_strategy->oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
+      }
+      return solution_strategy;
     }
-    else if (solver_type == SolverType::Implicit)
-    {
-      solution_strategy.reset(new MicroSolutionStrategy);
-    }
-    else
-    {
-      std::cerr<<"Attempting to use a type of solver which has not been implemented yet.\n";
-      std::cerr<<"This is most likely configuration error, but it could also happen if there";
-      std::cerr<<" is an MPI communication error"<<std::endl;
-      std::abort();
-    }
-    // set the combined solver parameters
-    if(solution_strategy != nullptr)
-    {
-      solution_strategy->cnvgTolerance = slvr.data[MICRO_CONVERGENCE_TOL];
-      solution_strategy->slvrTolerance = slvr.data[MICRO_SOLVER_TOL];
-      solution_strategy->oscPrms.maxIterations = slvr_int.data[MAX_MICRO_ITERS];
-      solution_strategy->oscPrms.maxMicroCutAttempts = slvr_int.data[MAX_MICRO_CUT_ATTEMPT];
-      solution_strategy->oscPrms.microAttemptCutFactor = slvr_int.data[MICRO_ATTEMPT_CUT_FACTOR];
-      solution_strategy->oscPrms.oscType = static_cast<amsi::DetectOscillationType>(
-          slvr_int.data[DETECT_OSCILLATION_TYPE]);
-      solution_strategy->oscPrms.prevNormFactor = slvr.data[PREV_ITER_FACTOR];
-    }
-    return solution_strategy;
-  }
- 
-}  // namespace mumfim
+  }  // namespace mumfim

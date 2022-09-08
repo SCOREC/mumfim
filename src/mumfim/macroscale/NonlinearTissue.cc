@@ -202,8 +202,8 @@ namespace mumfim
     // with the multiscale analysis
     AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
     { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
-    double nrm = 0.0;
-    las->GetVectorNorm(nrm);
+    //double nrm = 0.0;
+    //las->GetVectorNorm(nrm);
     // process constraints
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
@@ -215,11 +215,24 @@ namespace mumfim
     // full displacements
     // FIXME: Detangle this code once SNES is working
     amsi::WriteOp wr_op;
+    auto num_dofs = countNodes(apf_primary_numbering)*countComponents(apf_primary_delta_field);
+    std::vector<double> old_solution(num_dofs);
+    amsi::ToArray(apf_primary_numbering,apf_primary_field,&old_solution[0],first_local_dof,&wr_op).run();
     amsi::FreeApplyOp frwr_op(apf_primary_numbering, &wr_op);
     amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol, first_local_dof,
                       &frwr_op)
         .run();
+    std::transform(old_solution.begin(), old_solution.end(), sol, old_solution.begin(),
+                   [](double old_sol, double new_sol){
+                     return new_sol-old_sol;
+                   });
+
+    amsi::ApplyVector(apf_primary_numbering, apf_primary_delta_field, old_solution.data(), first_local_dof,
+                      &frwr_op)
+        .run();
+
     apf::synchronize(apf_primary_field);
+    apf::synchronize(delta_u);
   }
   /**
    * get the Neumann boundary condition value on the specified entity

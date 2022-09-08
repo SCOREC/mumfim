@@ -144,18 +144,19 @@ namespace mumfim
           PetscInt iteration;
           SNESGetIterationNumber(s, &iteration);
           // bit hacky...if the last finalized iteration is same as previous
-
           static int num_calls = 0;
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
           // in this case, we have called Function another time without checking
           // for convergence
-          if(an->iteration > 0) {
+          if (an->iteration > 0)
+          {
             an->finalizeIteration(false);
           }
-          // Note iteration is not here an actual count of the iterations performed
-          // instead it is a test to make sure we call finalize iteration
-          // in the correct order between here and the call to check convergence
+          // Note iteration is not here an actual count of the iterations
+          // performed instead it is a test to make sure we call finalize
+          // iteration in the correct order between here and the call to check
+          // convergence
           ++an->iteration;
           // Given the trial displacement x, compute the residual
           // an->itr->iterate(); // this doesn't work as is. Writing out steps
@@ -203,20 +204,18 @@ namespace mumfim
            PetscReal f, SNESConvergedReason * reason,
            void * ctx) -> PetscErrorCode
         {
-          //if(it >2 )
-          //  *reason = SNESConvergedReason::SNES_CONVERGED_ITS;
-          //else
-          //  *reason = SNESConvergedReason::SNES_CONVERGED_ITERATING;
           auto * an = static_cast<TissueAnalysis *>(ctx);
-          auto error= SNESConvergedDefault(snes,it,xnorm,gnorm,f,reason,ctx);
-          bool converged = (reason != nullptr && *reason != SNES_CONVERGED_ITERATING);
+          auto error =
+              SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, ctx);
+          bool converged =
+              (reason != nullptr && *reason != SNES_CONVERGED_ITERATING);
           // For MultiscaleAnalysis this informs microscale if the step is done
           an->finalizeIteration(converged);
           // HACK set this to zero so we don't finalize iteration
           // in form function
           an->iteration = 0;
           return error;
-          //return 0;
+          // return 0;
         },
         static_cast<void *>(this), NULL));
     while (!completed)
@@ -249,7 +248,8 @@ namespace mumfim
       if (converged < 0)
       {
         completed = true;
-        //finalizeStep(); // shouldn't call this here since it's called at the end
+        // finalizeStep(); // shouldn't call this here since it's called at the
+        // end
         std::stringstream ss;
         ss << "Step " << stp << "failed to converge\n";
         ss << SNESConvergedReasons[converged];

@@ -318,6 +318,7 @@ namespace mumfim
       }
       return result;
     }
+    /*
     virtual void computeMaterialStiffness(
         Kokkos::DualView<Scalar * [6][6], ExeSpace> C) final
     {
@@ -403,6 +404,7 @@ namespace mumfim
       }
       C.template modify<ExeSpace>();
     }
+     */
     void compute3DOrientationTensor(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
     {
