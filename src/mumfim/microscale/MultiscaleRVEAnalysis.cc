@@ -186,14 +186,14 @@ namespace mumfim
     }
     if (to_add.size() > 0)
     {
-      // batched_analysis = BatchedAnalysisType{
-      //     new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
-      //                                         Kokkos::DefaultExecutionSpace>{
-      //         std::move(fiber_networks), std::move(solution_strategies)}};
-      batched_analysis = BatchedAnalysisType{
-          new BatchedNeohookeanAnalysis<Scalar, LocalOrdinal,
-                                        Kokkos::DefaultExecutionSpace>(
-              static_cast<int>(fiber_networks.size()),10000,0.3)};
+       batched_analysis = BatchedAnalysisType{
+           new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
+                                               Kokkos::DefaultExecutionSpace>{
+               std::move(fiber_networks), std::move(solution_strategies)}};
+      //batched_analysis = BatchedAnalysisType{
+      //    new BatchedNeohookeanAnalysis<Scalar, LocalOrdinal,
+      //                                  Kokkos::DefaultExecutionSpace>(
+      //        static_cast<int>(fiber_networks.size()),10000,0.3)};
     }
       // reset the PCU communictor back to its original state so that
       // our scale wide communications can proceed
