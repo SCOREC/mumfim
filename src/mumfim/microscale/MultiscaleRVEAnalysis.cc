@@ -305,11 +305,12 @@ namespace mumfim
 
           cs->scaleBroadcast(M2m_id, &step_accepted);
           bool step_complete = (step_accepted > 0);
-          std::cout<<"step complete: "<<step_complete<<" "<<step_complete<<"\n";
           if(step_accepted) {
-            std::cout<<"step accepted\n";
+            batched_analysis->accept();
           }
+          //batched_analysis->accept();
         }
+        //batched_analysis->accept();
         // get the size of the step results vector
         std::vector<micro_fo_step_result> step_results(hdrs.size());
         // recover step results and set the step results vector

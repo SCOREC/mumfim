@@ -184,6 +184,7 @@ namespace mumfim
           MatAssemblyEnd(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
           an->tssu->iter();
           VecCopy(petsc_las->GetVector(), residual);
+          //an->tssu->AcceptDOFs();
           return 0;
         },
         static_cast<void *>(this)));
@@ -205,6 +206,7 @@ namespace mumfim
            PetscReal f, SNESConvergedReason * reason,
            void * ctx) -> PetscErrorCode
         {
+        std::cout<<"CHECKING CONVERGENCE\n";
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto error =
               SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, ctx);
@@ -214,6 +216,9 @@ namespace mumfim
           // For MultiscaleAnalysis this informs microscale if the step is done
           // the microscale knows that a value of 0 means step is accepted but not converged
           an->finalizeIteration(accepted);
+          an->tssu->AcceptDOFs();
+          if(converged)
+            std::cout<<"Iteration converged\n";
           // HACK set this to zero so we don't finalize iteration
           // in form function
           an->iteration = 0;
@@ -247,6 +252,7 @@ namespace mumfim
             MumfimPetscCall(SNESGetIterationNumber(snes, &iteration));
             return iteration;
           });
+      //tssu->AcceptDOFs();
       // analysis diverged
       if (converged < 0)
       {

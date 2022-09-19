@@ -58,6 +58,7 @@ namespace mumfim
     DofDataType current_coordinates;
     DofDataType displacement;
     DofDataType trial_displacement;
+    DofDataType prev_displacement;
     DofDataType velocity;
     DofDataType force_total;
     DofDataType force_internal;
@@ -175,6 +176,7 @@ namespace mumfim
       current_coordinates = DofDataType(dof_counts);
       displacement = DofDataType(dof_counts);
       trial_displacement = DofDataType(dof_counts);
+      prev_displacement = DofDataType(dof_counts);
       trial_stress = Kokkos::DualView<Scalar * [6], ExeSpace>(
           "current_stress", fiber_networks.size());
       velocity = DofDataType(dof_counts);
@@ -267,6 +269,9 @@ namespace mumfim
       orientation_tensor =
           OrientationTensorType(connectivity, current_coordinates, TEAM_SIZE);
     }
+    // FIXME update_coords is true when we are doing a "Full" run and false
+    // when we are doing a run to compute the material stiffness.
+    // If this approach works. This is in critical need of refactor
     virtual bool run(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> deformation_gradients,
         Kokkos::DualView<Scalar * [6], ExeSpace> sigma,
@@ -276,10 +281,26 @@ namespace mumfim
       trial_displacement.template modify<ExeSpace>();
       current_volume.template sync<ExeSpace>();
       trial_volume.template modify<ExeSpace>();
-      displacement.template modify<ExeSpace>();
-      Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
-                        displacement.template getAllRows<ExeSpace>());
-      Kokkos::deep_copy(trial_volume, current_volume);
+      //displacement.template modify<ExeSpace>();
+      if(update_coords) {
+        Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
+                          displacement.template getAllRows<ExeSpace>());
+        Kokkos::deep_copy(trial_volume, current_volume);
+        updateVolume<ExeSpace>(deformation_gradients, trial_volume);
+
+        current_volume.template sync<HostMemorySpace>();
+        trial_volume.template sync<HostMemorySpace>();
+        std::cout<<"Vol: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
+
+      }
+      // if we aren't "updating coords" we are doing a finite difference and
+      // that should make use of the last state, not the accepted state!
+      else {
+        Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
+                          prev_displacement.template getAllRows<ExeSpace>());
+        //Kokkos::deep_copy(trial_volume, prev_volume);
+      }
+
       original_coordinates.template sync<ExeSpace>();
       current_coordinates.template sync<ExeSpace>();
       trial_displacement.template sync<ExeSpace>();
@@ -287,10 +308,6 @@ namespace mumfim
           1.0, trial_displacement.template getAllRows<ExeSpace>(), 1.0,
           original_coordinates.template getAllRows<ExeSpace>(), 0.0,
           current_coordinates.template getAllRows<ExeSpace>());
-      if (update_coords)
-      {
-        updateVolume<ExeSpace>(deformation_gradients, trial_volume);
-      }
       // apply the incremental deformation gradient to the boundaries and the
       // boundary_vert_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
@@ -331,14 +348,21 @@ namespace mumfim
         // will only ever accept after run with update coords,
         // so only do this copy if we are going to accept to save
         // some time from the deep copy during FD for material stiffness
-        Kokkos::deep_copy(trial_stress.template view<ExeSpace>(),
+        Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(),
                           sigma.template view<ExeSpace>());
-        accept();
+        this->current_stress_.template modify<ExeSpace>();
+        Kokkos::deep_copy(this->prev_displacement.template getAllRows<ExeSpace>(),
+                          this->trial_displacement.template getAllRows<ExeSpace>());
+        //accept();
       }
       return result;
     }
     void accept() final
     {
+      std::cerr<<"ACCEPTING MICROSCALE\n";
+      current_volume.template sync<HostMemorySpace>();
+      trial_volume.template sync<HostMemorySpace>();
+      std::cout<<"Vol2: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
       // these syncs should most likely be no-op since we compute everything in
       // the EXE Space.
       this->trial_volume.template sync<ExeSpace>();
@@ -346,14 +370,18 @@ namespace mumfim
       this->trial_displacement.template sync<ExeSpace>();
       Kokkos::deep_copy(this->current_volume.template view<ExeSpace>(),
                         this->trial_volume.template view<ExeSpace>());
-      Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(),
-                        this->trial_stress.template view<ExeSpace>());
+      //Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(),
+      //                  this->trial_stress.template view<ExeSpace>());
       Kokkos::deep_copy(
           this->displacement.template getAllRows<ExeSpace>(),
           this->trial_displacement.template getAllRows<ExeSpace>());
-      this->current_stress_.template modify<ExeSpace>();
+      //this->current_stress_.template modify<ExeSpace>();
       this->displacement.template modify<ExeSpace>();
       this->current_volume.template modify<ExeSpace>();
+
+      current_volume.template sync<HostMemorySpace>();
+      trial_volume.template sync<HostMemorySpace>();
+      std::cout<<"Vol3: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
     }
     void compute3DOrientationTensor(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final

@@ -29,6 +29,11 @@ namespace mumfim
                                        apf::VECTOR, 1);
     apf::zeroField(delta_u);
     apf_primary_delta_field = delta_u;
+
+
+    accepted_displacements =
+        apf::createLagrangeField(apf_mesh, "accepted_displacement", apf::VECTOR, 1);
+    apf::zeroField(accepted_displacements);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
     xpyfnc =
         new amsi::XpYFunc(apf_mesh->getCoordinateField(), apf_primary_field);
@@ -216,8 +221,10 @@ namespace mumfim
     // FIXME: Detangle this code once SNES is working
     amsi::WriteOp wr_op;
     auto num_dofs = countNodes(apf_primary_numbering)*countComponents(apf_primary_delta_field);
+
+
     std::vector<double> old_solution(num_dofs);
-    amsi::ToArray(apf_primary_numbering,apf_primary_field,&old_solution[0],first_local_dof,&wr_op).run();
+    amsi::ToArray(apf_primary_numbering,accepted_displacements,&old_solution[0],first_local_dof,&wr_op).run();
     amsi::FreeApplyOp frwr_op(apf_primary_numbering, &wr_op);
     amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol, first_local_dof,
                       &frwr_op)
