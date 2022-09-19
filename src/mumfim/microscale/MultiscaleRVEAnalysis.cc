@@ -10,7 +10,7 @@
 #include <mumfim/microscale/Verbosity.h>
 #include <cassert>
 #include <sstream>
-#include "BatchedNeohookeanAnalysis.h"
+//#include "BatchedNeohookeanAnalysis.h"
 #include "FiberNetworkLibrary.h"
 #include "FiberRVEAnalysis.h"
 #include "MultiscaleCoupling.h"
@@ -186,14 +186,14 @@ namespace mumfim
     }
     if (to_add.size() > 0)
     {
-      // batched_analysis = BatchedAnalysisType{
-      //     new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
-      //                                         Kokkos::DefaultExecutionSpace>{
-      //         std::move(fiber_networks), std::move(solution_strategies)}};
-      batched_analysis = BatchedAnalysisType{
-          new BatchedNeohookeanAnalysis<Scalar, LocalOrdinal,
-                                        Kokkos::DefaultExecutionSpace>(
-              static_cast<int>(fiber_networks.size()),10000,0.3)};
+       batched_analysis = BatchedAnalysisType{
+           new BatchedFiberRVEAnalysisExplicit<Scalar, LocalOrdinal,
+                                               Kokkos::DefaultExecutionSpace>{
+               std::move(fiber_networks), std::move(solution_strategies)}};
+      //batched_analysis = BatchedAnalysisType{
+      //    new BatchedNeohookeanAnalysis<Scalar, LocalOrdinal,
+      //                                  Kokkos::DefaultExecutionSpace>(
+      //        static_cast<int>(fiber_networks.size()),10000,0.3)};
     }
       // reset the PCU communictor back to its original state so that
       // our scale wide communications can proceed
@@ -235,10 +235,11 @@ namespace mumfim
         cs->Communicate(send_ptrn, step_results,
                         amsi::mpi_type<micro_fo_step_result>());
       }
-      bool sim_complete = false;
+      bool sim_complete{false};
       while (!sim_complete)
       {
-        bool step_complete = false;
+        bool step_complete{false};
+        int step_accepted{0};
         while (!step_complete)
         {
           // migration
@@ -301,7 +302,13 @@ namespace mumfim
           cs->Communicate(send_ptrn, results,
                           amsi::mpi_type<micro_fo_result>());
           macro_iter++;
-          cs->scaleBroadcast(M2m_id, &step_complete);
+
+          cs->scaleBroadcast(M2m_id, &step_accepted);
+          bool step_complete = (step_accepted > 0);
+          std::cout<<"step complete: "<<step_complete<<" "<<step_complete<<"\n";
+          if(step_accepted) {
+            std::cout<<"step accepted\n";
+          }
         }
         // get the size of the step results vector
         std::vector<micro_fo_step_result> step_results(hdrs.size());

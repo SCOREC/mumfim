@@ -78,7 +78,7 @@ namespace mumfim
     cs->scaleBroadcast(cplng, &completed);
   }
 
-  void MultiscaleTissueAnalysis::finalizeIteration(bool lastIteration) {
+  void MultiscaleTissueAnalysis::finalizeIteration(int lastIteration) {
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(cplng, &lastIteration);
   }

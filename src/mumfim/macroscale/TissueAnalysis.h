@@ -45,7 +45,7 @@ namespace mumfim
     virtual void run();
     virtual void checkpoint();
     virtual void finalizeStep();
-    virtual void finalizeIteration(bool );
+    virtual void finalizeIteration(int);
 
     protected:
     // util

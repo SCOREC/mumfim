@@ -148,10 +148,11 @@ namespace mumfim
           auto * an = static_cast<TissueAnalysis *>(ctx);
           auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
           // in this case, we have called Function another time without checking
-          // for convergence
+          // for convergence. We sent 0 state to tell the microscale that the previous
+          // step was not "accepted"
           if (an->iteration > 0)
           {
-            an->finalizeIteration(false);
+            an->finalizeIteration(0);
           }
           // Note iteration is not here an actual count of the iterations
           // performed instead it is a test to make sure we call finalize
@@ -209,8 +210,10 @@ namespace mumfim
               SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, ctx);
           bool converged =
               (reason != nullptr && *reason != SNES_CONVERGED_ITERATING);
+          int accepted = converged?1:-1;
           // For MultiscaleAnalysis this informs microscale if the step is done
-          an->finalizeIteration(converged);
+          // the microscale knows that a value of 0 means step is accepted but not converged
+          an->finalizeIteration(accepted);
           // HACK set this to zero so we don't finalize iteration
           // in form function
           an->iteration = 0;
@@ -356,7 +359,7 @@ namespace mumfim
     }
     */
   void TissueAnalysis::finalizeStep(){};
-  void TissueAnalysis::finalizeIteration(bool){};
+  void TissueAnalysis::finalizeIteration(int){};
   void TissueAnalysis::checkpoint()
   {
 #ifdef LOGRUN

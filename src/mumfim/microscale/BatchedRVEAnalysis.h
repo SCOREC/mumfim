@@ -29,6 +29,8 @@ namespace mumfim
     virtual bool run(Kokkos::DualView<Scalar * [3][3], ExeSpace> dfmGrds,
                      Kokkos::DualView<Scalar * [6], ExeSpace> sigma,
                      bool update_coords = true) = 0;
+    /* Accept the state from the last run*/
+    virtual void accept() {}
     // computes the material stiffness tensor at the current deformation state
     // this should be dSigma/dE, where Sigma is the cauchy stress, and E is the
     // PK2 stress. This should have 36 components due to the symmetry in Sigma
