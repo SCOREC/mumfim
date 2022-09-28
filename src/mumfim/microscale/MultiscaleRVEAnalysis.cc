@@ -10,7 +10,7 @@
 #include <mumfim/microscale/Verbosity.h>
 #include <cassert>
 #include <sstream>
-#include "BatchedNeohookeanAnalysis.h"
+//#include "BatchedNeohookeanAnalysis.h"
 #include "FiberNetworkLibrary.h"
 #include "FiberRVEAnalysis.h"
 #include "MultiscaleCoupling.h"

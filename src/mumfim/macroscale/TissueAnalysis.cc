@@ -33,8 +33,6 @@ namespace mumfim
       , state_fn()
   {
     // util data
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
     const auto * problem_definition =
         mt::GetPrimaryCategoryByType(analysis_case.get(), "problem definition");
     const auto * solution_strategy =
