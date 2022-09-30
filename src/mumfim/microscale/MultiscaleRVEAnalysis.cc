@@ -304,10 +304,11 @@ namespace mumfim
           macro_iter++;
 
           cs->scaleBroadcast(M2m_id, &step_accepted);
-          bool step_complete = (step_accepted > 0);
-          if(step_accepted) {
-            batched_analysis->accept();
-          }
+          step_complete = (step_accepted > 0);
+          batched_analysis->accept();
+          //if(step_accepted) {
+          //  batched_analysis->accept();
+          //}
           //batched_analysis->accept();
         }
         //batched_analysis->accept();

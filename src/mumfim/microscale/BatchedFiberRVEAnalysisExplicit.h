@@ -80,7 +80,6 @@ namespace mumfim
     Kokkos::DualView<Scalar *, ExeSpace> scale_factor;
     std::vector<RVE> rves;
     OrientationTensorType orientation_tensor;
-    Kokkos::DualView<Scalar * [6], ExeSpace> trial_stress;
 
     public:
     BatchedFiberRVEAnalysisExplicit(
@@ -128,6 +127,8 @@ namespace mumfim
       //////////////////
       trial_volume = Kokkos::DualView<Scalar *, ExeSpace>(
           "trial_volume", fiber_networks.size());
+      deep_copy(trial_volume.template view<ExeSpace>(), 1.0);
+      trial_volume.template modify<ExeSpace>();
       //////////////////
       scale_factor = Kokkos::DualView<Scalar *, ExeSpace>(
           "scale_factor", fiber_networks.size());
@@ -177,8 +178,6 @@ namespace mumfim
       displacement = DofDataType(dof_counts);
       trial_displacement = DofDataType(dof_counts);
       prev_displacement = DofDataType(dof_counts);
-      trial_stress = Kokkos::DualView<Scalar * [6], ExeSpace>(
-          "current_stress", fiber_networks.size());
       velocity = DofDataType(dof_counts);
       force_total = DofDataType(dof_counts);
       force_internal = DofDataType(dof_counts);
@@ -281,7 +280,7 @@ namespace mumfim
       trial_displacement.template modify<ExeSpace>();
       current_volume.template sync<ExeSpace>();
       trial_volume.template modify<ExeSpace>();
-      //displacement.template modify<ExeSpace>();
+      displacement.template modify<ExeSpace>();
       if(update_coords) {
         Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
                           displacement.template getAllRows<ExeSpace>());
@@ -295,7 +294,6 @@ namespace mumfim
       else {
         Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
                           prev_displacement.template getAllRows<ExeSpace>());
-        //Kokkos::deep_copy(trial_volume, prev_volume);
       }
 
       original_coordinates.template sync<ExeSpace>();
@@ -314,6 +312,7 @@ namespace mumfim
       connectivity.template sync<ExeSpace>();
       original_coordinates.template sync<ExeSpace>();
       current_coordinates.template sync<ExeSpace>();
+      displacement.template sync<ExeSpace>();
       velocity.template sync<ExeSpace>();
       force_total.template sync<ExeSpace>();
       force_internal.template sync<ExeSpace>();
@@ -350,6 +349,7 @@ namespace mumfim
         this->current_stress_.template modify<ExeSpace>();
         Kokkos::deep_copy(this->prev_displacement.template getAllRows<ExeSpace>(),
                           this->trial_displacement.template getAllRows<ExeSpace>());
+        this->prev_displacement.template modify<ExeSpace>();
         //accept();
       }
       return result;
@@ -359,15 +359,12 @@ namespace mumfim
       // these syncs should most likely be no-op since we compute everything in
       // the EXE Space.
       this->trial_volume.template sync<ExeSpace>();
-      this->trial_stress.template sync<ExeSpace>();
-      this->trial_displacement.template sync<ExeSpace>();
+      this->prev_displacement.template sync<ExeSpace>();
       Kokkos::deep_copy(this->current_volume.template view<ExeSpace>(),
                         this->trial_volume.template view<ExeSpace>());
-      //Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(),
-      //                  this->trial_stress.template view<ExeSpace>());
       Kokkos::deep_copy(
           this->displacement.template getAllRows<ExeSpace>(),
-          this->trial_displacement.template getAllRows<ExeSpace>());
+          this->prev_displacement.template getAllRows<ExeSpace>());
       //this->current_stress_.template modify<ExeSpace>();
       this->displacement.template modify<ExeSpace>();
       this->current_volume.template modify<ExeSpace>();
