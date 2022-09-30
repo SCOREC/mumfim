@@ -1,6 +1,6 @@
 #ifndef MUMFIM_SRC_MUMFIM_MICROSCALE_BATCHEDNEOHOOKEANANALYSIS_H
 #define MUMFIM_SRC_MUMFIM_MICROSCALE_BATCHEDNEOHOOKEANANALYSIS_H
-#include <Kokkos_core.hpp>
+#include <Kokkos_Core.hpp>
 #include "BatchedRVEAnalysis.h"
 #include "KokkosBatched_Gemm_Decl.hpp"
 #include "KokkosBatched_Gemm_Serial_Impl.hpp"

@@ -85,8 +85,7 @@ namespace mumfim
       double detF = getDeterminant(F);
       if (detF < 0.0)
       {
-        std::cout << "error: detF < 0" << std::endl;
-        std::abort();
+        throw mumfim_error("detF < 0");
       }
       apf::NewArray<apf::Vector3> grads;
       apf::getShapeGrads(cccce, p, grads);

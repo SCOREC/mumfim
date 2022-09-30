@@ -58,7 +58,6 @@ namespace mumfim
     virtual void recoverSecondaryVariables(int);
     virtual void preRun() {};
     void AcceptDOFs(){
-      std::cerr<<"ACCEPTING MACROSCALE\n";
       apf::copyData(accepted_displacements, getUField());
     }
     void storeStress(apf::MeshElement* me, double* stress);
