@@ -288,9 +288,6 @@ namespace mumfim
         Kokkos::deep_copy(trial_volume, current_volume);
         updateVolume<ExeSpace>(deformation_gradients, trial_volume);
 
-        current_volume.template sync<HostMemorySpace>();
-        trial_volume.template sync<HostMemorySpace>();
-        std::cout<<"Vol: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
 
       }
       // if we aren't "updating coords" we are doing a finite difference and
@@ -359,10 +356,6 @@ namespace mumfim
     }
     void accept() final
     {
-      std::cerr<<"ACCEPTING MICROSCALE\n";
-      current_volume.template sync<HostMemorySpace>();
-      trial_volume.template sync<HostMemorySpace>();
-      std::cout<<"Vol2: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
       // these syncs should most likely be no-op since we compute everything in
       // the EXE Space.
       this->trial_volume.template sync<ExeSpace>();
@@ -379,9 +372,6 @@ namespace mumfim
       this->displacement.template modify<ExeSpace>();
       this->current_volume.template modify<ExeSpace>();
 
-      current_volume.template sync<HostMemorySpace>();
-      trial_volume.template sync<HostMemorySpace>();
-      std::cout<<"Vol3: "<<current_volume.template view<HostMemorySpace>()(0)<<" "<<trial_volume.template view<HostMemorySpace>()(0)<<"\n";
     }
     void compute3DOrientationTensor(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
