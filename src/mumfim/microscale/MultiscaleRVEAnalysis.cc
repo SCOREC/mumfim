@@ -298,20 +298,16 @@ namespace mumfim
           MUMFIM_V1(std::cout << "Computed " << results.size() << " RVEs in "
                               << t1 - t0 << " seconds. On rank " << rank << "."
                               << std::endl;)
-          // PCU_Switch_Comm(AMSI_COMM_SCALE);
           cs->Communicate(send_ptrn, results,
                           amsi::mpi_type<micro_fo_result>());
           macro_iter++;
 
           cs->scaleBroadcast(M2m_id, &step_accepted);
           step_complete = (step_accepted > 0);
-          batched_analysis->accept();
-          //if(step_accepted) {
-          //  batched_analysis->accept();
-          //}
-          //batched_analysis->accept();
+          if(step_accepted) {
+            batched_analysis->accept();
+          }
         }
-        //batched_analysis->accept();
         // get the size of the step results vector
         std::vector<micro_fo_step_result> step_results(hdrs.size());
         // recover step results and set the step results vector
