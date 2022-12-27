@@ -31,16 +31,7 @@ auto ReadAdiosDeformations(const char* inputfile, adios2::ADIOS& ad, MPI_Comm co
   adios2::IO bpReaderIO = ad.DeclareIO("input");
   if (!bpReaderIO.InConfigFile())
  	{
- 	//		// if not defined by user, we can change the default settings
- 	//		// BPFile is the default engine
  			bpReaderIO.SetEngine("BP");
- 			  //bpReaderIO.SetEngine("BP5");
- 	//		//bpReaderIO.SetParameters({{"num_threads", "2"}});
- 	//		bpReaderIO.SetParameter("OpenAsFile", "true");
- 
- 	//		// ISO-POSIX file is the default transport
- 	//		// Passing parameters to the transport
- 	//		bpReaderIO.AddTransport("File", {{"verbose", "4"}});
  	}
 	adios2::Engine bpReader = bpReaderIO.Open(inputfile, adios2::Mode::Read, comm);
 	
@@ -158,14 +149,18 @@ int main(int argc, char * argv[])
  	{
  			bpIO.SetEngine("BP");
  	}
-  //auto orientation_tensor_var = bpIO.DefineVariable<Scalar>("orientation_tensor", {num_total,3,3}, {rank*N,0,0}, {BatchNum, 3,3}, true);
-  auto stress_var = bpIO.DefineVariable<Scalar>("stresss", {num_total,6}, {rank*N,0}, {BatchNum, 6}, true);
-  auto stiffness_var = bpIO.DefineVariable<Scalar>("stiffness", {num_total,6,6}, {rank*N,0,0}, {BatchNum, 6,6}, true);
+  auto deformation_var = bpIO.DefineVariable<Scalar>("F", {num_total,3,3}, {rank*N,0,0}, {BatchNum, 3,3}, true);
+  auto stress_var = bpIO.DefineVariable<Scalar>("stress", {num_total,6}, {rank*N,0}, {BatchNum, 6}, true);
+  // Note that the data is stored in layout_left for GPU, so we must copy it into layout right to write it out properly for adios2
+  Kokkos::View<double*[3][3], Kokkos::LayoutRight, Kokkos::HostSpace> right_deformation_gradient_h("Fh", BatchNum);
+  Kokkos::deep_copy(right_deformation_gradient_h, deformation_gradient_h);
+
+  Kokkos::View<double*[6], Kokkos::LayoutRight, Kokkos::HostSpace> right_stress_h("stress", BatchNum);
+  Kokkos::deep_copy(right_stress_h, stress_h);
 	
 	adios2::Engine bpWriter = bpIO.Open(outputfile, adios2::Mode::Write, MPI_COMM_WORLD);
-  //bpWriter.Put(orientation_tensor_var, orientation_tensor.h_view.data());
-  bpWriter.Put(stress_var, stress_h.data());
-  bpWriter.Put(stiffness_var, stiffness_h.data());
+  bpWriter.Put(deformation_var, right_deformation_gradient_h.data());
+  bpWriter.Put(stress_var, right_stress_h.data());
 
 	bpWriter.Close();
   return success;
