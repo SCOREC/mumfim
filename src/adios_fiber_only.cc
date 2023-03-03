@@ -116,7 +116,7 @@ int main(int argc, char * argv[])
   Kokkos::DualView<Scalar*[3][3],ExeSpace> deformation_gradient("deformation gradients",BatchNum);
   Kokkos::DualView<Scalar*[6][6],ExeSpace> stiffness("stiffness",BatchNum);
   Kokkos::DualView<Scalar*[6], ExeSpace> stress("stress",BatchNum);
-  //Kokkos::DualView<Scalar * [3][3], ExeSpace> orientation_tensor("orientation tensor", BatchNum);
+  Kokkos::DualView<Scalar * [3][3], ExeSpace> orientation_tensor("orientation tensor", BatchNum);
 
 
   auto deformation_gradient_h = deformation_gradient.h_view;
@@ -132,11 +132,13 @@ int main(int argc, char * argv[])
   }
   deformation_gradient.modify<Kokkos::HostSpace>();
 
-  //deformation_gradient.modify<Kokkos::HostSpace>();
-  //batched_analysis.compute3DOrientationTensor(orientation_tensor);
-  //orientation_tensor.sync<Kokkos::HostSpace>();
   auto success = !batched_analysis.run(deformation_gradient, stress);
   stress.sync<Kokkos::HostSpace>();
+
+  batched_analysis.compute3DOrientationTensor(orientation_tensor);
+  orientation_tensor.sync<Kokkos::HostSpace>();
+  
+
   auto stress_h = stress.h_view;
   batched_analysis.computeMaterialStiffness(stiffness);
   stiffness.sync<Kokkos::HostSpace>();
@@ -150,10 +152,14 @@ int main(int argc, char * argv[])
  			bpIO.SetEngine("BP");
  	}
   auto deformation_var = bpIO.DefineVariable<Scalar>("F", {num_total,3,3}, {rank*N,0,0}, {BatchNum, 3,3}, true);
+  auto orientation_var = bpIO.DefineVariable<Scalar>("orientation", {num_total,3,3}, {rank*N,0,0}, {BatchNum, 3,3}, true);
   auto stress_var = bpIO.DefineVariable<Scalar>("stress", {num_total,6}, {rank*N,0}, {BatchNum, 6}, true);
   // Note that the data is stored in layout_left for GPU, so we must copy it into layout right to write it out properly for adios2
   Kokkos::View<double*[3][3], Kokkos::LayoutRight, Kokkos::HostSpace> right_deformation_gradient_h("Fh", BatchNum);
   Kokkos::deep_copy(right_deformation_gradient_h, deformation_gradient_h);
+
+  Kokkos::View<double*[3][3], Kokkos::LayoutRight, Kokkos::HostSpace> right_orientation_h("orientation", BatchNum);
+  Kokkos::deep_copy(right_orientation_h, orientation_tensor.h_view);
 
   Kokkos::View<double*[6], Kokkos::LayoutRight, Kokkos::HostSpace> right_stress_h("stress", BatchNum);
   Kokkos::deep_copy(right_stress_h, stress_h);
@@ -161,6 +167,7 @@ int main(int argc, char * argv[])
 	adios2::Engine bpWriter = bpIO.Open(outputfile, adios2::Mode::Write, MPI_COMM_WORLD);
   bpWriter.Put(deformation_var, right_deformation_gradient_h.data());
   bpWriter.Put(stress_var, right_stress_h.data());
+  bpWriter.Put(orientation_var, right_orientation_h.data());
 
 	bpWriter.Close();
   return success;
