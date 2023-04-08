@@ -41,6 +41,7 @@ if (Catch2_FOUND)
             test_reorder_mesh.cc
             test_kokkos_view_of_views.cc
             test_polar_decomposition.cc
+            test_finite_difference_material_stiffness.cc
             )
     add_executable(unit_tests ${TEST_SOURCES})
     target_link_libraries(unit_tests PUBLIC Catch2::Catch2 micro_fo)
