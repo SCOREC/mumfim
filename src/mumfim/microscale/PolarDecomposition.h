@@ -13,23 +13,23 @@ namespace mumfim
   template <int N>
   struct PolarResult
   {
-    PolarResult(int size) : P("P", size), U("U", size) {}
+    PolarResult(int size) : U("P", size), R("U", size) {}
     /**
-     * Hermetian positive semidefinite. If a is nonsingular, P is positive
-     * definite
-     */
-    Kokkos::View<double * [N][N]> P;
-    /**
-     * Unitary matrix
+     * Hermetian positive semidefinite. If a is nonsingular, U is positive
+     * definite (also often called P)
      */
     Kokkos::View<double * [N][N]> U;
+    /**
+     * Unitary matrix (also often called U)
+     */
+    Kokkos::View<double * [N][N]> R;
   };
   template <>
   struct PolarResult<0>
   {
-    PolarResult(int size, int N) : P("P", size, N, N), U("U", size, N, N) {}
-    Kokkos::View<double ***> P;
+    PolarResult(int size, int N) : U("U", size, N, N), R("R", size, N, N) {}
     Kokkos::View<double ***> U;
+    Kokkos::View<double ***> R;
   };
   struct LeftTag
   {
@@ -69,9 +69,9 @@ namespace mumfim
           auto Vt = Kokkos::subview(Vts, i, Kokkos::ALL(), Kokkos::ALL());
           auto work = Kokkos::subview(works, i, Kokkos::ALL());
           auto result_U =
-              Kokkos::subview(results.U, i, Kokkos::ALL(), Kokkos::ALL());
+              Kokkos::subview(results.R, i, Kokkos::ALL(), Kokkos::ALL());
           auto result_P =
-              Kokkos::subview(results.P, i, Kokkos::ALL(), Kokkos::ALL());
+              Kokkos::subview(results.U, i, Kokkos::ALL(), Kokkos::ALL());
           KokkosBatched::SerialSVD::invoke(KokkosBatched::SVD_USV_Tag{},
                                            matrix_copy, U, S, Vt, work);
           KokkosBatched::SerialGemm<
