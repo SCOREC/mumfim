@@ -16,6 +16,10 @@ namespace mumfim
     Ordinal num_rves_;
 
     public:
+    using memory_space = typename ExeSpace::memory_space;
+    using exe_space = ExeSpace;
+
+    // TODO get rid of DualView in the interface
     explicit BatchedRVEAnalysis(Ordinal num_rves) : num_rves_(num_rves) {
       current_stress_ = Kokkos::DualView<Scalar * [6], ExeSpace>("current_stress", num_rves);
     };
@@ -134,6 +138,7 @@ namespace mumfim
       omega.template modify<Kokkos::HostSpace>();
       Kokkos::deep_copy(omega.h_view, 0);
     }
+    Ordinal GetNumRVEs() const { return this->num_rves_; }
     // RVEAnalysis(const RVEAnalysis & an);
     // RVEAnalysis();
   };
