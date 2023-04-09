@@ -23,321 +23,6 @@
 
 namespace mumfim
 {
-  enum class StressType
-  {
-    Cauchy,
-    PK2
-  };
-
-  template <typename ExeSpace>
-  auto ComputeM(
-      Kokkos::View<double * [3][3], typename ExeSpace::memory_space> U)
-      -> Kokkos::View<double * [6][6], typename ExeSpace::memory_space>
-  {
-    Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> M(
-        "M", U.extent(0));
-    Kokkos::parallel_for(
-        "FillM", Kokkos::RangePolicy<ExeSpace>(0, U.extent(0)),
-        KOKKOS_LAMBDA(int i) {
-          auto sr2 = sqrt(2.0);
-          M(i, 0, 0) = 2 * U(i, 0, 0);
-          M(i, 0, 4) = sr2 * U(i, 0, 2);
-          M(i, 0, 5) = sr2 * U(i, 0, 1);
-          M(i, 1, 1) = 2 * U(i, 1, 1);
-          M(i, 1, 3) = sr2 * U(i, 1, 2);
-          M(i, 1, 5) = sr2 * U(i, 0, 1);
-          M(i, 2, 2) = 2 * U(i, 2, 2);
-          M(i, 2, 3) = sr2 * U(i, 1, 2);
-          M(i, 2, 4) = sr2 * U(i, 0, 2);
-          M(i, 3, 0) = 0;
-          M(i, 3, 1) = sr2 * U(i, 1, 2);
-          M(i, 3, 2) = sr2 * U(i, 1, 2);
-          M(i, 3, 3) = U(i, 1, 1) + U(i, 2, 2);
-          M(i, 3, 4) = U(i, 0, 1);
-          M(i, 3, 5) = U(i, 0, 2);
-          M(i, 4, 0) = sr2 * U(i, 0, 2);
-          M(i, 4, 1) = 0;
-          M(i, 4, 2) = sr2 * U(i, 0, 2);
-          M(i, 4, 3) = U(i, 0, 1);
-          M(i, 4, 4) = U(i, 0, 0) + U(i, 2, 2);
-          M(i, 4, 5) = U(i, 1, 2);
-          M(i, 5, 0) = sr2 * U(i, 0, 1);
-          M(i, 5, 1) = sr2 * U(i, 0, 1);
-          M(i, 5, 2) = 0;
-          M(i, 5, 3) = U(i, 0, 2);
-          M(i, 5, 4) = U(i, 1, 2);
-          M(i, 5, 5) = U(i, 0, 0) + U(i, 1, 1);
-          KokkosBatched::SerialScale::invoke(1. / 2, M);
-        });
-    return M;
-  }
-  // calculate the mandel form of the probing directions
-  template <typename MemorySpace>
-  auto ComputeT() -> Kokkos::View<Scalar[6][6], MemorySpace>
-  {
-    Kokkos::View<Scalar[6][6], MemorySpace> T("T");
-    auto T_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, T);
-    Kokkos::deep_copy(T_h, 0.0);
-    auto sr2 = sqrt(2);
-    T_h(0, 0) = 1;
-    T_h(1, 1) = 1;
-    T_h(2, 2) = 1;
-    T_h(3, 3) = 2;
-    T_h(4, 4) = 2;
-    T_h(5, 5) = 2;
-    T_h(0, 4) = sr2;
-    T_h(0, 5) = sr2;
-    T_h(1, 3) = sr2;
-    T_h(1, 5) = sr2;
-    T_h(2, 3) = sr2;
-    T_h(2, 4) = sr2;
-    Kokkos::deep_copy(T, T_h);
-    return T;
-  }
-
-  // These probe vectors correspond to the mandel form that is created in
-  // the ComputeT function
-  template <typename MemorySpace>
-  auto ComputeProbeVectors() -> Kokkos::View<Scalar[6][3][3], MemorySpace>
-  {
-    Kokkos::View<Scalar[6][3][3], MemorySpace> T("T");
-    auto T_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, T);
-    Kokkos::deep_copy(T_h, 0.0);
-    T_h(0, 0, 0) = 1;
-    T_h(1, 1, 1) = 1;
-    T_h(2, 2, 2) = 1;
-    T_h(3, 1, 1) = 1;
-    T_h(3, 1, 2) = 1;
-    T_h(3, 2, 1) = 1;
-    T_h(3, 2, 2) = 1;
-    T_h(4, 0, 0) = 1;
-    T_h(4, 0, 2) = 1;
-    T_h(4, 2, 0) = 1;
-    T_h(4, 2, 2) = 1;
-    T_h(5, 0, 0) = 1;
-    T_h(5, 0, 1) = 1;
-    T_h(5, 1, 0) = 1;
-    T_h(5, 1, 1) = 1;
-    Kokkos::deep_copy(T, T_h);
-    return T;
-  }
-
-  /**
-   * @brief Compute the derivative of the PK2 stress with respect to the Green
-   * Lagrange Strain This is the material stiffness that is used in the
-   * Total-Lagrangian formulation
-   * @tparam ExeSpace Execution space to use
-   * @tparam Func (Kokkos::View<Scalar*[3][3]> U) -> Kokkos::View<Scalar*[6]>
-   * (dPk2_dU)
-   * @param F deformation gradient
-   * @param compute_dpk2_dU function to compute the derivative of the PK2 stress
-   * with respect to the stretch tensor
-   * @return derivative of the PK2 stress with respect to the Green Lagrange
-   * Strain (Total Lagrangian Material Stiffness)
-   */
-  template <typename ExeSpace, typename Func>
-  auto ComputeDPK2dE(
-      Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space> F,
-      Func & compute_dpk2_dU)
-      -> Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space>
-  {
-    using memory_space = typename ExeSpace::memory_space;
-    auto [R, U] = PolarDecomposition<ExeSpace>(F);
-    auto M = ComputeM<ExeSpace>(U);
-    auto T = ComputeT<memory_space>();
-
-    // auto P = ComputeDiff<ExeSpace>()
-    //  TODO COMPUTE P
-    Kokkos::View<Scalar * [6][6], memory_space> P = compute_dpk2_dU(R, U);
-    Kokkos::fence();
-    Kokkos::View<Scalar * [6][6], memory_space> MT("MT", U.extent(0));
-    Kokkos::View<Scalar * [6][6], memory_space> D("D", U.extent(0));
-    Kokkos::View<Scalar * [6][6], memory_space> PTr("P Transpose", U.extent(0));
-    auto policy = Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
-    using member_type = typename decltype(policy)::member_type;
-    Kokkos::parallel_for(
-        "compute MT", policy, KOKKOS_LAMBDA(member_type member) {
-          auto i = member.league_rank();
-          // D^T = Solve( ( (MT@T) ^T, P^T)
-          auto Mi = Kokkos::subview(M, i, Kokkos::ALL(), Kokkos::ALL());
-          auto MTi = Kokkos::subview(MT, i, Kokkos::ALL(), Kokkos::ALL());
-          auto Pi = Kokkos::subview(P, i, Kokkos::ALL(), Kokkos::ALL());
-          auto PTri = Kokkos::subview(PTr, i, Kokkos::ALL(), Kokkos::ALL());
-          auto Di = Kokkos::subview(D, i, Kokkos::ALL(), Kokkos::ALL());
-          KokkosBatched::TeamCopy<
-              member_type, KokkosBatched::Trans::Transpose>::invoke(member, Pi,
-                                                                    PTri);
-          KokkosBatched::TeamGemm<
-              member_type, KokkosBatched::Trans::NoTranspose,
-              KokkosBatched::Trans::NoTranspose,
-              KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0, Mi, T,
-                                                            0.0, MTi);
-          member.team_barrier();
-          KokkosBatched::TeamLU<
-              member_type, KokkosBatched::Algo::LU::Unblocked>::invoke(member,
-                                                                       MTi);
-          member.team_barrier();
-          KokkosBatched::TeamSolveLU<
-              member_type, KokkosBatched::Trans::Transpose,
-              KokkosBatched::Algo::SolveLU::Unblocked>::invoke(member, MTi,
-                                                               PTri);
-          member.team_barrier();
-          // move the solution into the solution vector Di (needs to be
-          // transposed)
-          KokkosBatched::TeamCopy<
-              member_type, KokkosBatched::Trans::Transpose>::invoke(member,
-                                                                    PTri, Di);
-        });
-    Kokkos::fence();
-    return D;
-  }
-
-  template <typename ExeSpace, typename ComputePK2Func>
-  struct StressFiniteDifferenceFunc
-  {
-    using exe_space = ExeSpace;
-    using memory_space = typename ExeSpace::memory_space;
-
-    explicit StressFiniteDifferenceFunc(
-        ComputePK2Func compute_stress,
-        Kokkos::View<Scalar * [6], memory_space> current_stress,
-        double h = 1e-6)
-        : compute_pk2_stress_(compute_stress), h_(h)
-    {
-      current_pk2_stress_ =
-          Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>(
-              "current pk2 stress", current_stress.extent(0));
-      Kokkos::deep_copy(current_pk2_stress_, current_stress);
-    }
-
-    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> R,
-                    Kokkos::View<Scalar * [3][3], memory_space> U) noexcept
-        -> Kokkos::View<Scalar * [6][6], memory_space>
-    {
-      assert(R.extent(0) == U.extent(0));
-      assert(R.extent(0) == current_pk2_stress_.extent(0));
-      Kokkos::View<Scalar * [6][6], memory_space> dPK2dU("dPK2dU", R.extent(0));
-      Kokkos::View<Scalar * [3][3], memory_space> probing_F("probe F",
-                                                            R.extent(0));
-      Kokkos::View<Scalar * [3][3], memory_space> probing_U("probe F",
-                                                            R.extent(0));
-      auto probes = ComputeProbeVectors<ExeSpace>();
-      assert(probes.extent(0) == 6);
-      // probing the 6 directions
-      for (int i = 0; i < 6; ++i)
-      {
-        Kokkos::parallel_for(
-            "calc probing vec",
-            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
-                                  Kokkos::IndexType<size_t>>(
-                {0ul, 0ul, 0ul}, {R.extent(0), 3ul, 3ul}),
-            KOKKOS_LAMBDA(int j, int k, int l) {
-              probing_U(j, k, l) = U(j, k, l) + h_ * probes(i, k, l);
-            });
-        auto team_policy =
-            Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
-        using member_type = typename decltype(team_policy)::member_type;
-        Kokkos::parallel_for(
-            "F=RU", team_policy, KOKKOS_LAMBDA(member_type member) {
-              auto i = member.league_rank();
-              auto Ri = Kokkos::subview(R, i, Kokkos::ALL(), Kokkos::ALL());
-              auto Ui =
-                  Kokkos::subview(probing_U, i, Kokkos::ALL(), Kokkos::ALL());
-              auto Fi =
-                  Kokkos::subview(probing_F, i, Kokkos::ALL(), Kokkos::ALL());
-              KokkosBatched::TeamGemm<
-                  member_type, KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0, Ri,
-                                                                Ui, 0.0, Fi);
-            });
-        // FIXME...the problem is that the microscale assumes that we are
-        // passing an increment in F. But...we need the full deformation
-        // gradient to compute the PK2 stress from the cauchy stress. We could
-        // pass F and Fincrement but in the general case this isn't needed
-        //auto updated_stress = compute_pk2_stress_(F, probing_F);
-        auto updated_stress = compute_pk2_stress_(probing_F);
-        Kokkos::fence();
-        Kokkos::parallel_for(
-            "finite difference",
-            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>,
-                                  Kokkos::IndexType<size_t>>(
-                {0ul, 0ul}, {U.extent(0), 6ul}),
-            KOKKOS_LAMBDA(int j, int k) {
-              dPK2dU(j, k, i) =
-                  (updated_stress(j, k) - current_pk2_stress_(j, k)) / h_;
-            });
-      }
-      return dPK2dU;
-    }
-
-    ComputePK2Func compute_pk2_stress_;
-    Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>
-        current_pk2_stress_;
-    double h_;
-  };
-
-  // deduction guide to test the execution space
-  template <typename Func, typename View>
-  StressFiniteDifferenceFunc(Func, View, double)
-      -> StressFiniteDifferenceFunc<typename View::execution_space, Func>;
-
-  template <typename ExeSpace>
-  void VoigtToMandel(
-      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
-  {
-    auto sr2 = sqrt(2);
-    Kokkos::parallel_for(
-        "voigt to mandel",
-        Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>(
-            {0, 0, 0}, {matrix.extent(0), 3, 3}),
-        KOKKOS_LAMBDA(int i, int j, int k) {
-          // lower right
-          if (i > 2 && j > 2)
-          {
-            matrix(i, j, k) = 2 * matrix(i, j, k);
-          }
-          // upper right
-          else if (i < 3 && j > 2)
-          {
-            matrix(i, j, k) = sr2 * matrix(i, j, k);
-          }
-          // lower left
-          else if (i > 2)
-          {
-            matrix(i, j, k) = sr2 * matrix(i, j, k);
-          }
-        });
-  }
-
-  template <typename ExeSpace>
-  void MandelToVoigt(
-      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
-  {
-    auto sr2 = sqrt(2);
-    Kokkos::parallel_for(
-        "mandel to voigt",
-        Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>(
-            {0, 0, 0}, {matrix.extent(0), 3, 3}),
-        KOKKOS_LAMBDA(int i, int j, int k) {
-          // lower right
-          if (i > 2 && j > 2)
-          {
-            matrix(i, j, k) = matrix(i, j, k) / 2;
-          }
-          // upper right
-          else if (i < 3 && j > 2)
-          {
-            matrix(i, j, k) = matrix(i, j, k) / sr2;
-          }
-          // lower left
-          else if (i > 2)
-          {
-            matrix(i, j, k) = matrix(i, j, k) / sr2;
-          }
-        });
-  }
-
   /**
    * @brief Compute the determinant of a 2x2 or 3x3 matrix
    * @param[in] F the matrix
@@ -357,9 +42,13 @@ namespace mumfim
     }
     else if constexpr (dim == 3)
     {
-      return (F(0, 0) * (F(1, 1) * F(2, 2) - F(1, 2) * F(2, 1)) -
-              F(0, 1) * (F(1, 0) * F(2, 2) - F(1, 2) * F(2, 0)) +
-              F(0, 2) * (F(1, 0) * F(2, 1) - F(1, 1) * F(2, 0)));
+      // return (F(0, 0) * (F(1, 1) * F(2, 2) - F(1, 2) * F(2, 1)) -
+      //         F(0, 1) * (F(1, 0) * F(2, 2) - F(1, 2) * F(2, 0)) +
+      //         F(0, 2) * (F(1, 0) * F(2, 1) - F(1, 1) * F(2, 0)));
+      return (F(0, 0) * F(1, 1) * F(2, 2) + F(0, 1) * F(1, 2) * F(2, 0) +
+              F(0, 2) * F(1, 0) * F(2, 1) -
+              (F(0, 2) * F(1, 1) * F(2, 0) + F(0, 1) * F(1, 0) * F(2, 2) +
+               F(0, 0) * F(1, 2) * F(2, 1)));
     }
   }
 
@@ -401,6 +90,407 @@ namespace mumfim
       invF(2, 2) = (F(0, 0) * F(1, 1) - F(0, 1) * F(1, 0)) / detF;
     }
   }
+
+  template <typename ExeSpace>
+  auto ComputeM(
+      Kokkos::View<double * [3][3], typename ExeSpace::memory_space> U)
+      -> Kokkos::View<double * [6][6], typename ExeSpace::memory_space>
+  {
+    Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> M(
+        "M", U.extent(0));
+    Kokkos::deep_copy(M, 0.0);
+    Kokkos::parallel_for(
+        "FillM", Kokkos::RangePolicy<ExeSpace>(0, U.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+          auto sr2 = sqrt(2.0);
+          auto Mi = Kokkos::subview(M, i, Kokkos::ALL(), Kokkos::ALL());
+          Mi(0, 0) = 2 * U(i, 0, 0);
+          Mi(0, 4) = sr2 * U(i, 0, 2);
+          Mi(0, 5) = sr2 * U(i, 0, 1);
+          Mi(1, 1) = 2 * U(i, 1, 1);
+          Mi(1, 3) = sr2 * U(i, 1, 2);
+          Mi(1, 5) = sr2 * U(i, 0, 1);
+          Mi(2, 2) = 2 * U(i, 2, 2);
+          Mi(2, 3) = sr2 * U(i, 1, 2);
+          Mi(2, 4) = sr2 * U(i, 0, 2);
+          Mi(3, 1) = sr2 * U(i, 1, 2);
+          Mi(3, 2) = sr2 * U(i, 1, 2);
+          Mi(3, 3) = U(i, 1, 1) + U(i, 2, 2);
+          Mi(3, 4) = U(i, 0, 1);
+          Mi(3, 5) = U(i, 0, 2);
+          Mi(4, 0) = sr2 * U(i, 0, 2);
+          Mi(4, 2) = sr2 * U(i, 0, 2);
+          Mi(4, 3) = U(i, 0, 1);
+          Mi(4, 4) = U(i, 0, 0) + U(i, 2, 2);
+          Mi(4, 5) = U(i, 1, 2);
+          Mi(5, 0) = sr2 * U(i, 0, 1);
+          Mi(5, 1) = sr2 * U(i, 0, 1);
+          Mi(5, 3) = U(i, 0, 2);
+          Mi(5, 4) = U(i, 1, 2);
+          Mi(5, 5) = U(i, 0, 0) + U(i, 1, 1);
+          KokkosBatched::SerialScale::invoke(0.5, Mi);
+        });
+    return M;
+  }
+  // calculate the mandel form of the probing directions
+  template <typename MemorySpace>
+  auto ComputeT() -> Kokkos::View<Scalar[6][6], MemorySpace>
+  {
+    Kokkos::View<Scalar[6][6], MemorySpace> T("T");
+    auto T_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, T);
+    Kokkos::deep_copy(T_h, 0.0);
+    auto sr2 = sqrt(2);
+    T_h(0, 0) = 1;
+    T_h(1, 1) = 1;
+    T_h(2, 2) = 1;
+    T_h(3, 3) = 2;
+    T_h(4, 4) = 2;
+    T_h(5, 5) = 2;
+    T_h(0, 4) = sr2;
+    T_h(0, 5) = sr2;
+    T_h(1, 3) = sr2;
+    T_h(1, 5) = sr2;
+    T_h(2, 3) = sr2;
+    T_h(2, 4) = sr2;
+    Kokkos::deep_copy(T, T_h);
+    return T;
+  }
+
+  // These probe vectors correspond to the mandel form that is created in
+  // the ComputeT function
+  template <typename MemorySpace>
+  auto ComputeProbeVectors(double h)
+      -> Kokkos::View<Scalar[6][3][3], MemorySpace>
+  {
+    Kokkos::View<Scalar[6][3][3], MemorySpace> T("T");
+    auto T_h = Kokkos::create_mirror_view(Kokkos::HostSpace{}, T);
+    Kokkos::deep_copy(T_h, 0.0);
+    T_h(0, 0, 0) = h;
+    T_h(1, 1, 1) = h;
+    T_h(2, 2, 2) = h;
+    T_h(3, 1, 1) = h;
+    T_h(3, 1, 2) = h;
+    T_h(3, 2, 1) = h;
+    T_h(3, 2, 2) = h;
+    T_h(4, 0, 0) = h;
+    T_h(4, 0, 2) = h;
+    T_h(4, 2, 0) = h;
+    T_h(4, 2, 2) = h;
+    T_h(5, 0, 0) = h;
+    T_h(5, 0, 1) = h;
+    T_h(5, 1, 0) = h;
+    T_h(5, 1, 1) = h;
+    Kokkos::deep_copy(T, T_h);
+    return T;
+  }
+
+  template <typename ExeSpace>
+  void MandelToVoigt(
+      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
+  {
+    auto sr2 = sqrt(2);
+    Kokkos::parallel_for(
+        "mandel to voigt",
+        Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>(
+            {0, 0, 0}, {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
+        KOKKOS_LAMBDA(int i, int j, int k) {
+          // lower right
+          if (j > 2 && k > 2)
+          {
+            matrix(i, j, k) = matrix(i, j, k) / 2;
+          }
+          // upper right
+          else if (j < 3 && k > 2)
+          {
+            matrix(i, j, k) = matrix(i, j, k) / sr2;
+          }
+          // lower left
+          else if (j > 2)
+          {
+            matrix(i, j, k) = matrix(i, j, k) / sr2;
+          }
+        });
+  }
+
+  template <typename ExeSpace>
+  void VoigtToMandel(
+      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
+  {
+    auto sr2 = sqrt(2);
+    Kokkos::parallel_for(
+        "voigt to mandel",
+        Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
+                              Kokkos::IndexType<size_t>>(
+            {0ul, 0ul, 0ul},
+            {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
+        KOKKOS_LAMBDA(int i, int j, int k) {
+          // lower right
+          if (j > 2 && k > 2)
+          {
+            matrix(i, j, k) = 2 * matrix(i, j, k);
+          }
+          // upper right
+          else if (j < 3 && k > 2)
+          {
+            matrix(i, j, k) = sr2 * matrix(i, j, k);
+          }
+          // lower left
+          else if (j > 2)
+          {
+            matrix(i, j, k) = sr2 * matrix(i, j, k);
+          }
+        });
+  }
+
+  /**
+   * @brief Compute the derivative of the PK2 stress with respect to the Green
+   * Lagrange Strain This is the material stiffness that is used in the
+   * Total-Lagrangian formulation
+   * @tparam ExeSpace Execution space to use
+   * @tparam Func (Kokkos::View<Scalar*[3][3]> U) -> Kokkos::View<Scalar*[6]>
+   * (dPk2_dU)
+   * @param F deformation gradient
+   * @param compute_dpk2_dU function to compute the derivative of the PK2 stress
+   * with respect to the stretch tensor
+   * @return derivative of the PK2 stress with respect to the Green Lagrange
+   * Strain (Total Lagrangian Material Stiffness) in VoigtForm
+   */
+  template <typename ExeSpace, typename Func>
+  auto ComputeDPK2dE(
+      Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space> F,
+      Func & compute_dpk2_dU)
+      -> Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space>
+  {
+    using memory_space = typename ExeSpace::memory_space;
+    auto [U, R] = PolarDecomposition<ExeSpace>(F);
+    auto M = ComputeM<ExeSpace>(U);
+    auto T = ComputeT<memory_space>();
+
+    // auto P = ComputeDiff<ExeSpace>()
+    //  TODO COMPUTE P
+    Kokkos::View<Scalar * [6][6], memory_space> P = compute_dpk2_dU(F, R, U);
+    Kokkos::fence();
+    Kokkos::View<Scalar * [6][6], memory_space> MT("MT", U.extent(0));
+    Kokkos::View<Scalar * [6][6], memory_space> D("D", U.extent(0));
+    Kokkos::View<Scalar * [6][6], memory_space> PTr("P Transpose", U.extent(0));
+    auto policy = Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
+    using member_type = typename decltype(policy)::member_type;
+    Kokkos::parallel_for(
+        "compute MT", policy, KOKKOS_LAMBDA(member_type member) {
+          auto i = member.league_rank();
+          // D^T = Solve( ( (MT@T) ^T, P^T)
+          auto Mi = Kokkos::subview(M, i, Kokkos::ALL(), Kokkos::ALL());
+          auto MTi = Kokkos::subview(MT, i, Kokkos::ALL(), Kokkos::ALL());
+          auto Pi = Kokkos::subview(P, i, Kokkos::ALL(), Kokkos::ALL());
+          auto PTri = Kokkos::subview(PTr, i, Kokkos::ALL(), Kokkos::ALL());
+          auto Di = Kokkos::subview(D, i, Kokkos::ALL(), Kokkos::ALL());
+          KokkosBatched::TeamCopy<
+              member_type, KokkosBatched::Trans::Transpose>::invoke(member, Pi,
+                                                                    PTri);
+          KokkosBatched::TeamGemm<
+              member_type, KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0, Mi, T,
+                                                            0.0, MTi);
+          member.team_barrier();
+          KokkosBatched::TeamLU<
+              member_type, KokkosBatched::Algo::LU::Unblocked>::invoke(member,
+                                                                       MTi);
+          member.team_barrier();
+          KokkosBatched::TeamSolveLU<
+              member_type, KokkosBatched::Trans::Transpose,
+              KokkosBatched::Algo::SolveLU::Unblocked>::invoke(member, MTi,
+                                                               PTri);
+          member.team_barrier();
+          // move the solution into the solution vector Di (needs to be
+          // transposed)
+          KokkosBatched::TeamCopy<
+              member_type, KokkosBatched::Trans::Transpose>::invoke(member,
+                                                                    PTri, Di);
+        });
+    MandelToVoigt<ExeSpace>(D);
+    Kokkos::fence();
+    return D;
+  }
+
+  template <typename ExeSpace>
+  auto TLtoULStiffness(
+      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> dPK2dE)
+      -> Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space>
+  {
+    Kokkos::parallel_for(
+        "TL2UL stiffness", Kokkos::RangePolicy<ExeSpace>(0, dPK2dE.extent(0)),
+        KOKKOS_LAMBDA(size_t idx, size_t j, size_t k, size_t l, size_t m){
+
+        });
+  }
+
+  template <typename ExeSpace, typename ComputePK2Func>
+  struct StressFiniteDifferenceFunc
+  {
+    using exe_space = ExeSpace;
+    using memory_space = typename ExeSpace::memory_space;
+
+    explicit StressFiniteDifferenceFunc(
+        ComputePK2Func compute_stress,
+        Kokkos::View<Scalar * [6], memory_space> current_stress,
+        double h = 1e-6)
+        : compute_pk2_stress_(compute_stress), h_(h)
+    {
+      current_pk2_stress_ =
+          Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>(
+              "current pk2 stress", current_stress.extent(0));
+      Kokkos::deep_copy(current_pk2_stress_, current_stress);
+    }
+
+    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F,
+                    Kokkos::View<Scalar * [3][3], memory_space> R,
+                    Kokkos::View<Scalar * [3][3], memory_space> U) noexcept
+        -> Kokkos::View<Scalar * [6][6], memory_space>
+    {
+      assert(F.extent(0) == R.extent(0));
+      assert(R.extent(0) == U.extent(0));
+      assert(R.extent(0) == current_pk2_stress_.extent(0));
+      Kokkos::View<Scalar * [6][6], memory_space> dPK2dU("dPK2dU", R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_F("probe F",
+                                                            R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_F_increment(
+          "probe F increment", R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_U("probe F",
+                                                            R.extent(0));
+      auto probes = ComputeProbeVectors<ExeSpace>(h_);
+      assert(probes.extent(0) == 6);
+      // probing the 6 directions
+      for (int i = 0; i < 6; ++i)
+      {
+        // 1) Noting that we want to perturb U, but not the full F we compute
+        // the the new value of U as U+probe
+        Kokkos::parallel_for(
+            "calc probing vec",
+            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
+                                  Kokkos::IndexType<size_t>>(
+                {0ul, 0ul, 0ul}, {R.extent(0), 3ul, 3ul}),
+            KOKKOS_LAMBDA(int j, int k, int l) {
+              probing_U(j, k, l) = U(j, k, l) + probes(i, k, l);
+            });
+        // std::cout << "------------------\n";
+        // std::cout << "probe U\n";
+        // for (int j = 0; j < 3; ++j)
+        // {
+        //   for (int k = 0; k < 3; ++k)
+        //   {
+        //     std::cout << U(0, j, k) << " ";
+        //   }
+        //   std::cout << "\n";
+        // }
+        // 2) compute Fprobe as R@(U+probe).
+        auto team_policy =
+            Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
+        using member_type = typename decltype(team_policy)::member_type;
+        Kokkos::parallel_for(
+            "F=RU", team_policy, KOKKOS_LAMBDA(member_type member) {
+              auto j = member.league_rank();
+              auto R_j = Kokkos::subview(R, j, Kokkos::ALL(), Kokkos::ALL());
+              auto U_j =
+                  Kokkos::subview(probing_U, j, Kokkos::ALL(), Kokkos::ALL());
+              auto F_j =
+                  Kokkos::subview(probing_F, j, Kokkos::ALL(), Kokkos::ALL());
+              KokkosBatched::TeamGemm<
+                  member_type, KokkosBatched::Trans::NoTranspose,
+                  KokkosBatched::Trans::NoTranspose,
+                  KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0,
+                                                                R_j, U_j, 0.0,
+                                                                F_j);
+            });
+        // 3) compute the increment in F as Finc = Fprobe@F^-1
+        // we do not use team parallelism here because current implementation of
+        // Invert is only implemented for the first order parallelism
+        Kokkos::parallel_for(
+            "Finc", Kokkos::RangePolicy<ExeSpace>(0, U.extent(0)),
+            KOKKOS_LAMBDA(int j) {
+              auto F_probe_j =
+                  Kokkos::subview(probing_F, j, Kokkos::ALL(), Kokkos::ALL());
+              auto F_increment_j = Kokkos::subview(
+                  probing_F_increment, j, Kokkos::ALL(), Kokkos::ALL());
+              auto F_j = Kokkos::subview(F, j, Kokkos::ALL(), Kokkos::ALL());
+              // Reuse the Probing_U memory to store the inverse of F
+              auto Finv_j =
+                  Kokkos::subview(probing_U, j, Kokkos::ALL(), Kokkos::ALL());
+              // compute the inverse of F
+              Invert<3>(F_j, Finv_j);
+              // compute the increment in F
+              KokkosBatched::SerialGemm<
+                  KokkosBatched::Trans::NoTranspose,
+                  KokkosBatched::Trans::NoTranspose,
+                  KokkosBatched::Algo::Gemm::Unblocked>::invoke(1.0, F_probe_j,
+                                                                Finv_j, 0.0,
+                                                                F_increment_j);
+            });
+        // std::cout << "------------------\n";
+        // std::cout << "F\n";
+        // for (int j = 0; j < 3; ++j)
+        //{
+        //   for (int k = 0; k < 3; ++k)
+        //   {
+        //     std::cout << F(0, j, k) << " ";
+        //   }
+        //   std::cout << "\n";
+        // }
+        // std::cout << "------------------\n";
+        // std::cout << "F probe\n";
+        // for (int j = 0; j < 3; ++j)
+        //{
+        //   for (int k = 0; k < 3; ++k)
+        //   {
+        //     std::cout << probing_F(0, j, k) << " ";
+        //   }
+        //   std::cout << "\n";
+        // }
+        // std::cout << "------------------\n";
+        // std::cout << "Increment in F\n";
+        // for (int j = 0; j < 3; ++j)
+        //{
+        //   for (int k = 0; k < 3; ++k)
+        //   {
+        //     std::cout << probing_F_increment(0, j, k) << " ";
+        //   }
+        //   std::cout << "\n";
+        // }
+        // std::cout << "------------------\n";
+
+        // FIXME...the problem is that the microscale assumes that we are
+        // passing an increment in F. But...we need the full deformation
+        // gradient to compute the PK2 stress from the cauchy stress. We could
+        // pass F and Fincrement but in the general case this isn't needed
+        // auto updated_stress = compute_pk2_stress_(F, probing_F);
+        auto updated_stress =
+            compute_pk2_stress_(probing_F, probing_F_increment);
+        Kokkos::fence();
+        Kokkos::parallel_for(
+            "finite difference",
+            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>,
+                                  Kokkos::IndexType<size_t>>(
+                {0ul, 0ul}, {U.extent(0), 6ul}),
+            KOKKOS_LAMBDA(int j, int k) {
+              dPK2dU(j, k, i) =
+                  (updated_stress(j, k) - current_pk2_stress_(j, k)) / h_;
+            });
+      }
+      std::cout << "Calling V2M\n";
+      VoigtToMandel<ExeSpace>(dPK2dU);
+      return dPK2dU;
+    }
+
+    ComputePK2Func compute_pk2_stress_;
+    Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>
+        current_pk2_stress_;
+    double h_;
+  };
+
+  // deduction guide to test the execution space
+  template <typename Func, typename View>
+  StressFiniteDifferenceFunc(Func, View, double)
+      -> StressFiniteDifferenceFunc<typename View::execution_space, Func>;
 
   /**
    * @brief Convert a stress tensor from Voigt to matrix form
@@ -499,13 +589,18 @@ namespace mumfim
         });
   }
 
-  // template <typename ExeSpace>
-  // void ConvertTLStiffnessToULStiffness(
-  //     Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space> F,
-  //     Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space>
-  //         material_stiffness)
-  //{
-  // }
+  template <typename ExeSpace>
+  void ConvertTLStiffnessToULStiffness(
+      Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space> F,
+      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> D)
+  {
+    assert(F.extent(0) == D.extent(0));
+    Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> C("UL material stiffness", F.extent(0));
+    Kokkos::parallel_for("TL2UL", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
+                         KOKKOS_LAMBDA(int i) {
+                         });
+  }
+
   template <typename Analysis>
   struct BatchedAnalysisGetPK2StressFunc
   {
@@ -514,22 +609,24 @@ namespace mumfim
 
     explicit BatchedAnalysisGetPK2StressFunc(Analysis & analysis)
         : analysis_(analysis)
-        , F_("deformation grad", analysis_.GetNumRVEs())
+        , F_increment_("deformation grad increment", analysis_.GetNumRVEs())
         , stress_("stress", analysis_.GetNumRVEs())
     {
     }
 
-    // FIXME take both the total F and the increment in F
-    // That way we can work with codes that use either incremental or total approach
-    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F) noexcept
+    // That way we can work with codes that use either incrementalor total
+    // approach
+    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F,
+                    Kokkos::View<Scalar * [3][3], memory_space> F_increment,
+                    bool update_coords = false) noexcept
         -> Kokkos::View<Scalar * [6], memory_space>
     {
-      assert(F.extent(0) == analysis_.GetNumRVEs());
+      assert(F_increment.extent(0) == analysis_.GetNumRVEs());
       assert(F.extent(0) == analysis_.GetNumRVEs());
       // FIXME pass in here Fincrement
-      Kokkos::deep_copy(F_.d_view, F);
-      F_.template modify<exe_space>();
-      analysis_.run(F_, stress_, false);
+      Kokkos::deep_copy(F_increment_.d_view, F_increment);
+      F_increment_.template modify<exe_space>();
+      analysis_.run(F_increment_, stress_, update_coords);
       stress_.template sync<exe_space>();
       // Batched analysis computes the cauchy stress, we need to convert this to
       // the PK2 stress
@@ -538,10 +635,98 @@ namespace mumfim
     }
 
     Analysis & analysis_;
-    Kokkos::DualView<Scalar * [3][3], memory_space> F_;
+    Kokkos::DualView<Scalar * [3][3], memory_space> F_increment_;
     Kokkos::DualView<Scalar * [6], memory_space> stress_;
   };
 }  // namespace mumfim
+
+template <typename ViewT>
+KOKKOS_INLINE_FUNCTION auto ComputeE(ViewT F, ViewT E) noexcept
+{
+  E(0, 0) = 1.0;
+  E(1, 1) = 1.0;
+  E(2, 2) = 1.0;
+  KokkosBatched::SerialGemm<
+      KokkosBatched::Trans::Transpose, KokkosBatched::Trans::NoTranspose,
+      KokkosBatched::Algo::Gemm::Unblocked>::invoke(0.5, F, F, -0.5, E);
+}
+
+template <typename ExeSpace>
+struct LinearStress
+{
+  using memory_space = typename ExeSpace::memory_space;
+  auto operator()(
+      Kokkos::View<double * [3][3], memory_space> F,
+      Kokkos::View<double * [3][3], memory_space> /*unused*/) noexcept
+      -> Kokkos::View<double * [6], memory_space>
+  {
+    Kokkos::View<double * [3][3], typename ExeSpace::memory_space> E_matrix(
+        "E_matrix", F.extent(0));
+    Kokkos::View<double * [6], typename ExeSpace::memory_space> E("E",
+                                                                  F.extent(0));
+    Kokkos::deep_copy(E_matrix, 0.0);
+    Kokkos::deep_copy(E, 0.0);
+    Kokkos::parallel_for(
+        "linear stress", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+          auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto E_matrix_i =
+              Kokkos::subview(E_matrix, i, Kokkos::ALL(), Kokkos::ALL());
+          auto E_i = Kokkos::subview(E, i, Kokkos::ALL());
+          ComputeE(F_i, E_matrix_i);
+          mumfim::MatrixToVoigt(E_matrix_i, E_i);
+        });
+    Kokkos::fence();
+    return E;
+  }
+};
+
+template <typename ExeSpace>
+struct CubicStress
+{
+  using memory_space = typename ExeSpace::memory_space;
+  auto operator()(Kokkos::View<double * [3][3], memory_space> F,
+                  Kokkos::View<double * [3][3], memory_space> /*unused*/,
+                  bool /*unused*/ = false) noexcept
+      -> Kokkos::View<double * [6], memory_space>
+  {
+    Kokkos::View<double * [3][3], typename ExeSpace::memory_space> E_matrix(
+        "E_matrix", F.extent(0));
+    Kokkos::View<double * [3][3], typename ExeSpace::memory_space> tmp(
+        "tmp", F.extent(0));
+    Kokkos::View<double * [3][3], typename ExeSpace::memory_space> tmp2(
+        "tmp", F.extent(0));
+    Kokkos::View<double * [6], typename ExeSpace::memory_space> E("E",
+                                                                  F.extent(0));
+    Kokkos::deep_copy(E_matrix, 0.0);
+    Kokkos::deep_copy(E, 0.0);
+    Kokkos::parallel_for(
+        "linear stress", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+          auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto E_matrix_i =
+              Kokkos::subview(E_matrix, i, Kokkos::ALL(), Kokkos::ALL());
+          auto tmpi = Kokkos::subview(tmp, i, Kokkos::ALL(), Kokkos::ALL());
+          auto tmp2i = Kokkos::subview(tmp2, i, Kokkos::ALL(), Kokkos::ALL());
+          auto E_i = Kokkos::subview(E, i, Kokkos::ALL());
+          ComputeE(F_i, E_matrix_i);
+          KokkosBatched::SerialGemm<
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Algo::Gemm::Unblocked>::invoke(1.0, E_matrix_i,
+                                                            E_matrix_i, 0.0,
+                                                            tmpi);
+          KokkosBatched::SerialGemm<
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Algo::Gemm::Unblocked>::invoke(1.0, E_matrix_i,
+                                                            tmpi, 0.0, tmp2i);
+          mumfim::MatrixToVoigt(tmp2i, E_i);
+        });
+    Kokkos::fence();
+    return E;
+  }
+};
 
 TEST_CASE("dUdE", "[finite_difference]")
 {
@@ -570,14 +755,19 @@ TEST_CASE("dUdE", "[finite_difference]")
             << std::endl;
   mumfim::BatchedNeohookeanAnalysis analysis(F.extent(0), 1E3, 0.3);
   using exe_space = typename decltype(analysis)::exe_space;
-  mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
-  auto [R, U] = mumfim::PolarDecomposition<exe_space>(F);
-  auto stress = compute_pk2_stress(F);
-  // for (size_t j = 0; j < stress.extent(1); ++j)
+  // mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
+  //  LinearStress<exe_space> compute_pk2_stress{};
+  CubicStress<exe_space> compute_pk2_stress{};
+  auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
+  // apply the full deformation gradient as the increment
+  // in the first timestep
+  auto stress = compute_pk2_stress(F, F, true);
+  // auto stress = compute_pk2_stress(F, F);
+  //  for (size_t j = 0; j < stress.extent(1); ++j)
   //{
-  //   std::cout << stress(0, j) << ",";
-  // }
-  // std::cout<<"\n";
+  //    std::cout << stress(0, j) << ",";
+  //  }
+  //  std::cout<<"\n";
   for (size_t i = 0; i < 3; ++i)
   {
     std::cout << "(";
@@ -591,14 +781,24 @@ TEST_CASE("dUdE", "[finite_difference]")
 
   std::cout << "\n";
   mumfim::StressFiniteDifferenceFunc finite_difference{compute_pk2_stress,
-                                                       stress, 1E-4};
-  auto result = finite_difference(R, U);
-  // auto result = mumfim::ComputeDPK2dE<exe_space>(F, finite_difference);
+                                                       stress, 1E-5};
+  // auto result = finite_difference(F, R, U);
+  auto result = mumfim::ComputeDPK2dE<exe_space>(F, finite_difference);
   for (size_t i = 0; i < result.extent(1); ++i)
   {
     for (size_t j = 0; j < result.extent(2); ++j)
     {
-      std::cout << result(0, i, j) << " ";
+      auto r = result(0, i, j) < 1E-5 ? 0.0 : result(0, i, j);
+      std::cout << r << " ";
+    }
+    std::cout << "\n";
+  }
+  std::cout << "U\n";
+  for (size_t i = 0; i < U.extent(1); ++i)
+  {
+    for (size_t j = 0; j < U.extent(2); ++j)
+    {
+      std::cout << (U(0, i, j) < 1E-5 ? 0.0 : U(0, i, j)) << " ";
     }
     std::cout << "\n";
   }
