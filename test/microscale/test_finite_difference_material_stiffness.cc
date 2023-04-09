@@ -373,16 +373,6 @@ namespace mumfim
             KOKKOS_LAMBDA(int j, int k, int l) {
               probing_U(j, k, l) = U(j, k, l) + probes(i, k, l);
             });
-        // std::cout << "------------------\n";
-        // std::cout << "probe U\n";
-        // for (int j = 0; j < 3; ++j)
-        // {
-        //   for (int k = 0; k < 3; ++k)
-        //   {
-        //     std::cout << U(0, j, k) << " ";
-        //   }
-        //   std::cout << "\n";
-        // }
         // 2) compute Fprobe as R@(U+probe).
         auto team_policy =
             Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
@@ -426,43 +416,6 @@ namespace mumfim
                                                                 Finv_j, 0.0,
                                                                 F_increment_j);
             });
-        // std::cout << "------------------\n";
-        // std::cout << "F\n";
-        // for (int j = 0; j < 3; ++j)
-        //{
-        //   for (int k = 0; k < 3; ++k)
-        //   {
-        //     std::cout << F(0, j, k) << " ";
-        //   }
-        //   std::cout << "\n";
-        // }
-        // std::cout << "------------------\n";
-        // std::cout << "F probe\n";
-        // for (int j = 0; j < 3; ++j)
-        //{
-        //   for (int k = 0; k < 3; ++k)
-        //   {
-        //     std::cout << probing_F(0, j, k) << " ";
-        //   }
-        //   std::cout << "\n";
-        // }
-        // std::cout << "------------------\n";
-        // std::cout << "Increment in F\n";
-        // for (int j = 0; j < 3; ++j)
-        //{
-        //   for (int k = 0; k < 3; ++k)
-        //   {
-        //     std::cout << probing_F_increment(0, j, k) << " ";
-        //   }
-        //   std::cout << "\n";
-        // }
-        // std::cout << "------------------\n";
-
-        // FIXME...the problem is that the microscale assumes that we are
-        // passing an increment in F. But...we need the full deformation
-        // gradient to compute the PK2 stress from the cauchy stress. We could
-        // pass F and Fincrement but in the general case this isn't needed
-        // auto updated_stress = compute_pk2_stress_(F, probing_F);
         auto updated_stress =
             compute_pk2_stress_(probing_F, probing_F_increment);
         Kokkos::fence();
@@ -476,7 +429,6 @@ namespace mumfim
                   (updated_stress(j, k) - current_pk2_stress_(j, k)) / h_;
             });
       }
-      std::cout << "Calling V2M\n";
       VoigtToMandel<ExeSpace>(dPK2dU);
       return dPK2dU;
     }
@@ -589,16 +541,105 @@ namespace mumfim
         });
   }
 
+  KOKKOS_INLINE_FUNCTION
+  size_t TensorIndex2VoigtIndex(size_t i, size_t j)
+  {
+    // 11, 22, 33, 23, 13, 12
+    if (i == j)
+    {
+      return i;
+    }
+    else if ((i == 1 && j == 2) || (i == 2 && j == 1))
+    {
+      return 3;
+    }
+    else if ((i == 0 && j == 2) || (i == 2 && j == 0))
+    {
+      return 4;
+    }
+    else if ((i == 0 && j == 1) || (i == 1 && j == 0))
+    {
+      return 5;
+    }
+    else
+    {
+      KOKKOS_ASSERT(i < 3 && j < 3);
+    }
+    return -1;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  size_t TensorIndex2VoigtIndexNoTranspose(size_t i, size_t j)
+  {
+    // 11, 22, 33, 23, 13, 12
+    if (i == j)
+    {
+      return i;
+    }
+    else if ((i == 1 && j == 2))
+    {
+      return 3;
+    }
+    else if ((i == 0 && j == 2))
+    {
+      return 4;
+    }
+    else if ((i == 0 && j == 1))
+    {
+      return 5;
+    }
+    return 99999;
+  }
+
   template <typename ExeSpace>
   void ConvertTLStiffnessToULStiffness(
       Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space> F,
       Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> D)
   {
     assert(F.extent(0) == D.extent(0));
-    Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> C("UL material stiffness", F.extent(0));
-    Kokkos::parallel_for("TL2UL", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
-                         KOKKOS_LAMBDA(int i) {
-                         });
+    Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> C(
+        "UL material stiffness", F.extent(0));
+    Kokkos::deep_copy(C, 0.0);
+    Kokkos::parallel_for(
+        "TL2UL", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+          auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto Ci = Kokkos::subview(C, i, Kokkos::ALL(), Kokkos::ALL());
+          auto Di = Kokkos::subview(D, i, Kokkos::ALL(), Kokkos::ALL());
+          for (int m = 0; m < 3; ++m)
+          {
+            for (int n = m; n < 3; ++n)
+            {
+              for (int p = 0; p < 3; ++p)
+              {
+                for (int q = p; q < 3; ++q)
+                {
+                  auto idx_mn = TensorIndex2VoigtIndex(m, n);
+                  auto idx_pq = TensorIndex2VoigtIndex(p, q);
+                  double total = 0.0;
+                  for (int j = 0; j < 3; ++j)
+                  {
+                    for (int k = 0; k < 3; ++k)
+                    {
+                      for (int r = 0; r < 3; ++r)
+                      {
+                        for (int s = 0; s < 3; ++s)
+                        {
+                          total += Fi(m, j) * Fi(n, k) * Fi(p, r) * Fi(q, s) *
+                                   Di(TensorIndex2VoigtIndex(j, k),
+                                      TensorIndex2VoigtIndex(r, s));
+                        }
+                      }
+                    }
+                  }
+                  Ci(idx_mn, idx_pq) += total;
+                }
+              }
+            }
+          }
+          KokkosBatched::SerialScale::invoke(1.0 / Determinant<3>(Fi), Ci);
+        });
+    Kokkos::deep_copy(D, C);
   }
 
   template <typename Analysis>
@@ -755,19 +796,13 @@ TEST_CASE("dUdE", "[finite_difference]")
             << std::endl;
   mumfim::BatchedNeohookeanAnalysis analysis(F.extent(0), 1E3, 0.3);
   using exe_space = typename decltype(analysis)::exe_space;
-  // mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
+  mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
   //  LinearStress<exe_space> compute_pk2_stress{};
-  CubicStress<exe_space> compute_pk2_stress{};
+  // CubicStress<exe_space> compute_pk2_stress{};
   auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
   // apply the full deformation gradient as the increment
   // in the first timestep
   auto stress = compute_pk2_stress(F, F, true);
-  // auto stress = compute_pk2_stress(F, F);
-  //  for (size_t j = 0; j < stress.extent(1); ++j)
-  //{
-  //    std::cout << stress(0, j) << ",";
-  //  }
-  //  std::cout<<"\n";
   for (size_t i = 0; i < 3; ++i)
   {
     std::cout << "(";
@@ -781,7 +816,7 @@ TEST_CASE("dUdE", "[finite_difference]")
 
   std::cout << "\n";
   mumfim::StressFiniteDifferenceFunc finite_difference{compute_pk2_stress,
-                                                       stress, 1E-5};
+                                                       stress, 1E-7};
   // auto result = finite_difference(F, R, U);
   auto result = mumfim::ComputeDPK2dE<exe_space>(F, finite_difference);
   for (size_t i = 0; i < result.extent(1); ++i)
@@ -793,12 +828,29 @@ TEST_CASE("dUdE", "[finite_difference]")
     }
     std::cout << "\n";
   }
-  std::cout << "U\n";
-  for (size_t i = 0; i < U.extent(1); ++i)
+  std::cout << "---------------------\n";
+  mumfim::ConvertTLStiffnessToULStiffness<exe_space>(F, result);
+  for (size_t i = 0; i < result.extent(1); ++i)
   {
-    for (size_t j = 0; j < U.extent(2); ++j)
+    for (size_t j = 0; j < result.extent(2); ++j)
     {
-      std::cout << (U(0, i, j) < 1E-5 ? 0.0 : U(0, i, j)) << " ";
+      auto r = result(0, i, j) < 1E-5 ? 0.0 : result(0, i, j);
+      std::cout << r << " ";
+    }
+    std::cout << "\n";
+  }
+  Kokkos::DualView<double * [6][6], typename exe_space::memory_space> stiffness(
+      "stiffness", F.extent(0));
+  analysis.computeMaterialStiffness(stiffness);
+  stiffness.sync_host();
+  auto stiffness_h = stiffness.h_view;
+  std::cout << "---------------------\n";
+  for (size_t i = 0; i < stiffness_h.extent(1); ++i)
+  {
+    for (size_t j = 0; j < stiffness_h.extent(2); ++j)
+    {
+      auto r = stiffness_h(0, i, j) < 1E-5 ? 0.0 : stiffness_h(0, i, j);
+      std::cout << r << " ";
     }
     std::cout << "\n";
   }
