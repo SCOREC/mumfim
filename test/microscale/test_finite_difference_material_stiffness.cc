@@ -325,6 +325,100 @@ namespace mumfim
         });
   }
 
+  template <typename ViewT, typename ProbeViewT>
+  auto ComputeProbeU(ViewT U, ProbeViewT probe, ViewT probe_U)
+      -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3 &&
+                              Kokkos::is_view<ProbeViewT>::value &&
+                              ProbeViewT::rank == 2,
+                          void>
+  {
+    static_assert(Kokkos::SpaceAccessibility<
+                      typename ViewT::memory_space,
+                      typename ProbeViewT::memory_space>::accessible,
+                  "ViewT and ProbeViewT must have the same memory space");
+    using exe_space = typename ViewT::execution_space;
+    KOKKOS_ASSERT(U.extent(0) == probe_U.extent(0));
+    KOKKOS_ASSERT(U.extent(1) == probe_U.extent(1));
+    KOKKOS_ASSERT(U.extent(2) == probe_U.extent(2));
+    KOKKOS_ASSERT(U.extent(1) == probe.extent(0));
+    KOKKOS_ASSERT(U.extent(2) == probe.extent(1));
+
+    Kokkos::parallel_for(
+        "calc probing vec",
+        Kokkos::MDRangePolicy<exe_space, Kokkos::Rank<3>,
+                              Kokkos::IndexType<size_t>>(
+            {0ul, 0ul, 0ul}, {U.extent(0), U.extent(1), U.extent(2)}),
+        KOKKOS_LAMBDA(int j, int k, int l) {
+          probe_U(j, k, l) = U(j, k, l) + probe(k, l);
+        });
+  }
+
+  template <typename ViewT>
+  auto ComputeF(ViewT R, ViewT U, ViewT F)
+      -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3,
+                          void>
+
+  {
+    using exe_space = typename ViewT::execution_space;
+    KOKKOS_ASSERT((R.extent(0) == U.extent(0)) &&
+                  (R.extent(1) == U.extent(1)) && (R.extent(2) == U.extent(2)));
+    KOKKOS_ASSERT((R.extent(0) == F.extent(0)) &&
+                  (R.extent(1) == F.extent(1)) && (R.extent(2) == F.extent(2)));
+
+    auto team_policy =
+        Kokkos::TeamPolicy<exe_space>(U.extent(0), Kokkos::AUTO());
+    using member_type = typename decltype(team_policy)::member_type;
+    Kokkos::parallel_for(
+        "F=RU", team_policy, KOKKOS_LAMBDA(member_type member) {
+          auto j = member.league_rank();
+          auto R_j = Kokkos::subview(R, j, Kokkos::ALL(), Kokkos::ALL());
+          auto U_j = Kokkos::subview(U, j, Kokkos::ALL(), Kokkos::ALL());
+          auto F_j = Kokkos::subview(F, j, Kokkos::ALL(), Kokkos::ALL());
+          KokkosBatched::TeamGemm<
+              member_type, KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0, R_j,
+                                                            U_j, 0.0, F_j);
+        });
+  }
+
+  // W: work array should be same size as F
+  template <typename ViewT>
+  auto ComputeFIncrement(ViewT F, ViewT Fnew, ViewT W, ViewT Fincrement)
+      -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3,
+                          void>
+  {
+    using exe_space = typename ViewT::execution_space;
+    KOKKOS_ASSERT((F.extent(0) == Fnew.extent(0)) &&
+                  (F.extent(1) == Fnew.extent(1)) &&
+                  (F.extent(2) == Fnew.extent(2)));
+    KOKKOS_ASSERT((F.extent(0) == Fincrement.extent(0)) &&
+                  (F.extent(1) == Fincrement.extent(1)) &&
+                  (F.extent(2) == Fincrement.extent(2)));
+    KOKKOS_ASSERT((F.extent(0) == W.extent(0)) &&
+                  (F.extent(1) == W.extent(1)) && (F.extent(2) == W.extent(2)));
+    Kokkos::parallel_for(
+        "Finc", Kokkos::RangePolicy<exe_space>(0, F.extent(0)),
+        KOKKOS_LAMBDA(int j) {
+          auto F_probe_j =
+              Kokkos::subview(Fnew, j, Kokkos::ALL(), Kokkos::ALL());
+          auto F_increment_j =
+              Kokkos::subview(Fincrement, j, Kokkos::ALL(), Kokkos::ALL());
+          auto F_j = Kokkos::subview(F, j, Kokkos::ALL(), Kokkos::ALL());
+          // Reuse the Probing_U memory to store the inverse of F
+          auto Finv_j = Kokkos::subview(W, j, Kokkos::ALL(), Kokkos::ALL());
+          // compute the inverse of F
+          Invert<3>(F_j, Finv_j);
+          // compute the increment in F
+          KokkosBatched::SerialGemm<
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Trans::NoTranspose,
+              KokkosBatched::Algo::Gemm::Unblocked>::invoke(1.0, F_probe_j,
+                                                            Finv_j, 0.0,
+                                                            F_increment_j);
+        });
+  }
+
   template <typename ExeSpace, typename ComputePK2Func>
   struct StressFiniteDifferenceFunc
   {
@@ -365,57 +459,15 @@ namespace mumfim
       {
         // 1) Noting that we want to perturb U, but not the full F we compute
         // the the new value of U as U+probe
-        Kokkos::parallel_for(
-            "calc probing vec",
-            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
-                                  Kokkos::IndexType<size_t>>(
-                {0ul, 0ul, 0ul}, {R.extent(0), 3ul, 3ul}),
-            KOKKOS_LAMBDA(int j, int k, int l) {
-              probing_U(j, k, l) = U(j, k, l) + probes(i, k, l);
-            });
+        auto probe = Kokkos::subview(probes, i, Kokkos::ALL(), Kokkos::ALL());
+        ComputeProbeU(U, probe, probing_U);
         // 2) compute Fprobe as R@(U+probe).
-        auto team_policy =
-            Kokkos::TeamPolicy<ExeSpace>(U.extent(0), Kokkos::AUTO());
-        using member_type = typename decltype(team_policy)::member_type;
-        Kokkos::parallel_for(
-            "F=RU", team_policy, KOKKOS_LAMBDA(member_type member) {
-              auto j = member.league_rank();
-              auto R_j = Kokkos::subview(R, j, Kokkos::ALL(), Kokkos::ALL());
-              auto U_j =
-                  Kokkos::subview(probing_U, j, Kokkos::ALL(), Kokkos::ALL());
-              auto F_j =
-                  Kokkos::subview(probing_F, j, Kokkos::ALL(), Kokkos::ALL());
-              KokkosBatched::TeamGemm<
-                  member_type, KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Algo::Gemm::Unblocked>::invoke(member, 1.0,
-                                                                R_j, U_j, 0.0,
-                                                                F_j);
-            });
+        ComputeF(R, probing_U, probing_F);
         // 3) compute the increment in F as Finc = Fprobe@F^-1
         // we do not use team parallelism here because current implementation of
         // Invert is only implemented for the first order parallelism
-        Kokkos::parallel_for(
-            "Finc", Kokkos::RangePolicy<ExeSpace>(0, U.extent(0)),
-            KOKKOS_LAMBDA(int j) {
-              auto F_probe_j =
-                  Kokkos::subview(probing_F, j, Kokkos::ALL(), Kokkos::ALL());
-              auto F_increment_j = Kokkos::subview(
-                  probing_F_increment, j, Kokkos::ALL(), Kokkos::ALL());
-              auto F_j = Kokkos::subview(F, j, Kokkos::ALL(), Kokkos::ALL());
-              // Reuse the Probing_U memory to store the inverse of F
-              auto Finv_j =
-                  Kokkos::subview(probing_U, j, Kokkos::ALL(), Kokkos::ALL());
-              // compute the inverse of F
-              Invert<3>(F_j, Finv_j);
-              // compute the increment in F
-              KokkosBatched::SerialGemm<
-                  KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Trans::NoTranspose,
-                  KokkosBatched::Algo::Gemm::Unblocked>::invoke(1.0, F_probe_j,
-                                                                Finv_j, 0.0,
-                                                                F_increment_j);
-            });
+        // reuse probing_U as the work array for ComputeFIncrement
+        ComputeFIncrement(F, probing_F, probing_U, probing_F_increment);
         auto updated_stress =
             compute_pk2_stress_(probing_F, probing_F_increment);
         Kokkos::fence();
@@ -566,29 +618,6 @@ namespace mumfim
       KOKKOS_ASSERT(i < 3 && j < 3);
     }
     return -1;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  size_t TensorIndex2VoigtIndexNoTranspose(size_t i, size_t j)
-  {
-    // 11, 22, 33, 23, 13, 12
-    if (i == j)
-    {
-      return i;
-    }
-    else if ((i == 1 && j == 2))
-    {
-      return 3;
-    }
-    else if ((i == 0 && j == 2))
-    {
-      return 4;
-    }
-    else if ((i == 0 && j == 1))
-    {
-      return 5;
-    }
-    return 99999;
   }
 
   template <typename ExeSpace>
