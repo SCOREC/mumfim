@@ -159,27 +159,27 @@ namespace mumfim
   // These probe vectors correspond to the mandel form that is created in
   // the ComputeT function
   template <typename MemorySpace>
-  auto ComputeProbeVectors(double h)
+  auto ComputeProbeVectors()
       -> Kokkos::View<Scalar[6][3][3], MemorySpace>
   {
     Kokkos::View<Scalar[6][3][3], MemorySpace> T("T");
     auto T_h = Kokkos::create_mirror_view(Kokkos::HostSpace{}, T);
     Kokkos::deep_copy(T_h, 0.0);
-    T_h(0, 0, 0) = h;
-    T_h(1, 1, 1) = h;
-    T_h(2, 2, 2) = h;
-    T_h(3, 1, 1) = h;
-    T_h(3, 1, 2) = h;
-    T_h(3, 2, 1) = h;
-    T_h(3, 2, 2) = h;
-    T_h(4, 0, 0) = h;
-    T_h(4, 0, 2) = h;
-    T_h(4, 2, 0) = h;
-    T_h(4, 2, 2) = h;
-    T_h(5, 0, 0) = h;
-    T_h(5, 0, 1) = h;
-    T_h(5, 1, 0) = h;
-    T_h(5, 1, 1) = h;
+    T_h(0, 0, 0) = 1.0;
+    T_h(1, 1, 1) = 1.0;
+    T_h(2, 2, 2) = 1.0;
+    T_h(3, 1, 1) = 1.0;
+    T_h(3, 1, 2) = 1.0;
+    T_h(3, 2, 1) = 1.0;
+    T_h(3, 2, 2) = 1.0;
+    T_h(4, 0, 0) = 1.0;
+    T_h(4, 0, 2) = 1.0;
+    T_h(4, 2, 0) = 1.0;
+    T_h(4, 2, 2) = 1.0;
+    T_h(5, 0, 0) = 1.0;
+    T_h(5, 0, 1) = 1.0;
+    T_h(5, 1, 0) = 1.0;
+    T_h(5, 1, 1) = 1.0;
     Kokkos::deep_copy(T, T_h);
     return T;
   }
@@ -326,7 +326,7 @@ namespace mumfim
   }
 
   template <typename ViewT, typename ProbeViewT>
-  auto ComputeProbeU(ViewT U, ProbeViewT probe, ViewT probe_U)
+  auto ComputeProbeU(ViewT U, ProbeViewT probe, ViewT probe_U, double h)
       -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3 &&
                               Kokkos::is_view<ProbeViewT>::value &&
                               ProbeViewT::rank == 2,
@@ -349,7 +349,7 @@ namespace mumfim
                               Kokkos::IndexType<size_t>>(
             {0ul, 0ul, 0ul}, {U.extent(0), U.extent(1), U.extent(2)}),
         KOKKOS_LAMBDA(int j, int k, int l) {
-          probe_U(j, k, l) = U(j, k, l) + probe(k, l);
+          probe_U(j, k, l) = U(j, k, l) + h*probe(k, l);
         });
   }
 
@@ -452,7 +452,7 @@ namespace mumfim
           "probe F increment", R.extent(0));
       Kokkos::View<Scalar * [3][3], memory_space> probing_U("probe F",
                                                             R.extent(0));
-      auto probes = ComputeProbeVectors<ExeSpace>(h_);
+      auto probes = ComputeProbeVectors<ExeSpace>();
       assert(probes.extent(0) == 6);
       // probing the 6 directions
       for (int i = 0; i < 6; ++i)
@@ -460,7 +460,7 @@ namespace mumfim
         // 1) Noting that we want to perturb U, but not the full F we compute
         // the the new value of U as U+probe
         auto probe = Kokkos::subview(probes, i, Kokkos::ALL(), Kokkos::ALL());
-        ComputeProbeU(U, probe, probing_U);
+        ComputeProbeU(U, probe, probing_U, h_);
         // 2) compute Fprobe as R@(U+probe).
         ComputeF(R, probing_U, probing_F);
         // 3) compute the increment in F as Finc = Fprobe@F^-1
@@ -495,6 +495,83 @@ namespace mumfim
   template <typename Func, typename View>
   StressFiniteDifferenceFunc(Func, View, double)
       -> StressFiniteDifferenceFunc<typename View::execution_space, Func>;
+
+  template <typename ExeSpace, typename ComputePK2Func>
+  struct StressCentralDifferenceFunc
+  {
+    using exe_space = ExeSpace;
+    using memory_space = typename ExeSpace::memory_space;
+
+    explicit StressCentralDifferenceFunc(
+        ComputePK2Func compute_stress,
+        double h = 1e-6)
+        : compute_pk2_stress_(compute_stress), h_(h)
+    {
+    }
+
+    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F,
+                    Kokkos::View<Scalar * [3][3], memory_space> R,
+                    Kokkos::View<Scalar * [3][3], memory_space> U) noexcept
+    -> Kokkos::View<Scalar * [6][6], memory_space>
+    {
+
+      // allocate an array for the current stress if it hasn't already been allocated
+      if(current_pk2_stress_.extent(0) == 0) {
+        current_pk2_stress_ =
+            Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>(
+                "current pk2 stress", F.extent(0));
+      }
+      assert(F.extent(0) == R.extent(0));
+      assert(R.extent(0) == U.extent(0));
+      assert(R.extent(0) == current_pk2_stress_.extent(0));
+      Kokkos::View<Scalar * [6][6], memory_space> dPK2dU("dPK2dU", R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_F("probe F",
+                                                            R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_F_increment(
+          "probe F increment", R.extent(0));
+      Kokkos::View<Scalar * [3][3], memory_space> probing_U("probe F",
+                                                            R.extent(0));
+      auto probes = ComputeProbeVectors<ExeSpace>();
+      assert(probes.extent(0) == 6);
+      // probing the 6 directions
+      for (int i = 0; i < 6; ++i)
+      {
+        auto probe = Kokkos::subview(probes, i, Kokkos::ALL(), Kokkos::ALL());
+        ComputeProbeU(U, probe, probing_U, h_);
+        ComputeF(R, probing_U, probing_F);
+        ComputeFIncrement(F, probing_F, probing_U, probing_F_increment);
+        Kokkos::deep_copy(current_pk2_stress_,
+                          compute_pk2_stress_(probing_F, probing_F_increment));
+        ComputeProbeU(U, probe, probing_U, -1*h_);
+        ComputeF(R, probing_U, probing_F);
+        ComputeFIncrement(F, probing_F, probing_U, probing_F_increment);
+        auto updated_stress_negative =
+            compute_pk2_stress_(probing_F, probing_F_increment);
+        Kokkos::fence();
+        Kokkos::parallel_for(
+            "finite difference",
+            Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>,
+                                  Kokkos::IndexType<size_t>>(
+                {0ul, 0ul}, {U.extent(0), 6ul}),
+            KOKKOS_LAMBDA(int j, int k) {
+              dPK2dU(j, k, i) =
+                  (current_pk2_stress_(j, k) - updated_stress_negative(j, k)) / (2*h_);
+            });
+      }
+      VoigtToMandel<ExeSpace>(dPK2dU);
+      return dPK2dU;
+    }
+
+    ComputePK2Func compute_pk2_stress_;
+    Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>
+        current_pk2_stress_;
+    double h_;
+  };
+
+  // deduction guide to test the execution space
+  template <typename Func>
+  StressCentralDifferenceFunc(Func, double)
+  -> StressCentralDifferenceFunc<typename Func::exe_space, Func>;
 
   /**
    * @brief Convert a stress tensor from Voigt to matrix form
@@ -801,15 +878,19 @@ struct CubicStress
 TEST_CASE("dUdE", "[finite_difference]")
 {
   Kokkos::Random_XorShift64_Pool<Kokkos::HostSpace> random(13718);
-  constexpr int num_tests = 1;
+  constexpr int num_tests = 10;
   Kokkos::View<double * [3][3], Kokkos::HostSpace> F("F", num_tests);
   Kokkos::View<double * [6], Kokkos::HostSpace> PK2("PK2", num_tests);
   Kokkos::fill_random(F, random, 1.0);
   Kokkos::parallel_for(
       F.extent(0), KOKKOS_LAMBDA(int i) {
-        F(i, 0, 0) += 1.0;
-        F(i, 1, 1) += 1.0;
-        F(i, 2, 2) += 1.0;
+        auto Fi = Kokkos::subview(F,i, Kokkos::ALL(), Kokkos::ALL());
+        while(mumfim::Determinant<3>(Fi) < 0.0)
+        {
+          Fi(0, 0) += 1.0;
+          Fi(1, 1) += 1.0;
+          Fi(2, 2) += 1.0;
+        }
       });
   Kokkos::parallel_for(
       F.extent(0), KOKKOS_LAMBDA(int i) {
@@ -819,10 +900,6 @@ TEST_CASE("dUdE", "[finite_difference]")
 
   auto t1 = std::chrono::steady_clock::now();
   // mumfim::computeDPK2dE<Kokkos::Serial>(F, dPK2dU);
-  auto t2 = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration<double>(t2 - t1).count();
-  std::cout << "Time taken by function: " << duration << " seconds"
-            << std::endl;
   mumfim::BatchedNeohookeanAnalysis analysis(F.extent(0), 1E3, 0.3);
   using exe_space = typename decltype(analysis)::exe_space;
   mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
@@ -832,55 +909,40 @@ TEST_CASE("dUdE", "[finite_difference]")
   // apply the full deformation gradient as the increment
   // in the first timestep
   auto stress = compute_pk2_stress(F, F, true);
-  for (size_t i = 0; i < 3; ++i)
-  {
-    std::cout << "(";
-    for (size_t j = 0; j < 3; ++j)
-    {
-      std::cout << F(0, i, j);
-      if (j < 2) std::cout << ",";
-    }
-    std::cout << "),";
-  }
-
-  std::cout << "\n";
-  mumfim::StressFiniteDifferenceFunc finite_difference{compute_pk2_stress,
-                                                       stress, 1E-7};
-  // auto result = finite_difference(F, R, U);
+  //mumfim::StressFiniteDifferenceFunc finite_difference{compute_pk2_stress,
+  //                                                     stress, 1E-7};
+  mumfim::StressCentralDifferenceFunc finite_difference{compute_pk2_stress, 1E-7};
   auto result = mumfim::ComputeDPK2dE<exe_space>(F, finite_difference);
-  for (size_t i = 0; i < result.extent(1); ++i)
-  {
-    for (size_t j = 0; j < result.extent(2); ++j)
-    {
-      auto r = result(0, i, j) < 1E-5 ? 0.0 : result(0, i, j);
-      std::cout << r << " ";
-    }
-    std::cout << "\n";
-  }
-  std::cout << "---------------------\n";
   mumfim::ConvertTLStiffnessToULStiffness<exe_space>(F, result);
-  for (size_t i = 0; i < result.extent(1); ++i)
-  {
-    for (size_t j = 0; j < result.extent(2); ++j)
-    {
-      auto r = result(0, i, j) < 1E-5 ? 0.0 : result(0, i, j);
-      std::cout << r << " ";
-    }
-    std::cout << "\n";
-  }
   Kokkos::DualView<double * [6][6], typename exe_space::memory_space> stiffness(
       "stiffness", F.extent(0));
   analysis.computeMaterialStiffness(stiffness);
   stiffness.sync_host();
   auto stiffness_h = stiffness.h_view;
+  for (int l=0; l<num_tests; ++l) {
+
+  for (size_t i = 0; i < result.extent(1); ++i)
+  {
+    for (size_t j = 0; j < result.extent(2); ++j)
+    {
+      auto r = result(l, i, j) < 1E-5 ? 0.0 : result(l, i, j);
+      std::cout << r << " ";
+    }
+    std::cout << "\n";
+  }
   std::cout << "---------------------\n";
   for (size_t i = 0; i < stiffness_h.extent(1); ++i)
   {
     for (size_t j = 0; j < stiffness_h.extent(2); ++j)
     {
-      auto r = stiffness_h(0, i, j) < 1E-5 ? 0.0 : stiffness_h(0, i, j);
+      auto r = stiffness_h(l, i, j) < 1E-5 ? 0.0 : stiffness_h(l, i, j);
       std::cout << r << " ";
     }
     std::cout << "\n";
   }
+  }
+  auto t2 = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration<double>(t2 - t1).count();
+  std::cout << "Time taken by function: " << duration << " seconds"
+            << std::endl;
 }
