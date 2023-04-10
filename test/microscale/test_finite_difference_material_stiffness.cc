@@ -188,12 +188,12 @@ namespace mumfim
   void MandelToVoigt(
       Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
   {
-    auto sr2 = sqrt(2);
     Kokkos::parallel_for(
         "mandel to voigt",
         Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>(
             {0, 0, 0}, {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
         KOKKOS_LAMBDA(int i, int j, int k) {
+          auto sr2 = sqrt(2);
           // lower right
           if (j > 2 && k > 2)
           {
@@ -216,7 +216,6 @@ namespace mumfim
   void VoigtToMandel(
       Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
   {
-    auto sr2 = sqrt(2);
     Kokkos::parallel_for(
         "voigt to mandel",
         Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
@@ -224,6 +223,7 @@ namespace mumfim
             {0ul, 0ul, 0ul},
             {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
         KOKKOS_LAMBDA(int i, int j, int k) {
+          auto sr2 = sqrt(2);
           // lower right
           if (j > 2 && k > 2)
           {
@@ -311,18 +311,6 @@ namespace mumfim
     MandelToVoigt<ExeSpace>(D);
     Kokkos::fence();
     return D;
-  }
-
-  template <typename ExeSpace>
-  auto TLtoULStiffness(
-      Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> dPK2dE)
-      -> Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space>
-  {
-    Kokkos::parallel_for(
-        "TL2UL stiffness", Kokkos::RangePolicy<ExeSpace>(0, dPK2dE.extent(0)),
-        KOKKOS_LAMBDA(size_t idx, size_t j, size_t k, size_t l, size_t m){
-
-        });
   }
 
   template <typename ViewT, typename ProbeViewT>
@@ -422,7 +410,6 @@ namespace mumfim
   template <typename ExeSpace, typename ComputePK2Func>
   struct StressFiniteDifferenceFunc
   {
-    using exe_space = ExeSpace;
     using memory_space = typename ExeSpace::memory_space;
 
     explicit StressFiniteDifferenceFunc(
