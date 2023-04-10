@@ -1,19 +1,19 @@
 #ifndef MUMFIM_SRC_MUMFIM_MICROSCALE_MATERIALSTIFFNESS_H
 #define MUMFIM_SRC_MUMFIM_MICROSCALE_MATERIALSTIFFNESS_H
 #include <mumfim/microscale/MicroTypeDefinitions.h>
+#include <mumfim/microscale/PolarDecomposition.h>
 #include <mumfim/microscale/StressConversion.h>
 #include <mumfim/microscale/TensorUtilities.h>
-#include <mumfim/microscale/PolarDecomposition.h>
-#include <KokkosBatched_Scale_Decl.hpp>
-#include <KokkosBatched_Scale_Impl.hpp>
+
 #include <KokkosBatched_Copy_Decl.hpp>
 #include <KokkosBatched_Copy_Impl.hpp>
-#include <KokkosBatched_LU_Decl.hpp>
-#include <KokkosBatched_LU_Team_Impl.hpp>
-#include <KokkosBatched_SolveLU_Decl.hpp>
 #include <KokkosBatched_Gemm_Decl.hpp>
 #include <KokkosBatched_Gemm_Team_Impl.hpp>
-
+#include <KokkosBatched_LU_Decl.hpp>
+#include <KokkosBatched_LU_Team_Impl.hpp>
+#include <KokkosBatched_Scale_Decl.hpp>
+#include <KokkosBatched_Scale_Impl.hpp>
+#include <KokkosBatched_SolveLU_Decl.hpp>
 #include <Kokkos_Core.hpp>
 
 namespace mumfim
@@ -283,7 +283,7 @@ namespace mumfim
     explicit StressFiniteDifferenceFunc(
         ComputePK2Func compute_stress,
         Kokkos::View<Scalar * [6], memory_space> current_stress,
-        double h = 1e-6)
+        double h = 1e-7)
         : compute_pk2_stress_(compute_stress), h_(h)
     {
       current_pk2_stress_ =
@@ -350,6 +350,9 @@ namespace mumfim
   template <typename Func, typename View>
   StressFiniteDifferenceFunc(Func, View, double)
       -> StressFiniteDifferenceFunc<typename View::execution_space, Func>;
+  template <typename Func, typename View>
+  StressFiniteDifferenceFunc(Func, View)
+      -> StressFiniteDifferenceFunc<typename View::execution_space, Func>;
 
   template <typename ExeSpace, typename ComputePK2Func>
   struct StressCentralDifferenceFunc
@@ -358,7 +361,7 @@ namespace mumfim
     using memory_space = typename ExeSpace::memory_space;
 
     explicit StressCentralDifferenceFunc(ComputePK2Func compute_stress,
-                                         double h = 1e-6)
+                                         double h = 1e-7)
         : compute_pk2_stress_(compute_stress), h_(h)
     {
     }
@@ -429,7 +432,9 @@ namespace mumfim
   StressCentralDifferenceFunc(Func, double)
       -> StressCentralDifferenceFunc<typename Func::exe_space, Func>;
 
-
+  template <typename Func>
+  StressCentralDifferenceFunc(Func)
+      -> StressCentralDifferenceFunc<typename Func::exe_space, Func>;
 
   template <typename ExeSpace>
   void ConvertTLStiffnessToULStiffness(
@@ -466,8 +471,8 @@ namespace mumfim
                         for (int s = 0; s < 3; ++s)
                         {
                           total += Fi(m, j) * Fi(n, k) * Fi(p, r) * Fi(q, s) *
-                              Di(TensorIndex2VoigtIndex(j, k),
-                                 TensorIndex2VoigtIndex(r, s));
+                                   Di(TensorIndex2VoigtIndex(j, k),
+                                      TensorIndex2VoigtIndex(r, s));
                         }
                       }
                     }
