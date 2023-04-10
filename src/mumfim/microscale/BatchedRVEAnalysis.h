@@ -5,6 +5,8 @@
 #include <array>
 #include <vector>
 #include "MicroFOParams.h"
+#include "mumfim/microscale/MicroTypeDefinitions.h"
+#include "mumfim/microscale/StressConversion.h"
 namespace mumfim
 {
   template <typename Scalar, typename Ordinal, typename ExeSpace>
@@ -142,5 +144,44 @@ namespace mumfim
     // RVEAnalysis(const RVEAnalysis & an);
     // RVEAnalysis();
   };
+
+  template <typename Analysis>
+  struct BatchedAnalysisGetPK2StressFunc
+  {
+    using memory_space = typename Analysis::memory_space;
+    using exe_space = typename Analysis::exe_space;
+
+    explicit BatchedAnalysisGetPK2StressFunc(Analysis & analysis)
+        : analysis_(analysis)
+        , F_increment_("deformation grad increment", analysis_.GetNumRVEs())
+        , stress_("stress", analysis_.GetNumRVEs())
+    {
+    }
+
+    // That way we can work with codes that use either incrementalor total
+    // approach
+    auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F,
+                    Kokkos::View<Scalar * [3][3], memory_space> F_increment,
+                    bool update_coords = false) noexcept
+    -> Kokkos::View<Scalar * [6], memory_space>
+    {
+      assert(F_increment.extent(0) == analysis_.GetNumRVEs());
+      assert(F.extent(0) == analysis_.GetNumRVEs());
+      // FIXME pass in here Fincrement
+      Kokkos::deep_copy(F_increment_.d_view, F_increment);
+      F_increment_.template modify<exe_space>();
+      analysis_.run(F_increment_, stress_, update_coords);
+      stress_.template sync<exe_space>();
+      // Batched analysis computes the cauchy stress, we need to convert this to
+      // the PK2 stress
+      ConvertCauchyToPK2<exe_space>(F, stress_.d_view);
+      return stress_.d_view;
+    }
+
+    Analysis & analysis_;
+    Kokkos::DualView<Scalar * [3][3], memory_space> F_increment_;
+    Kokkos::DualView<Scalar * [6], memory_space> stress_;
+  };
+
 }  // namespace mumfim
 #endif
