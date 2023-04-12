@@ -59,6 +59,24 @@ namespace mumfim
         });
     return left_cauchy_green;
   }
+  template<typename ViewT>
+  auto FillIdentity(ViewT view) -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3, void>
+  {
+    KOKKOS_ASSERT(view.extent(1) == 3);
+    KOKKOS_ASSERT(view.extent(2) == 3);
+      Kokkos::parallel_for(Kokkos::RangePolicy<typename ViewT::execution_space>(0, view.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+            for (int j = 0; j < 3; ++j)
+            {
+              for (int k = 0; k < 3; ++k)
+              {
+                view(i, j, k) = (j == k) ? 1 : 0;
+              }
+            }
+          });
+
+  }
+
   template <typename Scalar = mumfim::Scalar,
             typename LocalOrdinal = mumfim::LocalOrdinal,
             typename ExeSpace = Kokkos::DefaultExecutionSpace>
@@ -75,18 +93,8 @@ namespace mumfim
         , lambda_((2.0 * shear_modulus_ * poissons_ratio) /
                   (1.0 - 2.0 * poissons_ratio))
     {
-      printf("Initialize Batched Neohookean analysis\n");
       // initialize original deformation gradient
-      Kokkos::parallel_for(
-          F.extent(0), KOKKOS_LAMBDA(int i) {
-            for (int j = 0; j < 3; ++j)
-            {
-              for (int k = 0; k < 3; ++k)
-              {
-                F(i, j, k) = (j == k) ? 1 : 0;
-              }
-            }
-          });
+      FillIdentity(F);
     }
     bool run(Kokkos::DualView<Scalar * [3][3], ExeSpace> dfmGrds,
              Kokkos::DualView<Scalar * [6], ExeSpace> sigma,
@@ -103,6 +111,7 @@ namespace mumfim
       static_assert(std::is_same_v<decltype(dfmGrds_d), decltype(F)>);
       auto F_updated = compute_updated_deformation_gradient(F, dfmGrds_d);
       auto left_cauchy_green = compute_left_cauchy_green(F_updated);
+
       // to enable copy to device (w/o this ptr)
       auto shear_modulus = shear_modulus_;
       auto lambda = lambda_;
@@ -145,11 +154,12 @@ namespace mumfim
       C.sync_device();
       auto lambda = lambda_;
       auto shear_modulus = shear_modulus_;
+      auto F_local = F;
       Kokkos::parallel_for(
           C.extent(0), KOKKOS_LAMBDA(int i) {
             auto C_i =
                 Kokkos::subview(C.d_view, i, Kokkos::ALL(), Kokkos::ALL());
-            auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+            auto F_i = Kokkos::subview(F_local, i, Kokkos::ALL(), Kokkos::ALL());
             auto J = determinant(F_i);
             auto lambda_prime = lambda / J;
             auto shear_modulus_prime = (shear_modulus - lambda * log(J)) / J;

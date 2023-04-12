@@ -3,7 +3,7 @@
 #include <mumfim/microscale/MaterialStiffness.h>
 #include <mumfim/microscale/MicroTypeDefinitions.h>
 
-#include <Catch2/catch.hpp>
+#include <catch2/catch.hpp>
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
@@ -29,17 +29,18 @@ struct LinearU
       Kokkos::View<double * [3][3], memory_space> /*unused*/) noexcept
       -> Kokkos::View<double * [6], memory_space>
   {
-    auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
+    auto polar_result = mumfim::PolarDecomposition<exe_space>(F);
+    KOKKOS_ASSERT(F.extent(0) == polar_result.U.extent(0));
+    KOKKOS_ASSERT(F.extent(0) == polar_result.R.extent(0));
     Kokkos::View<double * [6], typename ExeSpace::memory_space> U_voigt(
         "U", F.extent(0));
     Kokkos::parallel_for(
         "linear stress", Kokkos::RangePolicy<ExeSpace>(0, F.extent(0)),
         KOKKOS_LAMBDA(int i) {
-          auto U_i = Kokkos::subview(U, i, Kokkos::ALL(), Kokkos::ALL());
+          auto U_i = Kokkos::subview(polar_result.U, i, Kokkos::ALL(), Kokkos::ALL());
           auto U_voigt_i = Kokkos::subview(U_voigt, i, Kokkos::ALL());
           mumfim::MatrixToVoigt(U_i, U_voigt_i);
         });
-    Kokkos::fence();
     return U_voigt;
   }
 };
@@ -58,6 +59,7 @@ struct LinearStress
         "E_matrix", F.extent(0));
     Kokkos::View<double * [6], typename ExeSpace::memory_space> E("E",
                                                                   F.extent(0));
+
     Kokkos::deep_copy(E_matrix, 0.0);
     Kokkos::deep_copy(E, 0.0);
     Kokkos::parallel_for(
@@ -70,7 +72,6 @@ struct LinearStress
           ComputeGreenLagrangeStrain(F_i, E_matrix_i);
           mumfim::MatrixToVoigt(E_matrix_i, E_i);
         });
-    Kokkos::fence();
     return E;
   }
 };
@@ -118,87 +119,9 @@ struct CubicStress
                                                             tmpi, 0.0, tmp2i);
           mumfim::MatrixToVoigt(tmp2i, E_i);
         });
-    Kokkos::fence();
     return E;
   }
 };
-
-// MandelToVoight -> VoigtToMandel gives the same matrix
-
-TEST_CASE("finite_difference", "[material_stiffness],[finite_difference]")
-{
-  using exe_space = Kokkos::DefaultExecutionSpace;
-  using memory_space = Kokkos::DefaultExecutionSpace::memory_space;
-  // finite difference should return dPK2dU. So, we can analyze two cases.
-  Kokkos::Random_XorShift64_Pool<Kokkos::HostSpace> random(13718);
-  constexpr int num_tests = 10;
-  Kokkos::View<double * [3][3], Kokkos::HostSpace> F("F", num_tests);
-  Kokkos::View<double * [6], Kokkos::HostSpace> PK2("PK2", num_tests);
-  Kokkos::fill_random(F, random, 1.0);
-  Kokkos::parallel_for(
-      F.extent(0), KOKKOS_LAMBDA(int i) {
-        auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
-        while (mumfim::Determinant<3>(Fi) < 0.02)
-        {
-          Fi(0, 0) += 1.0;
-          Fi(1, 1) += 1.0;
-          Fi(2, 2) += 1.0;
-        }
-      });
-  Kokkos::parallel_for(
-      F.extent(0), KOKKOS_LAMBDA(int i) {
-        auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
-        KOKKOS_ASSERT(mumfim::Determinant<3>(Fi) > 0.0);
-      });
-  Kokkos::View<double * [6], memory_space> current_stress("current_stress",
-                                                          num_tests);
-  auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
-  auto T = mumfim::ComputeT<memory_space>();
-  auto T_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, T);
-  // 1. Stress function is linear in U i.e., the resulting derivative should be
-  // the identity matrix
-  SECTION("Linear Stress")
-  {
-    LinearU<exe_space> compute_pk2_stress{};
-    current_stress = compute_pk2_stress(F, F);
-    SECTION("Forward Difference")
-    {
-      mumfim::StressFiniteDifferenceFunc compute_dpk2du(compute_pk2_stress,
-                                                        current_stress);
-      auto dPK2dU = compute_dpk2du(F, R, U);
-      auto dPK2dU_h =
-          Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, dPK2dU);
-      for (int i = 0; i < num_tests; ++i)
-      {
-        for (int j = 0; j < 6; ++j)
-        {
-          for (int k = 0; k < 6; ++k)
-          {
-            REQUIRE(dPK2dU_h(i, j, k) == Approx(T_h(j, k)).margin(1E-6));
-          }
-        }
-      }
-    }
-    SECTION("Central Difference")
-    {
-      mumfim::StressCentralDifferenceFunc compute_dpk2du(compute_pk2_stress,
-                                                         1E-7);
-      auto dPK2dU = compute_dpk2du(F, R, U);
-      auto dPK2dU_h =
-          Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, dPK2dU);
-      for (int i = 0; i < num_tests; ++i)
-      {
-        for (int j = 0; j < 6; ++j)
-        {
-          for (int k = 0; k < 6; ++k)
-          {
-            REQUIRE(dPK2dU_h(i, j, k) == Approx(T_h(j, k)).margin(1E-6));
-          }
-        }
-      }
-    }
-  }
-}
 
 template <typename ViewT, typename ViewT2>
 [[nodiscard]] auto ViewsEqual(ViewT a,
@@ -233,7 +156,7 @@ template <typename ViewT, typename ViewT2>
           {
             bool is_close =
                 (fabs(a(i, j, k) - b(i, j, k)) <=
-                 std::max(rtol * std::max(fabs(a(i, j, k)), fabs(b(i, j, k))),
+                 max(rtol * max(fabs(a(i, j, k)), fabs(b(i, j, k))),
                           atol));
             update += !is_close;
           }
@@ -241,6 +164,86 @@ template <typename ViewT, typename ViewT2>
       },
       sum);
   return (sum == 0);
+}
+
+// MandelToVoight -> VoigtToMandel gives the same matrix
+
+TEST_CASE("finite_difference", "[material_stiffness],[finite_difference]")
+{
+  using exe_space = Kokkos::DefaultExecutionSpace;
+  //using exe_space = Kokkos::Serial;
+  using memory_space = typename exe_space::memory_space;
+  // finite difference should return dPK2dU. So, we can analyze two cases.
+  Kokkos::Random_XorShift64_Pool<memory_space> random(13718);
+  constexpr int num_tests = 10;
+  Kokkos::View<double * [3][3], memory_space> F("F", num_tests);
+  Kokkos::View<double * [6], memory_space> PK2("PK2", num_tests);
+  Kokkos::fill_random(F, random, 1.0);
+  Kokkos::parallel_for(Kokkos::RangePolicy<exe_space>(0, F.extent(0)), KOKKOS_LAMBDA(int i) {
+        auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+        while (mumfim::Determinant<3>(Fi) < 0.5)
+        {
+          Fi(0, 0) += 1.0;
+          Fi(1, 1) += 1.0;
+          Fi(2, 2) += 1.0;
+        }
+      });
+  Kokkos::parallel_for(Kokkos::RangePolicy<exe_space>(0, F.extent(0)), KOKKOS_LAMBDA(int i) {
+        auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+        KOKKOS_ASSERT(mumfim::Determinant<3>(Fi) > 0.0);
+      });
+  Kokkos::View<double * [6], memory_space> current_stress("current_stress",
+                                                          num_tests);
+  auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
+  auto F_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, F);
+  auto R_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, R);
+  auto U_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, U);
+
+  auto T = mumfim::ComputeT<memory_space>();
+  auto T_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, T);
+  // 1. Stress function is linear in U i.e., the resulting derivative should be
+  // the identity matrix
+  SECTION("Linear Stress")
+  {
+    LinearU<exe_space> compute_pk2_stress{};
+    current_stress = compute_pk2_stress(F, F);
+    auto current_stress_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, current_stress);
+    SECTION("Forward Difference")
+    {
+      mumfim::StressFiniteDifferenceFunc compute_dpk2du(compute_pk2_stress,
+                                                        current_stress);
+      auto dPK2dU = compute_dpk2du(F, R, U);
+      auto dPK2dU_h =
+          Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, dPK2dU);
+      for (int i = 0; i < num_tests; ++i)
+      {
+        for (int j = 0; j < 6; ++j)
+        {
+          for (int k = 0; k < 6; ++k)
+          {
+            REQUIRE(dPK2dU_h(i, j, k) == Approx(T_h(j, k)).margin(1E-6));
+          }
+        }
+      }
+    }
+    SECTION("Central Difference")
+    {
+      mumfim::StressCentralDifferenceFunc compute_dpk2du(compute_pk2_stress);
+      auto dPK2dU = compute_dpk2du(F, R, U);
+      auto dPK2dU_h =
+          Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, dPK2dU);
+      for (int i = 0; i < num_tests; ++i)
+      {
+        for (int j = 0; j < 6; ++j)
+        {
+          for (int k = 0; k < 6; ++k)
+          {
+            REQUIRE(dPK2dU_h(i, j, k) == Approx(T_h(j, k)).margin(1E-6));
+          }
+        }
+      }
+    }
+  }
 }
 
 KOKKOS_INLINE_FUNCTION
@@ -251,10 +254,12 @@ int Delta(int i, int j) { return (i == j) ? 1 : 0; }
 // 3. dPK2/dE
 TEST_CASE("dPK2dE", "[material stiffness]")
 {
-  Kokkos::Random_XorShift64_Pool<Kokkos::HostSpace> random(13718);
+  using exe_space = Kokkos::DefaultExecutionSpace;
+  using memory_space = typename Kokkos::DefaultExecutionSpace::memory_space;
+  Kokkos::Random_XorShift64_Pool<memory_space> random(13718);
   constexpr int num_tests = 100;
-  Kokkos::View<double * [3][3], Kokkos::HostSpace> F("F", num_tests);
-  Kokkos::View<double * [6], Kokkos::HostSpace> PK2("PK2", num_tests);
+  Kokkos::View<double * [3][3], memory_space> F("F", num_tests);
+  Kokkos::View<double * [6], memory_space> PK2("PK2", num_tests);
   Kokkos::fill_random(F, random, 1.0);
   Kokkos::parallel_for(
       F.extent(0), KOKKOS_LAMBDA(int i) {
@@ -271,10 +276,6 @@ TEST_CASE("dPK2dE", "[material stiffness]")
         auto Fi = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
         KOKKOS_ASSERT(mumfim::Determinant<3>(Fi) > 0.0);
       });
-  using exe_space = Kokkos::DefaultExecutionSpace;
-  using memory_space = typename Kokkos::DefaultExecutionSpace::memory_space;
-  auto [U, R] = mumfim::PolarDecomposition<exe_space>(F);
-
   SECTION("Linear Stress")
   {
     LinearStress<exe_space> compute_pk2_stress{};

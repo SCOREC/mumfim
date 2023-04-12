@@ -74,12 +74,12 @@ namespace mumfim
   void MandelToVoigt(
       Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
   {
+    auto sr2 = sqrt(2);
     Kokkos::parallel_for(
         "mandel to voigt",
         Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>(
             {0, 0, 0}, {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
         KOKKOS_LAMBDA(int i, int j, int k) {
-          auto sr2 = sqrt(2);
           // lower right
           if (j > 2 && k > 2)
           {
@@ -102,6 +102,7 @@ namespace mumfim
   void VoigtToMandel(
       Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> matrix)
   {
+    auto sr2 = sqrt(2);
     Kokkos::parallel_for(
         "voigt to mandel",
         Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>,
@@ -109,7 +110,6 @@ namespace mumfim
             {0ul, 0ul, 0ul},
             {matrix.extent(0), matrix.extent(1), matrix.extent(2)}),
         KOKKOS_LAMBDA(int i, int j, int k) {
-          auto sr2 = sqrt(2);
           // lower right
           if (j > 2 && k > 2)
           {
@@ -201,7 +201,7 @@ namespace mumfim
     {
       KOKKOS_ASSERT(i < 3 && j < 3);
     }
-    return -1;
+    return 99999999;
   }
 }  // namespace mumfim
 #endif  // MUMFIM_SRC_MUMFIM_MICROSCALE_TENSORUTILITIES_H

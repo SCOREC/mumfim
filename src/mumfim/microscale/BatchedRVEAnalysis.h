@@ -167,7 +167,6 @@ namespace mumfim
     {
       assert(F_increment.extent(0) == analysis_.GetNumRVEs());
       assert(F.extent(0) == analysis_.GetNumRVEs());
-      // FIXME pass in here Fincrement
       Kokkos::deep_copy(F_increment_.d_view, F_increment);
       F_increment_.template modify<exe_space>();
       analysis_.run(F_increment_, stress_, update_coords);

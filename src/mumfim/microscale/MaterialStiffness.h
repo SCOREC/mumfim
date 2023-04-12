@@ -26,10 +26,10 @@ namespace mumfim
     Kokkos::View<Scalar * [6][6], typename ExeSpace::memory_space> M(
         "M", U.extent(0));
     Kokkos::deep_copy(M, 0.0);
+    auto sr2 = sqrt(2.0);
     Kokkos::parallel_for(
         "FillM", Kokkos::RangePolicy<ExeSpace>(0, U.extent(0)),
         KOKKOS_LAMBDA(int i) {
-          auto sr2 = sqrt(2.0);
           auto Mi = Kokkos::subview(M, i, Kokkos::ALL(), Kokkos::ALL());
           Mi(0, 0) = 2 * U(i, 0, 0);
           Mi(0, 4) = sr2 * U(i, 0, 2);
@@ -137,7 +137,6 @@ namespace mumfim
     // auto P = ComputeDiff<ExeSpace>()
     //  TODO COMPUTE P
     Kokkos::View<Scalar * [6][6], memory_space> P = compute_dpk2_dU(F, R, U);
-    Kokkos::fence();
     Kokkos::View<Scalar * [6][6], memory_space> MT("MT", U.extent(0));
     Kokkos::View<Scalar * [6][6], memory_space> D("D", U.extent(0));
     Kokkos::View<Scalar * [6][6], memory_space> PTr("P Transpose", U.extent(0));
@@ -177,7 +176,6 @@ namespace mumfim
                                                                     PTri, Di);
         });
     MandelToVoigt<ExeSpace>(D);
-    Kokkos::fence();
     return D;
   }
 
@@ -297,9 +295,9 @@ namespace mumfim
                     Kokkos::View<Scalar * [3][3], memory_space> U) noexcept
         -> Kokkos::View<Scalar * [6][6], memory_space>
     {
-      assert(F.extent(0) == R.extent(0));
-      assert(R.extent(0) == U.extent(0));
-      assert(R.extent(0) == current_pk2_stress_.extent(0));
+      KOKKOS_ASSERT(F.extent(0) == R.extent(0));
+      KOKKOS_ASSERT(R.extent(0) == U.extent(0));
+      KOKKOS_ASSERT(R.extent(0) == current_pk2_stress_.extent(0));
       Kokkos::View<Scalar * [6][6], memory_space> dPK2dU("dPK2dU", R.extent(0));
       Kokkos::View<Scalar * [3][3], memory_space> probing_F("probe F",
                                                             R.extent(0));
@@ -325,7 +323,10 @@ namespace mumfim
         ComputeFIncrement(F, probing_F, probing_U, probing_F_increment);
         auto updated_stress =
             compute_pk2_stress_(probing_F, probing_F_increment);
-        Kokkos::fence();
+        KOKKOS_ASSERT(updated_stress.extent(0) == U.extent(0));
+        KOKKOS_ASSERT(updated_stress.extent(1) == 6);
+        auto current_pk2_stress_local = current_pk2_stress_;
+        auto h_local = h_;
         Kokkos::parallel_for(
             "finite difference",
             Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>,
@@ -333,7 +334,7 @@ namespace mumfim
                 {0ul, 0ul}, {U.extent(0), 6ul}),
             KOKKOS_LAMBDA(int j, int k) {
               dPK2dU(j, k, i) =
-                  (updated_stress(j, k) - current_pk2_stress_(j, k)) / h_;
+                  (updated_stress(j, k) - current_pk2_stress_local(j, k)) / h_local;
             });
       }
       VoigtToMandel<ExeSpace>(dPK2dU);
@@ -405,7 +406,8 @@ namespace mumfim
         ComputeFIncrement(F, probing_F, probing_U, probing_F_increment);
         auto updated_stress_negative =
             compute_pk2_stress_(probing_F, probing_F_increment);
-        Kokkos::fence();
+        auto h_local = h_;
+        auto current_pk2_stress_local = current_pk2_stress_;
         Kokkos::parallel_for(
             "finite difference",
             Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>,
@@ -413,8 +415,8 @@ namespace mumfim
                 {0ul, 0ul}, {U.extent(0), 6ul}),
             KOKKOS_LAMBDA(int j, int k) {
               dPK2dU(j, k, i) =
-                  (current_pk2_stress_(j, k) - updated_stress_negative(j, k)) /
-                  (2 * h_);
+                  (current_pk2_stress_local(j, k) - updated_stress_negative(j, k)) /
+                  (2 * h_local);
             });
       }
       VoigtToMandel<ExeSpace>(dPK2dU);
