@@ -5,17 +5,10 @@
 #include "KokkosBatched_Gemm_Decl.hpp"
 #include "KokkosBatched_Gemm_Serial_Impl.hpp"
 #include "MicroTypeDefinitions.h"
+#include "TensorUtilities.h"
+#include "ContinuumMechanics.h"
 namespace mumfim
 {
-  template <typename T, typename... Args>
-  KOKKOS_INLINE_FUNCTION auto determinant(Kokkos::View<T[3][3], Args...> matrix)
-  {
-    auto a = matrix(0, 0), b = matrix(0, 1), c = matrix(0, 2);
-    auto d = matrix(1, 0), e = matrix(1, 1), f = matrix(1, 2);
-    auto g = matrix(2, 0), h = matrix(2, 1), i = matrix(2, 2);
-    return a * e * i - a * f * h + b * f * g - b * d * i + c * d * h -
-           c * e * g;
-  }
   // dF is increment in F
   template <typename T, typename... Args>
   auto compute_updated_deformation_gradient(

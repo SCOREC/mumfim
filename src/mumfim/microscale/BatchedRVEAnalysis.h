@@ -6,7 +6,7 @@
 #include <vector>
 #include "MicroFOParams.h"
 #include "mumfim/microscale/MicroTypeDefinitions.h"
-#include "mumfim/microscale/StressConversion.h"
+#include "mumfim/microscale/ContinuumMehcanics.h"
 namespace mumfim
 {
   template <typename Scalar, typename Ordinal, typename ExeSpace>

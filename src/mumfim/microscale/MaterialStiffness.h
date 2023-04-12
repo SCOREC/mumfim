@@ -2,7 +2,7 @@
 #define MUMFIM_SRC_MUMFIM_MICROSCALE_MATERIALSTIFFNESS_H
 #include <mumfim/microscale/MicroTypeDefinitions.h>
 #include <mumfim/microscale/PolarDecomposition.h>
-#include <mumfim/microscale/StressConversion.h>
+#include <mumfim/microscale/ContinuumMechanics.h>
 #include <mumfim/microscale/TensorUtilities.h>
 
 #include <KokkosBatched_Copy_Decl.hpp>
