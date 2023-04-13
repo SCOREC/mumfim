@@ -34,6 +34,8 @@ if(${BUILD_EXTERNAL})
   add_subdirectory(external)
 endif()
 
+option(MUMFIM_ENABLE_ADIOS2 "enable adios2 test cases" OFF)
+
 add_subdirectory(src)
 if(BUILD_TESTS)
   include(CTest)
@@ -41,3 +43,4 @@ if(BUILD_TESTS)
   include(add-mpi-test)
   add_subdirectory(test)
 endif(BUILD_TESTS)
+
