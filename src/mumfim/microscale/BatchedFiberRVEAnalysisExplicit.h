@@ -271,6 +271,7 @@ namespace mumfim
       current_coordinates.template modify<HostMemorySpace>();
       orientation_tensor =
           OrientationTensorType(connectivity, current_coordinates, TEAM_SIZE);
+      FillIdentity(current_deformation_gradient_);
     }
     // FIXME update_coords is true when we are doing a "Full" run and false
     // when we are doing a run to compute the material stiffness.

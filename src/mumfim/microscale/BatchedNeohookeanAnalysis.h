@@ -40,7 +40,7 @@ namespace mumfim
       auto dfmGrds_d = dfmGrds.d_view;
       static_assert(std::is_same_v<decltype(dfmGrds_d), decltype(F)>);
       auto F_updated = compute_updated_deformation_gradient(F, dfmGrds_d);
-      auto left_cauchy_green = compute_left_cauchy_green(F_updated);
+      auto left_cauchy_green = ComputeLeftCauchyGreenDeformation(F_updated);
 
       // to enable copy to device (w/o this ptr)
       auto shear_modulus = shear_modulus_;

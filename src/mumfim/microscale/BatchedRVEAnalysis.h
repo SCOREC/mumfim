@@ -73,7 +73,7 @@ namespace mumfim
     {
     }
 
-    // That way we can work with codes that use either incrementalor total
+    // That way we can work with codes that use either incremental or total
     // approach
     auto operator()(Kokkos::View<Scalar * [3][3], memory_space> F,
                     Kokkos::View<Scalar * [3][3], memory_space> F_increment,

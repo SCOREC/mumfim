@@ -5,10 +5,12 @@
 #include "mumfim/microscale/TensorUtilities.h"
 #include <KokkosBatched_Gemm_Decl.hpp>
 #include <KokkosBatched_Gemm_Serial_Impl.hpp>
-#include "KokkosBatched_Gemm_Decl.hpp"
-#include "KokkosBatched_Gemm_Serial_Impl.hpp"
-#include "KokkosBatched_SetIdentity_Decl.hpp"
-#include "KokkosBatched_SetIdentity_Impl.hpp"
+#include <KokkosBatched_Gemm_Decl.hpp>
+#include <KokkosBatched_Gemm_Serial_Impl.hpp>
+#include <KokkosBatched_SetIdentity_Decl.hpp>
+#include <KokkosBatched_SetIdentity_Impl.hpp>
+#include <KokkosBatched_Copy_Decl.hpp>
+#include <KokkosBatched_Copy_Impl.hpp>
 
 namespace mumfim {
   /**
@@ -60,6 +62,7 @@ namespace mumfim {
   }
   // dF is increment in F
   template <typename T, typename... Args>
+  [[deprecated("Use UpdateDeformationGradient which doesn't require reallocation")]]
   auto compute_updated_deformation_gradient(
       Kokkos::View<T * [3][3], Args...> F,
       Kokkos::View<T * [3][3], Args...> dF) -> Kokkos::View<T * [3][3], Args...>
@@ -81,8 +84,36 @@ namespace mumfim {
         });
     return F_updated;
   }
+  
+  /*
+   * Update the deformation gradient given an increment
+   * This version won't require reallocation of array each call to run
+   * and should be preferred
+   * @param dF increment in deformation gradient
+   * @param W work array that is at least as big as dF
+   * @param F deformation graident to be updated
+   */
   template <typename T, typename... Args>
-  auto compute_left_cauchy_green(Kokkos::View<T * [3][3], Args...> F)
+  void UpdateDeformationGradient(Kokkos::View<T * [3][3], Args...> dF,
+                                 Kokkos::View<T* [3][3], Args...> W,
+                                 Kokkos::View<T * [3][3], Args...> F)
+  {
+    Kokkos::parallel_for(
+        F.extent(0), KOKKOS_LAMBDA(const int i) {
+          using namespace KokkosBatched;
+          auto dF_i = Kokkos::subview(dF, (dF.extent(0) > 1 ? i : 0),
+                                      Kokkos::ALL(), Kokkos::ALL());
+          auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto W_i =
+              Kokkos::subview(W, i, Kokkos::ALL(), Kokkos::ALL());
+          KokkosBatched::SerialCopy<Trans::NoTranspose>(F_i, W_i);
+          SerialGemm<Trans::NoTranspose, Trans::NoTranspose,
+                     Algo::Gemm::Unblocked>::invoke(1.0, dF_i, W_i, 0.0,
+                                                    F_i);
+        });
+  }
+  template <typename T, typename... Args>
+  auto ComputeLeftCauchyGreenDeformation(Kokkos::View<T * [3][3], Args...> F)
       -> Kokkos::View<T * [3][3], Args...>
   {
     // TODO no initialize
