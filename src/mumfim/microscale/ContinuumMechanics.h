@@ -5,6 +5,10 @@
 #include "mumfim/microscale/TensorUtilities.h"
 #include <KokkosBatched_Gemm_Decl.hpp>
 #include <KokkosBatched_Gemm_Serial_Impl.hpp>
+#include "KokkosBatched_Gemm_Decl.hpp"
+#include "KokkosBatched_Gemm_Serial_Impl.hpp"
+#include "KokkosBatched_SetIdentity_Decl.hpp"
+#include "KokkosBatched_SetIdentity_Impl.hpp"
 
 namespace mumfim {
   /**
@@ -53,6 +57,70 @@ namespace mumfim {
       // convert back to voigt
       MatrixToVoigt(Stressi, StressVoigti);
     });
+  }
+  // dF is increment in F
+  template <typename T, typename... Args>
+  auto compute_updated_deformation_gradient(
+      Kokkos::View<T * [3][3], Args...> F,
+      Kokkos::View<T * [3][3], Args...> dF) -> Kokkos::View<T * [3][3], Args...>
+  {
+    // TODO no initialize
+    Kokkos::View<T * [3][3], Args...> F_updated("F", F.extent(0));
+    Kokkos::parallel_for(
+        F.extent(0), KOKKOS_LAMBDA(const int i) {
+          using namespace KokkosBatched;
+          using namespace Kokkos;
+          auto dF_i = Kokkos::subview(dF, (dF.extent(0) > 1 ? i : 0),
+                                      Kokkos::ALL(), Kokkos::ALL());
+          auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto F_updated_i =
+              Kokkos::subview(F_updated, i, Kokkos::ALL(), Kokkos::ALL());
+          SerialGemm<Trans::NoTranspose, Trans::NoTranspose,
+                     Algo::Gemm::Unblocked>::invoke(1.0, dF_i, F_i, 0.0,
+                                                    F_updated_i);
+        });
+    return F_updated;
+  }
+  template <typename T, typename... Args>
+  auto compute_left_cauchy_green(Kokkos::View<T * [3][3], Args...> F)
+      -> Kokkos::View<T * [3][3], Args...>
+  {
+    // TODO no initialize
+    Kokkos::View<T * [3][3], Args...> left_cauchy_green(
+        "left cauchy green deformation tensor", F.extent(0));
+    Kokkos::parallel_for(
+        F.extent(0), KOKKOS_LAMBDA(const int i) {
+          using namespace KokkosBatched;
+          using namespace Kokkos;
+          auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
+          auto left_cauchy_green_i = Kokkos::subview(
+              left_cauchy_green, i, Kokkos::ALL(), Kokkos::ALL());
+          SerialGemm<Trans::NoTranspose, Trans::Transpose,
+                     Algo::Gemm::Unblocked>::invoke(1.0, F_i, F_i, 0.0,
+                                                    left_cauchy_green_i);
+        });
+    return left_cauchy_green;
+  }
+  template<typename ViewT>
+  auto FillIdentity(ViewT view) -> std::enable_if_t<Kokkos::is_view<ViewT>::value && ViewT::rank == 3, void>
+  {
+    KOKKOS_ASSERT(view.extent(1) == 3);
+    KOKKOS_ASSERT(view.extent(2) == 3);
+      Kokkos::parallel_for(Kokkos::RangePolicy<typename ViewT::execution_space>(0, view.extent(0)),
+        KOKKOS_LAMBDA(int i) {
+          auto view_i = Kokkos::subview(view, i, Kokkos::ALL(), Kokkos::ALL());
+          KokkosBatched::SerialSetIdentity::invoke(view_i);
+        });
+
+  }
+  template <typename ViewT>
+  KOKKOS_INLINE_FUNCTION auto ComputeGreenLagrangeStrain(ViewT F,
+                                                         ViewT E) noexcept
+  {
+    KokkosBatched::SerialSetIdentity::invoke(E);
+    KokkosBatched::SerialGemm<
+        KokkosBatched::Trans::Transpose, KokkosBatched::Trans::NoTranspose,
+        KokkosBatched::Algo::Gemm::Unblocked>::invoke(0.5, F, F, -0.5, E);
   }
 
 }

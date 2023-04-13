@@ -412,7 +412,7 @@ TEST_CASE("dPK2dE", "[material stiffness]")
       mumfim::BatchedAnalysisGetPK2StressFunc compute_pk2_stress{analysis};
       // apply the full deformation gradient as the increment
       // in the first timestep
-      auto stress = compute_pk2_stress(F, F, true);
+      compute_pk2_stress(F, F, true);
       mumfim::StressCentralDifferenceFunc dPK2dU_func(compute_pk2_stress, 1E-7);
       auto dPK2dE = mumfim::ComputeDPK2dE<exe_space>(F, dPK2dU_func);
       mumfim::ConvertTLStiffnessToULStiffness<exe_space>(F, dPK2dE);

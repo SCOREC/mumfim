@@ -1,5 +1,6 @@
 #ifndef MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
 #define MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
+#include <Kokkos_Macros.hpp>
 #include <memory>
 #include <vector>
 #include "BatchedRVEAnalysis.h"
@@ -29,6 +30,10 @@ namespace mumfim
   class BatchedFiberRVEAnalysisExplicit
       : public BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>
   {
+    public:
+    using exe_space = ExeSpace;
+    using memory_space = typename ExeSpace::memory_space;
+
     private:
     using LO = LocalOrdinal;
     // the packed types correspond to data which is packed to include multiple
@@ -84,10 +89,9 @@ namespace mumfim
     public:
     BatchedFiberRVEAnalysisExplicit(
         std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks,
-        std::vector<std::shared_ptr<const MicroSolutionStrategy>>
-            solution_strategies)
-        : BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>(
-              fiber_networks.size())
+        std::vector<std::shared_ptr<const MicroSolutionStrategy>> solution_strategies) : 
+         BatchedRVEAnalysis<Scalar,LocalOrdinal,ExeSpace>(fiber_networks.size()),
+         compute_pk2_stress_(*this)
     {
       if (fiber_networks.size() != solution_strategies.size())
       {
@@ -368,7 +372,19 @@ namespace mumfim
       //this->current_stress_.template modify<ExeSpace>();
       this->displacement.template modify<ExeSpace>();
       this->current_volume.template modify<ExeSpace>();
+    }
 
+    virtual void computeMaterialStiffness(
+        Kokkos::DualView<Scalar * [6][6], ExeSpace> C) final
+    {
+      std::cerr<<"ComputeMaterialStiffness hasn't been updated yet\n";
+      std::terminate();
+      //mumfim::StressCentralDifferenceFunc dPK2dU_func(compute_pk2_stress_, 1E-7);
+      //// this zeroing out may not be required...
+      //Kokkos::deep_copy(C.d_view, 0);
+      //mumfim::ComputeDPK2dE<exe_space>(current_deformation_gradient_, dPK2dU_func, C.d_view);
+      //mumfim::ConvertTLStiffnessToULStiffness<exe_space>(current_deformation_gradient_, C.d_view);
+      //C.modify_device();
     }
     void compute3DOrientationTensor(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
@@ -381,6 +397,9 @@ namespace mumfim
     {
       orientation_tensor.compute2D(normal, omega);
     }
+    // TODO make FD be able to take member function pointer
+    BatchedAnalysisGetPK2StressFunc<BatchedFiberRVEAnalysisExplicit> compute_pk2_stress_;
+    Kokkos::View<Scalar* [3][3], typename ExeSpace::memory_space> current_deformation_gradient_;
   };
 }  // namespace mumfim
 #endif
