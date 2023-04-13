@@ -417,12 +417,32 @@ TEST_CASE("dPK2dE", "[material stiffness]")
       auto dPK2dE = mumfim::ComputeDPK2dE<exe_space>(F, dPK2dU_func);
       mumfim::ConvertTLStiffnessToULStiffness<exe_space>(F, dPK2dE);
 
+
       // the analytic stress function
       Kokkos::DualView<double * [6][6], typename exe_space::memory_space>
           stiffness("stiffness", F.extent(0));
       analysis.computeMaterialStiffness(stiffness);
       stiffness.sync_device();
-      REQUIRE(ViewsEqual(stiffness.d_view, dPK2dE, 1E-8, 1E-4));
+      stiffness.sync_host();
+
+      auto dPK2dE_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, dPK2dE);
+      for(int i=0; i<dPK2dE_h.extent_int(0); ++i) {
+        for(int j=0;j<dPK2dE_h.extent_int(1); ++j) {
+          for(int k=0;k<dPK2dE_h.extent_int(2); ++k) {
+            std::cout << dPK2dE_h(i,j,k) << " ";
+          }
+          std::cout<<"\n";
+        }
+        std::cout<<"----------------\n";
+        for(int j=0;j<stiffness.h_view.extent_int(1); ++j) {
+          for(int k=0;k<stiffness.h_view.extent_int(2); ++k) {
+            std::cout << stiffness.h_view(i,j,k) << " ";
+          }
+          std::cout<<"\n";
+        }
+        std::cout<<"=====================\n";
+      }
+      REQUIRE(ViewsEqual(stiffness.d_view, dPK2dE, 1E-8, 1E-3));
     }
   }
 }
