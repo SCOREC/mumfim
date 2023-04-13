@@ -55,7 +55,7 @@ namespace mumfim
       omega.template modify<Kokkos::HostSpace>();
       Kokkos::deep_copy(omega.h_view, 0);
     }
-    Ordinal GetNumRVEs() const { return this->num_rves_; }
+    size_t GetNumRVEs() const { return this->num_rves_; }
     // RVEAnalysis(const RVEAnalysis & an);
     // RVEAnalysis();
   };

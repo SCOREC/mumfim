@@ -19,6 +19,7 @@ namespace mumfim
                               Scalar poissons_ratio)
         : BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>(num_rves)
         , F("f", num_rves)
+        , F_updated("f_updated", num_rves)
         , shear_modulus_(youngs_modulus / (2.0 * (1.0 + poissons_ratio)))
         , lambda_((2.0 * shear_modulus_ * poissons_ratio) /
                   (1.0 - 2.0 * poissons_ratio))
@@ -39,7 +40,7 @@ namespace mumfim
       dfmGrds.sync_device();
       auto dfmGrds_d = dfmGrds.d_view;
       static_assert(std::is_same_v<decltype(dfmGrds_d), decltype(F)>);
-      auto F_updated = compute_updated_deformation_gradient(F, dfmGrds_d);
+      UpdateDeformationGradient(dfmGrds_d, F, F_updated);
       auto left_cauchy_green = ComputeLeftCauchyGreenDeformation(F_updated);
 
       // to enable copy to device (w/o this ptr)
@@ -112,6 +113,7 @@ namespace mumfim
     // explicitly specify voids in F for template matching. Eventually functions
     // should be fixed to not require this...
     Kokkos::View<Scalar * [3][3], ExeSpace, void, void> F;
+    Kokkos::View<Scalar * [3][3], ExeSpace, void, void> F_updated;
     Scalar shear_modulus_;
     Scalar lambda_;
   };

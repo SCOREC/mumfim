@@ -93,23 +93,32 @@ namespace mumfim {
    * @param W work array that is at least as big as dF
    * @param F deformation graident to be updated
    */
-  template <typename T, typename... Args>
-  void UpdateDeformationGradient(Kokkos::View<T * [3][3], Args...> dF,
-                                 Kokkos::View<T* [3][3], Args...> W,
-                                 Kokkos::View<T * [3][3], Args...> F)
+  template <typename ViewT, typename ViewT2>
+  void UpdateDeformationGradient(ViewT dF,
+                                 ViewT2 F,
+                                 ViewT2 F_new)
   {
+    static_assert(ViewT::rank == 3, "ViewT must be rank 3");
+    static_assert(ViewT::rank_dynamic == 1, "ViewT must have dynamic rank 1");
+    static_assert(ViewT::static_extent(1) == 3);
+    static_assert(ViewT::static_extent(2) == 3);
+    static_assert(ViewT2::rank == 3, "ViewT must be rank 3");
+    static_assert(ViewT2::rank_dynamic == 1, "ViewT must have dynamic rank 1");
+    static_assert(ViewT2::static_extent(1) == 3);
+    static_assert(ViewT2::static_extent(2) == 3);
+    KOKKOS_ASSERT(dF.extent(0) == F.extent(0) || dF.extent(0) == 1);
+    KOKKOS_ASSERT(F.extent(0) == F_new.extent(0));
     Kokkos::parallel_for(
         F.extent(0), KOKKOS_LAMBDA(const int i) {
           using namespace KokkosBatched;
           auto dF_i = Kokkos::subview(dF, (dF.extent(0) > 1 ? i : 0),
                                       Kokkos::ALL(), Kokkos::ALL());
           auto F_i = Kokkos::subview(F, i, Kokkos::ALL(), Kokkos::ALL());
-          auto W_i =
-              Kokkos::subview(W, i, Kokkos::ALL(), Kokkos::ALL());
-          KokkosBatched::SerialCopy<Trans::NoTranspose>(F_i, W_i);
+          auto F_new_i =
+              Kokkos::subview(F_new, i, Kokkos::ALL(), Kokkos::ALL());
           SerialGemm<Trans::NoTranspose, Trans::NoTranspose,
-                     Algo::Gemm::Unblocked>::invoke(1.0, dF_i, W_i, 0.0,
-                                                    F_i);
+                     Algo::Gemm::Unblocked>::invoke(1.0, dF_i, F_i, 0.0,
+                                                    F_new_i);
         });
   }
   template <typename T, typename... Args>
