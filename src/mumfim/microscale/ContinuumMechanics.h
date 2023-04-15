@@ -64,9 +64,10 @@ namespace mumfim {
   template <typename T, typename... Args>
   [[deprecated("Use UpdateDeformationGradient which doesn't require reallocation")]]
   auto compute_updated_deformation_gradient(
-      Kokkos::View<T * [3][3], Args...> F,
-      Kokkos::View<T * [3][3], Args...> dF) -> Kokkos::View<T * [3][3], Args...>
+      Kokkos::View<T * [3][3], Args...> dF,
+      Kokkos::View<T * [3][3], Args...> F) -> Kokkos::View<T * [3][3], Args...>
   {
+    KOKKOS_ASSERT(dF.extent(0) == F.extent(0));
     // TODO no initialize
     Kokkos::View<T * [3][3], Args...> F_updated("F", F.extent(0));
     Kokkos::parallel_for(

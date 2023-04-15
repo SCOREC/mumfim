@@ -105,6 +105,7 @@ namespace mumfim
                                       fiber_networks.size())
         , previous_deformation_gradient_("trial_deformation_gradient",
                                          fiber_networks.size())
+        , PK2_stress_("PK2", fiber_networks.size())
     {
       if (fiber_networks.size() != solution_strategies.size())
       {
@@ -307,6 +308,8 @@ namespace mumfim
         Kokkos::deep_copy(trial_volume, current_volume);
         updateVolume<ExeSpace>(deformation_gradients, trial_volume);
         deformation_gradients.sync_device();
+        // deformation_gradients.d_view is the incremental deformation. Should
+        // refactor the name...
         UpdateDeformationGradient(deformation_gradients.d_view,
                                   current_deformation_gradient_,
                                   trial_deformation_gradient_);
@@ -406,15 +409,19 @@ namespace mumfim
       // TODO: don't take a copy of the stress and make this a member function
       // that way the "current_stress_" will get updated as a reference when
       // the coordinates are updated
+      
       this->current_stress_.sync_device();
+      Kokkos::deep_copy(PK2_stress_, this->current_stress_.d_view);
+      // Note! current stress is cauchy, but...it needs to be in ***PK2***
+      ConvertCauchyToPK2<ExeSpace>(previous_deformation_gradient_, PK2_stress_);
       mumfim::StressFiniteDifferenceFunc dPK2dU_func(
-          compute_pk2_stress_, this->current_stress_.d_view, 1E-7);
+          compute_pk2_stress_, PK2_stress_, 1E-5);
       // this zeroing out may not be required...
       // TODO: rather than returning the array take the C array as an argument
       auto dPK2dE = mumfim::ComputeDPK2dE<exe_space>(
-          current_deformation_gradient_, dPK2dU_func);
+          previous_deformation_gradient_, dPK2dU_func);
       mumfim::ConvertTLStiffnessToULStiffness<exe_space>(
-          current_deformation_gradient_, dPK2dE);
+          previous_deformation_gradient_, dPK2dE);
       Kokkos::deep_copy(C.d_view, dPK2dE);
       C.modify_device();
     }
@@ -441,6 +448,8 @@ namespace mumfim
         previous_deformation_gradient_;
     Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space>
         trial_deformation_gradient_;
+    Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>
+        PK2_stress_;
   };
 }  // namespace mumfim
 #endif
