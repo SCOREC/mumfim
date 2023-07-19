@@ -25,22 +25,29 @@ if(DOXYGEN_FOUND)
                     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                     COMMENT "Generating API documentation with doxygen." VERBATIM)
-endif()
+endif ()
 
 find_package(SCOREC CONFIG REQUIRED)
 
 option(BUILD_EXTERNAL "build external libs with fetch content (except scorec)" ON)
-if(${BUILD_EXTERNAL})
+if (${BUILD_EXTERNAL})
   add_subdirectory(external)
-endif()
+endif ()
 
 option(MUMFIM_ENABLE_ADIOS2 "enable adios2 test cases" OFF)
+option(MUMFIM_ENABLE_Torch "enable PyTorch material model" OFF)
+if (MUMFIM_ENABLE_Torch)
+  find_package(Torch REQUIRED)
+  message("TORCH_CXX_FLAGS=${TORCH_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+endif ()
+
 
 add_subdirectory(src)
-if(BUILD_TESTS)
+if (BUILD_TESTS)
   include(CTest)
   enable_testing()
   include(add-mpi-test)
   add_subdirectory(test)
-endif(BUILD_TESTS)
+endif (BUILD_TESTS)
 
