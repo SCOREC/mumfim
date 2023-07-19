@@ -101,13 +101,14 @@ namespace mumfim
         throw material_error{
             "Tensor4ToVoigt only works for 5D tensors with nx3x3x3x3 shapes"};
     }
-    if (!torch::allclose(tensor, torch::transpose(tensor, 1, 2), 1E-4) ||
-        !torch::allclose(tensor, torch::transpose(tensor, 2, 3), 1E-4))
-    {
-      // throw material_error{"Tensor4ToVoigt only works for symmetric
-      // tensors"};
-      std::cerr << "Warning: Tensor4ToVoigt called with non symmetric tensor\n";
-    }
+    // if (!torch::allclose(tensor, torch::transpose(tensor, 1, 2), 1E-4) ||
+    //     !torch::allclose(tensor, torch::transpose(tensor, 2, 3), 1E-4))
+    //{
+    //   // throw material_error{"Tensor4ToVoigt only works for symmetric
+    //   // tensors"};
+    //   //std::cerr << "Warning: Tensor4ToVoigt called with non symmetric
+    //   tensor\n";
+    // }
     auto voigt_tensor = torch::zeros({tensor_shapes[0], 6, 6});
     for (int i = 0; i < 6; ++i)
     {
@@ -408,8 +409,12 @@ namespace mumfim
     try
     {
       ApfMatrixToTorchTensor(deformation_gradient, deformation_gradient_tensor);
+      // we set requires_grad to false because we do in place tensor operations
+      inputs[0].toTensor().set_requires_grad(false);
       ComputeRightCauchyGreen(deformation_gradient_tensor,
                               inputs[0].toTensor());
+      // set requires_grad to true so we can take derivatives w.r.t. right
+      // cauchy green deformation tensor
       inputs[0].toTensor().set_requires_grad(true);
       auto energy = model.forward(inputs).toTensor();
       auto [cauchy_stress, stiffness] = ComputeCauchyStressStiffness(
