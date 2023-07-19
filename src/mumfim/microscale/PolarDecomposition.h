@@ -6,7 +6,7 @@
 #include <KokkosBatched_Gemv_Serial_Impl.hpp>
 #include <KokkosBatched_SVD_Decl.hpp>
 #include <KokkosBatched_Set_Decl.hpp>
-#include <KokkosBatched_Set_Impl.hpp>
+// #include <KokkosBatched_Set_Impl.hpp>
 #include <Kokkos_Core.hpp>
 #include <KokkosBatched_Copy_Decl.hpp>
 #include <KokkosBatched_Copy_Impl.hpp>

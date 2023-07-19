@@ -1,8 +1,8 @@
 #ifndef MUMFIM_SRC_MUMFIM_MICROSCALE_MATERIALSTIFFNESS_H
 #define MUMFIM_SRC_MUMFIM_MICROSCALE_MATERIALSTIFFNESS_H
+#include <mumfim/microscale/ContinuumMechanics.h>
 #include <mumfim/microscale/MicroTypeDefinitions.h>
 #include <mumfim/microscale/PolarDecomposition.h>
-#include <mumfim/microscale/ContinuumMechanics.h>
 #include <mumfim/microscale/TensorUtilities.h>
 
 #include <KokkosBatched_Copy_Decl.hpp>
@@ -12,7 +12,8 @@
 #include <KokkosBatched_LU_Decl.hpp>
 #include <KokkosBatched_LU_Team_Impl.hpp>
 #include <KokkosBatched_Scale_Decl.hpp>
-#include <KokkosBatched_Scale_Impl.hpp>
+#include <KokkosBlas1_scal.hpp>
+// #include <KokkosBatched_Scale_Impl.hpp>
 #include <KokkosBatched_SolveLU_Decl.hpp>
 #include <Kokkos_Core.hpp>
 
@@ -55,7 +56,7 @@ namespace mumfim
           Mi(5, 3) = U(i, 0, 2);
           Mi(5, 4) = U(i, 1, 2);
           Mi(5, 5) = U(i, 0, 0) + U(i, 1, 1);
-          KokkosBatched::SerialScale::invoke(0.5, Mi);
+          KokkosBlas::SerialScale::invoke(0.5, Mi);
         });
     return M;
   }
@@ -484,7 +485,7 @@ namespace mumfim
               }
             }
           }
-          KokkosBatched::SerialScale::invoke(1.0 / Determinant<3>(Fi), Ci);
+          KokkosBlas::SerialScale::invoke(1.0 / Determinant<3>(Fi), Ci);
         });
     Kokkos::deep_copy(D, C);
   }

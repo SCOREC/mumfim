@@ -47,8 +47,10 @@ TEST_CASE("Polar Decomposition") {
         std::cout << U0(i, j) << " ";
         if (i == j) {
           REQUIRE(result(i, j) == Approx(1.0));
-        } else {
-          REQUIRE(result(i, j) == Approx(0.0));
+        } else
+        {
+          // add margin because test fails on macos with 0.0 != -0.0
+          REQUIRE(result(i, j) == Approx(0.0).margin(1e-16));
         }
       }
       std::cout<<"\n";
