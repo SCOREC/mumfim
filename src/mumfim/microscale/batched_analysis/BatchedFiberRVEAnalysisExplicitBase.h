@@ -5,6 +5,7 @@
 #include <limits>
 #include "mumfim/microscale/PackedData.h"
 #include "mumfim/microscale/RVE.h"
+#include "mumfim/microscale/TensorUtilities.h"
 namespace mumfim
 {
   template <typename ExeSpace,
@@ -125,15 +126,9 @@ namespace mumfim
     stress.template modify<ExeSpace>();
   }
   template <typename ExeSpace, typename T1, typename T2>
-  void updateVolume(T1 deformation_gradients, T2 current_volume)
+  void updateVolume(T1 deformation_gradients_d, T2 current_volume_d)
   {
-    deformation_gradients.template sync<ExeSpace>();
-    current_volume.template sync<ExeSpace>();
-    current_volume.template modify<ExeSpace>();
-    auto deformation_gradients_d =
-        deformation_gradients.template view<ExeSpace>();
-    auto current_volume_d = current_volume.template view<ExeSpace>();
-    if (deformation_gradients.extent(0) != current_volume.extent(0))
+    if (deformation_gradients_d.extent(0) != current_volume_d.extent(0))
     {
       std::cerr << "The volume and deformation gradients must have the same "
                    "extent corresponding to the number of RVEs."
@@ -145,10 +140,7 @@ namespace mumfim
         KOKKOS_LAMBDA(const int i) {
           auto dg = Kokkos::subview(deformation_gradients_d, i, Kokkos::ALL(),
                                     Kokkos::ALL());
-          // the jacobian
-          auto J = dg(0, 0) * (dg(1, 1) * dg(2, 2) - dg(1, 2) * dg(2, 1)) -
-                   dg(0, 1) * (dg(1, 0) * dg(2, 2) - dg(1, 2) * dg(2, 0)) +
-                   dg(0, 2) * (dg(1, 0) * dg(2, 1) - dg(1, 1) * dg(2, 0));
+          auto J = Determinant<3>(dg);
           current_volume_d(i) = J * current_volume_d(i);
         });
   }
@@ -169,6 +161,20 @@ namespace mumfim
     Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
     // elastic_modulus * area
     return length_ratio * elastic_modulus * area * green_strain;
+  }
+  template <typename Scalar>
+  KOKKOS_FORCEINLINE_FUNCTION Scalar
+  getLinearReactionStiffness(Scalar orig_length,
+                         Scalar length,
+                         Scalar elastic_modulus,
+                         Scalar area
+                         )
+  {
+    Scalar length_ratio = length / orig_length;
+    Scalar green_strain = 1.0 / 2.0 * (length_ratio * length_ratio - 1);
+
+    return elastic_modulus * area / orig_length *
+                    (green_strain + length_ratio * length_ratio);
   }
   template <typename Derived,
             typename Scalar,
@@ -268,6 +274,7 @@ namespace mumfim
         // degrees of freedom
         Scalar local_residual = -f_int(i,j);
         f(i,j) = local_residual - f_damp;
+				local_residual += f_damp;
         residual += local_residual*local_residual;
       }
       return residual;

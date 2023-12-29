@@ -14,6 +14,7 @@ namespace mumfim
     Scalar fiber_density; // (3)
     Scalar dt_crit; // (4)
     Scalar residual; // (5)
+		Scalar initial_residual;
     Scalar dt_nphalf; // (6)
     Ordinal step;
   };
@@ -66,7 +67,7 @@ namespace mumfim
           TeamOuterLoop::getElementLength(i, coords, connectivity, l0);
           min_reducer.join(local, l0(i));
         }, min_reducer);
-        // might need a barrier here...
+        team.team_barrier();
         if(team.team_rank() == 0)
         {
           Scalar sound_speed = sqrt(scratch(0).fiber_elastic_modulus / scratch(0).fiber_density);
@@ -126,6 +127,7 @@ namespace mumfim
                   TeamOuterLoop::getForceLoop3(i, mass_matrix, v, f_int, f,viscous_damping_coefficient);
             },
             residual);
+        team.team_barrier();
         Kokkos::single(Kokkos::PerTeam(team), [=]()
         {
           scratch(0).residual = sqrt(residual);
@@ -173,11 +175,13 @@ namespace mumfim
          }
       });
     }
+		typedef Kokkos::MinMax<double> reducer_type;
+		typedef reducer_type::value_type value_type;
     // note ever function we call has been hand tuned to reduce regsiter count so we
     // lie at the 64 reg boundary (so we can acheive 50% occupancy). Please verify
     // that you are not incraseing the reg count using the --resource-usage flag
     // when modifying this code!
-    template <typename T1, typename T2, typename T3, typename T4, typename T5>
+    template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
     static bool run(Ordinal num_rves,
                     ConnectivityType connectivity,
                     T1 original_coordinates,
@@ -195,6 +199,7 @@ namespace mumfim
                     T4 viscous_damping_coefficient,
                     T4 /*critical_time_scale_factor*/,
                     T5 displacement_boundary_vert,
+                    T6 strain_energy,
                     Ordinal num_threads)
     {
       using OuterPolicyType = Kokkos::TeamPolicy<ExeSpace, Kokkos::IndexType<Ordinal>, Kokkos::Schedule<Kokkos::Static>>;
@@ -336,7 +341,67 @@ namespace mumfim
                     displacement_boundary_vert_row.extent(0));
             //  need ot have a barrier
             //  to make sure any scratch data has come in properly
+            /*
             team_member.team_barrier();
+            value_type init_force_minmax;
+            value_type init_internal_force_minmax;
+            value_type init_velocity_minmax;
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = force_total_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(init_force_minmax));
+
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = force_internal_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(init_internal_force_minmax));
+
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = velocity_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(init_velocity_minmax));
+            if(team_member.team_rank() == 0)
+            {
+							printf("xxx START xxxxxxx\n");
+              printf("network: %d, residual: %.4e, total forces: (%.4e, %.4e), internal total forces: (%.4e, %.4e), velocity: (%.4e, %.4e) \n", i, scratch(0).residual, init_force_minmax.min_val, init_force_minmax.max_val, init_internal_force_minmax.min_val, init_internal_force_minmax.max_val, init_velocity_minmax.min_val, init_velocity_minmax.max_val);
+						  printf("---------------\n");
+            }
+            */
+
+
             do
             {
               // Kokkos::single was causing an extra 5 registers here! (sm_70)
@@ -366,9 +431,78 @@ namespace mumfim
               team_member.team_barrier();
               if(team_member.team_rank() == 0)
               {
+								if(scratch(0).step == 0) {
+									scratch(0).initial_residual = scratch(0).residual;
+								}
+								//if(scratch(0).step %10000 == 0) {
+								//	printf("Step: %d, %.4e\n", scratch(0).step, scratch(0).residual);
+								//}
                 ++scratch(0).step;
               }
-            } while (scratch(0).residual > 1E-6);
+							team_member.team_barrier();
+						// internal forces should reduce by 6 orders of magnitude
+            //} while ((scratch(0).residual/scratch(0).initial_residual) > 1E-6);
+            } while (scratch(0).residual > 1E-10);
+            // DEBUG STUFF...
+            //
+            /*
+            value_type force_minmax;
+            value_type internal_force_minmax;
+            value_type velocity_minmax;
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = force_total_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(force_minmax));
+
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = force_internal_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(internal_force_minmax));
+
+						Kokkos::parallel_reduce(free_vert_policy, 
+								[=] (const int& m, value_type& thread_minmax) {
+							for(int j=0; j<3; ++j) {
+								double val = velocity_row(m,j);
+								
+								// Check whether this is a new minimum or maximum value
+								if(val < thread_minmax.min_val) {
+									thread_minmax.min_val = val;
+								}
+								if(val > thread_minmax.max_val) {
+									thread_minmax.max_val = val;
+								}
+							}
+
+						}, reducer_type(velocity_minmax));
+            
+            
+            if(team_member.team_rank() == 0)
+            {
+              printf("step: %d, residual: (%.4e,%.4e) total forces: (%.4e, %.4e), internal total forces: (%.4e, %.4e), velocity: (%.4e, %.4e) \n", scratch(0).step, scratch(0).residual, scratch(0).initial_residual, force_minmax.min_val, force_minmax.max_val, internal_force_minmax.min_val, internal_force_minmax.max_val, velocity_minmax.min_val, velocity_minmax.max_val);
+            }
+            */
           });
       // Finalize Data
       Kokkos::parallel_for("FinalizeData",
@@ -431,6 +565,17 @@ namespace mumfim
                   }
               });
             team_member.team_barrier();
+						double energy = 0;
+						Kokkos::parallel_reduce(element_policy, 
+								[=] (const int& m, double& local_energy) {
+							double dx = current_length_row(m)-original_length_row(m);
+							local_energy += 0.5*getLinearReactionStiffness(original_length_row(m), current_length_row(m), scratch(0).fiber_elastic_modulus, scratch(0).fiber_area)*dx*dx;
+						}, energy);
+						team_member.team_barrier();
+						if(team_member.team_rank() == 0)
+						{
+							strain_energy(i) = energy;
+						}
           });
 
       return true;

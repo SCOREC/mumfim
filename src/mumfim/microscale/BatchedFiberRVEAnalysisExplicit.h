@@ -9,7 +9,6 @@
 #include "MicroFOParams.h"
 #include "MicroTypeDefinitions.h"
 #include "PackedData.h"
-// #include "bioBatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
 #include <apf.h>
 #include <apfMesh.h>          // for count owned
 #include <apfMeshIterator.h>  // iterator for RVE Functions
@@ -22,6 +21,7 @@
 #include "mumfim/microscale/MaterialStiffness.h"
 #include "mumfim/microscale/batched_analysis/BatchedComputeOrientationTensor.h"
 #include "mumfim/microscale/batched_analysis/BatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
+#include "mumfim/microscale/batched_analysis/BatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
 #include "mumfim/microscale/batched_analysis/BatchedMesh.h"
 #include "mumfim/microscale/batched_analysis/BatchedReorderMesh.h"
 
@@ -85,9 +85,10 @@ namespace mumfim
     // PackedScalarType energy_check_epsilon;
     // Boundary Condition data
     OrdinalVertDataType displacement_boundary_vert;
-    Kokkos::DualView<Scalar *, ExeSpace> current_volume;
+    Kokkos::DualView<Scalar *, ExeSpace> original_volume;
     Kokkos::DualView<Scalar *, ExeSpace> trial_volume;
     Kokkos::DualView<Scalar *, ExeSpace> scale_factor;
+    Kokkos::View<Scalar*, ExeSpace> strain_energy;
     std::vector<RVE> rves;
     OrientationTensorType orientation_tensor;
 
@@ -138,15 +139,16 @@ namespace mumfim
       rves.reserve(fiber_networks.size());
       boundary_verts.reserve(boundary_verts.size());
       ///////////////////
-      current_volume = Kokkos::DualView<Scalar *, ExeSpace>(
-          "current_volume", fiber_networks.size());
-      deep_copy(current_volume.template view<ExeSpace>(), 1.0);
-      current_volume.template modify<ExeSpace>();
+      original_volume = Kokkos::DualView<Scalar *, ExeSpace>(
+          "original_volume", fiber_networks.size());
+      deep_copy(original_volume.template view<ExeSpace>(), 1.0);
+      original_volume.template modify<ExeSpace>();
       //////////////////
       trial_volume = Kokkos::DualView<Scalar *, ExeSpace>(
           "trial_volume", fiber_networks.size());
       deep_copy(trial_volume.template view<ExeSpace>(), 1.0);
       trial_volume.template modify<ExeSpace>();
+      strain_energy = Kokkos::View<Scalar*, ExeSpace>("strain_energy", fiber_networks.size());
       //////////////////
       scale_factor = Kokkos::DualView<Scalar *, ExeSpace>(
           "scale_factor", fiber_networks.size());
@@ -298,15 +300,13 @@ namespace mumfim
     {
       displacement.template sync<ExeSpace>();
       trial_displacement.template modify<ExeSpace>();
-      current_volume.template sync<ExeSpace>();
+      original_volume.template sync<ExeSpace>();
       trial_volume.template modify<ExeSpace>();
       displacement.template modify<ExeSpace>();
       if (update_coords)
       {
         Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
                           displacement.template getAllRows<ExeSpace>());
-        Kokkos::deep_copy(trial_volume, current_volume);
-        updateVolume<ExeSpace>(deformation_gradients, trial_volume);
         deformation_gradients.sync_device();
         // deformation_gradients.d_view is the incremental deformation. Should
         // refactor the name...
@@ -325,6 +325,8 @@ namespace mumfim
                                   previous_deformation_gradient_,
                                   trial_deformation_gradient_);
       }
+      Kokkos::deep_copy(trial_volume.d_view, 1.0);
+      updateVolume<ExeSpace>(trial_deformation_gradient_, trial_volume.d_view);
 
       original_coordinates.template sync<ExeSpace>();
       current_coordinates.template sync<ExeSpace>();
@@ -362,7 +364,15 @@ namespace mumfim
           trial_displacement, velocity, force_total, force_internal, nodal_mass,
           original_length, current_length, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_vert, TEAM_SIZE);
+          critical_time_scale_factor, displacement_boundary_vert, strain_energy, TEAM_SIZE);
+      force_internal.template modify<ExeSpace>();
+      velocity.template modify<ExeSpace>();
+      //auto result = SerialOuterLoop<Scalar, LO, ExeSpace>::run(
+      //    rves.size(), connectivity, original_coordinates, current_coordinates,
+      //    trial_displacement, velocity, force_total, force_internal, nodal_mass,
+      //    original_length, current_length, fiber_elastic_modulus, fiber_area,
+      //    fiber_density, viscous_damping_coefficient,
+      //    critical_time_scale_factor, displacement_boundary_vert, TEAM_SIZE);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_vert,
                                     current_coordinates, force_internal, sigma,
@@ -391,8 +401,6 @@ namespace mumfim
       // the EXE Space.
       this->trial_volume.template sync<ExeSpace>();
       this->prev_displacement.template sync<ExeSpace>();
-      Kokkos::deep_copy(this->current_volume.template view<ExeSpace>(),
-                        this->trial_volume.template view<ExeSpace>());
       Kokkos::deep_copy(
           this->displacement.template getAllRows<ExeSpace>(),
           this->prev_displacement.template getAllRows<ExeSpace>());
@@ -400,7 +408,6 @@ namespace mumfim
                         previous_deformation_gradient_);
       // this->current_stress_.template modify<ExeSpace>();
       this->displacement.template modify<ExeSpace>();
-      this->current_volume.template modify<ExeSpace>();
     }
 
     virtual void computeMaterialStiffness(
@@ -414,8 +421,9 @@ namespace mumfim
       Kokkos::deep_copy(PK2_stress_, this->current_stress_.d_view);
       // Note! current stress is cauchy, but...it needs to be in ***PK2***
       ConvertCauchyToPK2<ExeSpace>(previous_deformation_gradient_, PK2_stress_);
-      mumfim::StressFiniteDifferenceFunc dPK2dU_func(
-          compute_pk2_stress_, PK2_stress_, 1E-5);
+      //mumfim::StressFiniteDifferenceFunc dPK2dU_func(
+      //    compute_pk2_stress_, PK2_stress_, 1E-5);
+      mumfim::StressCentralDifferenceFunc dPK2dU_func(compute_pk2_stress_, 1E-7);
       // this zeroing out may not be required...
       // TODO: rather than returning the array take the C array as an argument
       auto dPK2dE = mumfim::ComputeDPK2dE<exe_space>(
@@ -437,6 +445,27 @@ namespace mumfim
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
     {
       orientation_tensor.compute2D(normal, omega);
+    }
+    ConnectivityType GetConnectivityArray() {
+      return connectivity;
+    }
+    DofDataType GetCoordinates() {
+      return current_coordinates;
+    }
+    DofDataType GetDisplacement() {
+      return trial_displacement;
+    }
+    DofDataType GetVelocity() {
+      return velocity;
+    }
+    DofDataType GetForce() {
+      return force_internal;
+    }
+    auto GetVolume() {
+      return trial_volume;
+    }
+    auto GetStrainEnergy() {
+      return strain_energy;
     }
 
     private:
