@@ -568,8 +568,20 @@ namespace mumfim
 						double energy = 0;
 						Kokkos::parallel_reduce(element_policy, 
 								[=] (const int& m, double& local_energy) {
-							double dx = current_length_row(m)-original_length_row(m);
-							local_energy += 0.5*getLinearReactionStiffness(original_length_row(m), current_length_row(m), scratch(0).fiber_elastic_modulus, scratch(0).fiber_area)*dx*dx;
+
+              // strain energy based on the "linear" case which is linear between
+              // PK2 and E, not f and l!
+              // Note: PK2 = Y*E, U = \int \sigma dE = \int Y E dE
+              // Since Y = const, U = Y/2 * E^2
+              double l = current_length_row(m);
+              double l0 = original_length_row(m);
+              double lambda = l/l0;
+              double E = 0.5*(lambda*lambda - 1);
+              double Y = scratch(0).fiber_elastic_modulus;
+              // should use l0 since energy density per undeformed volume
+              double volume = scratch(0).fiber_area*l0;
+              // sum the total energy (strain energy density * V
+              local_energy += 0.5*Y*E*E*volume;
 						}, energy);
 						team_member.team_barrier();
 						if(team_member.team_rank() == 0)
