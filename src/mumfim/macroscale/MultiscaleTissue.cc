@@ -177,8 +177,8 @@ namespace mumfim
     AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int ip)
                               { return getIntegrator(me, ip); }, current_coords);
 
-    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
-                              { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
+    //AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
+    //                          { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
 #ifdef LOGRUN
@@ -276,6 +276,8 @@ namespace mumfim
   }
   void MultiscaleTissue::updateRVEExistence()
   {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     std::vector<micro_fo_header> nw_hdrs;
     std::vector<micro_fo_params> nw_prms;
     std::vector<micro_fo_init_data> nw_data;

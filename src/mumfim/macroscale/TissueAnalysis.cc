@@ -1,8 +1,14 @@
 #include "mumfim/macroscale/TissueAnalysis.h"
+#include <amsiPETScLAS.h>
 #include <apf.h>
+#include <petscsnes.h>
 #include <iostream>
+#include "mumfim/exceptions.h"
 #include "mumfim/macroscale/AnalysisIO.h"
 #include "mumfim/macroscale/ModelTraits.h"
+#include "mumfim/macroscale/PetscSNES.h"
+// #define MumfimPetscCall(petsc_error_code) if(petsc_error_code) [[unlikely]] {
+//  throw mumfim::petsc_error(petsc_error_code); }
 namespace mumfim
 {
   TissueAnalysis::TissueAnalysis(apf::Mesh * mesh,
@@ -27,8 +33,6 @@ namespace mumfim
       , state_fn()
   {
     // util data
-    int rnk = -1;
-    MPI_Comm_rank(cm, &rnk);
     const auto * problem_definition =
         mt::GetPrimaryCategoryByType(analysis_case.get(), "problem definition");
     const auto * solution_strategy =
@@ -60,7 +64,8 @@ namespace mumfim
     state_fn =
         amsi::fs->getResultsDir() + "/tissue_state." + cnvrt.str() + ".log";
     state = amsi::activateLog("tissue_efficiency");
-    amsi::log(state) << "STEP, ITER,   T, DESC\n"<< "   0,    0, 0.0, init\n";
+    amsi::log(state) << "STEP, ITER,   T, DESC\n"
+                     << "   0,    0, 0.0, init\n";
 #endif
   }
   void TissueAnalysis::addVolumeTracking(
@@ -68,7 +73,7 @@ namespace mumfim
       const mt::CategoryNode * solution_strategy)
   {
     const auto * track_volume =
-       mt::GetCategoryByType(solution_strategy, "track volume");
+        mt::GetCategoryByType(solution_strategy, "track volume");
     if (track_volume != nullptr)
     {
       for (const auto & tracked_volume : track_volume->GetModelTraitNodes())
@@ -106,79 +111,230 @@ namespace mumfim
   }
   void TissueAnalysis::run()
   {
-    tssu->preRun();
-    tssu->recoverSecondaryVariables(stp);
-    checkpoint();
-    // write the initial state of everything
-    t += dt;
-    tssu->setSimulationTime(t);
-    //logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp, tssu->getUField());
-    tssu->computeInitGuess(las);
-    completed = false;
-    while (!completed)
+    try
     {
-#ifdef LOGRUN
-      amsi::log(state) << stp << ", " << itr->iteration() << ", " << MPI_Wtime()
-                       << ", "
-                       << "start_step" << std::endl;
-#endif
-      if (!PCU_Comm_Self()) std::cout << "Load step = " << stp << std::endl;
-      if (amsi::numericalSolve(itr, cvg))
+      tssu->preRun();  // calls updateMicro for multiscale analysis
+      tssu->recoverSecondaryVariables(stp);
+      checkpoint();
+      // write the initial state of everything
+      t += dt;
+      tssu->setSimulationTime(t);
+      // logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp,
+      // tssu->getUField());
+      tssu->computeInitGuess(las);
+      completed = false;
+      SNES snes(cm);
+      MumfimPetscCall(SNESSetFromOptions(snes));
+      auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(las);
+      if (petsc_las == nullptr)
       {
-        // checkpoint the initial state
-        // note this is not actually the initial state
-        // since we have already applied our guess solution
-        // if(stp == 0 && itr->iteration() == 0)
+        std::cerr << "Current solver only works with petsc backend!\n";
+        std::exit(1);
+      }
+      Mat AMat, PMat;
+      MumfimPetscCall(
+          MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES, &PMat));
+      MumfimPetscCall(
+          MatDuplicate(petsc_las->GetMatrix(), MAT_DO_NOT_COPY_VALUES, &AMat));
+      MumfimPetscCall(
+          SNESSetFunction(
+              snes, NULL,
+              [](::SNES s, Vec displacement, Vec residual,
+                 void * ctx) -> PetscErrorCode
+              {
+                PetscInt iteration;
+                SNESGetIterationNumber(s, &iteration);
+                // bit hacky...if the last finalized iteration is same as
+                // previous
+                static int num_calls = 0;
+                auto * an = static_cast<TissueAnalysis *>(ctx);
+                auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
+                try
+                {
+                  // in this case, we have called Function another time without
+                  // checking for convergence. We sent 0 state to tell the
+                  // microscale that the previous step was not "accepted"
+                  if (an->iteration > 0)
+                  {
+                    an->finalizeIteration(0);
+                  }
+                  // Note iteration is not here an actual count of the
+                  // iterations performed instead it is a test to make sure we
+                  // call finalize iteration in the correct order between here
+                  // and the call to check convergence
+                  ++an->iteration;
+                  // Given the trial displacement x, compute the residual
+                  // an->itr->iterate(); // this doesn't work as is. Writing out
+                  // steps See amsi::Solvers.cc LinearIteration this comes from
+                  // UpdateDOF (Nonlinear Tissue)
+                  // 1. Write the new solution into the displacement field
+                  // las->iter() // we don't need to do this step since we are
+                  // just using the K/r storage in las not actually computing
+                  // residuals
+                  const double * sol;
+                  VecGetArrayRead(displacement, &sol);
+                  an->tssu->UpdateDOFs(sol);
+                  VecRestoreArrayRead(displacement, &sol);
+                  an->tssu->ApplyBC_Dirichlet();
+                  an->tssu->RenumberDOFs();
+                  int gbl, lcl, off;
+                  an->tssu->GetDOFInfo(gbl, lcl, off);
+                  an->las->Reinitialize(gbl, lcl, off);
+                  an->las->Zero();
+                  // assembles into Mat/vec
+                  an->tssu->Assemble(an->las);
+                  VecAssemblyBegin(petsc_las->GetVector());
+                  VecAssemblyEnd(petsc_las->GetVector());
+                  MatAssemblyBegin(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
+                  MatAssemblyEnd(petsc_las->GetMatrix(), MAT_FINAL_ASSEMBLY);
+                  an->tssu->iter();
+                  VecCopy(petsc_las->GetVector(), residual);
+                  //an->tssu->AcceptDOFs();
+                }
+                catch (mumfim_error & e)
+                {
+                  std::cerr
+                      << "Took bad step. Writing debug output\n";
+                  std::cerr << e.what() << "\n";
+                  an->stp = -2;
+                  an->checkpoint();
+                  PetscViewer viewer;
+                  // write residual/stiffness to file
+                  auto stiffness_matrix_file = std::string(
+                      amsi::fs->getResultsDir() + "/petsc_vector_states.mtx");
+                  MumfimPetscCall(PetscViewerBinaryOpen(
+                      AMSI_COMM_SCALE, stiffness_matrix_file.c_str(),
+                      FILE_MODE_WRITE, &viewer));
+                  // tangent stiffness matrix
+                  MumfimPetscCall(MatView(petsc_las->GetMatrix(), viewer));
+                  // residual vector
+                  MumfimPetscCall(VecView(petsc_las->GetVector(), viewer));
+                  MumfimPetscCall(SNESSetFunctionDomainError(s));
+                }
+                return 0;
+              },
+              static_cast<void *>(this)));
+      MumfimPetscCall(SNESSetJacobian(
+          snes, AMat, AMat,
+          [](::SNES snes, Vec displacement, Mat Amat, Mat Pmat,
+             void * ctx) -> PetscErrorCode
+          {
+            auto * an = static_cast<TissueAnalysis *>(ctx);
+            auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(an->las);
+            MatCopy(petsc_las->GetMatrix(), Amat, SAME_NONZERO_PATTERN);
+            MatScale(Amat, -1);
+            return 0;
+          },
+          static_cast<void *>(this)));
+      MumfimPetscCall(SNESSetConvergenceTest(
+          snes,
+          [](::SNES snes, PetscInt it, PetscReal xnorm, PetscReal gnorm,
+             PetscReal f, SNESConvergedReason * reason,
+             void * ctx) -> PetscErrorCode
+          {
+            auto * an = static_cast<TissueAnalysis *>(ctx);
+            auto error =
+                SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, ctx);
+            bool converged =
+                (reason != nullptr && *reason != SNES_CONVERGED_ITERATING);
+            int accepted = converged ? 1 : -1;
+            // For MultiscaleAnalysis this informs microscale if the step is
+            // done the microscale knows that a value of 0 means step is
+            // accepted but not converged
+            an->finalizeIteration(accepted);
+            an->tssu->AcceptDOFs();
+            // HACK set this to zero so we don't finalize iteration
+            // in form function
+            an->iteration = 0;
+            return error;
+            // return 0;
+          },
+          static_cast<void *>(this), NULL));
+      while (!completed)
+      {
 #ifdef LOGRUN
         amsi::log(state) << stp << ", " << itr->iteration() << ", "
                          << MPI_Wtime() << ", "
-                         << "end_solve" << std::endl;
+                         << "start_step" << std::endl;
 #endif
+        if (!PCU_Comm_Self()) std::cout << "Load step = " << stp << std::endl;
+        // TODO wrap SNES in RAII class so create/destroy is exception safe
+        // initialize SNES
+        // solve
+        MumfimPetscCall(
+            SNESSolve(snes, nullptr, petsc_las->GetSolutionVector()));
+        const auto converged = std::invoke(
+            [&snes]()
+            {
+              SNESConvergedReason converged;
+              MumfimPetscCall(SNESGetConvergedReason(snes, &converged));
+              return converged;
+            });
+        const auto iterations = std::invoke(
+            [&snes]()
+            {
+              PetscInt iteration;
+              MumfimPetscCall(SNESGetIterationNumber(snes, &iteration));
+              return iteration;
+            });
+        // analysis diverged
+        if (converged < 0)
+        {
+          completed = true;
+          // finalizeStep(); // shouldn't call this here since it's called at
+          // the end
+          std::stringstream ss;
+          ss << "Step " << stp << "failed to converge\n";
+          ss << SNESConvergedReasons[converged];
+          ss << "Number of nonlinear iterations = " << iterations << "\n";
+          throw mumfim_error(ss.str());
+        }
         if (stp >= mx_stp - 1)
         {
           completed = true;
           std::cout << "Final load step converged. Case complete." << std::endl;
         }
-        else
-        {
-          for (auto vol = trkd_vols.begin(); vol != trkd_vols.end(); ++vol)
-            vol->second->step();
-          las->step();
-          tssu->step();
-        }
-#ifdef LOGRUN
-        amsi::log(state) << stp << ", " << itr->iteration() << ", "
-                         << MPI_Wtime() << ", "
-                         << "end_step" << std::endl;
-#endif
-      }
-      else
-      {
-        completed = true;
-        std::cerr << "ERROR: Step " << stp << " failed to converge!"
+        std::cout << "checkpointing (macro)" << std::endl;
+        std::cout << "Rewriting at end of load step to include orientation data"
                   << std::endl;
+        tssu->recoverSecondaryVariables(stp);
+        checkpoint();
+        // reset the iteration from the numerical solve after checkpointing
+        // which records iteration information
+        itr->reset();
+        stp++;
+        t += dt;
+        tssu->setSimulationTime(t);
+        // Warning! this function has a potentially blocking MPI CALL!
         finalizeStep();
       }
-      //logDisps(dsp_itms.begin(), dsp_itms.end(), dsps, stp, tssu->getUField());
-      //logForces(frc_itms.begin(), frc_itms.end(), frcs, stp, tssu);
-      //logVolumes(vol_itms.begin(), vol_itms.end(), vols, stp,
-      //           tssu->getUField());
-      std::cout << "checkpointing (macro)" << std::endl;
-      std::cout << "Rewriting at end of load step to include orientation data"
-                << std::endl;
-      tssu->recoverSecondaryVariables(stp);
+    }
+    catch (mumfim_error & e)
+    {
+      stp = -4;
+      // Write out the failed state
+      // tssu->recoverSecondaryVariables(stp);
       checkpoint();
-      // reset the iteration from the numerical solve after checkpointing which
-      // records iteration information
-      itr->reset();
-      stp++;
-      t += dt;
-      tssu->setSimulationTime(t);
-      std::cout << "Finalizing step (macro)" << std::endl;
-      finalizeStep();
+      PetscViewer viewer;
+      auto * petsc_las = dynamic_cast<amsi::PetscLAS *>(this->las);
+      if (petsc_las)
+      {
+        // write residual/stiffness to file
+        auto stiffness_matrix_file =
+            std::string(amsi::fs->getResultsDir() + "/petsc_vector_states.mtx");
+        MumfimPetscCall(PetscViewerBinaryOpen(AMSI_COMM_SCALE,
+                                              stiffness_matrix_file.c_str(),
+                                              FILE_MODE_WRITE, &viewer));
+        // tangent stiffness matrix
+        MumfimPetscCall(MatView(petsc_las->GetMatrix(), viewer));
+        // residual vector
+        MumfimPetscCall(VecView(petsc_las->GetVector(), viewer));
+      }
+      throw;
     }
   }
   void TissueAnalysis::finalizeStep(){};
+  void TissueAnalysis::finalizeIteration(int){};
   void TissueAnalysis::checkpoint()
   {
 #ifdef LOGRUN
@@ -189,7 +345,7 @@ namespace mumfim
     std::string pvd("/out.pvd");
     std::ofstream pvdf;
     int iteration = itr->iteration() - 1;
-    std::cout << "ITERATION: " << iteration << std::endl;
+    // std::cout << "ITERATION: " << iteration << std::endl;
     std::stringstream cnvrt;
     cnvrt << "msh_stp_" << stp << "_iter_";
     // amsi::writePvdFile(pvd, cnvrt.str(), iteration-1);

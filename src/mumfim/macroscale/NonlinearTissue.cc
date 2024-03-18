@@ -1,16 +1,20 @@
 #include "NonlinearTissue.h"
+
 #include <amsiControlService.h>
 #include <apfFunctions.h>
 #include <apfLabelRegions.h>
+
 #include <array>
 #include <cstdlib>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
 #include "NeoHookeanIntegrator.h"
 #include "TrnsIsoNeoHookeanIntegrator.h"
 #include "gmi.h"
+
 namespace mumfim
 {
   NonlinearTissue::NonlinearTissue(apf::Mesh * mesh,
@@ -29,6 +33,10 @@ namespace mumfim
                                        apf::VECTOR, 1);
     apf::zeroField(delta_u);
     apf_primary_delta_field = delta_u;
+
+    accepted_displacements = apf::createLagrangeField(
+        apf_mesh, "accepted_displacement", apf::VECTOR, 1);
+    apf::zeroField(accepted_displacements);
     // create a current coordinate field from the CurrentCoordFunc (x = X+u)
     xpyfnc =
         new amsi::XpYFunc(apf_mesh->getCoordinateField(), apf_primary_field);
@@ -65,8 +73,7 @@ namespace mumfim
     {
       for (const auto & grad_nd : stiffness_gradient->GetCategoryNodes())
       {
-        stf_vrtn_cnst.push_back(
-            buildStiffnessVariation(grad_nd, stf_vrtn));
+        stf_vrtn_cnst.push_back(buildStiffnessVariation(grad_nd, stf_vrtn));
       }
     }
     for (auto & cnst : stf_vrtn_cnst)
@@ -104,7 +111,14 @@ namespace mumfim
       const auto * poisson_ratio =
           mt::GetCategoryModelTraitByType<mt::ScalarMT>(continuum_model,
                                                         "poisson ratio");
-      if (youngs_modulus == nullptr || poisson_ratio == nullptr)
+      // Even pytorch needs a young's modulus, poisson ratio b/c
+      // LinearTissue is used as an initial guess. The initial guess should
+      // be based off the same continuum material model as the nonlinear tissue
+      // TODO: LinearTissue uses same continuum material model as
+      // NonlinearTissue
+      std::cout << "continuum model type: " << continuum_model->GetType()
+                << "\n";
+      if ((youngs_modulus == nullptr || poisson_ratio == nullptr))
       {
         std::cerr << " \"poisson ratio\" and \"youngs modulus\" are required "
                      "types for the continuum model.\n";
@@ -137,6 +151,20 @@ namespace mumfim
                 &axs[0], (*axial_shear_modulus)(), (*axial_youngs_modulus)(),
                 1);
       }
+      else if (continuum_model->GetType() == "pytorch")
+      {
+#ifdef MUMFIM_ENABLE_TORCH
+        const auto * model_file = mt::GetCategoryModelTraitByType<mt::StringMT>(
+            continuum_model, "model file");
+        constitutives[reinterpret_cast<apf::ModelEntity *>(gent)] =
+            std::make_unique<
+                UpdatedLagrangianMaterialIntegrator<TorchMaterial>>(
+                TorchMaterial{(*model_file)()}, strn, strs, apf_primary_field,
+                dfm_grd, 1);
+#else
+        throw mumfim_error("MUMFIM was not compiled with PyTorch support");
+#endif
+      }
     }
     gmi_end(gmodel, it);
     dirichlet_bcs.push_back(
@@ -154,6 +182,7 @@ namespace mumfim
                              .mt_name = "direction",
                              .mt_type = amsi::NeumannBCType::traction});
   }
+
   NonlinearTissue::~NonlinearTissue()
   {
     delete xpyfnc;
@@ -169,6 +198,7 @@ namespace mumfim
     apf::destroyField(stf_vrtn);
     apf::destroyField(axl_yngs_mod);
   }
+
   void NonlinearTissue::computeInitGuess(amsi::LAS * las)
   {
     // LinearTissue lt(model, mesh, prob_def, solution_strategy, analysis_comm);
@@ -180,6 +210,7 @@ namespace mumfim
     apf::copyData(delta_u, lt.getField());
     apf::copyData(apf_primary_field, lt.getField());
   }
+
   void NonlinearTissue::step()
   {
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
@@ -187,46 +218,63 @@ namespace mumfim
     iteration = 0;
     load_step++;
   }
+
   void NonlinearTissue::iter()
   {
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->iter();
     iteration++;
   }
+
   void NonlinearTissue::Assemble(amsi::LAS * las)
   {
     ApplyBC_Neumann(las);
     // custom iterator would be perfect for switching for multiscale version
     // FIXME !!! here createMeshELement is using the mesh (Original coords),
-    // BUT Constitutives Should be set to Use the deformed coords for consistency
-    // with the multiscale analysis
-    AssembleIntegratorIntoLAS(las, [this](apf::MeshEntity * me, int)
-    { return constitutives[apf_mesh->toModel(me)].get(); }, current_coords);
-    double nrm = 0.0;
-    las->GetVectorNorm(nrm);
-    // process constraints
+    // BUT Constitutives Should be set to Use the deformed coords for
+    // consistency with the multiscale analysis
+    AssembleIntegratorIntoLAS(
+        las,
+        [this](apf::MeshEntity * me, int)
+        { return constitutives[apf_mesh->toModel(me)].get(); },
+        current_coords);
+    // double nrm = 0.0;
+    // las->GetVectorNorm(nrm);
+    //  process constraints
     for (auto cnst = vol_cnst.begin(); cnst != vol_cnst.end(); cnst++)
       (*cnst)->apply(las);
     // las->GetVectorNorm(nrm);
   }
+
   void NonlinearTissue::UpdateDOFs(const double * sol)
   {
-    // accumulate displacement deltas into primary field
-    amsi::AccumOp ac_op;
-    amsi::FreeApplyOp frac_op(apf_primary_numbering, &ac_op);
-    amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol,
-                      first_local_dof, &frac_op)
-        .run();
-    // amsi::PrintField(apf_primary_field,std::cout).run();
+    // rewrite for SNES. Here the solution vector we have is the
+    // full displacements
+    // FIXME: Detangle this code once SNES is working
     amsi::WriteOp wr_op;
-    amsi::FreeApplyOp frwr_op(apf_primary_numbering, &wr_op);
-    amsi::ApplyVector(apf_primary_numbering, delta_u, sol, first_local_dof,
-                      &frwr_op)
+    auto num_dofs = countNodes(apf_primary_numbering) *
+                    countComponents(apf_primary_delta_field);
+
+    std::vector<double> old_solution(num_dofs);
+    amsi::ToArray(apf_primary_numbering, accepted_displacements,
+                  &old_solution[0], first_local_dof, &wr_op)
         .run();
-    // amsi::PrintField(delta_u,std::cout).run();
+    amsi::FreeApplyOp frwr_op(apf_primary_numbering, &wr_op);
+    amsi::ApplyVector(apf_primary_numbering, apf_primary_field, sol,
+                      first_local_dof, &frwr_op)
+        .run();
+    std::transform(
+        old_solution.begin(), old_solution.end(), sol, old_solution.begin(),
+        [](double old_sol, double new_sol) { return new_sol - old_sol; });
+
+    amsi::ApplyVector(apf_primary_numbering, apf_primary_delta_field,
+                      old_solution.data(), first_local_dof, &frwr_op)
+        .run();
+
     apf::synchronize(apf_primary_field);
     apf::synchronize(delta_u);
   }
+
   /**
    * get the Neumann boundary condition value on the specified entity
    * @param ent model entity to query
@@ -288,7 +336,8 @@ namespace mumfim
       }
     }
   }
-  void NonlinearTissue::recoverSecondaryVariables(int /* unused load_step */ )
+
+  void NonlinearTissue::recoverSecondaryVariables(int /* unused load_step */)
   {
     /*
     //#ifdef SCOREC
@@ -303,8 +352,9 @@ namespace mumfim
     amsi::PrintField(qfld, file).run();
     apf::destroyField(qfld);
     */
-    //#endif
+    // #endif
   }
+
   void NonlinearTissue::storeStrain(apf::MeshElement * me, double * strain)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
@@ -312,11 +362,13 @@ namespace mumfim
                        strain[4], strain[5], strain[4], strain[2]);
     apf::setMatrix(strn, m_ent, 0, eps);
   }
+
   void NonlinearTissue::storeStrain(apf::MeshElement * me, apf::Matrix3x3 eps)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
     apf::setMatrix(strn, m_ent, 0, eps);
   }
+
   void NonlinearTissue::storeStress(apf::MeshElement * me, double * stress)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);
@@ -324,6 +376,7 @@ namespace mumfim
                          stress[4], stress[5], stress[4], stress[2]);
     apf::setMatrix(strs, m_ent, 0, sigma);
   }
+
   void NonlinearTissue::storeStress(apf::MeshElement * me, apf::Matrix3x3 eps)
   {
     apf::MeshEntity * m_ent = apf::getMeshEntity(me);

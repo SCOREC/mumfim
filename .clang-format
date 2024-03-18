@@ -3,7 +3,7 @@ BreakBeforeBraces: Allman
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 BreakConstructorInitializers: BeforeComma
 NamespaceIndentation: All
-MaxEmptyLinesToKeep: 0
+MaxEmptyLinesToKeep: 1
 AccessModifierOffset: 0
 AllowShortLoopsOnASingleLine: false
 DerivePointerAlignment: false
@@ -12,3 +12,4 @@ AllowAllParametersOfDeclarationOnNextLine: false
 AlignAfterOpenBracket: Align
 BinPackArguments: true
 BinPackParameters: false
+SeparateDefinitionBlocks: Always

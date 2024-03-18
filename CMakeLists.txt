@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.21.1)
 project(MuMFiM)
 set(BIOTISSUE_MAJOR_VERSION 0)
-set(BIOTISSUE_MINOR_VERSION 2)
-set(BIOTISSUE_PATCH_VERSION 7)
+set(BIOTISSUE_MINOR_VERSION 3)
+set(BIOTISSUE_PATCH_VERSION 0)
 set(BIOTISSUE_VERSION ${BIOTISSUE_MAJOR_VERSION}.${BIOTISSUE_MINOR_VERSION}.${BIOTISSUE_PATCH_VERSION})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -25,19 +25,29 @@ if(DOXYGEN_FOUND)
                     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                     COMMENT "Generating API documentation with doxygen." VERBATIM)
-endif()
+endif ()
 
 find_package(SCOREC CONFIG REQUIRED)
 
 option(BUILD_EXTERNAL "build external libs with fetch content (except scorec)" ON)
-if(${BUILD_EXTERNAL})
+if (${BUILD_EXTERNAL})
   add_subdirectory(external)
-endif()
+endif ()
+
+option(MUMFIM_ENABLE_ADIOS2 "enable adios2 test cases" OFF)
+option(MUMFIM_ENABLE_Torch "enable PyTorch material model" OFF)
+if (MUMFIM_ENABLE_Torch)
+  find_package(Torch REQUIRED)
+  message("TORCH_CXX_FLAGS=${TORCH_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+endif ()
+
 
 add_subdirectory(src)
-if(BUILD_TESTS)
+if (BUILD_TESTS)
   include(CTest)
   enable_testing()
   include(add-mpi-test)
   add_subdirectory(test)
-endif(BUILD_TESTS)
+endif (BUILD_TESTS)
+

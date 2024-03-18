@@ -57,6 +57,7 @@ namespace mumfim
           SerialOuterLoop::getElementLength(i, coords, connectivity, l0);
           min_reducer.join(local, l0(i));
         }, min_reducer);
+        Kokkos::fence(); 
         Scalar sound_speed = sqrt(fiber_elastic_modulus / fiber_density);
         dt_crit = l_min/sound_speed;
       }
@@ -138,6 +139,7 @@ namespace mumfim
                   SerialOuterLoop::getForceLoop3(i, mass_matrix, v, f_int, f,viscous_damping_coefficient);
             },
             residual);
+          Kokkos::fence();
           residual = sqrt(residual);
       }
       else
@@ -241,7 +243,7 @@ namespace mumfim
               force_total_row, velocity_row);
           ++n_step;
           Kokkos::fence();
-        } while (residual > 1E-6);
+        } while (residual > 1E-12);
       }
       return true;
     }

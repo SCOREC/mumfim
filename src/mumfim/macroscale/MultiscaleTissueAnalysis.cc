@@ -22,14 +22,20 @@ namespace mumfim
 {
   void MultiscaleTissueIteration::iterate()
   {
+    std::cerr<<"We shouldn't be calling the multiscale tissue iteration if code is working as expected\n";
+    std::abort();
     if (!PCU_Comm_Self())
       std::cout << "Multiscale Nonlinear Iteration : " << iteration()
                 << std::endl;
+    // Note!: We shouldn't need to call this here since preRun calls update micro!!
     if (iteration() == 0) tssu->updateMicro();
+    // multiscale calls las->iter *before* fem_iter iterate
+    // single scale calls it afet! does this matter?
+    // This should only impact the first iteration. Where multiscale is probably
+    // wrong. Thaat's because this is used to updat the vectors for convergence.
     las->iter();
     fem_iter->iterate();
-    tssu->iter();
-    amsi::Iteration::iterate();
+    tssu->iter(); // ends up calling nonlineartissue iter which does volume stuff don't care about amsi::Iteration::iterate();
   }
   MultiscaleTissueAnalysis::MultiscaleTissueAnalysis(
       apf::Mesh * mesh,
@@ -70,5 +76,10 @@ namespace mumfim
   {
     amsi::ControlService * cs = amsi::ControlService::Instance();
     cs->scaleBroadcast(cplng, &completed);
+  }
+
+  void MultiscaleTissueAnalysis::finalizeIteration(int lastIteration) {
+    amsi::ControlService * cs = amsi::ControlService::Instance();
+    cs->scaleBroadcast(cplng, &lastIteration);
   }
 }  // namespace mumfim

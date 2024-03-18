@@ -45,6 +45,7 @@ namespace mumfim
     virtual void run();
     virtual void checkpoint();
     virtual void finalizeStep();
+    virtual void finalizeIteration(int);
 
     protected:
     // util
@@ -56,6 +57,7 @@ namespace mumfim
     double dt;
     int stp;
     int mx_stp;
+    int iteration{0};
     NonlinearTissue * tssu;
     // this is actually a MultiIteration
     amsi::MultiIteration * itr;
@@ -71,6 +73,7 @@ namespace mumfim
     std::string state_fn;
     // logs
     amsi::Log state;
+
     void addVolumeTracking(apf::Mesh * mesh,
                            const mt::CategoryNode * solution_strategy);
   };
@@ -84,8 +87,11 @@ namespace mumfim
     TissueIteration(NonlinearTissue * t, amsi::LAS * l) : tssu(t), las(l) {}
     virtual void iterate()
     {
+      // Note this is same as FEMLinearIteration
       LinearSolver(tssu, las);
+
       tssu->iter();
+      // copies LHS/RHS into "old" state as needed for computing convergence
       las->iter();
       amsi::Iteration::iterate();
     }
