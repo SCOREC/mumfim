@@ -156,7 +156,7 @@ template <typename ViewT, typename ViewT2>
           {
             bool is_close =
                 (fabs(a(i, j, k) - b(i, j, k)) <=
-                 Kokkos::Experimental::max(rtol * Kokkos::Experimental::max(fabs(a(i, j, k)), fabs(b(i, j, k))),
+                 Kokkos::max(rtol * Kokkos::max(fabs(a(i, j, k)), fabs(b(i, j, k))),
                           atol));
             update += !is_close;
           }

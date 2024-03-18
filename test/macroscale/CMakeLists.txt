@@ -3,7 +3,24 @@ if (NOT ${BUILD_EXTERNAL})
 endif ()
 
 include(Catch)
-add_executable(macro_unit_tests test_macro_main.cc NeohookeanMaterial.cc MultiscaleMaterial.cc UpdatedLagrangianMaterialIntegrator.cc ApfMatrixUtils.cc TestDeformations.cc TestSupport.cc TestSupport.h TorchMaterial.cc)
+
+set(TEST_SOURCES
+    test_macro_main.cc
+    NeohookeanMaterial.cc
+    MultiscaleMaterial.cc
+    UpdatedLagrangianMaterialIntegrator.cc
+    ApfMatrixUtils.cc
+    TestDeformations.cc
+    TestSupport.cc
+    TestSupport.h
+  )
+
+if(MUMFIM_ENABLE_Torch)
+  list(APPEND TEST_SOURCES TorchMaterial.cc)
+endif()
+
+
+add_executable(macro_unit_tests ${TEST_SOURCES})
 target_link_libraries(macro_unit_tests PUBLIC Catch2::Catch2 biotissue)
 catch_discover_tests(macro_unit_tests)
 
