@@ -27,6 +27,7 @@ find_package(yaml-cpp REQUIRED)
 endif()
 
 find_package(Kokkos CONFIG REQUIRED)
+find_package(KokkosKernels CONFIG REQUIRED)
 
 option(ENABLE_WRITE_MICRO_PER_ITER "Write microscale to vtk on every iteration" OFF)
 if(ENABLE_WRITE_MICRO_PER_ITER)
@@ -62,7 +63,7 @@ target_include_directories(micro_fo PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
         $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(micro_fo PUBLIC las amsi::amsi las_core Kokkos::kokkos PRIVATE yaml-cpp)
+target_link_libraries(micro_fo PUBLIC las amsi::amsi las_core Kokkos::kokkos Kokkos::kokkoskernels PRIVATE yaml-cpp)
 if(yaml-cpp_FOUND)
   target_compile_definitions(micro_fo PUBLIC -DHAS_YAML_CPP)
 endif()

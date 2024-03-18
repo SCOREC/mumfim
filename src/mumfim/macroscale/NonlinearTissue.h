@@ -32,6 +32,7 @@ namespace mumfim
     std::vector<std::unique_ptr<StiffnessVariation>> stf_vrtn_cnst;
     std::vector<std::unique_ptr<VolumeConstraint>> vol_cnst;
     apf::Field * delta_u;
+    apf::Field* accepted_displacements;
     apf::Field * current_coords;  // coordinates in current config
     apf::Field * strs;
     apf::Field * strn;
@@ -52,10 +53,13 @@ namespace mumfim
     void getLoadOn(apf::ModelEntity* ent, double* frc);
     void step();
     void iter();
-    virtual void Assemble(amsi::LAS* las) override;
-    virtual void UpdateDOFs(const double*) override;
+    void Assemble(amsi::LAS* las) override;
+    void UpdateDOFs(const double* sol) override;
     virtual void recoverSecondaryVariables(int);
     virtual void preRun() {};
+    void AcceptDOFs(){
+      apf::copyData(accepted_displacements, getUField());
+    }
     void storeStress(apf::MeshElement* me, double* stress);
     void storeStress(apf::MeshElement* me, apf::Matrix3x3 eps);
     void storeStrain(apf::MeshElement* me, double* strain);

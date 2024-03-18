@@ -26,4 +26,17 @@ target_link_libraries(fiber_only PUBLIC micro_fo)
 add_executable(batched_fiber_only batched_fiber_only.cc)
 target_link_libraries(batched_fiber_only PUBLIC micro_fo)
 
-install(TARGETS mumfim_singlescale mumfim_multiscale fiber_only batched_fiber_only RUNTIME DESTINATION bin)
+SET(MUMFIM_INSTALL_TARGETS mumfim_singlescale mumfim_multiscale fiber_only batched_fiber_only)
+
+if (MUMFIM_ENABLE_ADIOS2)
+  find_package(adios2 REQUIRED)
+  add_executable(adios_fiber_only adios_fiber_only.cc)
+  target_link_libraries(adios_fiber_only PUBLIC micro_fo adios2::cxx11_mpi adios2::core adios2::core_mpi adios2::adios2)
+  LIST(APPEND MUMFIM_INSTALL_TARGETS adios_fiber_only)
+endif()
+
+
+
+
+
+install(TARGETS ${MUMFIM_INSTALL_TARGETS} RUNTIME DESTINATION bin)

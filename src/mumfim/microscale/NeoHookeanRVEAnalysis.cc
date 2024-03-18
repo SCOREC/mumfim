@@ -4,6 +4,7 @@ namespace mumfim
 {
   bool NeoHookeanRVEAnalysis::run(const DeformationGradient & dfmGrd, double sigma[6], bool update_coords)
   {
+
     if (!update_coords)
       F_old = F;
     // incremental deformation gradient

@@ -1,23 +1,30 @@
 #ifndef MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
 #define MUMFIM_BATCHED_FIBER_RVE_ANALYSIS_EXPLICIT_H
+#include <Kokkos_Macros.hpp>
 #include <memory>
 #include <vector>
+
 #include "BatchedRVEAnalysis.h"
 #include "FiberNetwork.h"
 #include "MicroFOParams.h"
 #include "MicroTypeDefinitions.h"
 #include "PackedData.h"
-//#include "bioBatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
 #include <apf.h>
 #include <apfMesh.h>          // for count owned
 #include <apfMeshIterator.h>  // iterator for RVE Functions
+
+#include <KokkosBlas1_update.hpp>
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
+
+#include "RVE.h"
+#include "mumfim/microscale/MaterialStiffness.h"
 #include "mumfim/microscale/batched_analysis/BatchedComputeOrientationTensor.h"
 #include "mumfim/microscale/batched_analysis/BatchedFiberRVEAnalysisExplicitTeamOuterLoop.h"
+#include "mumfim/microscale/batched_analysis/BatchedFiberRVEAnalysisExplicitSerialOuterLoop.h"
 #include "mumfim/microscale/batched_analysis/BatchedMesh.h"
 #include "mumfim/microscale/batched_analysis/BatchedReorderMesh.h"
-#include "RVE.h"
+
 namespace mumfim
 {
   // void updateRVECoords(RVE &rve, const DeformationGradient &
@@ -28,17 +35,20 @@ namespace mumfim
   class BatchedFiberRVEAnalysisExplicit
       : public BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>
   {
+    public:
+    using exe_space = ExeSpace;
+    using memory_space = typename ExeSpace::memory_space;
+
     private:
     using LO = LocalOrdinal;
     // the packed types correspond to data which is packed to include multiple
     // RVEs. Each in the packed data corresponds to the data for that RVE
-    using ConnectivityType = PackedData<LocalOrdinal*[2], ExeSpace>;
-    using DofDataType = PackedData<Scalar*[3], ExeSpace>;
-    using VertDataType = PackedData<Scalar*, ExeSpace>;
-    using OrdinalVertDataType = PackedData<LocalOrdinal*, ExeSpace>;
-    using ElementDataType = PackedData<Scalar*, ExeSpace>;
-
-    using PackedScalarType = PackedData<Scalar*, ExeSpace>;
+    using ConnectivityType = PackedData<LocalOrdinal * [2], ExeSpace>;
+    using DofDataType = PackedData<Scalar * [3], ExeSpace>;
+    using VertDataType = PackedData<Scalar *, ExeSpace>;
+    using OrdinalVertDataType = PackedData<LocalOrdinal *, ExeSpace>;
+    using ElementDataType = PackedData<Scalar *, ExeSpace>;
+    using PackedScalarType = PackedData<Scalar *, ExeSpace>;
     using HostMemorySpace = typename PackedScalarType::host_mirror_space;
     using DeviceMemorySpace = typename PackedScalarType::memory_space;
     using DofCopyType = typename DofDataType::DeviceViewType;
@@ -47,13 +57,18 @@ namespace mumfim
         BatchedApfMeshFunctions<Scalar, LocalOrdinal, HostMemorySpace>;
     // the layout of all of the arrays should be the same
     using ViewLayout = typename ConnectivityType::traits::array_layout;
-    using OrientationTensorType =
-        OrientationTensor<Scalar, LocalOrdinal, DofDataType, ConnectivityType, ExeSpace>;
+    using OrientationTensorType = OrientationTensor<Scalar,
+                                                    LocalOrdinal,
+                                                    DofDataType,
+                                                    ConnectivityType,
+                                                    ExeSpace>;
     // Simulation state vectors
     ConnectivityType connectivity;
     DofDataType original_coordinates;
     DofDataType current_coordinates;
     DofDataType displacement;
+    DofDataType trial_displacement;
+    DofDataType prev_displacement;
     DofDataType velocity;
     DofDataType force_total;
     DofDataType force_internal;
@@ -70,9 +85,10 @@ namespace mumfim
     // PackedScalarType energy_check_epsilon;
     // Boundary Condition data
     OrdinalVertDataType displacement_boundary_vert;
-    DofCopyType displacement_copy;
-    Kokkos::DualView<Scalar *, ExeSpace> current_volume;
+    Kokkos::DualView<Scalar *, ExeSpace> original_volume;
+    Kokkos::DualView<Scalar *, ExeSpace> trial_volume;
     Kokkos::DualView<Scalar *, ExeSpace> scale_factor;
+    Kokkos::View<Scalar*, ExeSpace> strain_energy;
     std::vector<RVE> rves;
     OrientationTensorType orientation_tensor;
 
@@ -80,7 +96,17 @@ namespace mumfim
     BatchedFiberRVEAnalysisExplicit(
         std::vector<std::shared_ptr<const FiberNetwork>> fiber_networks,
         std::vector<std::shared_ptr<const MicroSolutionStrategy>>
-            solution_strategies) : BatchedRVEAnalysis<Scalar,LocalOrdinal,ExeSpace>(fiber_networks.size())
+            solution_strategies)
+        : BatchedRVEAnalysis<Scalar, LocalOrdinal, ExeSpace>(
+              fiber_networks.size())
+        , compute_pk2_stress_(*this)
+        , current_deformation_gradient_("current_deformation_gradient",
+                                        fiber_networks.size())
+        , trial_deformation_gradient_("trial_deformation_gradient",
+                                      fiber_networks.size())
+        , previous_deformation_gradient_("trial_deformation_gradient",
+                                         fiber_networks.size())
+        , PK2_stress_("PK2", fiber_networks.size())
     {
       if (fiber_networks.size() != solution_strategies.size())
       {
@@ -112,17 +138,25 @@ namespace mumfim
       std::vector<std::vector<apf::MeshEntity *>> boundary_verts;
       rves.reserve(fiber_networks.size());
       boundary_verts.reserve(boundary_verts.size());
-      current_volume = Kokkos::DualView<Scalar *, ExeSpace>(
-          "current_volume", fiber_networks.size());
-      deep_copy(current_volume.template view<ExeSpace>(), 1.0);
-      current_volume.template modify<ExeSpace>();
+      ///////////////////
+      original_volume = Kokkos::DualView<Scalar *, ExeSpace>(
+          "original_volume", fiber_networks.size());
+      deep_copy(original_volume.template view<ExeSpace>(), 1.0);
+      original_volume.template modify<ExeSpace>();
+      //////////////////
+      trial_volume = Kokkos::DualView<Scalar *, ExeSpace>(
+          "trial_volume", fiber_networks.size());
+      deep_copy(trial_volume.template view<ExeSpace>(), 1.0);
+      trial_volume.template modify<ExeSpace>();
+      strain_energy = Kokkos::View<Scalar*, ExeSpace>("strain_energy", fiber_networks.size());
+      //////////////////
       scale_factor = Kokkos::DualView<Scalar *, ExeSpace>(
           "scale_factor", fiber_networks.size());
       scale_factor.template modify<HostMemorySpace>();
       for (size_t i = 0; i < fiber_networks.size(); ++i)
       {
         scale_factor.h_view(i) = fiber_networks[i]->getScaleConversion();
-        dof_counts_h(i) = fiber_networks[i]->getDofCount()/3;
+        dof_counts_h(i) = fiber_networks[i]->getDofCount() / 3;
         // since we are dealing with trusses all elements are just lines
         element_counts_h(i) =
             apf::countOwned(fiber_networks[i]->getNetworkMesh(), 1);
@@ -162,9 +196,8 @@ namespace mumfim
       original_coordinates = DofDataType(dof_counts);
       current_coordinates = DofDataType(dof_counts);
       displacement = DofDataType(dof_counts);
-      displacement_copy = DofCopyType(displacement.template getAllRows<ExeSpace>());
-      displacement_copy = Kokkos::create_mirror(
-          ExeSpace(), displacement.template getAllRows<ExeSpace>());
+      trial_displacement = DofDataType(dof_counts);
+      prev_displacement = DofDataType(dof_counts);
       velocity = DofDataType(dof_counts);
       force_total = DofDataType(dof_counts);
       force_internal = DofDataType(dof_counts);
@@ -198,7 +231,8 @@ namespace mumfim
             displacement_boundary_vert.template getRow<HostMemorySpace>(i);
         apf::NaiveOrder(fiber_networks[i]->getUNumbering());
         MeshFunctionType::getFixedVert(fiber_networks[i]->getUNumbering(),
-                                       displacement_boundary_vert_row, boundary_verts[i]);
+                                       displacement_boundary_vert_row,
+                                       boundary_verts[i]);
         auto fiber_elastic_modulus_row =
             fiber_elastic_modulus.template getRow<HostMemorySpace>(i);
         fiber_elastic_modulus_row(0) =
@@ -228,7 +262,7 @@ namespace mumfim
                                        nodal_mass_row);
         // reorder the mesh
         ReorderMesh<Scalar, LocalOrdinal, ViewLayout, Kokkos::Serial> reorder(
-                 nodal_mass_row.extent(0), displacement_boundary_vert_row);
+            nodal_mass_row.extent(0), displacement_boundary_vert_row);
         reorder.createPermutationArray();
         reorder.applyPermutationToConnectivity(connectivity_row);
         reorder.applyPermutationToCoordinates(original_coordinates_row);
@@ -253,28 +287,59 @@ namespace mumfim
       current_coordinates.template modify<HostMemorySpace>();
       orientation_tensor =
           OrientationTensorType(connectivity, current_coordinates, TEAM_SIZE);
+      FillIdentity(current_deformation_gradient_);
     }
+
+    // FIXME update_coords is true when we are doing a "Full" run and false
+    // when we are doing a run to compute the material stiffness.
+    // If this approach works. This is in critical need of refactor
     virtual bool run(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> deformation_gradients,
         Kokkos::DualView<Scalar * [6], ExeSpace> sigma,
         bool update_coords = true) final
     {
       displacement.template sync<ExeSpace>();
+      trial_displacement.template modify<ExeSpace>();
+      original_volume.template sync<ExeSpace>();
+      trial_volume.template modify<ExeSpace>();
       displacement.template modify<ExeSpace>();
-      if (!update_coords)
+      if (update_coords)
       {
-        Kokkos::deep_copy(displacement_copy,
+        Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
                           displacement.template getAllRows<ExeSpace>());
+        deformation_gradients.sync_device();
+        // deformation_gradients.d_view is the incremental deformation. Should
+        // refactor the name...
+        UpdateDeformationGradient(deformation_gradients.d_view,
+                                  current_deformation_gradient_,
+                                  trial_deformation_gradient_);
       }
+      // if we aren't "updating coords" we are doing a finite difference and
+      // that should make use of the last state, not the accepted state!
       else
       {
-        updateVolume<ExeSpace>(deformation_gradients, current_volume);
+        Kokkos::deep_copy(trial_displacement.template getAllRows<ExeSpace>(),
+                          prev_displacement.template getAllRows<ExeSpace>());
+        deformation_gradients.sync_device();
+        UpdateDeformationGradient(deformation_gradients.d_view,
+                                  previous_deformation_gradient_,
+                                  trial_deformation_gradient_);
       }
+      Kokkos::deep_copy(trial_volume.d_view, 1.0);
+      updateVolume<ExeSpace>(trial_deformation_gradient_, trial_volume.d_view);
+
+      original_coordinates.template sync<ExeSpace>();
+      current_coordinates.template sync<ExeSpace>();
+      trial_displacement.template sync<ExeSpace>();
+      KokkosBlas::update(
+          1.0, trial_displacement.template getAllRows<ExeSpace>(), 1.0,
+          original_coordinates.template getAllRows<ExeSpace>(), 0.0,
+          current_coordinates.template getAllRows<ExeSpace>());
       // apply the incremental deformation gradient to the boundaries and the
       // boundary_vert_values
       applyIncrementalDeformationToDisplacement<ExeSpace>(
           rves.size(), deformation_gradients, current_coordinates,
-          displacement);
+          trial_displacement);
       // sync all data to the execution space
       connectivity.template sync<ExeSpace>();
       original_coordinates.template sync<ExeSpace>();
@@ -292,128 +357,128 @@ namespace mumfim
       viscous_damping_coefficient.template sync<ExeSpace>();
       critical_time_scale_factor.template sync<ExeSpace>();
       displacement_boundary_vert.template sync<ExeSpace>();
-
-      Kokkos::deep_copy(velocity.template getAllRows<ExeSpace>(),0);
+      Kokkos::deep_copy(velocity.template getAllRows<ExeSpace>(), 0);
       // Run the specific implementation we are interested in
-      auto result = TeamOuterLoop<Scalar, LO, ExeSpace>::run(rves.size(),
-          connectivity, original_coordinates, current_coordinates,
-          displacement, velocity, force_total, force_internal,
-          nodal_mass, original_length,
-          current_length, fiber_elastic_modulus, fiber_area,
+      auto result = TeamOuterLoop<Scalar, LO, ExeSpace>::run(
+          rves.size(), connectivity, original_coordinates, current_coordinates,
+          trial_displacement, velocity, force_total, force_internal, nodal_mass,
+          original_length, current_length, fiber_elastic_modulus, fiber_area,
           fiber_density, viscous_damping_coefficient,
-          critical_time_scale_factor, displacement_boundary_vert, TEAM_SIZE);
+          critical_time_scale_factor, displacement_boundary_vert, strain_energy, TEAM_SIZE);
+      force_internal.template modify<ExeSpace>();
+      velocity.template modify<ExeSpace>();
+      //auto result = SerialOuterLoop<Scalar, LO, ExeSpace>::run(
+      //    rves.size(), connectivity, original_coordinates, current_coordinates,
+      //    trial_displacement, velocity, force_total, force_internal, nodal_mass,
+      //    original_length, current_length, fiber_elastic_modulus, fiber_area,
+      //    fiber_density, viscous_damping_coefficient,
+      //    critical_time_scale_factor, displacement_boundary_vert, TEAM_SIZE);
       // compute the stress from the force and displacement vectors
       computeCauchyStress<ExeSpace>(displacement_boundary_vert,
                                     current_coordinates, force_internal, sigma,
-                                    current_volume, scale_factor);
-      if (!update_coords)
+                                    trial_volume, scale_factor);
+      if (update_coords)
       {
-        Kokkos::deep_copy(displacement.template getAllRows<ExeSpace>(),
-                          displacement_copy);
-      }
-      else
-      {
-        Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(), sigma.template view<ExeSpace>());
+        // will only ever accept after run with update coords,
+        // so only do this copy if we are going to accept to save
+        // some time from the deep copy during FD for material stiffness
+        Kokkos::deep_copy(this->current_stress_.template view<ExeSpace>(),
+                          sigma.template view<ExeSpace>());
         this->current_stress_.template modify<ExeSpace>();
+        Kokkos::deep_copy(
+            this->prev_displacement.template getAllRows<ExeSpace>(),
+            this->trial_displacement.template getAllRows<ExeSpace>());
+        this->prev_displacement.template modify<ExeSpace>();
+        Kokkos::deep_copy(previous_deformation_gradient_,
+                          trial_deformation_gradient_);
       }
       return result;
     }
+
+    void accept() final
+    {
+      // these syncs should most likely be no-op since we compute everything in
+      // the EXE Space.
+      this->trial_volume.template sync<ExeSpace>();
+      this->prev_displacement.template sync<ExeSpace>();
+      Kokkos::deep_copy(
+          this->displacement.template getAllRows<ExeSpace>(),
+          this->prev_displacement.template getAllRows<ExeSpace>());
+      Kokkos::deep_copy(current_deformation_gradient_,
+                        previous_deformation_gradient_);
+      // this->current_stress_.template modify<ExeSpace>();
+      this->displacement.template modify<ExeSpace>();
+    }
+
     virtual void computeMaterialStiffness(
         Kokkos::DualView<Scalar * [6][6], ExeSpace> C) final
     {
-      if (this->current_stress_.extent(0) != C.extent(0))
-      {
-        std::cerr << "stiffness matrix must have the number of rves as the "
-                     "first dimension"
-                  << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
-      constexpr Scalar h = 1E-5;
-      this->current_stress_.template sync<ExeSpace>();
-      auto current_stress_d = this->current_stress_.template view<ExeSpace>();
-      Kokkos::DualView<Scalar * [6], ExeSpace> sigma1("C", C.extent(0));
-      auto sigma1_d = sigma1.template view<ExeSpace>();
-      Kokkos::DualView<Scalar * [3][3], ExeSpace> Fappd("Fappd", 1);
-      auto Fappd_h = Fappd.template view<HostMemorySpace>();
-      // auto Fappd_d = Fappd.template view<ExeSpace>();
-      auto C_d = C.template view<ExeSpace>();
-      Scalar D1 = sqrt(1.0 / (1 - 2 * h));
-      constexpr Scalar l1 = 1;
-      constexpr Scalar l2 = (1 + h) / (1 - h * h);
-      constexpr Scalar l3 = (1 - h) / (1 - h * h);
-      Scalar l2pl3 = 0.5 * (sqrt(l2) + sqrt(l3));
-      Scalar l2ml3 = 0.5 * (sqrt(l2) - sqrt(l3));
-      // compute V from V = sqrt((I-2e)^-1)
-      // V has been computed by hand
-      for (int i = 0; i < 6; ++i)
-      {
-        Kokkos::deep_copy(Fappd_h, 0);
-        switch (i)
-        {
-          case 0:
-            Fappd_h(0, 0, 0) = D1;
-            Fappd_h(0, 1, 1) = 1;
-            Fappd_h(0, 2, 2) = 1;
-            break;
-          case 1:
-            Fappd_h(0, 0, 0) = 1;
-            Fappd_h(0, 1, 1) = D1;
-            Fappd_h(0, 2, 2) = 1;
-            break;
-          case 2:
-            Fappd_h(0, 0, 0) = 1;
-            Fappd_h(0, 1, 1) = 1;
-            Fappd_h(0, 2, 2) = D1;
-            break;
-          case 3:
-            Fappd_h(0, 0, 0) = l1;
-            Fappd_h(0, 1, 1) = l2pl3;
-            Fappd_h(0, 2, 2) = l2pl3;
-            Fappd_h(0, 1, 2) = l2ml3;
-            Fappd_h(0, 2, 1) = l2ml3;
-            break;
-          case 4:
-            Fappd_h(0, 0, 0) = l2pl3;
-            Fappd_h(0, 1, 1) = l1;
-            Fappd_h(0, 2, 2) = l2pl3;
-            Fappd_h(0, 0, 2) = l2ml3;
-            Fappd_h(0, 2, 0) = l2ml3;
-            break;
-          case 5:
-            Fappd_h(0, 0, 0) = l2pl3;
-            Fappd_h(0, 1, 1) = l2pl3;
-            Fappd_h(0, 2, 2) = l1;
-            Fappd_h(0, 0, 1) = l2ml3;
-            Fappd_h(0, 1, 0) = l2ml3;
-            break;
-        }
-        Fappd.template modify<HostMemorySpace>();
-        run(Fappd, sigma1, false);
-        sigma1.template sync<ExeSpace>();
-        // j is row, i is column
-        Kokkos::parallel_for(
-            Kokkos::RangePolicy<ExeSpace>(0, current_stress_d.extent(0)),
-            KOKKOS_LAMBDA(const int rve) {
-              for (int j = 0; j < 6; ++j)
-              {
-                C_d(rve, j, i) =
-                    (sigma1_d(rve, j) - current_stress_d(rve, j)) / h;
-              }
-            });
-      }
-      C.template modify<ExeSpace>();
+      // TODO: don't take a copy of the stress and make this a member function
+      // that way the "current_stress_" will get updated as a reference when
+      // the coordinates are updated
+      
+      this->current_stress_.sync_device();
+      Kokkos::deep_copy(PK2_stress_, this->current_stress_.d_view);
+      // Note! current stress is cauchy, but...it needs to be in ***PK2***
+      ConvertCauchyToPK2<ExeSpace>(previous_deformation_gradient_, PK2_stress_);
+      //mumfim::StressFiniteDifferenceFunc dPK2dU_func(
+      //    compute_pk2_stress_, PK2_stress_, 1E-5);
+      mumfim::StressCentralDifferenceFunc dPK2dU_func(compute_pk2_stress_, 1E-7);
+      // this zeroing out may not be required...
+      // TODO: rather than returning the array take the C array as an argument
+      auto dPK2dE = mumfim::ComputeDPK2dE<exe_space>(
+          previous_deformation_gradient_, dPK2dU_func);
+      mumfim::ConvertTLStiffnessToULStiffness<exe_space>(
+          previous_deformation_gradient_, dPK2dE);
+      Kokkos::deep_copy(C.d_view, dPK2dE);
+      C.modify_device();
     }
+
     void compute3DOrientationTensor(
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
     {
       orientation_tensor.compute3D(omega);
     }
+
     void compute2DOrientationTensor(
         Kokkos::DualView<Scalar * [3], ExeSpace> normal,
         Kokkos::DualView<Scalar * [3][3], ExeSpace> omega) final
     {
       orientation_tensor.compute2D(normal, omega);
     }
+    ConnectivityType GetConnectivityArray() {
+      return connectivity;
+    }
+    DofDataType GetCoordinates() {
+      return current_coordinates;
+    }
+    DofDataType GetDisplacement() {
+      return trial_displacement;
+    }
+    DofDataType GetVelocity() {
+      return velocity;
+    }
+    DofDataType GetForce() {
+      return force_internal;
+    }
+    auto GetVolume() {
+      return trial_volume;
+    }
+    auto GetStrainEnergy() {
+      return strain_energy;
+    }
+
+    private:
+    BatchedAnalysisGetPK2StressFunc<BatchedFiberRVEAnalysisExplicit>
+        compute_pk2_stress_;
+    Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space>
+        current_deformation_gradient_;
+    Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space>
+        previous_deformation_gradient_;
+    Kokkos::View<Scalar * [3][3], typename ExeSpace::memory_space>
+        trial_deformation_gradient_;
+    Kokkos::View<Scalar * [6], typename ExeSpace::memory_space>
+        PK2_stress_;
   };
 }  // namespace mumfim
 #endif
